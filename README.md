@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.3.0-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.4.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -31,7 +31,7 @@
 | <kbd>左键</kbd> | 射击（狙击：按住蓄力，松开发射） |
 | <kbd>Shift</kbd> | 潜入墨水：在自己的颜色里高速移动、回墨、回血、隐身，还能爬上涂过的墙 |
 | <kbd>空格</kbd> | 跳跃 |
-| <kbd>右键</kbd> / <kbd>E</kbd> | 墨水炸弹 |
+| <kbd>右键</kbd> / <kbd>E</kbd> | 按住瞄准墨水炸弹（显示抛物线），松开投掷 |
 | <kbd>Q</kbd> | 必杀技「墨浪冲击」 |
 | <kbd>M</kbd> | 放大地图 |
 
@@ -58,6 +58,7 @@
 ```bash
 ./tools/build.sh             # 把 src/ 打包成 index.html
 node tools/smoke-test.js     # 无浏览器自动跑完整对局，检查有没有报错
+node tools/feature-test.js   # 逐项验证核心机制（蓄力、准星、炸弹、防护罩……）
 ```
 
 ```

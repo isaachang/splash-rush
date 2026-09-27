@@ -206,3 +206,13 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #ret2 .x{position:absolute;width:30px;height:30px;left:-15px;top:-15px;opacity:0;transform:scale(1.4);transition:opacity .08s,transform .12s}
 #ret2.lock .x{opacity:1;transform:scale(1)}
 #ret2.lock .rr{border-color:#fff;border-width:3px}
+
+#inkScreen{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+#inkScreen svg{position:absolute;opacity:.82;animation:inkfade 1.4s ease-in forwards;filter:drop-shadow(0 4px 0 rgba(0,0,0,.25))}
+@keyframes inkfade{0%{opacity:0;transform:scale(.6)}8%{opacity:.85}60%{opacity:.7}100%{opacity:0}}
+.ticon .wb{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);border-radius:10px;padding:0 3px;line-height:0}
+.ticon .rs{bottom:auto;top:-18px}
+#topbar{padding-bottom:18px}
+.ticon.special{box-shadow:0 0 0 3px #fff,0 0 18px 6px #fff;animation:spglow .6s ease-in-out infinite alternate}
+@keyframes spglow{from{box-shadow:0 0 0 3px #fff,0 0 10px 2px #fff}to{box-shadow:0 0 0 4px #fff,0 0 26px 10px #ffe45c}}
+#chargeRing.stored{animation:blink .25s infinite}

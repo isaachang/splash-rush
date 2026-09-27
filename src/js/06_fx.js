@@ -157,10 +157,31 @@ const Proj = {
     const light = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffffff, emissiveIntensity: 0 });
     const band = new THREE.Mesh(this.bandGeo, light); band.rotation.x = Math.PI / 2; g.add(band);
     g.position.copy(o); scene.add(g);
-    const v = dir.clone().multiplyScalar(13); v.y += 5.5;
-    v.x += owner.vel.x * 0.5; v.z += owner.vel.z * 0.5;
+    const v = this.bombVel(owner, dir);
     this.bombs.push({ owner, team: owner.team, p: o.clone(), v, g, light, fuse: -1, bounces: 0 });
     if (sndVol(o) > 0.05) Sfx.throwB(sndVol(o));
+  },
+  bombVel(owner, dir) { const v = dir.clone().multiplyScalar(13); v.y += 5.5; v.x += owner.vel.x * 0.5; v.z += owner.vel.z * 0.5; return v; },
+  // throw-arc preview (player holds the sub button)
+  preview(owner, dir, ok) {
+    if (!this.pv) {
+      this.pvMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false, fog: false });
+      this.pvDots = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), this.pvMat, 40); this.pvDots.frustumCulled = false; scene.add(this.pvDots);
+      this.pvRing = new THREE.Mesh(new THREE.RingGeometry(2.9, 3.4, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+      this.pvRing.rotation.x = -Math.PI / 2; scene.add(this.pvRing); this.pv = true;
+    }
+    if (!owner) { this.pvDots.count = 0; this.pvRing.visible = false; return; }
+    const col = ok ? TEAM_HEX[owner.team] : '#9aa0aa';
+    this.pvMat.color.set(col); this.pvRing.material.color.set(col);
+    const p = owner.muzzle(), v = this.bombVel(owner, dir), h = 1 / 60; let n = 0, prev = p.clone(), hit = null;
+    for (let i = 0; i < 180 && !hit; i++) {
+      prev.copy(p); v.y -= 22 * h; p.addScaledVector(v, h);
+      if (solidAt(p.x, p.y, p.z) || p.y < -2) { hit = p.clone(); break; }
+      if (i % 3 === 1 && n < 40) { _dm.position.copy(p); _dm.scale.setScalar(0.06); _dm.rotation.set(0, 0, 0); _dm.updateMatrix(); this.pvDots.setMatrixAt(n++, _dm.matrix); }
+    }
+    this.pvDots.count = n; this.pvDots.instanceMatrix.needsUpdate = true;
+    if (hit) { const g = groundBelow(hit.x, hit.z, prev.y + 0.1, 0.4); this.pvRing.visible = true; this.pvRing.position.set(hit.x, g + 0.05, hit.z); this.pvRing.scale.setScalar(1); }
+    else this.pvRing.visible = false;
   },
   hitChar(c, p, rad) {
     if (!c.alive || c.state !== 'play') return false;
@@ -209,6 +230,7 @@ const Proj = {
           for (const c of CHARS) { if (c.team !== b.team && this.hitChar(c, b.p, 0.14)) { c.damage(this.shotDamage(b), b.owner); Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 7, 3, 0.07, -b.v.x, -b.v.y, -b.v.z, 0.8); dead = true; break; } }
           if (dead) break;
         }
+        if (inBarrier(1 - b.team, b.p)) { Fx.burst(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 3, 1.5, 0.05); Barrier.flash(1 - b.team); dead = true; break; }
         const s = solidAt(b.p.x, b.p.y, b.p.z);
         if (s) {
           if (b.big) { const h = this.classify(s, prev, b.p); if (h.type !== 'none') this.splash(b.owner, h.type === 'wall' ? h.pt : new THREE.Vector3(b.p.x, h.y, b.p.z), h.n, b.v.clone().normalize(), b.r, h.type, h.face); if (sndVol(b.p) > 0.1) Sfx.splat(sndVol(b.p)); }
@@ -224,6 +246,7 @@ const Proj = {
       const b = this.bombs[i];
       if (b.fuse < 0) {
         const prev = b.p.clone(); b.v.y -= 22 * dt; b.p.addScaledVector(b.v, dt);
+        if (inBarrier(1 - b.team, b.p)) { b.p.copy(prev); b.v.x *= -0.35; b.v.z *= -0.35; Barrier.flash(1 - b.team); }
         for (const c of CHARS) if (c.team !== b.team && this.hitChar(c, b.p, 0.2)) { b.fuse = 0.25; b.v.set(0, 0, 0); break; }
         const s = solidAt(b.p.x, b.p.y, b.p.z);
         if (s) {
@@ -262,4 +285,33 @@ const Proj = {
     for (const c of CHARS) { if (c.team === b.team || !c.alive) continue; const d = c.chest().distanceTo(p); if (d < 3.6) c.damage(d < 1.4 ? 180 : lerp(80, 30, (d - 1.4) / 2.2), b.owner, 'bomb'); }
   },
   clear() { this.shots.length = 0; this.bombs.forEach(b => scene.remove(b.g)); this.bombs.length = 0; }
+};
+
+/* ======================================================== SPAWN BARRIER
+   Like the original: a dome-ish wall around each spawn pad. Enemies can't
+   walk in, enemy ink can't get through, players inside it can't be hurt.   */
+const BARRIER_R = 6.5, BARRIER_H = 9;
+function inBarrier(team, p) { const s = SPAWN[team], dx = p.x - s.x, dz = p.z - s.z; return p.y < BARRIER_H && dx * dx + dz * dz < BARRIER_R * BARRIER_R; }
+const Barrier = {
+  meshes: [], glow: [0, 0],
+  init() {
+    const tex = canvasTex(64, 256, (g, w, h) => {
+      const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.75, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,.95)');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      g.fillStyle = 'rgba(255,255,255,.5)'; for (let y = 0; y < h; y += 16) g.fillRect(0, y, w, 3);
+    });
+    tex.repeat.set(10, 1);
+    SPAWN.forEach((sp, t) => {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(BARRIER_R, BARRIER_R, BARRIER_H, 56, 1, true),
+        new THREE.MeshBasicMaterial({ map: tex, color: 0xffffff, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false, fog: false }));
+      m.position.set(sp.x, BARRIER_H / 2 - 0.05, sp.z); m.renderOrder = 2; scene.add(m); this.meshes.push(m);
+    });
+    this.tex = tex;
+  },
+  flash(t) { this.glow[t] = 1; },
+  update(dt, time) {
+    if (!this.meshes.length) return;
+    this.tex.offset.y = (time * 0.15) % 1;
+    this.meshes.forEach((m, t) => { this.glow[t] = Math.max(0, this.glow[t] - dt * 3); m.material.color.set(TEAM_HEX[t]); m.material.opacity = 0.2 + this.glow[t] * 0.45; });
+  }
 };

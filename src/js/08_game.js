@@ -13,7 +13,7 @@ const HUD = {
   buildTeams() {
     ['teamA', 'teamB'].forEach((id, t) => {
       const el = $(id); el.innerHTML = '';
-      CHARS.filter(c => c.team === t).forEach(c => { const d = document.createElement('div'); d.className = 'ticon' + (c.isPlayer ? ' me' : ''); d.style.background = TEAM_HEX[t]; d.innerHTML = '<div class="face"></div><div class="rs"></div>'; el.appendChild(d); c.icon = d; });
+      CHARS.filter(c => c.team === t).forEach(c => { const d = document.createElement('div'); d.className = 'ticon' + (c.isPlayer ? ' me' : ''); d.style.background = TEAM_HEX[t]; d.innerHTML = '<div class="face"></div><div class="rs"></div><div class="wb">' + weaponIcon(c.weapon.id, '#fff', 30, TEAM_HEX[t]) + '</div>'; el.appendChild(d); c.icon = d; });
     });
     const hx = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
     this.rgb = [hx(TEAM_HEX[0]), hx(TEAM_HEX[1])];
@@ -34,7 +34,7 @@ const HUD = {
     const hp = c.alive ? c.hp : 100; this.hurtV = Math.max(0, this.hurtV - dt * 2);
     const vig = clamp((100 - hp) / 100 * 0.9 + this.hurtV * 0.4, 0, 0.95);
     const ec = TEAM_HEX[1 - c.team];
-    $('vignette').style.background = `radial-gradient(ellipse at center, transparent 45%, ${ec}cc 130%)`; $('vignette').style.opacity = vig;
+    $('vignette').style.background = `radial-gradient(ellipse at center, transparent 55%, ${ec}99 135%)`; $('vignette').style.opacity = clamp((70 - hp) / 70, 0, 0.8);
     $('crosshair').classList.toggle('enemy', Cam.lock);
     const r2 = $('ret2');
     if (Cam.showLand && c.alive && c.state === 'play') {
@@ -51,6 +51,7 @@ const HUD = {
     const cr = $('chargeRing'), isC = c.weapon.type === 'charge';
     cr.classList.toggle('on', isC && c.alive); cr.classList.toggle('full', isC && c.charge >= 1);
     if (isC) $('chargeArc').style.strokeDashoffset = 251.3 * (1 - c.charge);
+    cr.classList.toggle('stored', isC && c.stored > 0);
     $('crosshair').style.display = c.alive && c.state === 'play' ? 'block' : 'none';
     for (const ch of CHARS) if (ch.icon) {
       ch.icon.classList.toggle('dead', !ch.alive); ch.icon.classList.toggle('special', ch.alive && ch.special >= 100);
@@ -81,7 +82,21 @@ const HUD = {
       } else { g.fillStyle = TEAM_HEX[ch.team]; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 3.5, 0, 7); g.fill(); g.stroke(); }
     }
   },
-  hurt() { this.hurtV = 1; },
+  hurt(amount = 25) {
+    this.hurtV = 1;
+    // ink splattered on the screen edges in the attacker's colour
+    const el = $('inkScreen'), col = TEAM_HEX[1 - PLAYER.team], n = amount >= 60 ? 3 : amount >= 25 ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 200 200');
+      const side = Math.floor(Math.random() * 4), size = rand(22, 38), along = rand(5, 95);
+      const x = side === 0 ? -size * 0.35 : side === 1 ? 100 - size * 0.65 : along - size / 2, y = side === 2 ? -size * 0.35 : side === 3 ? 100 - size * 0.65 : along - size / 2;
+      s.style.cssText = `left:${side < 2 ? x + 'vw' : x + 'vw'};top:${y}vh;width:${size}vmin;height:${size}vmin;transform:rotate(${rand(0, 360)}deg)`;
+      let inner = `<path d="${blobPath(Math.random() * 50, 58)}" style="fill:${col}"/>`;
+      for (let k = 0; k < 5; k++) { const a = Math.random() * 6.28, d = rand(66, 92); inner += `<circle cx="${100 + Math.cos(a) * d}" cy="${100 + Math.sin(a) * d}" r="${rand(4, 11)}" style="fill:${col}"/>`; }
+      s.innerHTML = inner; el.appendChild(s); setTimeout(() => s.remove(), 1400);
+    }
+    for (let k = el.children.length - 8; k > 0; k--) { const old = el.children[0]; if (old && old.remove) old.remove(); }
+  },
   tip(t) { const el = $('tip'); el.textContent = t; el.classList.add('on'); clearTimeout(this._tt); this._tt = setTimeout(() => el.classList.remove('on'), 1100); },
   hitmark(kill) { const h = $('hitmark'); h.classList.remove('on', 'kill'); void h.offsetWidth; h.classList.add(kill ? 'kill' : 'on'); },
   lowInk() { if (this.lowInkT <= 0) Sfx.beep(false); this.lowInkT = 0.8; },
@@ -170,6 +185,7 @@ function endMatch() {
   G.state = 'end'; G.endT = 0; Sfx.whistle(); Sfx.stopMusic(); flash(0.6);
   HUD.center('比赛结束！', '', 0);
   CHARS.forEach(c => { c.intent.fire = false; c.intent.swim = false; c.intent.mx = c.intent.mz = 0; });
+  if (Proj.pv) Proj.preview(null); Cam.bombAim = false;
 }
 function showResults() {
   G.state = 'results'; show('hud', false); show('results', true); resetFov();
@@ -292,7 +308,7 @@ function loop() {
       if (G.state !== 'intro') updateCamera(dt);
       HUD.update(dt);
     }
-    Proj.update(dt); Fx.update(dt);
+    Proj.update(dt); Fx.update(dt); Barrier.update(dt, t);
     uploadPaint(); updateWorld(t, dt);
   }
   renderer.render(scene, camera);
@@ -357,7 +373,7 @@ function boot() {
   initPaint();
   initGeo();
   buildSkyEnv(); buildSea(); buildArena(); buildDecor();
-  Fx.init(); Proj.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI();
+  Fx.init(); Proj.init(); Barrier.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI();
   applyPalette();
   renderer.compile(scene, camera);
   G.state = 'title';

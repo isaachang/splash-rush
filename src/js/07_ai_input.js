@@ -69,7 +69,7 @@ class Bot {
   findEnemy() {
     const c = this.c, e0 = c.eye(); let best = null, bd = 1e9;
     for (const e of CHARS) {
-      if (e.team === c.team || !e.alive || e.state !== 'play' || e.onOwnDeck()) continue;
+      if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
       const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : 18) || d > bd) continue;
       if (e.submerged && d > 3.5 && !(G.time - e.lastShot < 0.4)) continue;
       const ch = e.chest(); if (segBlocked(e0.x, e0.y, e0.z, ch.x, ch.y, ch.z, 0.5)) continue;
@@ -222,27 +222,27 @@ class Bot {
 }
 
 /* =============================================================== INPUT */
-const Input = { keys: {}, fire: false, dx: 0, dy: 0, locked: false, jumpQ: false, bombQ: false, spQ: false };
+const Input = { keys: {}, fire: false, dx: 0, dy: 0, locked: false, jumpQ: false, bombQ: false, spQ: false, bombHoldKey: false, bombHoldMouse: false, bombWasHeld: false };
 function initInput() {
   addEventListener('keydown', e => {
     if (e.repeat) { if (['Space', 'Tab'].includes(e.code)) e.preventDefault(); return; }
     Input.keys[e.code] = true;
     if (e.code === 'Space') { Input.jumpQ = true; e.preventDefault(); }
-    if (e.code === 'KeyE') Input.bombQ = true;
+    if (e.code === 'KeyE') Input.bombHoldKey = true;
     if (e.code === 'KeyQ') Input.spQ = true;
     if (e.code === 'KeyM') $('minimap').classList.toggle('big');
     if (e.code === 'Tab') e.preventDefault();
   });
-  addEventListener('keyup', e => { Input.keys[e.code] = false; });
-  addEventListener('blur', () => { Input.keys = {}; Input.fire = false; });
+  addEventListener('keyup', e => { Input.keys[e.code] = false; if (e.code === 'KeyE') Input.bombHoldKey = false; });
+  addEventListener('blur', () => { Input.keys = {}; Input.fire = false; Input.bombHoldKey = Input.bombHoldMouse = false; });
   const cv = $('gl');
   addEventListener('mousedown', e => {
     if ((G.state === 'play' || G.state === 'intro') && !G.paused) {
       if (!Input.locked && !G.paused) { lockPointer(); return; }
-      if (e.button === 0) Input.fire = true; if (e.button === 2) Input.bombQ = true;
+      if (e.button === 0) Input.fire = true; if (e.button === 2) Input.bombHoldMouse = true;
     }
   });
-  addEventListener('mouseup', e => { if (e.button === 0) Input.fire = false; });
+  addEventListener('mouseup', e => { if (e.button === 0) Input.fire = false; if (e.button === 2) Input.bombHoldMouse = false; });
   addEventListener('contextmenu', e => e.preventDefault());
   addEventListener('mousemove', e => { if (Input.locked) { Input.dx += e.movementX || 0; Input.dy += e.movementY || 0; } });
   document.addEventListener('pointerlockchange', () => {
@@ -253,19 +253,22 @@ function initInput() {
 function lockPointer() { const cv = $('gl'); try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
 
 /* ============================================================= PLAYER */
-const Cam = { zoom: 1, land: new THREE.Vector3(), lock: false, landDist: 0, showLand: false, onEnemy: false, yaw: Math.PI, pitch: -0.05, pos: new THREE.Vector3(), pivotY: 0, dist: 4.4, aim: new THREE.Vector3(), onEnemy: false };
+const Cam = { bombAim: false, zoom: 1, land: new THREE.Vector3(), lock: false, landDist: 0, showLand: false, onEnemy: false, yaw: Math.PI, pitch: -0.05, pos: new THREE.Vector3(), pivotY: 0, dist: 4.4, aim: new THREE.Vector3(), onEnemy: false };
 function playerControl(dt) {
   const c = PLAYER, I = c.intent, k = Input.keys;
   const s = 0.0022 * SETTINGS.sens * Cam.zoom;
   Cam.yaw -= Input.dx * s; Cam.pitch -= Input.dy * s * (SETTINGS.inv ? -1 : 1); Input.dx = Input.dy = 0;
   Cam.pitch = clamp(Cam.pitch, -1.15, 1.2);
-  if (!c.alive || c.state !== 'play') { I.mx = I.mz = 0; I.fire = I.swim = false; Input.jumpQ = Input.bombQ = Input.spQ = false; Cam.showLand = false; Cam.lock = false; return; }
+  if (!c.alive || c.state !== 'play') { if (Proj.pv) Proj.preview(null); I.mx = I.mz = 0; I.fire = I.swim = false; Input.jumpQ = Input.bombQ = Input.spQ = false; Input.bombWasHeld = false; Cam.bombAim = false; Cam.showLand = false; Cam.lock = false; return; }
   const f = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0), r = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0);
   const fx = Math.sin(Cam.yaw), fz = Math.cos(Cam.yaw), rx = -fz, rz = fx;
   let mx = fx * f + rx * r, mz = fz * f + rz * r; const l = Math.hypot(mx, mz); if (l > 1) { mx /= l; mz /= l; }
   I.mx = mx; I.mz = mz;
   I.swim = !!(k.ShiftLeft || k.ShiftRight);
-  I.fire = Input.fire; I.jump = Input.jumpQ; I.bomb = Input.bombQ; I.special = Input.spQ;
+  const held = Input.bombHoldKey || Input.bombHoldMouse;
+  if (!held && Input.bombWasHeld && !c.swim) Input.bombQ = true;   // throw on release
+  Input.bombWasHeld = held; Cam.bombAim = held && !c.swim && !c.sp;
+  I.fire = Input.fire && !Cam.bombAim; I.jump = Input.jumpQ; I.bomb = Input.bombQ; I.special = Input.spQ;
   Input.jumpQ = Input.bombQ = Input.spQ = false;
   c.aimYaw = Cam.yaw; c.aimPitch = Cam.pitch;
   // aim ray from camera
@@ -285,8 +288,13 @@ function playerControl(dt) {
   I.aimDir = hitP.clone().sub(mzl).normalize();
   // second reticle: where the ink will actually land; "lock" when an enemy would be hit
   const W = c.weapon;
-  const pr = W.type === 'charge' ? traceRay(c, mzl, I.aimDir, c.rangeNow(), 0.3) : Proj.predict(c, mzl, I.aimDir);
-  Cam.land.copy(pr.end); Cam.lock = !!pr.char; Cam.landDist = mzl.distanceTo(pr.end);
+  const R = c.rangeNow(), D = mzl.distanceTo(hitP);
+  // small reticle sits ON the aim line: on the aimed surface if it is within range, otherwise at max range
+  if (D <= R) Cam.land.copy(hitP); else Cam.land.copy(mzl).addScaledVector(I.aimDir, R);
+  Cam.landDist = Math.min(D, R);
+  const pr = W.type === 'charge' ? traceRay(c, mzl, I.aimDir, R, 0.3) : Proj.predict(c, mzl, I.aimDir);
+  Cam.lock = !!pr.char;
+  if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[W.sub].cost); else if (Proj.pv) Proj.preview(null);
   Cam.showLand = !c.swim;
 }
 function updateCamera(dt) {
@@ -310,9 +318,9 @@ function updateCamera(dt) {
   const dir = new THREE.Vector3(Math.sin(Cam.yaw) * cp, sp, Math.cos(Cam.yaw) * cp);
   const right = new THREE.Vector3(-Math.cos(Cam.yaw), 0, Math.sin(Cam.yaw));
   const pivot = new THREE.Vector3(px, Cam.pivotY, pz);
-  const dist = c.swim ? 4.8 : 4.3;
-  const shoulder = right.clone().multiplyScalar(0.55);
-  const want = pivot.clone().addScaledVector(dir, -dist).add(shoulder); want.y += 0.25;
+  const dist = c.swim ? 5.0 : 4.6;
+  const shoulder = right.clone().multiplyScalar(0);
+  const want = pivot.clone().addScaledVector(dir, -dist).add(shoulder); want.y += 0.85;
   const pv = pivot.clone().add(shoulder.clone().multiplyScalar(0.5));
   const t = segBlocked(pv.x, pv.y, pv.z, want.x, want.y, want.z, 0.15);
   if (t) want.lerpVectors(pv, want, Math.max(0.1, t - 0.08));

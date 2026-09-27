@@ -53,6 +53,7 @@
 
 <div id="hud" class="screen">
   <div id="vignette"></div>
+  <div id="inkScreen"></div>
   <div id="topbar"><div class="team" id="teamA"></div><div id="timer">3:00</div><div class="team" id="teamB"></div></div>
   <div id="crosshair"><div class="ring"></div><div class="dot"></div>
     <svg id="chargeRing" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="9"/><circle id="chargeArc" cx="50" cy="50" r="40" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="251.3" stroke-dashoffset="251.3" stroke-linecap="round"/></svg>
@@ -94,7 +95,7 @@
     <div><kbd>左键</kbd></div><div>墨浪步枪：按住连射 · 重炮狙击：按住蓄力、松开发射（蓄得越久越远越痛，蓄满一击击倒）</div>
     <div><kbd>Shift</kbd></div><div>按住变成墨团潜入墨水 —— 在自己颜色里高速游动、快速回墨、隐身</div>
     <div><kbd>空格</kbd></div><div>跳跃（潜墨时跳得更高）</div>
-    <div><kbd>右键</kbd> / <kbd>E</kbd></div><div>投掷墨水炸弹（消耗 70% 墨水）</div>
+    <div><kbd>右键</kbd> / <kbd>E</kbd></div><div>按住显示抛物线和落点，松开投掷墨水炸弹（消耗 70% 墨水）</div>
     <div><kbd>Q</kbd></div><div>必杀技「墨浪冲击」：跃向高空后砸地，大范围涂色并击倒周围敌人</div>
     <div><kbd>M</kbd></div><div>放大地图</div>
     <div><kbd>Esc</kbd></div><div>暂停</div>
@@ -104,7 +105,9 @@
     <b>潜墨攀墙：</b>把墙壁涂成自己的颜色，潜墨状态下朝墙移动就能爬上去。<br>
     <b>敌方墨水：</b>踩在对手墨水里会减速并持续掉血，赶紧涂掉它。<br>
     <b>必杀技：</b>涂地会充能右上角的圆环，满了按 <b>Q</b>。<br>
-    <b>双准星：</b>中间的大准星是你瞄的方向，小准星是墨水真正会落下的位置；两个分开时说明打不到那么远。小准星出现叉号，表示这一枪能打中敌人。<br>
+    <b>双准星：</b>小准星会贴在射程内你瞄准的物体上；目标太远时它停在射程尽头、贴不上目标。小准星出现叉号，表示这一枪能打中敌人。<br>
+    <b>狙击存蓄力：</b>蓄满后按住左键潜入墨水，可以保留蓄力约 1 秒，浮出来直接开枪。<br>
+    <b>出生点防护罩：</b>敌人和敌方墨水都进不来，站在里面不会受伤。阵亡会损失一半必杀充能。<br>
     <b>换武器：</b>点「开始对战」进入战前准备，在左侧选择武器。重炮狙击蓄力时镜头会拉近，但激光线会暴露你的位置。
   </div>
 </div></div>

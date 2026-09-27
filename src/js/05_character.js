@@ -45,6 +45,7 @@ function traceRay(owner, o, dir, range, step = 0.2) {
   let prev = o.clone(), p = o.clone();
   for (let t = step; t <= range; t += step) {
     p.set(o.x + dir.x * t, o.y + dir.y * t, o.z + dir.z * t);
+    if (inBarrier(1 - owner.team, p)) return { end: p.clone(), barrier: true, t };
     for (const e of CHARS) if (e.team !== owner.team && Proj.hitChar(e, p, 0.12)) return { end: p.clone(), char: e, t };
     const s = solidAt(p.x, p.y, p.z);
     if (s) return { end: p.clone(), solid: s, prev: prev.clone(), t };
@@ -73,7 +74,7 @@ class Character {
     this.swim = false; this.submerged = false; this.climbing = false; this.grounded = true;
     this.fireCd = 0; this.bombCd = 0; this.lastHurt = -99; this.lastShot = -99; this.invulnT = 0; this.respawnT = 0;
     this.sp = null; this.hurtFlash = 0; this.phase = 0; this.recoil = 0; this.swimPop = 0; this.inEnemy = false; this.lastAttacker = null;
-    this.vel.set(0, 0, 0); this.kills = 0; this.deaths = 0; this.paint = 0; this.charge = 0; this.charging = false; this.lastVia = null;
+    this.vel.set(0, 0, 0); this.kills = 0; this.deaths = 0; this.paint = 0; this.charge = 0; this.charging = false; this.stored = 0; this.lastVia = null;
     this.root.visible = true; this.ghost.visible = false;
   }
   buildModel() {
@@ -185,7 +186,8 @@ class Character {
     return new THREE.Vector3(this.pos.x + rx * 0.27 + fx * f * cp, this.pos.y + 0.93 + sp * f, this.pos.z + rz * 0.27 + fz * f * cp);
   }
   onOwnDeck() { const d = DECK[this.team]; return this.pos.y > 1.9 && inRect(d, this.pos.x, this.pos.z); }
-  invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.onOwnDeck(); }
+  inOwnBarrier() { return inBarrier(this.team, this.pos); }
+  invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.inOwnBarrier(); }
   setSwim(on) {
     if (on === this.swim) return;
     this.swim = on; this.swimPop = 1;
@@ -196,14 +198,15 @@ class Character {
   damage(amount, src, via) {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
-    if (this.isPlayer) { Sfx.hurt(); HUD.hurt(); }
+    if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount); }
     if (src && src.isPlayer) { Sfx.hit(); HUD.hitmark(false); }
     if (this.hp <= 0) this.die(src, this.lastVia);
     return true;
   }
   die(killer, via) {
     this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0;
-    this.setSwim(false); this.sp = null; this.climbing = false; this.stopCharge();
+    this.setSwim(false); this.sp = null; this.climbing = false; this.stopCharge(); this.stored = 0;
+    this.special = Math.floor(this.special * (1 - this.weapon.spLoss));
     const kc = killer ? killer.team : 1 - this.team;
     if (killer) killer.kills++;
     const gy = groundBelow(this.pos.x, this.pos.z, this.pos.y + 0.2, 0.3);
@@ -278,7 +281,7 @@ class Character {
     const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging;
     // ----- movement
     let maxSp;
-    if (this.swim) maxSp = this.submerged ? 11.5 : this.inEnemy ? 2.0 : 3.4;
+    if (this.swim) maxSp = this.submerged ? 12.8 : this.inEnemy ? 2.0 : 3.4;
     else maxSp = this.inEnemy ? 2.3 : this.charging ? W.moveCharge : firing ? W.moveFire : 6.4;
     if (this.sp) maxSp = 3;
     const acc = this.grounded ? (this.submerged ? 75 : 48) : 16;
@@ -354,6 +357,13 @@ class Character {
   }
   updateCharge(dt, I, T) {
     const W = this.weapon;
+    // storing a full charge while submerged
+    if (this.swim && this.charging && this.charge >= 1 && I.fire) { this.charging = false; this.stored = W.storeTime; if (this.laser) { this.laser.visible = this.laserDot.visible = false; } if (this.isPlayer) Sfx.chargeStop(); }
+    if (this.stored > 0) {
+      if (!I.fire || this.sp || !this.alive) { this.stored = 0; this.charge = 0; }
+      else if (this.swim) { this.stored -= dt; if (this.stored <= 0) { this.stored = 0; this.charge = 0; } return; }
+      else { this.stored = 0; this.charging = true; this.charge = 1; this.lastShot = T; if (this.isPlayer) { Sfx.chargeStart(); Sfx.chargeSet(1); } return; }
+    }
     const can = I.fire && !this.swim && !this.sp && G.state === 'play';
     if (can && (this.charging || this.fireCd <= 0)) {
       if (!this.charging) {
@@ -401,6 +411,8 @@ class Character {
       if (h.type === 'floor') Proj.splash(this, new THREE.Vector3(tr.end.x, h.y, tr.end.z), h.n, dir, ir, 'floor');
       else if (h.type === 'wall') Proj.splash(this, h.pt, h.n, dir, ir * 0.85, 'wall', h.face);
       if (c >= 0.999 && h.type === 'floor') Fx.ring(tr.end.x, h.y + 0.06, tr.end.z, col, ir * 1.3);
+    } else if (tr.barrier) {
+      Fx.burst(tr.end.x, tr.end.y, tr.end.z, col, 8, 3, 0.07); Barrier.flash(1 - this.team);
     } else {
       // out of range: the ink slug loses energy and falls, splashing where it lands
       Proj.spray(this, tr.end, dir.clone().multiplyScalar(11), ir * 0.7, true);
@@ -454,6 +466,8 @@ class Character {
       const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
       hit = { s, nx, nz };
     }
+    { const sp = SPAWN[1 - this.team], dx = this.pos.x - sp.x, dz = this.pos.z - sp.z, d = Math.hypot(dx, dz), R = BARRIER_R + 0.4;
+      if (d < R && this.pos.y < BARRIER_H && d > 1e-4) { const nx = dx / d, nz = dz / d; this.pos.x = sp.x + nx * R; this.pos.z = sp.z + nz * R; const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; } Barrier.flash(1 - this.team); } }
     const lim = 0.38;
     if (this.pos.x > XH - lim) { this.pos.x = XH - lim; this.vel.x = Math.min(0, this.vel.x); }
     if (this.pos.x < -XH + lim) { this.pos.x = -XH + lim; this.vel.x = Math.max(0, this.vel.x); }

@@ -15,7 +15,7 @@ const WEAPONS = {
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
     dmg: 25, dmgFar: 12, falloff: [0.16, 0.4], interval: 0.105, speed: 130, straight: 0.055, dragH: 18, dragV: 16, grav: 150,
     spread: 0.045, airSpread: 0.1, cost: 0.92, splat: [0.95, 1.2],
-    moveFire: 4.8, muzzleF: 0.55, range: 13,
+    moveFire: 4.8, muzzleF: 0.55, range: 13, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,
     stats: { range: 3, dmg: 3, rate: 4, paint: 3, mobility: 4 }
   },
@@ -23,7 +23,7 @@ const WEAPONS = {
     id: 'charger', name: '重炮狙击', en: 'HEAVY CANNON', role: '远程 · 狙击', type: 'charge', cls: 'charger',
     desc: '按住蓄力、松开发射，蓄得越久射程越远、伤害越高，蓄满一发击倒。弹道沿途涂出墨线，落点大范围溅射。蓄力时会暴露激光瞄准线，近身很吃亏。',
     chargeTime: 0.95, minCharge: 0, minRange: 11, maxRange: 30, dmgMin: 40, dmgMax: 100, dmgFull: 160,
-    costMin: 3, costFull: 18, lineR: 0.5, impactR: [1.0, 2.8], moveCharge: 2.3, moveFire: 2.3, muzzleF: 1.05, range: 30,
+    costMin: 3, costFull: 18, lineR: 0.5, impactR: [1.0, 2.8], moveCharge: 1.35, moveFire: 1.35, muzzleF: 1.05, range: 30, storeTime: 1.25, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 36,
     stats: { range: 5, dmg: 5, rate: 1, paint: 2, mobility: 2 }
   }
