@@ -30,7 +30,7 @@ function makeSandbox() {
 const g = makeSandbox();
 vm.runInContext(`(() => {
   clock.getDelta = () => 1 / 30; for (let i = 0; i < 10; i++) loop();
-  const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
+  const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) globalThis.__fails = (globalThis.__fails || 0) + 1; };
   // ---------- charger: store charge while swimming
   Profile.data.weapon = 'charger'; openLobby(); startMatch(); Input.locked = true;
   while (G.state !== 'play') loop();
@@ -85,6 +85,52 @@ vm.runInContext(`(() => {
 
   P.pos.set(0, 0, 10); loop(); P.special = 80; P.invulnT = 0; P.hp = 1; P.damage(100, E, 'rifle');
   ok(!P.alive && P.special === 40, 'death halves the special gauge (80 -> ' + P.special + ')');
+  // ================= v0.5.0 =================
+  for (let i = 0; i < 300 && !(P.alive && P.state === 'play'); i++) loop();
+  const rif = CHARS.find(c => c.team === 1 && c.weapon.id === 'rifle');
+  // rifle: 3 hits
+  const V = CHARS.find(c => c.team === 0 && !c.isPlayer); V.pos.set(5, 0, 5); V.state = 'play'; V.alive = true; V.hp = 100; V.invulnT = 0; V.sj = null;
+  for (let k = 0; k < 3; k++) V.damage(WEAPONS.rifle.dmg, rif, 'rifle');
+  ok(!V.alive && WEAPONS.rifle.dmg === 36, 'rifle kills in 3 hits (36 dmg)');
+  V.respawnT = 999;   // keep it out of the way (bots may super-jump onto the player on respawn)
+  // regen timing (standing): nothing before 1 s, 12.5/s after
+  P.pos.set(0, 0, 12); P.vel.set(0, 0, 0); P.state = 'play'; P.alive = true; P.sj = null; Input.keys = {}; Input.fire = false; loop();
+  splatFloor(0, 0, 12, 4, 0, 1, false); loop();
+  P.hp = 50; P.lastHurt = G.time; for (let i = 0; i < 27; i++) loop(); const h09 = P.hp; for (let i = 0; i < 30; i++) loop();
+  ok(Math.abs(h09 - 50) < 0.01 && P.hp > 55 && P.hp < 64, 'regen waits 1s then ~12.5/s (after 0.9s: ' + h09.toFixed(1) + ', after 1.9s: ' + P.hp.toFixed(1) + ')');
+  // enemy ink floor at 50
+  splatFloor(0, 0, 12, 4, 1, 1, false); P.pos.set(0, 0, 12); P.vel.set(0, 0, 0); Input.keys = {}; P.hp = 100; P.lastHurt = -99; for (let i = 0; i < 150; i++) loop();
+  ok(Math.abs(P.hp - 50) < 1, 'standing in enemy ink drains to 50 HP and stops (' + P.hp.toFixed(1) + ')');
+  // submerged regen: 100/s
+  splatFloor(0, 0, 12, 4, 0, 1, false); P.hp = 30; P.lastHurt = G.time - 1.1; Input.keys.ShiftLeft = true; for (let i = 0; i < 12; i++) loop();
+  ok(P.hp >= 60 && P.submerged, 'submerged in own ink regenerates ~100/s (' + P.hp.toFixed(1) + ' after 0.4s)');
+  // ink spots on hurt characters
+  V.alive = true; V.state = 'play'; V.hp = 30; V.syncModel(0);
+  const shown = V.inkSpots.filter(m => m.visible).length; V.hp = 100; V.syncModel(0); const none = V.inkSpots.filter(m => m.visible).length;
+  ok(shown >= 8 && none === 0, 'hurt characters get covered in enemy ink (' + shown + ' spots at 30 HP, ' + none + ' at full)');
+  // swim jump keeps momentum
+  for (let z = 28; z >= -6; z -= 2.5) splatFloor(-9, 0, z, 2.6, 0, 1, false);
+  P.pos.set(-9, 0, 27); P.vel.set(0, 0, 0); Cam.yaw = Math.PI; Cam.pitch = 0; Input.keys = { KeyW: true, ShiftLeft: true };
+  for (let i = 0; i < 20; i++) loop(); const vx = Math.hypot(P.vel.x, P.vel.z), z0 = P.pos.z;
+  Input.jumpQ = true; loop(); let air = 0; while (!P.grounded && air < 90) { loop(); air++; } const jd = Math.abs(P.pos.z - z0);
+  ok(vx > 11 && jd > 7, 'swim-jump keeps speed (run-up ' + vx.toFixed(1) + ' m/s, jump distance ' + jd.toFixed(1) + ' m)');
+  Input.keys = {};
+  // super jump while alive (from the map)
+  const ally = CHARS.find(c => c.team === 0 && !c.isPlayer && c.alive);
+  ally.pos.set(-12, 0, -8); ally.state = 'play'; P.pos.set(10, 0, 20); P.vel.set(0, 0, 0); loop();
+  HUD.drawMap(); const idx = HUD.mapAllies.findIndex(a => a.c === ally);
+  toggleMap(true); HUD.pickAlly(idx);
+  ok(!!P.sj && !G.mapOpen && P.sjMarker && P.sjMarker.visible, 'picking a teammate on the map starts a super jump (marker shown, map closed)');
+  let f2 = 0; while ((P.sj || P.state !== 'play') && f2 < 200) { loop(); f2++; }
+  const dA = Math.hypot(P.pos.x - ally.pos.x, P.pos.z - ally.pos.z);
+  ok(P.state === 'play' && dA < 2 && !P.sjMarker.visible, 'super jump lands next to the teammate in ' + (f2 / 30).toFixed(1) + 's (' + dA.toFixed(1) + 'm away)');
+  // choose a jump target while dead -> respawn on the teammate
+  P.invulnT = 0; P.hp = 1; P.damage(100, rif, 'rifle'); HUD.drawMap(); toggleMap(true);
+  HUD.pickAlly(HUD.mapAllies.findIndex(a => a.c === ally)); ok(P.jumpTarget === ally, 'while dead you can pick a teammate to jump to');
+  let f3 = 0; while ((!P.alive || P.state !== 'play') && f3 < 400) { loop(); f3++; }
+  const dB = Math.hypot(P.pos.x - ally.pos.x, P.pos.z - ally.pos.z);
+  ok(P.state === 'play' && dB < 2, 'respawn super-jumps straight to that teammate (' + dB.toFixed(1) + 'm away)');
   // ---------- swim speed = 2x run
   ok(Math.abs(12.8 / 6.4 - 2) < 1e-9 && WEAPONS.charger.moveCharge === 1.35, 'speed ratios: swim 2.0x run, charging 21% of run');
 })()`, g);
+if (g.__fails) { console.log(g.__fails + ' FAILED'); process.exitCode = 1; } else console.log('ALL FEATURE TESTS PASSED');

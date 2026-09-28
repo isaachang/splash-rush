@@ -11,9 +11,9 @@ const SPECIALS = {
 const WEAPONS = {
   rifle: {
     id: 'rifle', name: '墨浪步枪', en: 'SPLASH RIFLE', role: '全能 · 中距离', type: 'auto', cls: 'shooter',
-    desc: '射速、射程、涂地都很均衡，4 发击倒。适合任何场合，新手首选。',
+    desc: '射速、射程、涂地都很均衡，3 发击倒。适合任何场合，新手首选。',
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
-    dmg: 25, dmgFar: 12, falloff: [0.16, 0.4], interval: 0.105, speed: 130, straight: 0.055, dragH: 18, dragV: 16, grav: 150,
+    dmg: 36, dmgFar: 18, falloff: [0.16, 0.4], interval: 0.105, speed: 130, straight: 0.055, dragH: 18, dragV: 16, grav: 150,
     spread: 0.045, airSpread: 0.1, cost: 0.92, splat: [0.95, 1.2],
     moveFire: 4.8, muzzleF: 0.55, range: 13, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,

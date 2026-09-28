@@ -75,13 +75,34 @@ const HUD = {
     const toM = (x, z) => [(x + XH) / (2 * XH) * W, (z + ZH) / (2 * ZH) * H];
     g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 1;
     for (const s of SOLIDS) { if (s.bound) continue; const [a, b] = toM(s.x0, s.z0), [c2, d] = toM(s.x1, s.z1); g.strokeRect(a, b, c2 - a, d - b); }
+    HUD.mapAllies = [];
     for (const ch of CHARS) {
-      if (!ch.alive || ch.team !== PLAYER.team) continue; const [x, y] = toM(ch.pos.x, ch.pos.z);
+      if (!ch.alive || ch.team !== PLAYER.team || ch.state === 'dead') continue; const [x, y] = toM(ch.pos.x, ch.pos.z);
+      if (!ch.isPlayer) HUD.mapAllies.push({ c: ch, x, y });
       if (ch.isPlayer) {
         g.save(); g.translate(x, y); g.rotate(-Cam.yaw + Math.PI); g.fillStyle = '#fff'; g.strokeStyle = '#111'; g.lineWidth = 2;
         g.beginPath(); g.moveTo(0, -7); g.lineTo(5, 5); g.lineTo(0, 2); g.lineTo(-5, 5); g.closePath(); g.stroke(); g.fill(); g.restore();
-      } else { g.fillStyle = TEAM_HEX[ch.team]; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 3.5, 0, 7); g.fill(); g.stroke(); }
+      } else {
+        const sel = PLAYER.jumpTarget === ch, big = G.mapOpen, rr = big ? 5.5 : 3.5;
+        g.fillStyle = TEAM_HEX[ch.team]; g.strokeStyle = sel ? '#ffe45c' : '#fff'; g.lineWidth = sel ? 3 : 2; g.beginPath(); g.arc(x, y, rr, 0, 7); g.fill(); g.stroke();
+        if (big) { g.font = '900 8px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#111'; g.fillText(String(HUD.mapAllies.length), x, y + 0.5); }
+      }
     }
+  },
+  mapAllies: [],
+  // choose a teammate (index in map order) to super jump to
+  pickAlly(i) {
+    const a = this.mapAllies[i]; if (!a || !PLAYER) return;
+    if (PLAYER.alive && PLAYER.state === 'play') { if (PLAYER.startSuperJump(a.c)) { toggleMap(false); HUD.center('超级跳！', '→ ' + a.c.name, 900); } else this.tip('现在无法超级跳'); }
+    else { PLAYER.jumpTarget = a.c; this.tip('复活后将跳到 ' + a.c.name + ' 身边'); $('deathTip').textContent = '复活后将超级跳到 ' + a.c.name + ' 身边'; this.mmT = 0; }
+  },
+  mapClick(e) {
+    if (!G.mapOpen) return;
+    const cv = $('minimap'), r = cv.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width * cv.width, y = (e.clientY - r.top) / r.height * cv.height;
+    let best = -1, bd = 14;
+    this.mapAllies.forEach((a, i) => { const d = Math.hypot(a.x - x, a.y - y); if (d < bd) { bd = d; best = i; } });
+    if (best >= 0) this.pickAlly(best);
   },
   hurt(amount = 25, src = null) { this.hurtV = 1; ScreenInk.hit(amount, src); },
   tip(t) { const el = $('tip'); el.textContent = t; el.classList.add('on'); clearTimeout(this._tt); this._tt = setTimeout(() => el.classList.remove('on'), 1100); },
@@ -98,9 +119,9 @@ const HUD = {
     ScreenInk.death();
     const vn = via && (WEAPONS[via] || SUBS[via] || SPECIALS[via]);
     $('death').classList.add('show'); $('deathBy').innerHTML = k ? `被 <span style="color:${TEAM_HEX[k.team]}">${k.name}</span> ${vn ? '用「' + vn.name + '」' : ''}击倒了！` : '你被击倒了！';
-    $('deathTip').textContent = '提示：' + pick(TIPS);
+    $('deathTip').textContent = '按 M 打开地图，点击队友可在复活时直接超级跳过去';
   },
-  respawned() { $('death').classList.remove('show'); ScreenInk.clear(); },
+  respawned() { $('death').classList.remove('show'); ScreenInk.clear(); if (G.mapOpen) toggleMap(false); },
   center(msg, sub, ms) {
     const el = $('center'); el.innerHTML = `<span class="msg pop">${msg}</span>${sub ? `<span class="sub">${sub}</span>` : ''}`;
     clearTimeout(this._ct); if (ms) this._ct = setTimeout(() => el.innerHTML = '', ms);
@@ -240,7 +261,7 @@ const ScreenInk = {
 };
 
 /* ============================================================== GAME */
-const G = { roster: null, state: 'boot', time: 0, left: 180, shakeAmt: 0, paused: false, introT: 0, endT: 0, bots: [], titleT: 0, flags: {}, shake(a) { this.shakeAmt = Math.max(this.shakeAmt, a); } };
+const G = { mapOpen: false, roster: null, state: 'boot', time: 0, left: 180, shakeAmt: 0, paused: false, introT: 0, endT: 0, bots: [], titleT: 0, flags: {}, shake(a) { this.shakeAmt = Math.max(this.shakeAmt, a); } };
 function show(id, on) { $(id).classList.toggle('show', on); }
 function flash(a = 0.8) { const f = $('flash'); f.style.transition = 'none'; f.style.opacity = a; requestAnimationFrame(() => { f.style.transition = 'opacity .5s'; f.style.opacity = 0; }); }
 function applyPalette() {
@@ -248,7 +269,7 @@ function applyPalette() {
   setTeamColors(p[0], p[1]); setTeamMats(p[0], p[1]);
 }
 function clearChars() {
-  CHARS.forEach(c => { scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot); }); CHARS.length = 0; G.bots = []; PLAYER = null;
+  CHARS.forEach(c => { scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot); if (c.sjMarker) scene.remove(c.sjMarker); }); CHARS.length = 0; G.bots = []; PLAYER = null;
 }
 // roster = who plays with what; rolled when entering the lobby so it can be shown before the match
 function rollRoster() {
@@ -297,6 +318,7 @@ function startMatch() {
 function pauseGame() { if (G.state !== 'play' && G.state !== 'intro') return; G.paused = true; show('pause', true); Input.keys = {}; }
 function resumeGame() { G.paused = false; show('pause', false); clock.getDelta(); lockPointer(); }
 function quitToTitle() {
+  if (G.mapOpen) { G.mapOpen = false; $('minimap').classList.remove('big'); $('mapHint').classList.remove('show'); }
   G.paused = false; show('pause', false); show('hud', false); show('results', false);
   if (document.pointerLockElement) document.exitPointerLock();
   gotoTitle();
@@ -305,7 +327,7 @@ function endMatch() {
   G.state = 'end'; G.endT = 0; Sfx.whistle(); Sfx.stopMusic(); flash(0.6);
   HUD.center('比赛结束！', '', 0);
   CHARS.forEach(c => { c.intent.fire = false; c.intent.swim = false; c.intent.mx = c.intent.mz = 0; });
-  if (Proj.pv) Proj.preview(null); Cam.bombAim = false;
+  if (Proj.pv) Proj.preview(null); Cam.bombAim = false; if (G.mapOpen) toggleMap(false);
 }
 function showResults() {
   G.state = 'results'; show('hud', false); show('results', true); resetFov();
@@ -465,6 +487,7 @@ function initUI() {
   const rng = (id, vid, key, fmt, after) => { const el = $(id); el.oninput = () => { SETTINGS[key] = +el.value; $(vid).textContent = fmt(+el.value); after && after(); }; };
   rng('sSens', 'vSens', 'sens', v => v.toFixed(2)); rng('sFov', 'vFov', 'fov', v => v, () => { camera.fov = SETTINGS.fov; camera.updateProjectionMatrix(); });
   rng('sVol', 'vVol', 'vol', v => Math.round(v * 100), () => Sfx.setVol()); rng('sMus', 'vMus', 'mus', v => Math.round(v * 100), () => Sfx.setVol());
+  $('minimap').addEventListener('mousedown', e => { e.stopPropagation(); HUD.mapClick(e); });
   $('pname').value = GAME.name;
   $('pname').oninput = e => { GAME.name = e.target.value.trim().slice(0, 8); Profile.save(); };
   $('btnStart').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };

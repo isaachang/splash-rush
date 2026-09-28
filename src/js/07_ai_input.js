@@ -230,7 +230,9 @@ function initInput() {
     if (e.code === 'Space') { Input.jumpQ = true; e.preventDefault(); }
     if (e.code === 'KeyE') Input.bombHoldKey = true;
     if (e.code === 'KeyQ') Input.spQ = true;
-    if (e.code === 'KeyM') $('minimap').classList.toggle('big');
+    if (e.code === 'KeyM') toggleMap();
+    if (G.mapOpen && /^Digit[1-3]$/.test(e.code)) HUD.pickAlly(+e.code.slice(5) - 1);
+    if (G.mapOpen && e.code === 'Escape') toggleMap(false);
     if (e.code === 'Tab') e.preventDefault();
   });
   addEventListener('keyup', e => { Input.keys[e.code] = false; if (e.code === 'KeyE') Input.bombHoldKey = false; });
@@ -238,6 +240,7 @@ function initInput() {
   const cv = $('gl');
   addEventListener('mousedown', e => {
     if ((G.state === 'play' || G.state === 'intro') && !G.paused) {
+      if (G.mapOpen) return;                      // map is open: clicks go to the map
       if (!Input.locked && !G.paused) { lockPointer(); return; }
       if (e.button === 0) Input.fire = true; if (e.button === 2) Input.bombHoldMouse = true;
     }
@@ -247,8 +250,17 @@ function initInput() {
   addEventListener('mousemove', e => { if (Input.locked) { Input.dx += e.movementX || 0; Input.dy += e.movementY || 0; } });
   document.addEventListener('pointerlockchange', () => {
     Input.locked = document.pointerLockElement === cv;
-    if (!Input.locked) { Input.fire = false; if (G.state === 'play' || G.state === 'intro') pauseGame(); }
+    if (!Input.locked) { Input.fire = false; if ((G.state === 'play' || G.state === 'intro') && !G.mapOpen) pauseGame(); }
   });
+}
+// big map: frees the mouse so you can click a teammate to super jump to
+function toggleMap(force) {
+  const open = force === undefined ? !G.mapOpen : force;
+  if (open && !(G.state === 'play' && PLAYER)) return;
+  G.mapOpen = open; $('minimap').classList.toggle('big', open); $('mapHint').classList.toggle('show', open);
+  Input.fire = false; Input.keys = {};
+  if (open) { if (document.pointerLockElement) document.exitPointerLock(); HUD.mmT = 0; }
+  else if (G.state === 'play' && !G.paused) lockPointer();
 }
 function lockPointer() { const cv = $('gl'); try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
 
