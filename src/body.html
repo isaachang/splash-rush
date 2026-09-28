@@ -28,6 +28,7 @@
     <h3>场地</h3>
     <div class="mapcard"><div class="thumb"></div><div><b>潮汐码头广场</b><small>涂地对战 · 4 V 4</small></div></div>
   </div>
+  <button class="verchip" id="btnLog"><b id="verTxt">v0.0.0</b><span>版本日志 ›</span></button>
   <div class="footer">进入对局后游戏会锁定鼠标 · 按 Esc 暂停</div>
 </div>
 
@@ -66,9 +67,10 @@
   <div id="special"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="rgba(0,0,0,.55)" stroke="#111" stroke-width="10"/><circle id="spRing" cx="50" cy="50" r="42" fill="none" stroke="#fff" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round"/></svg><div class="lbl"><b>Q</b>墨浪冲击</div></div>
   <div id="killfeed"></div>
   <canvas id="minimap" width="150" height="246"></canvas>
+  <div id="mapHint">点击队友（或按 1 / 2 / 3）超级跳过去 · 再按 M 关闭地图</div>
   <div id="center"></div>
   <div id="death"><div class="by" id="deathBy"></div><div class="cd" id="deathCd">5</div><div class="tip" id="deathTip"></div></div>
-  <div id="hint"><kbd>WASD</kbd>移动 <kbd>鼠标左键</kbd>射击 <kbd>Shift</kbd>潜墨 <kbd>空格</kbd>跳 <kbd>右键/E</kbd>炸弹 <kbd>Q</kbd>必杀 <kbd>M</kbd>地图</div>
+  <div id="hint"><kbd>WASD</kbd>移动 <kbd>鼠标左键</kbd>射击 <kbd>Shift</kbd>潜墨 <kbd>空格</kbd>跳 <kbd>右键/E</kbd>炸弹 <kbd>Q</kbd>必杀 <kbd>M</kbd>地图/超级跳</div>
 </div>
 
 <div id="pause" class="screen">
@@ -76,6 +78,7 @@
   <button class="btn big" id="btnResume">继续战斗</button>
   <button class="btn alt" id="btnSet2">设置</button>
   <button class="btn" id="btnQuit">退出到主菜单</button>
+  <div class="pausever" id="pauseVer"></div>
 </div>
 
 <div id="results" class="screen">
@@ -97,7 +100,7 @@
     <div><kbd>空格</kbd></div><div>跳跃（潜墨时跳得更高）</div>
     <div><kbd>右键</kbd> / <kbd>E</kbd></div><div>按住显示抛物线和落点，松开投掷墨水炸弹（消耗 70% 墨水）</div>
     <div><kbd>Q</kbd></div><div>必杀技「墨浪冲击」：跃向高空后砸地，大范围涂色并击倒周围敌人</div>
-    <div><kbd>M</kbd></div><div>放大地图</div>
+    <div><kbd>M</kbd></div><div>打开大地图；点击队友（或按 1/2/3）超级跳到他身边。阵亡时也可以选，复活后直接跳过去</div>
     <div><kbd>Esc</kbd></div><div>暂停</div>
   </div>
   <div class="tips">
@@ -110,6 +113,12 @@
     <b>出生点防护罩：</b>敌人和敌方墨水都进不来，站在里面不会受伤。阵亡会损失一半必杀充能。<br>
     <b>换武器：</b>点「开始对战」进入战前准备，在左侧选择武器。重炮狙击蓄力时镜头会拉近，但激光线会暴露你的位置。
   </div>
+</div></div>
+
+<div class="modal" id="changelog"><div class="card">
+  <button class="close" data-close="changelog">✕</button>
+  <h2>版本日志</h2>
+  <div id="logList"></div>
 </div></div>
 
 <div class="modal" id="settings"><div class="card">

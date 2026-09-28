@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.4.0-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.5.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -33,15 +33,16 @@
 | <kbd>空格</kbd> | 跳跃 |
 | <kbd>右键</kbd> / <kbd>E</kbd> | 按住瞄准墨水炸弹（显示抛物线），松开投掷 |
 | <kbd>Q</kbd> | 必杀技「墨浪冲击」 |
-| <kbd>M</kbd> | 放大地图 |
+| <kbd>M</kbd> | 打开大地图，点击队友（或按 1/2/3）超级跳过去；阵亡时也能选 |
 
 ## ✨ 特色
 
 - **实时涂地**：每一发墨水都会涂在地面和墙上，墨面有光泽和厚度，飞溅的墨滴落到哪就涂到哪
 - **两把手感不同的武器**
-  - **墨浪步枪**：全能型，子弹几乎瞬间直飞，末端下坠，4 发击倒
+  - **墨浪步枪**：全能型，子弹几乎瞬间直飞，末端下坠，3 发击倒
   - **重炮狙击**：蓄力瞬间命中，蓄满一发击倒；沿途涂出墨线，有激光瞄准线
-- **潜墨与爬墙**：在自己的墨水里游动、隐身，还能沿着涂过的墙往上爬
+- **潜墨与爬墙**：在自己的墨水里游动、隐身、1 秒回满血，还能沿着涂过的墙往上爬
+- **超级跳**：打开地图点队友，从天而降直接跳到他身边
 - **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分三档
 - **完整对局流程**：战前准备（选武器、看阵容）→ 开局飞行镜头 → 对局 → 裁判判定 → 结算
 - **单文件、零依赖**：整个游戏就是一个 HTML 文件，音乐和音效也是程序实时合成的

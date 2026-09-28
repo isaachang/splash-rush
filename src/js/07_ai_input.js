@@ -230,7 +230,9 @@ function initInput() {
     if (e.code === 'Space') { Input.jumpQ = true; e.preventDefault(); }
     if (e.code === 'KeyE') Input.bombHoldKey = true;
     if (e.code === 'KeyQ') Input.spQ = true;
-    if (e.code === 'KeyM') $('minimap').classList.toggle('big');
+    if (e.code === 'KeyM') toggleMap();
+    if (G.mapOpen && /^Digit[1-3]$/.test(e.code)) HUD.pickAlly(+e.code.slice(5) - 1);
+    if (G.mapOpen && e.code === 'Escape') toggleMap(false);
     if (e.code === 'Tab') e.preventDefault();
   });
   addEventListener('keyup', e => { Input.keys[e.code] = false; if (e.code === 'KeyE') Input.bombHoldKey = false; });
@@ -238,6 +240,7 @@ function initInput() {
   const cv = $('gl');
   addEventListener('mousedown', e => {
     if ((G.state === 'play' || G.state === 'intro') && !G.paused) {
+      if (G.mapOpen) return;                      // map is open: clicks go to the map
       if (!Input.locked && !G.paused) { lockPointer(); return; }
       if (e.button === 0) Input.fire = true; if (e.button === 2) Input.bombHoldMouse = true;
     }
@@ -247,8 +250,17 @@ function initInput() {
   addEventListener('mousemove', e => { if (Input.locked) { Input.dx += e.movementX || 0; Input.dy += e.movementY || 0; } });
   document.addEventListener('pointerlockchange', () => {
     Input.locked = document.pointerLockElement === cv;
-    if (!Input.locked) { Input.fire = false; if (G.state === 'play' || G.state === 'intro') pauseGame(); }
+    if (!Input.locked) { Input.fire = false; if ((G.state === 'play' || G.state === 'intro') && !G.mapOpen) pauseGame(); }
   });
+}
+// big map: frees the mouse so you can click a teammate to super jump to
+function toggleMap(force) {
+  const open = force === undefined ? !G.mapOpen : force;
+  if (open && !(G.state === 'play' && PLAYER)) return;
+  G.mapOpen = open; $('minimap').classList.toggle('big', open); $('mapHint').classList.toggle('show', open);
+  Input.fire = false; Input.keys = {};
+  if (open) { if (document.pointerLockElement) document.exitPointerLock(); HUD.mmT = 0; }
+  else if (G.state === 'play' && !G.paused) lockPointer();
 }
 function lockPointer() { const cv = $('gl'); try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
 
@@ -313,14 +325,16 @@ function updateCamera(dt) {
   Cam.zoom = damp(Cam.zoom, zt, 10, dt);
   const fv = SETTINGS.fov * Cam.zoom; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }
   const targetY = py + (c.swim ? 1.0 : 1.5);
-  Cam.pivotY = c.state === 'drop' ? targetY : damp(Cam.pivotY, targetY, 14, dt);
+  Cam.pivotY = c.state === 'drop' || c.state === 'sjfly' ? targetY : damp(Cam.pivotY, targetY, 14, dt);
   const cp = Math.cos(Cam.pitch), sp = Math.sin(Cam.pitch);
   const dir = new THREE.Vector3(Math.sin(Cam.yaw) * cp, sp, Math.cos(Cam.yaw) * cp);
   const right = new THREE.Vector3(-Math.cos(Cam.yaw), 0, Math.sin(Cam.yaw));
   const pivot = new THREE.Vector3(px, Cam.pivotY, pz);
-  const dist = c.swim ? 5.0 : 4.6;
+  // pull the camera back/up smoothly while super-jumping so you can see the map below
+  Cam.fly = damp(Cam.fly || 0, c.state === 'sjfly' ? 1 : 0, 4, dt);
+  const dist = (c.swim ? 5.0 : 4.6) + Cam.fly * 5.5;
   const shoulder = right.clone().multiplyScalar(0);
-  const want = pivot.clone().addScaledVector(dir, -dist).add(shoulder); want.y += 0.85;
+  const want = pivot.clone().addScaledVector(dir, -dist).add(shoulder); want.y += 0.85 + Cam.fly * 4.5;
   const pv = pivot.clone().add(shoulder.clone().multiplyScalar(0.5));
   const t = segBlocked(pv.x, pv.y, pv.z, want.x, want.y, want.z, 0.15);
   if (t) want.lerpVectors(pv, want, Math.max(0.1, t - 0.08));

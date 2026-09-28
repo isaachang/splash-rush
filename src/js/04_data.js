@@ -11,9 +11,9 @@ const SPECIALS = {
 const WEAPONS = {
   rifle: {
     id: 'rifle', name: '墨浪步枪', en: 'SPLASH RIFLE', role: '全能 · 中距离', type: 'auto', cls: 'shooter',
-    desc: '射速、射程、涂地都很均衡，4 发击倒。适合任何场合，新手首选。',
+    desc: '射速、射程、涂地都很均衡，3 发击倒。适合任何场合，新手首选。',
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
-    dmg: 25, dmgFar: 12, falloff: [0.16, 0.4], interval: 0.105, speed: 130, straight: 0.055, dragH: 18, dragV: 16, grav: 150,
+    dmg: 36, dmgFar: 18, falloff: [0.16, 0.4], interval: 0.105, speed: 130, straight: 0.055, dragH: 18, dragV: 16, grav: 150,
     spread: 0.045, airSpread: 0.1, cost: 0.92, splat: [0.95, 1.2],
     moveFire: 4.8, muzzleF: 0.55, range: 13, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,
@@ -70,3 +70,42 @@ const Profile = {
     try { localStorage.setItem(PROFILE_KEY, JSON.stringify(this.data)); } catch (e) { }
   }
 };
+
+/* --------------------------------------------------------- releases
+   Player-facing release notes (short, confirmed changes only).
+   Newest first. VERSION shown on the title screen comes from here.   */
+const RELEASES = [
+  { v: 'v0.5.0', date: '2026-09-28', title: '战斗手感收尾', items: [
+    '步枪改为 3 枪击倒，对枪节奏更利落',
+    '回血按原版调整：潜进自己的墨水约 1 秒回满',
+    '踩进敌方墨水掉血更快，并新增脚下冒墨、屏幕底部被墨黏住、咕叽声等提示',
+    '打中敌人时，对方身上会沾满你的墨水',
+    '新增超级跳：按 M 打开地图点队友，沿弧线飞到他身边；阵亡时也能选',
+    '修复潜墨时起跳会突然减速、跳不远的问题'
+  ] },
+  { v: 'v0.4.0', date: '2026-09-28', title: '操作手感向原版靠拢', items: [
+    '镜头改为居中，准星位于角色头顶上方',
+    '修复两个准星上下错开的问题',
+    '炸弹改为按住预览抛物线、松开投掷',
+    '狙击蓄满后可以潜墨保留蓄力',
+    '新增出生点防护罩；阵亡会损失一半必杀充能',
+    '受击时屏幕边缘溅上墨水，血越少越多'
+  ] },
+  { v: 'v0.3.0', date: '2026-09-27', title: '弹道与瞄准', items: [
+    '步枪子弹改为近乎瞬间命中、末端下坠，射程更清楚',
+    '狙击改为蓄多少都能发射',
+    '新增双准星和"这一枪能打中"的提示',
+    '墨水飞溅改为更真实的液体效果'
+  ] },
+  { v: 'v0.2.0', date: '2026-09-27', title: '第二把武器', items: [
+    '新增重炮狙击：蓄力、激光瞄准线、蓄满一枪击倒',
+    '新增战前准备页面：选武器、看阵容、调难度和时长',
+    '自动保存名字、武器和设置'
+  ] },
+  { v: 'v0.1.0', date: '2026-09-27', title: '首个可玩版本', items: [
+    '4 对 4 涂地对战：射击、潜墨、爬墙、炸弹、必杀技',
+    '潮汐码头广场地图，完整的开局、对局、结算流程',
+    '修复启动后一直停在加载画面的问题'
+  ] }
+];
+const VERSION = RELEASES[0].v;

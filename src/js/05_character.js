@@ -74,7 +74,7 @@ class Character {
     this.swim = false; this.submerged = false; this.climbing = false; this.grounded = true;
     this.fireCd = 0; this.bombCd = 0; this.lastHurt = -99; this.lastShot = -99; this.invulnT = 0; this.respawnT = 0;
     this.sp = null; this.hurtFlash = 0; this.phase = 0; this.recoil = 0; this.swimPop = 0; this.inEnemy = false; this.lastAttacker = null;
-    this.vel.set(0, 0, 0); this.kills = 0; this.deaths = 0; this.paint = 0; this.charge = 0; this.charging = false; this.stored = 0; this.lastVia = null;
+    this.vel.set(0, 0, 0); this.kills = 0; this.deaths = 0; this.paint = 0; this.charge = 0; this.charging = false; this.stored = 0; this.lastVia = null; this.airSpeed = 0; this.sj = null; this.jumpTarget = null; this.dropY = null; this.dropSJ = false;
     this.root.visible = true; this.ghost.visible = false;
   }
   buildModel() {
@@ -173,8 +173,40 @@ class Character {
       this.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthTest: false, transparent: true, sizeAttenuation: false }));
       this.tag.scale.set(0.11, 0.031, 1); this.tag.position.y = 2.05; this.tag.renderOrder = 5; root.add(this.tag);
     }
+    this.buildInkSpots();
     root.traverse(o => { if (o.isMesh && o.material && o.material.transparent) o.castShadow = false; });
     scene.add(root);
+  }
+  // blobs of the attacker's ink that appear on the body as HP drops (like the original's "inked" look)
+  buildInkSpots() {
+    const M = TEAMMAT[1 - this.team], geo = GEO.sphere, zf = new THREE.Vector3(0, 0, 1);
+    const defs = [
+      [this.torso, [0, 0.3, 0], [0.1, 0.15, 1], 0.2, 0.1, 0.02], [this.head, [0, 0.2, 0], [0.75, 0.25, 0.6], 0.26, 0.085, 0.08],
+      [this.torso, [0, 0.22, 0], [-0.8, 0, 0.6], 0.21, 0.085, 0.14], [this.legs[0], [0, -0.2, 0], [0, 0, 1], 0.085, 0.055, 0.2],
+      [this.arms[1], [0, -0.14, 0], [0.3, 0, 1], 0.07, 0.05, 0.26], [this.torso, [0, 0.4, 0], [0.9, 0.2, 0.3], 0.21, 0.08, 0.32],
+      [this.head, [0, 0.2, 0], [-0.7, 0.45, 0.55], 0.26, 0.075, 0.38], [this.legs[1], [0, -0.25, 0], [0.5, 0, 0.85], 0.085, 0.05, 0.44],
+      [this.torso, [0, 0.12, 0], [0.4, -0.2, 0.9], 0.21, 0.09, 0.5], [this.arms[0], [0, -0.12, 0], [-0.6, 0, 0.8], 0.07, 0.05, 0.56],
+      [this.torso, [0, 0.3, 0], [0, 0.1, -1], 0.2, 0.09, 0.62], [this.head, [0, 0.2, 0], [0.2, -0.3, 0.95], 0.26, 0.06, 0.68],
+      [this.legs[0], [0, -0.12, 0], [-0.8, 0, 0.5], 0.085, 0.05, 0.74], [this.torso, [0, 0.35, 0], [-0.5, 0.5, 0.7], 0.2, 0.1, 0.8],
+      [this.arms[1], [0, -0.22, 0], [1, 0, 0.2], 0.07, 0.045, 0.86], [this.torso, [0, 0.18, 0], [0.95, -0.1, -0.2], 0.21, 0.08, 0.9]
+    ];
+    this.inkSpots = defs.map(([parent, c, n, R, s, thr]) => {
+      const nn = new THREE.Vector3(...n).normalize(), m = new THREE.Mesh(geo, M);
+      m.position.set(c[0] + nn.x * R * 0.97, c[1] + nn.y * R * 0.97, c[2] + nn.z * R * 0.97);
+      m.quaternion.setFromUnitVectors(zf, nn); m.userData = { s, thr, rot: rand(0, 6.28) }; m.visible = false; parent.add(m);
+      // a couple of satellite drops per spot
+      for (let k = 0; k < 2; k++) { const d = new THREE.Mesh(geo, M); d.position.set(rand(-1.6, 1.6), rand(-1.6, 1.6), 0.2); d.scale.setScalar(rand(0.18, 0.3)); m.add(d); }
+      return m;
+    });
+  }
+  updateInkSpots() {
+    if (!this.inkSpots) return;
+    const lvl = this.alive ? clamp((100 - this.hp) / 100, 0, 1) : 0;
+    for (const m of this.inkSpots) {
+      const u = m.userData, k = clamp((lvl - u.thr) * 5 + 0.35, 0, 1);
+      m.visible = lvl > u.thr;
+      if (m.visible) m.scale.set(u.s * k * 1.15, u.s * k * 0.9, u.s * 0.28);
+    }
   }
   get fwd() { return new THREE.Vector3(Math.sin(this.aimYaw), 0, Math.cos(this.aimYaw)); }
   eye() { return new THREE.Vector3(this.pos.x, this.pos.y + (this.swim ? 0.5 : 1.3), this.pos.z); }
@@ -187,7 +219,40 @@ class Character {
   }
   onOwnDeck() { const d = DECK[this.team]; return this.pos.y > 1.9 && inRect(d, this.pos.x, this.pos.z); }
   inOwnBarrier() { return inBarrier(this.team, this.pos); }
-  invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.inOwnBarrier(); }
+  invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.state === 'sjfly' || this.inOwnBarrier(); }
+  canJumpTo(t) { return t && t !== this && t.team === this.team && t.alive && t.state === 'play' && !t.sj; }
+  // super jump to a teammate: short crouch (vulnerable), launch, then land on them
+  startSuperJump(t) {
+    if (!this.canJumpTo(t) || this.sj || this.sp || this.state !== 'play' || !this.alive) return false;
+    this.sj = { phase: 'crouch', t: 0, target: t, tp: t.pos.clone() };
+    this.setSwim(false); this.stopCharge(); this.showSJMarker(this.sj.tp);
+    if (sndVol(this.pos) > 0.05) Sfx.superJump();
+    return true;
+  }
+  showSJMarker(p) {
+    if (!this.sjMarker) {
+      const mat = new THREE.MeshBasicMaterial({ color: TEAM_HEX[this.team], transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide, fog: false });
+      const g = new THREE.Group();
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.78, 1.0, 40), mat); ring.rotation.x = -Math.PI / 2; g.add(ring);
+      const ring2 = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 32), mat); ring2.rotation.x = -Math.PI / 2; g.add(ring2);
+      const dot = new THREE.Mesh(new THREE.CircleGeometry(0.14, 20), mat); dot.rotation.x = -Math.PI / 2; g.add(dot);
+      g.userData.mat = mat; scene.add(g); this.sjMarker = g;
+    }
+    this.sjMarker.userData.mat.color.set(TEAM_HEX[this.team]);
+    this.sjMarker.position.set(p.x, groundBelow(p.x, p.z, p.y + 0.5, 0.6) + 0.06, p.z); this.sjMarker.visible = true;
+  }
+  // pulsing ring that shrinks as the jumper gets close (u: 0..1 of the flight)
+  pulseSJMarker(u) { if (!this.sjMarker) return; const s = (1.5 - 0.7 * u) * (1 + 0.08 * Math.sin(G.time * 14)); this.sjMarker.scale.set(s, 1, s); this.sjMarker.userData.mat.opacity = 0.55 + 0.35 * u; }
+  // continuous arc flight to a teammate (original-style super jump)
+  beginFlight(t) {
+    const p0 = this.pos.clone(), d = Math.hypot(t.pos.x - p0.x, t.pos.z - p0.z);
+    this.fly = { t: 0, p0, target: t, tp: t.pos.clone(), T: clamp(1.1 + d / 60, 1.2, 1.9), apex: clamp(9 + d * 0.22, 10, 20), last: p0.clone() };
+    this.state = 'sjfly'; this.sj = null; this.grounded = false; this.swim = false; this.vel.set(0, 0, 0);
+    this.showSJMarker(this.fly.tp); this.pulseSJMarker(0);
+    Fx.burst(p0.x, p0.y + 0.3, p0.z, TEAM_HEX[this.team], 18, 6, 0.1); Fx.ring(p0.x, p0.y + 0.05, p0.z, TEAM_HEX[this.team], 2.2);
+    if (sndVol(p0) > 0.05) Sfx.superJump();
+  }
+  hideSJMarker() { if (this.sjMarker) this.sjMarker.visible = false; }
   setSwim(on) {
     if (on === this.swim) return;
     this.swim = on; this.swimPop = 1;
@@ -206,6 +271,7 @@ class Character {
   die(killer, via) {
     this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0;
     this.setSwim(false); this.sp = null; this.climbing = false; this.stopCharge(); this.stored = 0;
+    this.sj = null; this.fly = null; this.dropY = null; this.dropSJ = false; this.hideSJMarker();
     this.special = Math.floor(this.special * (1 - this.weapon.spLoss));
     const kc = killer ? killer.team : 1 - this.team;
     if (killer) killer.kills++;
@@ -223,10 +289,15 @@ class Character {
   }
   respawn() {
     const sp = SPAWN[this.team]; this.state = 'drop'; this.alive = true; this.hp = 100; this.ink = 100;
-    this.pos.set(sp.x + rand(-2.5, 2.5), sp.y + 24, sp.z + rand(-1.5, 1.5)); this.vel.set(0, -30, 0);
+    // super jump straight to a chosen teammate (player picks on the map; bots sometimes jump to the front)
+    let tgt = this.canJumpTo(this.jumpTarget) ? this.jumpTarget : null; this.jumpTarget = null;
+    if (!tgt && !this.isPlayer && Math.random() < 0.4) { const opts = CHARS.filter(c => this.canJumpTo(c) && !c.inOwnBarrier()); if (opts.length) tgt = pick(opts); }
+    this.pos.set(sp.x + rand(-2.5, 2.5), sp.y + 24, sp.z + rand(-1.5, 1.5)); this.dropY = sp.y; this.dropSJ = false;
+    this.vel.set(0, -30, 0);
     this.aimYaw = this.yaw = this.bodyYaw = sp.yaw; this.aimPitch = 0;
     this.root.visible = true; this.ghost.visible = false; this.human.visible = true; this.blob.visible = false; this.swim = false;
     if (this.isPlayer) { Sfx.superJump(); HUD.respawned(); Cam.yaw = sp.yaw; Cam.pitch = -0.1; }
+    if (tgt) { this.pos.set(sp.x, sp.y, sp.z); this.beginFlight(tgt); }
   }
   stopCharge() {
     this.charge = 0; this.charging = false;
@@ -250,14 +321,35 @@ class Character {
       if (this.respawnT <= 0 && G.state === 'play') this.respawn();
       return;
     }
+    if (this.state === 'sjfly') {
+      const f = this.fly; f.t += dt; const u = Math.min(1, f.t / f.T);
+      if (u < 0.7 && f.target.alive && f.target.state === 'play') f.tp.copy(f.target.pos);
+      const ly = groundBelow(f.tp.x, f.tp.z, f.tp.y + 0.5, 0.6);
+      f.last.copy(this.pos);
+      this.pos.set(lerp(f.p0.x, f.tp.x, u), lerp(f.p0.y, ly, u) + f.apex * 4 * u * (1 - u), lerp(f.p0.z, f.tp.z, u));
+      this.vel.subVectors(this.pos, f.last).divideScalar(Math.max(dt, 1e-4));
+      if (Math.random() < 0.9) Fx.spark(this.pos.x, this.pos.y + 0.3, this.pos.z, TEAM_HEX[this.team]);
+      if (Math.random() < 0.25) Fx.add(this.pos.x, this.pos.y + 0.2, this.pos.z, rand(-1, 1), rand(-1, 0.5), rand(-1, 1), rand(0.06, 0.12), 0.6, TEAM_HEX[this.team], 18);
+      this.showSJMarker(f.tp); this.pulseSJMarker(u);
+      if (u >= 1) {
+        this.pos.set(f.tp.x, ly, f.tp.z); this.vel.set(0, 0, 0); this.state = 'play'; this.grounded = true; this.invulnT = 0.4; this.fly = null; this.landSquash = 1;
+        this.hideSJMarker(); this.human.visible = true; this.blob.visible = false;
+        splatFloor(this.pos.x, ly, this.pos.z, 1.9, this.team, 0.6, false);
+        Fx.burst(this.pos.x, ly + 0.3, this.pos.z, TEAM_HEX[this.team], 22, 6, 0.12); Fx.ring(this.pos.x, ly + 0.05, this.pos.z, TEAM_HEX[this.team], 3);
+        if (sndVol(this.pos) > 0.1) Sfx.land(sndVol(this.pos)); if (this.isPlayer) G.shake(0.35);
+      }
+      this.syncModel(dt); return;
+    }
     if (this.state === 'drop') {
       this.pos.y += this.vel.y * dt;
       if (Math.random() < 0.8) Fx.spark(this.pos.x, this.pos.y + 0.8, this.pos.z, TEAM_HEX[this.team]);
-      const sp = SPAWN[this.team];
-      if (this.pos.y <= sp.y) {
-        this.pos.y = sp.y; this.vel.set(0, 0, 0); this.state = 'play'; this.grounded = true; this.invulnT = 1.5;
-        splatFloor(this.pos.x, sp.y, this.pos.z, 2.3, this.team, 0.3, false);
-        Fx.burst(this.pos.x, this.pos.y + 0.3, this.pos.z, TEAM_HEX[this.team], 18, 5, 0.12); Fx.ring(this.pos.x, sp.y + 0.05, this.pos.z, TEAM_HEX[this.team], 2.6);
+      const ly = this.dropY ?? SPAWN[this.team].y;
+      if (this.pos.y <= ly) {
+        const sjLand = this.dropSJ;
+        this.pos.y = ly; this.vel.set(0, 0, 0); this.state = 'play'; this.grounded = true; this.invulnT = sjLand ? 0.4 : 1.5;
+        this.dropY = null; this.dropSJ = false; this.hideSJMarker();
+        splatFloor(this.pos.x, ly, this.pos.z, sjLand ? 1.8 : 2.3, this.team, 0.5, false);
+        Fx.burst(this.pos.x, this.pos.y + 0.3, this.pos.z, TEAM_HEX[this.team], 18, 5, 0.12); Fx.ring(this.pos.x, ly + 0.05, this.pos.z, TEAM_HEX[this.team], 2.6);
         if (sndVol(this.pos) > 0.1) Sfx.land(sndVol(this.pos));
       }
       this.syncModel(dt); return;
@@ -271,12 +363,32 @@ class Character {
       if (s.phase === 0 && s.t > 0.5) { s.phase = 1; s.t = 0; this.vel.y = 0; }
       if (s.phase === 1) { this.vel.y = 0; this.vel.x *= 0.9; this.vel.z *= 0.9; if (s.t > 0.28) { s.phase = 2; this.vel.y = -34; } }
     } else if (I.special && this.special >= 100 && this.alive && G.state === 'play') this.startSpecial();
+    // ----- super jump crouch
+    if (this.sj) {
+      const s = this.sj; s.t += dt;
+      I.mx = I.mz = 0; I.fire = false; I.swim = false; I.jump = false; I.bomb = false; I.special = false;
+      if (s.target.alive && s.target.state === 'play') { s.tp.copy(s.target.pos); this.showSJMarker(s.tp); }
+      this.pulseSJMarker(0);
+      if (s.t > 0.6) { const tg = s.target.alive && s.target.state === 'play' ? s.target : { pos: s.tp, alive: false }; this.beginFlight(tg); this.syncModel(dt); return; }
+    }
     // ----- swim state
     const wantSwim = I.swim && !this.sp;
     this.setSwim(wantSwim);
     const fo = this.grounded ? ownerAt(this.pos.x, this.pos.y, this.pos.z) : -3;
     this.submerged = this.swim && ((this.grounded && fo === this.team) || this.climbing);
     this.inEnemy = this.grounded && fo === 1 - this.team && !this.climbing;
+    if (this.inEnemy && !this.inOwnBarrier()) {
+      const hs0 = Math.hypot(this.vel.x, this.vel.z), ec = TEAM_HEX[1 - this.team];
+      this.stickT = (this.stickT || 0) - dt;
+      if (this.stickT <= 0) {   // sticky enemy ink squelching up around the feet
+        this.stickT = hs0 > 0.8 ? 0.07 : 0.2;
+        for (let k = 0; k < 2; k++) Fx.add(this.pos.x + rand(-0.3, 0.3), this.pos.y + 0.05, this.pos.z + rand(-0.3, 0.3), rand(-0.6, 0.6), rand(1.2, 2.6), rand(-0.6, 0.6), rand(0.05, 0.1), rand(0.35, 0.6), ec, 16);
+      }
+      if (this.isPlayer) {
+        this.sqT = (this.sqT || 0) - dt; if (this.sqT <= 0) { this.sqT = hs0 > 0.8 ? 0.3 : 0.65; Sfx.squelch(); }
+        if (!G.flags.inkTip) { G.flags.inkTip = 1; HUD.tip('踩进敌方墨水：会减速、掉血，先把脚下涂掉'); }
+      }
+    }
     const W = this.weapon;
     const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging;
     // ----- movement
@@ -284,12 +396,13 @@ class Character {
     if (this.swim) maxSp = this.submerged ? 12.8 : this.inEnemy ? 2.0 : 3.4;
     else maxSp = this.inEnemy ? 2.3 : this.charging ? W.moveCharge : firing ? W.moveFire : 6.4;
     if (this.sp) maxSp = 3;
+    if (!this.grounded && this.airSpeed > maxSp) maxSp = this.airSpeed;   // airborne: keep take-off speed, only steer
     const acc = this.grounded ? (this.submerged ? 75 : 48) : 16;
     const mlen = Math.min(1, Math.hypot(I.mx, I.mz));
     const tx = I.mx * maxSp, tz = I.mz * maxSp;
     const ax = tx - this.vel.x, az = tz - this.vel.z, al = Math.hypot(ax, az), maxA = acc * dt;
     if (al > maxA) { this.vel.x += ax / al * maxA; this.vel.z += az / al * maxA; } else { this.vel.x = tx; this.vel.z = tz; }
-    if (I.jump && this.grounded && !this.sp) { this.vel.y = this.swim ? 9.8 : 8.3; this.grounded = false; if (this.isPlayer) Sfx.jump(); if (this.swim) Fx.burst(this.pos.x, this.pos.y + 0.1, this.pos.z, TEAM_HEX[this.team], 6, 3, 0.08); }
+    if (I.jump && this.grounded && !this.sp) { this.airSpeed = Math.hypot(this.vel.x, this.vel.z); this.vel.y = this.swim ? 9.8 : 8.3; this.grounded = false; if (this.isPlayer) Sfx.jump(); if (this.swim) Fx.burst(this.pos.x, this.pos.y + 0.1, this.pos.z, TEAM_HEX[this.team], 6, 3, 0.08); }
     I.jump = false;
     // horizontal integrate + collide
     const px = this.pos.x, pz = this.pos.z;
@@ -317,16 +430,18 @@ class Character {
     const g = groundBelow(this.pos.x, this.pos.z, Math.max(this.pos.y, this.pos.y - this.vel.y * dt), STEP);
     if (this.pos.y <= g) {
       if (!wasG && this.vel.y < -12 && this.isPlayer) Sfx.land(0.5);
-      this.pos.y = g; if (this.vel.y < 0) this.vel.y = 0; this.grounded = true;
+      this.pos.y = g; if (this.vel.y < 0) this.vel.y = 0; this.grounded = true; this.airSpeed = 0;
       if (this.sp && this.sp.phase === 2) this.specialSlam();
-    } else if (wasG && this.vel.y <= 0 && this.pos.y - g < 0.35 && !this.climbing) { this.pos.y = g; this.vel.y = 0; this.grounded = true; }
-    else this.grounded = false;
+    } else if (wasG && this.vel.y <= 0 && this.pos.y - g < 0.35 && !this.climbing) { this.pos.y = g; this.vel.y = 0; this.grounded = true; this.airSpeed = 0; }
+    else { if (wasG) this.airSpeed = Math.max(this.airSpeed, Math.hypot(this.vel.x, this.vel.z)); this.grounded = false; }
     if (this.pos.y < -10) { this.die(this.lastAttacker); return; }
     // ----- ink / hp
     if (this.submerged) { this.ink = Math.min(100, this.ink + 40 * dt); }
     else if (T - this.lastShot > 0.6) this.ink = Math.min(100, this.ink + (this.swim ? 12 : 6.5) * dt);
-    if (T - this.lastHurt > 1.3) this.hp = Math.min(100, this.hp + (this.submerged ? 65 : 16) * dt);
-    if (this.inEnemy && !this.invuln()) { if (this.hp > 40) { this.hp = Math.max(40, this.hp - 16 * dt); this.lastHurt = T - 0.6; } }
+    // regen like the original: starts after 1 s without damage; 12.5/s standing, 100/s submerged in own ink
+    if (T - this.lastHurt > 1.0 && !(this.inEnemy && !this.invuln())) this.hp = Math.min(100, this.hp + (this.submerged ? 100 : 12.5) * dt);
+    // enemy ink: ~30 HP/s but never below 50
+    if (this.inEnemy && !this.invuln()) { if (this.hp > 50) { this.hp = Math.max(50, this.hp - 30 * dt); this.lastHurt = T - 0.4; } }
     // ----- aiming / facing
     const turnK = this.swim ? 14 : 20;
     if (this.swim && mlen > 0.1) this.bodyYaw += angDiff(this.bodyYaw, Math.atan2(I.mx, I.mz)) * Math.min(1, dt * turnK);
@@ -478,6 +593,13 @@ class Character {
   syncModel(dt) {
     const T = G.time;
     this.root.position.copy(this.pos);
+    if (this.state === 'sjfly') {       // flying ink blob, nose along the velocity
+      const v = this.vel, hs = Math.hypot(v.x, v.z);
+      this.human.visible = false; this.blob.visible = true; this.blobBody.visible = true; this.blobGhost.visible = false;
+      if (hs > 0.1) this.root.rotation.y = Math.atan2(v.x, v.z);
+      this.blobBody.rotation.x = -Math.atan2(v.y, Math.max(hs, 0.1)) * 0.8; this.blobBody.scale.set(0.8, 0.8, 1.45);
+      if (this.tag) this.tag.visible = this.team === PLAYER.team; this.updateInkSpots(); return;
+    }
     this.root.rotation.y = this.bodyYaw;
     const hs = Math.hypot(this.vel.x, this.vel.z);
     const run = clamp(hs / 6, 0, 1);
@@ -486,9 +608,10 @@ class Character {
     if (!this.swim) {
       const air = !this.grounded;
       const sw = Math.sin(this.phase);
-      this.legs[0].rotation.x = air ? -0.6 : sw * 0.9 * run;
-      this.legs[1].rotation.x = air ? 0.35 : -sw * 0.9 * run;
-      this.human.position.y = air ? 0 : Math.abs(Math.cos(this.phase)) * 0.06 * run;
+      const stride = this.inEnemy ? 0.5 : 0.9;
+      this.legs[0].rotation.x = air ? -0.6 : sw * stride * run;
+      this.legs[1].rotation.x = air ? 0.35 : -sw * stride * run;
+      this.human.position.y = air ? 0 : Math.abs(Math.cos(this.phase)) * 0.06 * run - (this.inEnemy ? 0.05 : 0);
       this.torso.rotation.x = 0.1 * run;
       const pitch = this.aimPitch, rel = angDiff(this.bodyYaw, this.aimYaw);
       this.torso.rotation.y = clamp(rel, -0.6, 0.6);
@@ -507,7 +630,9 @@ class Character {
       this.head.rotation.x = -pitch * 0.4;
       this.crest.scale.set(1, 1 + Math.sin(T * 9 + this.id) * 0.04 - this.vel.y * 0.012, 1);
       this.drips.forEach((d, i) => d.position.y = -0.1 - (i === 0 ? 0.02 : 0) + Math.sin(T * 7 + i) * 0.012 - Math.max(0, this.vel.y) * 0.004);
-      const k = 1 + this.swimPop * 0.25; this.human.scale.set(k, 2 - k, k);
+      this.landSquash = Math.max(0, (this.landSquash || 0) - dt * 5);
+      let k = 1 + this.swimPop * 0.25 + this.landSquash * 0.3; if (this.sj) k = 1 + Math.min(this.sj.t, 0.6) * 0.35;
+      this.human.scale.set(k, 2 - k, k);
       this.tankInk.scale.y = 0.32 * clamp(this.ink / 100, 0.02, 1); this.tankInk.position.y = -0.16 + this.tankInk.scale.y / 2;
       const fl = this.hurtFlash > 0 ? 0.8 : 0; this.mats.cloth.emissive.setRGB(fl, fl * 0.3, fl * 0.3); this.mats.skin.emissive.setRGB(fl, fl * 0.3, fl * 0.3);
     } else {
@@ -522,6 +647,6 @@ class Character {
       if (sub && hs > 3 && Math.random() < 0.35) Fx.wake(this.pos.x, this.pos.y + 0.05, this.pos.z, TEAM_HEX[this.team]);
     }
     if (this.tag) this.tag.visible = this.team === PLAYER.team && this.alive;
-    this.updateLaser();
+    this.updateLaser(); this.updateInkSpots();
   }
 }
