@@ -337,7 +337,7 @@ function spawnTeams() {
 }
 function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProjectionMatrix(); }
 function startMatch() {
-  Sfx.init(); Sfx.stopMusic();
+  Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Proj.clear();
   spawnTeams(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
@@ -349,11 +349,11 @@ function startMatch() {
   $('hint').style.display = 'block';
   lockPointer();
 }
-function pauseGame() { if (G.state !== 'play' && G.state !== 'intro') return; G.paused = true; show('pause', true); Input.keys = {}; }
-function resumeGame() { G.paused = false; show('pause', false); clock.getDelta(); lockPointer(); }
+function pauseGame() { if (G.state !== 'play' && G.state !== 'intro') return; G.paused = true; show('pause', true); Input.keys = {}; Sfx.duck(true); }
+function resumeGame() { G.paused = false; show('pause', false); clock.getDelta(); lockPointer(); Sfx.duck(false); }
 function quitToTitle() {
   if (G.mapOpen) { G.mapOpen = false; $('minimap').classList.remove('big'); $('mapHint').classList.remove('show'); }
-  G.paused = false; show('pause', false); show('hud', false); show('results', false);
+  G.paused = false; show('pause', false); show('hud', false); show('results', false); Sfx.duck(false);
   if (document.pointerLockElement) document.exitPointerLock();
   gotoTitle();
 }
@@ -372,6 +372,30 @@ const MEDALS = [
   { t: '最少阵亡', v: c => -c.deaths, ok: c => c.deaths <= 2 },
   { t: '超级跳最多', v: c => c.sjumps, ok: c => c.sjumps > 0 }
 ];
+// the other side of the awards: a cheeky "roast" badge when things went badly
+const ROASTS = [
+  { t: '送分快递', ok: c => c.deaths >= 4 && c.deaths >= Math.max(...CHARS.map(o => o.deaths)), say: ['对面的击倒数，有一半是你送的快递。', '倒下的次数比开枪的次数还让人印象深刻。', '复活点都快认识你了。'] },
+  { t: '和平主义者', ok: c => c.kills === 0 && c.assists === 0, say: ['一个人都没打倒，你是来劝架的吗？', '对面应该给你颁一个「最友善对手」奖。', '枪是拿来涂地的没错，但偶尔也可以对准人。'] },
+  { t: '路过的游客', ok: c => c.paint <= Math.min(...CHARS.map(o => o.paint)) + 0.5, say: ['这片广场好像跟你没什么关系。', '你涂的地，裁判拿放大镜才找到。', '来都来了，好歹多涂两下再走嘛。'] },
+  { t: '必杀收藏家', ok: c => c.specials === 0 && c.special >= 100, say: ['必杀技攒满了一局，舍不得按 Q？', 'Q 键：我一直在等你。'] }
+];
+const PRAISE = {
+  '涂地最多': ['整片广场都是你的颜色，裁判都看呆了！', '你一个人涂的地，够对面四个人加起来了。'],
+  '击倒最多': ['对面听到你的脚步声就想跑。', '全场最危险的人，就是你。'],
+  '助攻最多': ['没有你，队友的击倒至少少一半。', '最默契的队友，说的就是你。'],
+  '必杀技最多': ['Q 键都快被你按坏了！', '必杀技一个接一个，对面根本喘不过气。'],
+  '最少阵亡': ['全场最难打倒的人，就是你。', '稳！对面想打倒你都找不到机会。'],
+  '超级跳最多': ['哪里需要你，你就出现在哪里。', '空中飞人，全场到处都是你的身影。']
+};
+function roastsFor(c) { return ROASTS.filter(R => R.ok(c)).slice(0, 2); }
+// one line for the player: praise if you earned a medal, a cheeky roast if the match went badly
+function verdictLine(c) {
+  const md = medalsFor(c), rs = roastsFor(c), g = md.find(m => m.gold);
+  if (g) return { good: true, text: pick(PRAISE[g.t]) };
+  if (rs.length) return { good: false, text: pick(rs[0].say) };
+  if (md.length) return { good: true, text: pick(PRAISE[md[0].t]) };
+  return { good: true, text: '中规中矩，下一局争取拿块奖牌！' };
+}
 function medalsFor(c) {
   const out = [];
   for (const M of MEDALS) {
@@ -414,7 +438,7 @@ function showResults() {
     R.classList.add('boarded');
     const team = t => {
       const won = (t === 0) === win, rows = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint).map((c, i) => {
-        const md = medalsFor(c).map(m => `<b class="${m.gold ? 'g' : 's'}" title="${m.t}（${m.gold ? '全场第一' : '队内第一'}）"></b>`).join('');
+        const md = medalsFor(c).map(m => `<b class="${m.gold ? 'g' : 's'}" title="${m.t}（${m.gold ? '全场第一' : '队内第一'}）"></b>`).join('') + roastsFor(c).map(r => `<b class="x" title="${r.t}"></b>`).join('');
         return `<div class="r${c.isPlayer ? ' me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}${c.name}${c.isPlayer ? '<i>你</i>' : ''}</span><span>${Math.round(c.paint)}p</span><span>${c.kills}<small>${c.assists ? ' +' + c.assists : ''}</small></span><span>${c.deaths}</span><span>${c.specials}</span><span class="md">${md}</span></div>`;
       }).join('');
       return `<div class="tbl ${won ? 'won' : 'lost'}" style="--tc:${TEAM_HEX[t]}"><div class="th"><b>${won ? 'WIN!' : 'LOSE…'}</b><span>${t === 0 ? '我方' : '对手'}</span><em>${(t ? p1 : p0).toFixed(1)}%</em></div><div class="r h"><span></span><span>名字</span><span>涂地</span><span>击倒 +助攻</span><span>阵亡</span><span>必杀</span><span>奖牌</span></div>${rows}</div>`;
@@ -423,8 +447,10 @@ function showResults() {
     bd.classList.add('show');
   });
   later(6600, () => {
-    const me = medalsFor(PLAYER);
-    aw.innerHTML = '<h4>你的奖牌</h4>' + (me.length ? me.map((m, i) => `<div class="mdl ${m.gold ? 'g' : 's'}" style="animation-delay:${i * 0.12}s"><b></b><div><span>${m.t}</span><small>${m.gold ? '全场第一' : '队内第一'}</small></div></div>`).join('') : '<div class="mdl none"><span>这局没有拿到奖牌，下次加油！</span></div>');
+    const me = medalsFor(PLAYER), rs = roastsFor(PLAYER), line = verdictLine(PLAYER);
+    const chips = me.map(m => `<div class="mdl ${m.gold ? 'g' : 's'}"><b></b><div><span>${m.t}</span><small>${m.gold ? '全场第一' : '队内第一'}</small></div></div>`).concat(rs.map(r => `<div class="mdl x"><b></b><div><span>${r.t}</span><small>吐槽奖</small></div></div>`));
+    aw.innerHTML = `<div class="awrow"><h4>你的奖牌</h4>${chips.length ? chips.join('') : '<div class="mdl none"><span>这局一块都没有</span></div>'}</div><div class="quip ${line.good ? 'good' : 'bad'}">${line.text}</div>`;
+    aw.querySelectorAll('.mdl').forEach((el, i) => el.style.animationDelay = i * 0.12 + 's');
     aw.classList.add('show'); rb.classList.add('show');
     if (me.some(m => m.gold)) Sfx.chargeFull && Sfx.chargeFull();
   });

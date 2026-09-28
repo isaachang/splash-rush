@@ -244,7 +244,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #bars{position:relative;height:100px;display:flex;border:5px solid #111;border-radius:60px;overflow:hidden;background:#3a3d4a;box-shadow:0 10px 0 #111,inset 0 4px 0 rgba(255,255,255,.08);transition:height .6s}
 #bars div{height:100%;width:0}
 #barB{margin-left:auto}
-#pctA,#pctB{position:absolute;top:50%;transform:translateY(-50%);font-size:46px;font-weight:900;font-style:italic;-webkit-text-stroke:3px #111;paint-order:stroke fill;text-shadow:0 4px 0 #111;opacity:0;transition:opacity .3s,font-size .6s}
+#pctA,#pctB{position:absolute;top:0;height:110px;display:flex;align-items:center;font-size:46px;font-weight:900;font-style:italic;-webkit-text-stroke:3px #111;paint-order:stroke fill;text-shadow:0 4px 0 #111;opacity:0;transition:opacity .3s,font-size .6s}
 #pctA{left:30px}#pctB{right:30px}
 #results.revealed #pctA,#results.revealed #pctB{opacity:1;animation:pop .4s both}
 #verdict{position:absolute;top:30vh;left:0;right:0;height:0;text-align:center;opacity:0;pointer-events:none;transition:top .6s,transform .6s;transform-origin:50% 0}
@@ -256,7 +256,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #results.boarded #verdict{animation:none;top:1.5vh;transform:scale(.36)}
 #results.boarded #rsMeter{bottom:calc(100% - 14vh - 40px);width:min(640px,70vw)}
 #results.boarded #bars{height:40px;border-width:4px;box-shadow:0 5px 0 #111}
-#results.boarded #pctA,#results.boarded #pctB{font-size:22px;-webkit-text-stroke:2px #111;animation:none}
+#results.boarded #pctA,#results.boarded #pctB{height:48px;font-size:22px;-webkit-text-stroke:2px #111;animation:none}
 #board{position:absolute;left:50%;top:21vh;transform:translate(-50%,24px);width:min(1000px,94vw);display:flex;flex-direction:column;gap:12px;opacity:0;transition:opacity .5s,transform .5s}
 #board.show{opacity:1;transform:translate(-50%,0)}
 .tbl{background:rgba(15,13,32,.93);border:4px solid #111;border-left:12px solid var(--tc);border-radius:22px;padding:8px 16px 10px;box-shadow:0 8px 0 #111}
@@ -277,7 +277,10 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .md b{width:20px;height:20px}
 .md b.g,.mdl.g b{background:radial-gradient(circle at 35% 30%,#fff7c0,#ffc21a 50%,#a86f00)}
 .md b.s,.mdl.s b{background:radial-gradient(circle at 35% 30%,#ffffff,#c9ced8 50%,#747a88)}
-#awards{position:absolute;left:50%;bottom:14vh;transform:translateX(-50%);display:flex;align-items:center;gap:12px;opacity:0;transition:opacity .4s;white-space:nowrap}
+#awards{position:absolute;left:50%;bottom:13vh;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;transition:opacity .4s;white-space:nowrap}
+#awards .awrow{display:flex;align-items:center;gap:12px}
+#awards .quip{font-weight:900;font-size:17px;padding:5px 16px;border-radius:14px;border:3px solid #111;background:rgba(15,13,32,.93);box-shadow:0 4px 0 #111;animation:pop .5s .35s both}
+#awards .quip.good{color:#ffe45c}#awards .quip.bad{color:#ff9aa8}
 #awards.show{opacity:1}
 #awards h4{font-size:15px;letter-spacing:3px;color:#ffe45c;margin-right:4px}
 .mdl{display:flex;align-items:center;gap:10px;background:rgba(15,13,32,.93);border:3px solid #111;border-radius:16px;padding:6px 14px 6px 8px;box-shadow:0 5px 0 #111;animation:pop .45s both}
@@ -307,3 +310,6 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .st-r .sp{font-size:13px;opacity:.8}.st-r .sp.on b{color:#ffe45c;animation:blink .5s infinite}
 #specTag{position:absolute;left:50%;top:92px;transform:translateX(-50%);display:none;font-weight:900;font-size:16px;background:rgba(0,0,0,.6);border:3px solid #111;border-radius:16px;padding:5px 16px;color:#fff;text-shadow:0 2px 0 #000}
 #specTag.on{display:block}
+/* roast badge: a cracked, grubby medal */
+.md b.x,.mdl.x b{background:linear-gradient(135deg,transparent 46%,#111 47%,#111 53%,transparent 54%),radial-gradient(circle at 35% 30%,#b9a58a,#7a6546 55%,#3e3322)}
+.mdl.x span{color:#ff9aa8}

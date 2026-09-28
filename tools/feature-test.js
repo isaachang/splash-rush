@@ -202,6 +202,15 @@ vm.runInContext(`(() => {
     const shown = $('scoreTab').classList.contains('show'), html = $('stA').innerHTML + $('stB').innerHTML;
     Input.keys.Tab = false; HUD.update(0.03);
     ok(shown && !$('scoreTab').classList.contains('show') && html.includes(P.name) && html.includes('共击倒'), 'holding Tab shows the live scoreboard, releasing hides it');
+    // praise when you did well, a cheeky roast when you didn't
+    CHARS.forEach(c => { c.paint = 50; c.kills = 1; c.assists = 0; c.specials = 1; c.sjumps = 0; c.deaths = 2; c.special = 0; });
+    const bad = CHARS.find(c => c.team === 0 && c !== P); bad.paint = 1; bad.kills = 0; bad.deaths = 9; bad.special = 100; bad.specials = 0;
+    const rb = roastsFor(bad).map(r => r.t), lb = verdictLine(bad);
+    P.paint = 999; const lp = verdictLine(P);
+    ok(rb.length >= 2 && !lb.good && lp.good && PRAISE['涂地最多'].includes(lp.text), 'awards: praise for the best, roast badges + a cheeky line for a bad game (' + rb.join('/') + ': ' + lb.text + ')');
+    // pause ducks the sound, resume brings it back
+    Sfx.duck(true); const d1 = Sfx.ducked; Sfx.duck(false);
+    ok(d1 && !Sfx.ducked, 'pausing ducks and muffles the sound, resuming restores it');
     // knocked out: killer cam first, then watch a teammate, back to yourself on respawn
     quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby('turf'); startMatch(); while (G.state !== 'play') loop();
     const Q = PLAYER, foe = CHARS.find(c => c.team === 1); G.bots.forEach(b => b.update = () => {});

@@ -346,9 +346,13 @@ class Character {
       if (u >= 1) {
         this.pos.set(f.tp.x, ly, f.tp.z); this.vel.set(0, 0, 0); this.state = 'play'; this.grounded = true; this.invulnT = 0.4; this.fly = null; this.landSquash = 1;
         this.hideSJMarker(); this.human.visible = true; this.blob.visible = false;
-        splatFloor(this.pos.x, ly, this.pos.z, 1.9, this.team, 0.6, false);
-        Fx.burst(this.pos.x, ly + 0.3, this.pos.z, TEAM_HEX[this.team], 22, 6, 0.12); Fx.ring(this.pos.x, ly + 0.05, this.pos.z, TEAM_HEX[this.team], 3);
-        if (sndVol(this.pos) > 0.1) Sfx.land(sndVol(this.pos)); if (this.isPlayer) G.shake(0.35);
+        // landing splash: a big blot plus ink flung out all around the teammate
+        const col = TEAM_HEX[this.team], lp = this.pos;
+        this.addPaint(splatFloor(lp.x, ly, lp.z, 2.4, this.team, 0.7, true), false);
+        for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2 + rand(-0.2, 0.2), sp = rand(3.5, 6.5); Proj.spray(this, new THREE.Vector3(lp.x, ly + 0.5, lp.z), new THREE.Vector3(Math.cos(a) * sp, rand(3, 5.5), Math.sin(a) * sp), rand(0.4, 0.65)); }
+        Fx.burstDir(lp.x, ly + 0.2, lp.z, col, 30, 7.5, 0.13, 0, 1, 0, 0.9); Fx.burst(lp.x, ly + 0.3, lp.z, col, 16, 5, 0.1);
+        Fx.ring(lp.x, ly + 0.05, lp.z, col, 4.2); Fx.ring(lp.x, ly + 0.07, lp.z, '#ffffff', 2.6);
+        const lv = sndVol(lp); if (lv > 0.05) { Sfx.land(Math.max(0.6, lv)); Sfx.impact(lv, this.isPlayer ? 0 : sndPan(lp)); } if (this.isPlayer) G.shake(0.45);
       }
       this.syncModel(dt); return;
     }
