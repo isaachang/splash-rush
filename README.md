@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.5.2-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.6.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -34,6 +34,7 @@
 | <kbd>右键</kbd> / <kbd>E</kbd> | 按住瞄准墨水炸弹（显示抛物线），松开投掷 |
 | <kbd>Q</kbd> | 必杀技「墨浪冲击」 |
 | <kbd>M</kbd> | 打开大地图，点击队友（或按 1/2/3）超级跳过去；阵亡时也能选 |
+| <kbd>Tab</kbd> | 按住查看战况（双方击倒、助攻、阵亡、涂地） |
 
 ## ✨ 特色
 
@@ -45,6 +46,8 @@
 - **超级跳**：打开地图点队友，从天而降直接跳到他身边
 - **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分三档
 - **完整对局流程**：战前准备（选武器、看阵容）→ 开局飞行镜头 → 对局 → 裁判判定 → 结算
+- **原版风格结算**：俯视判定、比例条拉锯、WIN! / LOSE…，计分板、奖牌和毒舌吐槽奖
+- **阵亡观战**：先看是谁打倒了你，再切到队友视角，等复活时也不无聊
 - **单文件、零依赖**：整个游戏就是一个 HTML 文件，音乐和音效也是程序实时合成的
 
 ## 📸 截图
