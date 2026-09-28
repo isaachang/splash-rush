@@ -153,7 +153,7 @@ vm.runInContext(`(() => {
   let seenPending = false; for (let i = 0; i < 20; i++) { loop(); if (Proj.pending.length) seenPending = true; }
   ok(seenPending && Proj.pending.length === 0, 'impact paint lands in two beats (core, then full splat)');
   // ================= v0.5.2 weapon identity =================
-  ok(WEAPONS.rifle.cost === 1.1 && Math.floor(100 / WEAPONS.rifle.cost) === 90, 'rifle tank holds ~90 shots (1.1% per shot)');
+  ok(Math.floor(100 / WEAPONS.rifle.cost) === 70, 'rifle tank holds 70 shots (' + WEAPONS.rifle.cost + '% per shot)');
   // bomb: standing vs jump throw distance (read from the arc preview)
   P.pos.set(-9, 0, 27); P.vel.set(0, 0, 0); P.grounded = true; Cam.yaw = Math.PI; Cam.pitch = 0; P.aimYaw = Math.PI; P.aimPitch = 0; loop();
   const dirB = new THREE.Vector3(0, 0, -1);
