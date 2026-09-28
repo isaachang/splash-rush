@@ -74,7 +74,15 @@ vm.runInContext(`(() => {
   ok(P.inOwnBarrier() && P.damage(50, E, 'rifle') === false && P.hp === 100, 'player inside own barrier takes no damage');
   const before = Proj.shots.length; Proj.shot(E, new THREE.Vector3(SPAWN[0].x, 2.9, SPAWN[0].z - 9), new THREE.Vector3(0, 0, 1)); for (let i = 0; i < 12; i++) loop();
   ok(P.hp === 100, 'enemy bullets fired into the barrier are blocked');
-  // ---------- special gauge loss on death
+  // ---------- screen ink feedback
+  P.pos.set(0, 0, 10); P.hp = 100; P.invulnT = 0; loop(); ScreenInk.clear();
+  const foe = CHARS.find(c => c.team === 1 && c.weapon.id === 'rifle'); foe.pos.set(P.pos.x - 6, 0, P.pos.z); // on the player's right side (yaw 0 -> right = -x)
+  Cam.yaw = 0; P.damage(36, foe, 'rifle'); loop();
+  const sp0 = ScreenInk.splats[0];
+  ok(ScreenInk.splats.length >= 1 && sp0.x > ScreenInk.canvas.width * 0.8, 'hit from the right puts ink on the right edge (x=' + (sp0 ? Math.round(sp0.x) : '-') + ')');
+  P.hp = 100; P.lastHurt = -99; loop();
+  ok(ScreenInk.splats.length === 0, 'ink clears once health is full again');
+
   P.pos.set(0, 0, 10); loop(); P.special = 80; P.invulnT = 0; P.hp = 1; P.damage(100, E, 'rifle');
   ok(!P.alive && P.special === 40, 'death halves the special gauge (80 -> ' + P.special + ')');
   // ---------- swim speed = 2x run

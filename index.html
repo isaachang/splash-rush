@@ -217,6 +217,8 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .ticon.special{box-shadow:0 0 0 3px #fff,0 0 18px 6px #fff;animation:spglow .6s ease-in-out infinite alternate}
 @keyframes spglow{from{box-shadow:0 0 0 3px #fff,0 0 10px 2px #fff}to{box-shadow:0 0 0 4px #fff,0 0 26px 10px #ffe45c}}
 #chargeRing.stored{animation:blink .25s infinite}
+
+#inkCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 </style></head><body>
 <canvas id="gl"></canvas>
 
@@ -273,7 +275,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 
 <div id="hud" class="screen">
   <div id="vignette"></div>
-  <div id="inkScreen"></div>
+  <canvas id="inkCanvas"></canvas>
   <div id="topbar"><div class="team" id="teamA"></div><div id="timer">3:00</div><div class="team" id="teamB"></div></div>
   <div id="crosshair"><div class="ring"></div><div class="dot"></div>
     <svg id="chargeRing" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="9"/><circle id="chargeArc" cx="50" cy="50" r="40" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="251.3" stroke-dashoffset="251.3" stroke-linecap="round"/></svg>
@@ -1480,7 +1482,7 @@ class Character {
   damage(amount, src, via) {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
-    if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount); }
+    if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
     if (src && src.isPlayer) { Sfx.hit(); HUD.hitmark(false); }
     if (this.hp <= 0) this.die(src, this.lastVia);
     return true;
@@ -2492,7 +2494,8 @@ const HUD = {
     const hp = c.alive ? c.hp : 100; this.hurtV = Math.max(0, this.hurtV - dt * 2);
     const vig = clamp((100 - hp) / 100 * 0.9 + this.hurtV * 0.4, 0, 0.95);
     const ec = TEAM_HEX[1 - c.team];
-    $('vignette').style.background = `radial-gradient(ellipse at center, transparent 55%, ${ec}99 135%)`; $('vignette').style.opacity = clamp((70 - hp) / 70, 0, 0.8);
+    $('vignette').style.opacity = 0;
+    ScreenInk.update(dt, c.alive ? c.hp : 0);
     $('crosshair').classList.toggle('enemy', Cam.lock);
     const r2 = $('ret2');
     if (Cam.showLand && c.alive && c.state === 'play') {
@@ -2540,21 +2543,7 @@ const HUD = {
       } else { g.fillStyle = TEAM_HEX[ch.team]; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 3.5, 0, 7); g.fill(); g.stroke(); }
     }
   },
-  hurt(amount = 25) {
-    this.hurtV = 1;
-    // ink splattered on the screen edges in the attacker's colour
-    const el = $('inkScreen'), col = TEAM_HEX[1 - PLAYER.team], n = amount >= 60 ? 3 : amount >= 25 ? 2 : 1;
-    for (let i = 0; i < n; i++) {
-      const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 200 200');
-      const side = Math.floor(Math.random() * 4), size = rand(22, 38), along = rand(5, 95);
-      const x = side === 0 ? -size * 0.35 : side === 1 ? 100 - size * 0.65 : along - size / 2, y = side === 2 ? -size * 0.35 : side === 3 ? 100 - size * 0.65 : along - size / 2;
-      s.style.cssText = `left:${side < 2 ? x + 'vw' : x + 'vw'};top:${y}vh;width:${size}vmin;height:${size}vmin;transform:rotate(${rand(0, 360)}deg)`;
-      let inner = `<path d="${blobPath(Math.random() * 50, 58)}" style="fill:${col}"/>`;
-      for (let k = 0; k < 5; k++) { const a = Math.random() * 6.28, d = rand(66, 92); inner += `<circle cx="${100 + Math.cos(a) * d}" cy="${100 + Math.sin(a) * d}" r="${rand(4, 11)}" style="fill:${col}"/>`; }
-      s.innerHTML = inner; el.appendChild(s); setTimeout(() => s.remove(), 1400);
-    }
-    for (let k = el.children.length - 8; k > 0; k--) { const old = el.children[0]; if (old && old.remove) old.remove(); }
-  },
+  hurt(amount = 25, src = null) { this.hurtV = 1; ScreenInk.hit(amount, src); },
   tip(t) { const el = $('tip'); el.textContent = t; el.classList.add('on'); clearTimeout(this._tt); this._tt = setTimeout(() => el.classList.remove('on'), 1100); },
   hitmark(kill) { const h = $('hitmark'); h.classList.remove('on', 'kill'); void h.offsetWidth; h.classList.add(kill ? 'kill' : 'on'); },
   lowInk() { if (this.lowInkT <= 0) Sfx.beep(false); this.lowInkT = 0.8; },
@@ -2566,14 +2555,147 @@ const HUD = {
     setTimeout(() => el.remove(), 4500);
   },
   died(k, via) {
+    ScreenInk.death();
     const vn = via && (WEAPONS[via] || SUBS[via] || SPECIALS[via]);
     $('death').classList.add('show'); $('deathBy').innerHTML = k ? `被 <span style="color:${TEAM_HEX[k.team]}">${k.name}</span> ${vn ? '用「' + vn.name + '」' : ''}击倒了！` : '你被击倒了！';
     $('deathTip').textContent = '提示：' + pick(TIPS);
   },
-  respawned() { $('death').classList.remove('show'); },
+  respawned() { $('death').classList.remove('show'); ScreenInk.clear(); },
   center(msg, sub, ms) {
     const el = $('center'); el.innerHTML = `<span class="msg pop">${msg}</span>${sub ? `<span class="sub">${sub}</span>` : ''}`;
     clearTimeout(this._ct); if (ms) this._ct = setTimeout(() => el.innerHTML = '', ms);
+  }
+};
+
+/* ========================================================== SCREEN INK
+   Damage feedback like the original: the screen edges get splattered with
+   the attacker's ink.  Wet look (rim + gloss + drips), appears instantly on
+   the side you were hit from, stays while you're hurt and fades as you heal. */
+function shadeHex(hex, f) {
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  if (f < 1) { r *= f; g *= f; b *= f; } else { r += (255 - r) * (f - 1); g += (255 - g) * (f - 1); b += (255 - b) * (f - 1); }
+  return `rgb(${r | 0},${g | 0},${b | 0})`;
+}
+// draws one wet ink splat into its own canvas (static part); returns {cv, size}
+function makeSplat(r, col, seed) {
+  const rnd = (k) => hash(seed * 13.7 + k * 7.31);
+  const S = Math.ceil(r * 4.2), c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d'), cx = S / 2, cy = S / 2;
+  const lobes = [], nl = 5 + Math.floor(rnd(1) * 4);
+  for (let f = 0; f < nl; f++) lobes.push({ a: rnd(10 + f) * Math.PI * 2, amp: r * (0.14 + rnd(20 + f) * 0.4), w: 0.22 + rnd(30 + f) * 0.2 });
+  const drops = [];
+  lobes.forEach((l, f) => { if (l.amp > r * 0.3) { const d = r + l.amp + r * (0.12 + rnd(70 + f) * 0.15); drops.push([Math.cos(l.a) * d, Math.sin(l.a) * d, r * (0.07 + rnd(80 + f) * 0.07)]); } });
+  for (let k = 0; k < 5; k++) { const a = rnd(40 + k) * Math.PI * 2, d = r * (1.2 + rnd(50 + k) * 0.5); drops.push([Math.cos(a) * d, Math.sin(a) * d, r * (0.03 + rnd(60 + k) * 0.05)]); }
+  const shape = () => {
+    g.beginPath(); const n = 96;
+    for (let i = 0; i <= n; i++) {
+      const a = i / n * Math.PI * 2;
+      let rr = r * (1 + 0.08 * Math.sin(3 * a + rnd(2) * 6) + 0.05 * Math.sin(5 * a + rnd(3) * 6));
+      for (const l of lobes) { const d = angDiff(a, l.a) / l.w; rr += l.amp * Math.exp(-d * d * 2.5); }
+      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.closePath();
+    for (const [dx, dy, rr] of drops) { g.moveTo(cx + dx + rr, cy + dy); g.arc(cx + dx, cy + dy, rr, 0, Math.PI * 2); }
+  };
+  // rim
+  shape(); g.lineJoin = 'round'; g.lineWidth = Math.max(2, r * 0.05); g.strokeStyle = shadeHex(col, 0.5); g.stroke();
+  // body with depth gradient
+  shape(); const gr = g.createRadialGradient(cx - r * 0.25, cy - r * 0.3, r * 0.1, cx, cy, r * 1.5);
+  gr.addColorStop(0, shadeHex(col, 1.18)); gr.addColorStop(0.6, col); gr.addColorStop(1, shadeHex(col, 0.72)); g.fillStyle = gr; g.fill();
+  // gloss highlights
+  g.save(); g.globalAlpha = 0.38; g.fillStyle = '#fff';
+  g.beginPath(); g.ellipse(cx - r * 0.32, cy - r * 0.38, r * 0.34, r * 0.13, -0.5, 0, Math.PI * 2); g.fill();
+  g.globalAlpha = 0.7; g.beginPath(); g.arc(cx + r * 0.15, cy - r * 0.52, r * 0.06, 0, Math.PI * 2); g.fill();
+  g.globalAlpha = 0.25; g.beginPath(); g.ellipse(cx + r * 0.3, cy + r * 0.35, r * 0.25, r * 0.08, 0.6, 0, Math.PI * 2); g.fill();
+  g.restore();
+  return { cv: c, size: S };
+}
+const ScreenInk = {
+  splats: [], frame: [], col: '#3346ff', deathT: 0, canvas: null, ctx: null, scale: 0.75,
+  init() { this.canvas = $('inkCanvas'); this.ctx = this.canvas.getContext('2d'); this.resize(); addEventListener('resize', () => this.resize()); },
+  resize() { if (!this.canvas) return; this.canvas.width = Math.round(innerWidth * this.scale); this.canvas.height = Math.round(innerHeight * this.scale); },
+  reset(col) {
+    this.col = col; this.splats = []; this.deathT = 0;
+    // blobs that form the "ink frame" around the screen at low health
+    this.frame = [];
+    for (let i = 0; i < 22; i++) {
+      const side = i % 4, t = (Math.floor(i / 4) + 0.5) / 6 + rand(-0.06, 0.06);
+      this.frame.push({ side, t, r: rand(38, 70), seed: rand(0, 999), img: null });
+    }
+  },
+  clear() { this.splats = []; this.deathT = 0; },
+  hit(amount, src) {
+    const P = PLAYER; if (!P) return;
+    // which side of the screen: direction of the attacker relative to the camera
+    let side = pick([0, 1, 2]);
+    if (src && src.pos) {
+      const rel = angDiff(Cam.yaw, Math.atan2(src.pos.x - P.pos.x, src.pos.z - P.pos.z));
+      side = Math.abs(rel) < Math.PI / 4 ? 2 : Math.abs(rel) > Math.PI * 0.75 ? 3 : rel < 0 ? 1 : 0;   // 0 left 1 right 2 top 3 bottom
+    }
+    const n = amount >= 90 ? 3 : amount >= 30 ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const W = this.canvas.width, H = this.canvas.height, m = Math.min(W, H);
+      const r = m * rand(0.07, 0.11) * (0.8 + Math.min(amount, 100) / 160), along = rand(0.12, 0.88);
+      const x = side === 0 ? rand(0.03, 0.12) * W : side === 1 ? W - rand(0.03, 0.12) * W : along * W;
+      const y = side === 2 ? rand(0.04, 0.14) * H : side === 3 ? H - rand(0.04, 0.12) * H : along * H;
+      const sp = makeSplat(r, this.col, Math.random() * 999);
+      const drips = []; const nd = randi(1, 3);
+      for (let k = 0; k < nd; k++) drips.push({ dx: rand(-0.4, 0.4) * r, w: r * rand(0.12, 0.2), max: r * rand(0.6, 1.6), len: 0, delay: rand(0.15, 0.5) });
+      this.splats.push({ x, y, r, rot: rand(0, Math.PI * 2), sp, drips, age: 0 });
+    }
+    while (this.splats.length > 14) this.splats.shift();
+    G.shake(0.12 + Math.min(amount, 100) / 100 * 0.35);
+  },
+  death() {
+    // the whole screen gets drenched for a moment
+    const W = this.canvas.width, H = this.canvas.height, m = Math.min(W, H);
+    for (let i = 0; i < 9; i++) {
+      const r = m * rand(0.22, 0.34), sp = makeSplat(r, this.col, Math.random() * 999);
+      this.splats.push({ x: rand(0.1, 0.9) * W, y: rand(0.1, 0.9) * H, r, rot: rand(0, 6.28), sp, drips: [{ dx: 0, w: r * 0.12, max: r * 1.6, len: 0, delay: 0.1 }], age: 0, death: true });
+    }
+    this.deathT = 1.6;
+  },
+  update(dt, hp) {
+    const g = this.ctx; if (!g) return;
+    const W = this.canvas.width, H = this.canvas.height;
+    g.clearRect(0, 0, W, H);
+    const L = clamp((100 - hp) / 100, 0, 1);            // how hurt we are
+    if (hp >= 99.5 && this.deathT <= 0) this.splats = this.splats.filter(s => s.death);
+    this.deathT = Math.max(0, this.deathT - dt);
+    // low-health ink frame (replaces the old coloured vignette)
+    const fa = clamp((L - 0.3) / 0.45, 0, 1);
+    if (fa > 0 && this.frame.length) {
+      const m = Math.min(W, H);
+      for (const f of this.frame) {
+        if (!f.img) f.img = makeSplat(f.r * m / 800, this.col, f.seed);
+        const inset = (fa * 0.42 - 0.5) * f.img.size * 0.5;
+        const x = f.side === 0 ? inset : f.side === 1 ? W - inset : f.t * W, y = f.side === 2 ? inset : f.side === 3 ? H - inset : f.t * H;
+        g.globalAlpha = fa * 0.8; g.drawImage(f.img.cv, x - f.img.size / 2, y - f.img.size / 2);
+      }
+    }
+    // hit splats
+    for (let i = this.splats.length - 1; i >= 0; i--) {
+      const s = this.splats[i]; s.age += dt;
+      let a;
+      if (s.death) { a = clamp(this.deathT / 0.8, 0, 1) * 0.97; if (this.deathT <= 0) { this.splats.splice(i, 1); continue; } }
+      else a = clamp(0.3 + L * 1.1, 0, 0.85) * clamp(1.4 - s.age * 0.04, 0.55, 1);
+      const pop = s.age < 0.08 ? 1.12 - s.age * 1.5 : 1;          // instant splat with a tiny "burst"
+      g.save(); g.globalAlpha = a; g.translate(s.x, s.y);
+      g.save(); g.rotate(s.rot); g.scale(pop, pop);
+      g.drawImage(s.sp.cv, -s.sp.size / 2, -s.sp.size / 2);
+      g.restore();
+      // drips run downward out of the bottom of the splat (screen space)
+      for (const d of s.drips) {
+        if (s.age < d.delay) continue;
+        d.len = d.max * (1 - Math.exp(-(s.age - d.delay) * 0.9));
+        const x0 = d.dx, y0 = s.r * 0.72, y1 = y0 + d.len;
+        const lg = g.createLinearGradient(x0 - d.w, 0, x0 + d.w, 0); lg.addColorStop(0, shadeHex(this.col, 0.6)); lg.addColorStop(0.35, shadeHex(this.col, 1.12)); lg.addColorStop(1, shadeHex(this.col, 0.7));
+        g.fillStyle = lg; g.beginPath(); g.moveTo(x0 - d.w / 2, y0 - d.w); g.lineTo(x0 + d.w / 2, y0 - d.w); g.lineTo(x0 + d.w * 0.4, y1); g.arc(x0, y1, d.w * 0.6, 0, Math.PI); g.closePath(); g.fill();
+        g.fillStyle = 'rgba(255,255,255,.4)'; g.beginPath(); g.ellipse(x0 - d.w * 0.15, y1 - d.w * 0.05, d.w * 0.13, d.w * 0.2, 0, 0, Math.PI * 2); g.fill();
+      }
+      g.restore();
+    }
+    g.globalAlpha = 1;
   }
 };
 
@@ -2622,7 +2744,7 @@ function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProj
 function startMatch() {
   Sfx.init(); Sfx.stopMusic();
   applyPalette(); resetPaint(); Fx.clear(); Proj.clear();
-  spawnTeams(); HUD.buildTeams();
+  spawnTeams(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov();
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
@@ -2831,7 +2953,7 @@ function boot() {
   initPaint();
   initGeo();
   buildSkyEnv(); buildSea(); buildArena(); buildDecor();
-  Fx.init(); Proj.init(); Barrier.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI();
+  Fx.init(); Proj.init(); Barrier.init(); ScreenInk.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI();
   applyPalette();
   renderer.compile(scene, camera);
   G.state = 'title';

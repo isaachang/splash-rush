@@ -198,7 +198,7 @@ class Character {
   damage(amount, src, via) {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
-    if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount); }
+    if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
     if (src && src.isPlayer) { Sfx.hit(); HUD.hitmark(false); }
     if (this.hp <= 0) this.die(src, this.lastVia);
     return true;
