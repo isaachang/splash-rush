@@ -121,7 +121,9 @@ vm.runInContext(`(() => {
   HUD.drawMap(); const idx = HUD.mapAllies.findIndex(a => a.c === ally);
   toggleMap(true); HUD.pickAlly(idx);
   ok(!!P.sj && !G.mapOpen && P.sjMarker && P.sjMarker.visible, 'picking a teammate on the map starts a super jump (marker shown, map closed)');
-  let f2 = 0; while ((P.sj || P.state !== 'play') && f2 < 200) { loop(); f2++; }
+  let f2 = 0, maxStep = 0, lp = P.pos.clone(), sawFly = false;
+  while ((P.sj || P.state !== 'play') && f2 < 200) { loop(); f2++; maxStep = Math.max(maxStep, P.pos.distanceTo(lp)); lp.copy(P.pos); if (P.state === 'sjfly') sawFly = true; }
+  ok(sawFly && maxStep < 2.5, 'super jump is one continuous arc flight, no teleport (largest step ' + maxStep.toFixed(2) + ' m/frame)');
   const dA = Math.hypot(P.pos.x - ally.pos.x, P.pos.z - ally.pos.z);
   ok(P.state === 'play' && dA < 2 && !P.sjMarker.visible, 'super jump lands next to the teammate in ' + (f2 / 30).toFixed(1) + 's (' + dA.toFixed(1) + 'm away)');
   // choose a jump target while dead -> respawn on the teammate
@@ -130,6 +132,13 @@ vm.runInContext(`(() => {
   let f3 = 0; while ((!P.alive || P.state !== 'play') && f3 < 400) { loop(); f3++; }
   const dB = Math.hypot(P.pos.x - ally.pos.x, P.pos.z - ally.pos.z);
   ok(P.state === 'play' && dB < 2, 'respawn super-jumps straight to that teammate (' + dB.toFixed(1) + 'm away)');
+  // enemy-ink feedback
+  splatFloor(6, 0, 12, 3, 1, 1, false); P.pos.set(6, 0, 12); P.vel.set(0, 0, 0); P.hp = 100; ScreenInk.sticky = 0;
+  for (let i = 0; i < 20; i++) loop();
+  ok(P.inEnemy && ScreenInk.sticky > 0.5, 'standing in enemy ink: screen goo rises (' + ScreenInk.sticky.toFixed(2) + ')');
+  splatFloor(6, 0, 12, 3, 0, 1, false); for (let i = 0; i < 45; i++) loop();
+  ok(!P.inEnemy && ScreenInk.sticky < 0.1, 'leaving enemy ink: screen goo fades (' + ScreenInk.sticky.toFixed(2) + ')');
+  ok(VERSION === RELEASES[0].v && RELEASES.every(r => r.items.length >= 3), 'version badge ' + VERSION + ' and release notes (' + RELEASES.length + ' versions)');
   // ---------- swim speed = 2x run
   ok(Math.abs(12.8 / 6.4 - 2) < 1e-9 && WEAPONS.charger.moveCharge === 1.35, 'speed ratios: swim 2.0x run, charging 21% of run');
 })()`, g);

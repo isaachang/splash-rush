@@ -35,7 +35,7 @@ const HUD = {
     const vig = clamp((100 - hp) / 100 * 0.9 + this.hurtV * 0.4, 0, 0.95);
     const ec = TEAM_HEX[1 - c.team];
     $('vignette').style.opacity = 0;
-    ScreenInk.update(dt, c.alive ? c.hp : 0);
+    ScreenInk.update(dt, c.alive ? c.hp : 0, c.alive && c.inEnemy && !c.invuln());
     $('crosshair').classList.toggle('enemy', Cam.lock);
     const r2 = $('ret2');
     if (Cam.showLand && c.alive && c.state === 'play') {
@@ -176,7 +176,8 @@ const ScreenInk = {
   init() { this.canvas = $('inkCanvas'); this.ctx = this.canvas.getContext('2d'); this.resize(); addEventListener('resize', () => this.resize()); },
   resize() { if (!this.canvas) return; this.canvas.width = Math.round(innerWidth * this.scale); this.canvas.height = Math.round(innerHeight * this.scale); },
   reset(col) {
-    this.col = col; this.splats = []; this.deathT = 0;
+    this.col = col; this.splats = []; this.deathT = 0; this.sticky = 0;
+    this.bottom = []; for (let i = 0; i < 10; i++) this.bottom.push({ t: (i + 0.5) / 10 + rand(-0.03, 0.03), r: rand(40, 72), seed: rand(0, 999), img: null });
     // blobs that form the "ink frame" around the screen at low health
     this.frame = [];
     for (let i = 0; i < 22; i++) {
@@ -216,10 +217,22 @@ const ScreenInk = {
     }
     this.deathT = 1.6;
   },
-  update(dt, hp) {
+  update(dt, hp, stuck = false) {
     const g = this.ctx; if (!g) return;
     const W = this.canvas.width, H = this.canvas.height;
     g.clearRect(0, 0, W, H);
+    // standing in enemy ink: goo creeps up from the bottom of the screen
+    this.sticky = damp(this.sticky || 0, stuck ? 1 : 0, stuck ? 3 : 2.5, dt);
+    if (this.sticky > 0.02 && this.bottom) {
+      const m = Math.min(W, H), sk = this.sticky;
+      const gr = g.createLinearGradient(0, H, 0, H * 0.78); gr.addColorStop(0, shadeHex(this.col, 0.8)); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.globalAlpha = sk * 0.55; g.fillStyle = gr; g.fillRect(0, H * 0.78, W, H * 0.22);
+      for (const b of this.bottom) {
+        if (!b.img) b.img = makeSplat(b.r * m / 800, this.col, b.seed);
+        const y = H + b.img.size * 0.5 * (0.62 - sk * 0.42) + Math.sin(G.time * 2 + b.seed) * 3;
+        g.globalAlpha = sk * 0.85; g.drawImage(b.img.cv, b.t * W - b.img.size / 2, y - b.img.size / 2);
+      }
+    }
     const L = clamp((100 - hp) / 100, 0, 1);            // how hurt we are
     if (hp >= 99.5 && this.deathT <= 0) this.splats = this.splats.filter(s => s.death);
     this.deathT = Math.max(0, this.deathT - dt);
@@ -502,9 +515,13 @@ function initUI() {
   $('btnQuit').onclick = () => { Sfx.click(); quitToTitle(); };
   $('btnAgain').onclick = () => { Sfx.click(); rollRoster(); startMatch(); };
   $('btnMenu').onclick = () => { Sfx.click(); quitToTitle(); };
-  addEventListener('keydown', e => { if (e.code === 'Escape') { show('howto', false); show('settings', false); } });
+  addEventListener('keydown', e => { if (e.code === 'Escape') { show('howto', false); show('settings', false); show('changelog', false); } });
   document.addEventListener('pointerdown', () => { Sfx.init(); if (G.state === 'title') Sfx.music('title'); }, { once: true });
   titleSplats(); renderLoadCard();
+  // version badge + release notes
+  $('verTxt').textContent = VERSION; $('pauseVer').textContent = 'SPLASH RUSH ' + VERSION;
+  $('logList').innerHTML = RELEASES.map((r, i) => `<div class="logv${i === 0 ? ' cur' : ''}"><div class="hd"><b>${r.v}</b><span>${r.title}</span>${i === 0 ? '<i>当前版本</i>' : ''}<small>${r.date}</small></div><ul>${r.items.map(t => `<li>${t}</li>`).join('')}</ul></div>`).join('');
+  $('btnLog').onclick = () => { Sfx.init(); Sfx.click(); show('changelog', true); };
 }
 
 /* ---------------------------------------------------------------- boot */

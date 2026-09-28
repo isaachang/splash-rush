@@ -28,6 +28,7 @@
     <h3>场地</h3>
     <div class="mapcard"><div class="thumb"></div><div><b>潮汐码头广场</b><small>涂地对战 · 4 V 4</small></div></div>
   </div>
+  <button class="verchip" id="btnLog"><b id="verTxt">v0.0.0</b><span>版本日志 ›</span></button>
   <div class="footer">进入对局后游戏会锁定鼠标 · 按 Esc 暂停</div>
 </div>
 
@@ -77,6 +78,7 @@
   <button class="btn big" id="btnResume">继续战斗</button>
   <button class="btn alt" id="btnSet2">设置</button>
   <button class="btn" id="btnQuit">退出到主菜单</button>
+  <div class="pausever" id="pauseVer"></div>
 </div>
 
 <div id="results" class="screen">
@@ -111,6 +113,12 @@
     <b>出生点防护罩：</b>敌人和敌方墨水都进不来，站在里面不会受伤。阵亡会损失一半必杀充能。<br>
     <b>换武器：</b>点「开始对战」进入战前准备，在左侧选择武器。重炮狙击蓄力时镜头会拉近，但激光线会暴露你的位置。
   </div>
+</div></div>
+
+<div class="modal" id="changelog"><div class="card">
+  <button class="close" data-close="changelog">✕</button>
+  <h2>版本日志</h2>
+  <div id="logList"></div>
 </div></div>
 
 <div class="modal" id="settings"><div class="card">

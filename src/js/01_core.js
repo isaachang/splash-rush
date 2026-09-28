@@ -115,6 +115,7 @@ const Sfx = (() => {
     },
     chargeSet(c) { if (!ctx || !this._ch) return; const t = ctx.currentTime; this._ch.o.frequency.setTargetAtTime(180 + c * 520, t, 0.03); this._ch.f.frequency.setTargetAtTime(900 + c * 2600, t, 0.03); },
     chargeStop() { if (!ctx || !this._ch) return; const { o, g } = this._ch; const t = ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05); o.stop(t + 0.08); this._ch = null; },
+    squelch() { noise(0.13, 0.09, 'lowpass', 520, 3, 160); tone('sine', rand(170, 210), 85, 0.11, 0.05); },
     chargeReady() { tone('triangle', 990, null, 0.06, 0.08); },
     fizzle() { noise(0.12, 0.1, 'bandpass', 1500, 2, 500); tone('sine', 500, 200, 0.1, 0.05); },
     chargeFull() { tone('sine', 1760, null, 0.12, 0.12); tone('sine', 2640, null, 0.18, 0.08, null, ctx && ctx.currentTime + 0.05); },

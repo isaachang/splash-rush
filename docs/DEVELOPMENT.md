@@ -50,7 +50,7 @@ git switch main
 git merge --no-ff feat/reticle-like-original
 git push
 
-# 7. 发布版本：更新 CHANGELOG.md 和 README 里的版本号，然后打标签
+# 7. 发布版本：更新 CHANGELOG.md、README 版本号、src/js/04_data.js 的 RELEASES（游戏内版本日志），然后打标签
 git tag -a v0.4.0 -m "v0.4.0 准星与操作手感原版化"
 git push --tags
 ```

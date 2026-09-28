@@ -325,14 +325,16 @@ function updateCamera(dt) {
   Cam.zoom = damp(Cam.zoom, zt, 10, dt);
   const fv = SETTINGS.fov * Cam.zoom; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }
   const targetY = py + (c.swim ? 1.0 : 1.5);
-  Cam.pivotY = c.state === 'drop' ? targetY : damp(Cam.pivotY, targetY, 14, dt);
+  Cam.pivotY = c.state === 'drop' || c.state === 'sjfly' ? targetY : damp(Cam.pivotY, targetY, 14, dt);
   const cp = Math.cos(Cam.pitch), sp = Math.sin(Cam.pitch);
   const dir = new THREE.Vector3(Math.sin(Cam.yaw) * cp, sp, Math.cos(Cam.yaw) * cp);
   const right = new THREE.Vector3(-Math.cos(Cam.yaw), 0, Math.sin(Cam.yaw));
   const pivot = new THREE.Vector3(px, Cam.pivotY, pz);
-  const dist = c.swim ? 5.0 : 4.6;
+  // pull the camera back/up smoothly while super-jumping so you can see the map below
+  Cam.fly = damp(Cam.fly || 0, c.state === 'sjfly' ? 1 : 0, 4, dt);
+  const dist = (c.swim ? 5.0 : 4.6) + Cam.fly * 5.5;
   const shoulder = right.clone().multiplyScalar(0);
-  const want = pivot.clone().addScaledVector(dir, -dist).add(shoulder); want.y += 0.85;
+  const want = pivot.clone().addScaledVector(dir, -dist).add(shoulder); want.y += 0.85 + Cam.fly * 4.5;
   const pv = pivot.clone().add(shoulder.clone().multiplyScalar(0.5));
   const t = segBlocked(pv.x, pv.y, pv.z, want.x, want.y, want.z, 0.15);
   if (t) want.lerpVectors(pv, want, Math.max(0.1, t - 0.08));

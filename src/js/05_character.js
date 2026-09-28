@@ -219,7 +219,7 @@ class Character {
   }
   onOwnDeck() { const d = DECK[this.team]; return this.pos.y > 1.9 && inRect(d, this.pos.x, this.pos.z); }
   inOwnBarrier() { return inBarrier(this.team, this.pos); }
-  invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.state === 'sjup' || this.inOwnBarrier(); }
+  invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.state === 'sjfly' || this.inOwnBarrier(); }
   canJumpTo(t) { return t && t !== this && t.team === this.team && t.alive && t.state === 'play' && !t.sj; }
   // super jump to a teammate: short crouch (vulnerable), launch, then land on them
   startSuperJump(t) {
@@ -233,12 +233,24 @@ class Character {
     if (!this.sjMarker) {
       const mat = new THREE.MeshBasicMaterial({ color: TEAM_HEX[this.team], transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide, fog: false });
       const g = new THREE.Group();
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.75, 1.0, 36), mat); ring.rotation.x = -Math.PI / 2; g.add(ring);
-      const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 16, 8, 1, true), mat); beam.position.y = 8; g.add(beam);
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.78, 1.0, 40), mat); ring.rotation.x = -Math.PI / 2; g.add(ring);
+      const ring2 = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 32), mat); ring2.rotation.x = -Math.PI / 2; g.add(ring2);
+      const dot = new THREE.Mesh(new THREE.CircleGeometry(0.14, 20), mat); dot.rotation.x = -Math.PI / 2; g.add(dot);
       g.userData.mat = mat; scene.add(g); this.sjMarker = g;
     }
     this.sjMarker.userData.mat.color.set(TEAM_HEX[this.team]);
     this.sjMarker.position.set(p.x, groundBelow(p.x, p.z, p.y + 0.5, 0.6) + 0.06, p.z); this.sjMarker.visible = true;
+  }
+  // pulsing ring that shrinks as the jumper gets close (u: 0..1 of the flight)
+  pulseSJMarker(u) { if (!this.sjMarker) return; const s = (1.5 - 0.7 * u) * (1 + 0.08 * Math.sin(G.time * 14)); this.sjMarker.scale.set(s, 1, s); this.sjMarker.userData.mat.opacity = 0.55 + 0.35 * u; }
+  // continuous arc flight to a teammate (original-style super jump)
+  beginFlight(t) {
+    const p0 = this.pos.clone(), d = Math.hypot(t.pos.x - p0.x, t.pos.z - p0.z);
+    this.fly = { t: 0, p0, target: t, tp: t.pos.clone(), T: clamp(1.1 + d / 60, 1.2, 1.9), apex: clamp(9 + d * 0.22, 10, 20), last: p0.clone() };
+    this.state = 'sjfly'; this.sj = null; this.grounded = false; this.swim = false; this.vel.set(0, 0, 0);
+    this.showSJMarker(this.fly.tp); this.pulseSJMarker(0);
+    Fx.burst(p0.x, p0.y + 0.3, p0.z, TEAM_HEX[this.team], 18, 6, 0.1); Fx.ring(p0.x, p0.y + 0.05, p0.z, TEAM_HEX[this.team], 2.2);
+    if (sndVol(p0) > 0.05) Sfx.superJump();
   }
   hideSJMarker() { if (this.sjMarker) this.sjMarker.visible = false; }
   setSwim(on) {
@@ -259,7 +271,7 @@ class Character {
   die(killer, via) {
     this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0;
     this.setSwim(false); this.sp = null; this.climbing = false; this.stopCharge(); this.stored = 0;
-    this.sj = null; this.dropY = null; this.dropSJ = false; this.hideSJMarker();
+    this.sj = null; this.fly = null; this.dropY = null; this.dropSJ = false; this.hideSJMarker();
     this.special = Math.floor(this.special * (1 - this.weapon.spLoss));
     const kc = killer ? killer.team : 1 - this.team;
     if (killer) killer.kills++;
@@ -280,14 +292,12 @@ class Character {
     // super jump straight to a chosen teammate (player picks on the map; bots sometimes jump to the front)
     let tgt = this.canJumpTo(this.jumpTarget) ? this.jumpTarget : null; this.jumpTarget = null;
     if (!tgt && !this.isPlayer && Math.random() < 0.4) { const opts = CHARS.filter(c => this.canJumpTo(c) && !c.inOwnBarrier()); if (opts.length) tgt = pick(opts); }
-    if (tgt) {
-      const gy = groundBelow(tgt.pos.x, tgt.pos.z, tgt.pos.y + 0.5, 0.6);
-      this.pos.set(tgt.pos.x, gy + 24, tgt.pos.z); this.dropY = gy; this.dropSJ = true; this.showSJMarker(tgt.pos);
-    } else { this.pos.set(sp.x + rand(-2.5, 2.5), sp.y + 24, sp.z + rand(-1.5, 1.5)); this.dropY = sp.y; this.dropSJ = false; }
+    this.pos.set(sp.x + rand(-2.5, 2.5), sp.y + 24, sp.z + rand(-1.5, 1.5)); this.dropY = sp.y; this.dropSJ = false;
     this.vel.set(0, -30, 0);
     this.aimYaw = this.yaw = this.bodyYaw = sp.yaw; this.aimPitch = 0;
     this.root.visible = true; this.ghost.visible = false; this.human.visible = true; this.blob.visible = false; this.swim = false;
     if (this.isPlayer) { Sfx.superJump(); HUD.respawned(); Cam.yaw = sp.yaw; Cam.pitch = -0.1; }
+    if (tgt) { this.pos.set(sp.x, sp.y, sp.z); this.beginFlight(tgt); }
   }
   stopCharge() {
     this.charge = 0; this.charging = false;
@@ -311,14 +321,22 @@ class Character {
       if (this.respawnT <= 0 && G.state === 'play') this.respawn();
       return;
     }
-    if (this.state === 'sjup') {
-      const s = this.sj; s.t += dt; this.pos.y += this.vel.y * dt;
-      if (Math.random() < 0.9) Fx.spark(this.pos.x, this.pos.y + 0.5, this.pos.z, TEAM_HEX[this.team]);
-      if (s.target && s.target.alive && s.target.state === 'play') s.tp.copy(s.target.pos);
-      if (s.t > 0.45) {
-        const p = s.tp, gy = groundBelow(p.x, p.z, p.y + 0.5, 0.6);
-        this.pos.set(p.x, gy + 24, p.z); this.dropY = gy; this.dropSJ = true; this.showSJMarker(p);
-        this.state = 'drop'; this.vel.set(0, -30, 0); this.sj = null;
+    if (this.state === 'sjfly') {
+      const f = this.fly; f.t += dt; const u = Math.min(1, f.t / f.T);
+      if (u < 0.7 && f.target.alive && f.target.state === 'play') f.tp.copy(f.target.pos);
+      const ly = groundBelow(f.tp.x, f.tp.z, f.tp.y + 0.5, 0.6);
+      f.last.copy(this.pos);
+      this.pos.set(lerp(f.p0.x, f.tp.x, u), lerp(f.p0.y, ly, u) + f.apex * 4 * u * (1 - u), lerp(f.p0.z, f.tp.z, u));
+      this.vel.subVectors(this.pos, f.last).divideScalar(Math.max(dt, 1e-4));
+      if (Math.random() < 0.9) Fx.spark(this.pos.x, this.pos.y + 0.3, this.pos.z, TEAM_HEX[this.team]);
+      if (Math.random() < 0.25) Fx.add(this.pos.x, this.pos.y + 0.2, this.pos.z, rand(-1, 1), rand(-1, 0.5), rand(-1, 1), rand(0.06, 0.12), 0.6, TEAM_HEX[this.team], 18);
+      this.showSJMarker(f.tp); this.pulseSJMarker(u);
+      if (u >= 1) {
+        this.pos.set(f.tp.x, ly, f.tp.z); this.vel.set(0, 0, 0); this.state = 'play'; this.grounded = true; this.invulnT = 0.4; this.fly = null; this.landSquash = 1;
+        this.hideSJMarker(); this.human.visible = true; this.blob.visible = false;
+        splatFloor(this.pos.x, ly, this.pos.z, 1.9, this.team, 0.6, false);
+        Fx.burst(this.pos.x, ly + 0.3, this.pos.z, TEAM_HEX[this.team], 22, 6, 0.12); Fx.ring(this.pos.x, ly + 0.05, this.pos.z, TEAM_HEX[this.team], 3);
+        if (sndVol(this.pos) > 0.1) Sfx.land(sndVol(this.pos)); if (this.isPlayer) G.shake(0.35);
       }
       this.syncModel(dt); return;
     }
@@ -350,7 +368,8 @@ class Character {
       const s = this.sj; s.t += dt;
       I.mx = I.mz = 0; I.fire = false; I.swim = false; I.jump = false; I.bomb = false; I.special = false;
       if (s.target.alive && s.target.state === 'play') { s.tp.copy(s.target.pos); this.showSJMarker(s.tp); }
-      if (s.t > 0.6) { this.state = 'sjup'; this.sj.t = 0; this.vel.set(0, 34, 0); this.grounded = false; Fx.burst(this.pos.x, this.pos.y + 0.2, this.pos.z, TEAM_HEX[this.team], 16, 5, 0.1); this.syncModel(dt); return; }
+      this.pulseSJMarker(0);
+      if (s.t > 0.6) { const tg = s.target.alive && s.target.state === 'play' ? s.target : { pos: s.tp, alive: false }; this.beginFlight(tg); this.syncModel(dt); return; }
     }
     // ----- swim state
     const wantSwim = I.swim && !this.sp;
@@ -358,6 +377,18 @@ class Character {
     const fo = this.grounded ? ownerAt(this.pos.x, this.pos.y, this.pos.z) : -3;
     this.submerged = this.swim && ((this.grounded && fo === this.team) || this.climbing);
     this.inEnemy = this.grounded && fo === 1 - this.team && !this.climbing;
+    if (this.inEnemy && !this.inOwnBarrier()) {
+      const hs0 = Math.hypot(this.vel.x, this.vel.z), ec = TEAM_HEX[1 - this.team];
+      this.stickT = (this.stickT || 0) - dt;
+      if (this.stickT <= 0) {   // sticky enemy ink squelching up around the feet
+        this.stickT = hs0 > 0.8 ? 0.07 : 0.2;
+        for (let k = 0; k < 2; k++) Fx.add(this.pos.x + rand(-0.3, 0.3), this.pos.y + 0.05, this.pos.z + rand(-0.3, 0.3), rand(-0.6, 0.6), rand(1.2, 2.6), rand(-0.6, 0.6), rand(0.05, 0.1), rand(0.35, 0.6), ec, 16);
+      }
+      if (this.isPlayer) {
+        this.sqT = (this.sqT || 0) - dt; if (this.sqT <= 0) { this.sqT = hs0 > 0.8 ? 0.3 : 0.65; Sfx.squelch(); }
+        if (!G.flags.inkTip) { G.flags.inkTip = 1; HUD.tip('踩进敌方墨水：会减速、掉血，先把脚下涂掉'); }
+      }
+    }
     const W = this.weapon;
     const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging;
     // ----- movement
@@ -562,6 +593,13 @@ class Character {
   syncModel(dt) {
     const T = G.time;
     this.root.position.copy(this.pos);
+    if (this.state === 'sjfly') {       // flying ink blob, nose along the velocity
+      const v = this.vel, hs = Math.hypot(v.x, v.z);
+      this.human.visible = false; this.blob.visible = true; this.blobBody.visible = true; this.blobGhost.visible = false;
+      if (hs > 0.1) this.root.rotation.y = Math.atan2(v.x, v.z);
+      this.blobBody.rotation.x = -Math.atan2(v.y, Math.max(hs, 0.1)) * 0.8; this.blobBody.scale.set(0.8, 0.8, 1.45);
+      if (this.tag) this.tag.visible = this.team === PLAYER.team; this.updateInkSpots(); return;
+    }
     this.root.rotation.y = this.bodyYaw;
     const hs = Math.hypot(this.vel.x, this.vel.z);
     const run = clamp(hs / 6, 0, 1);
@@ -570,9 +608,10 @@ class Character {
     if (!this.swim) {
       const air = !this.grounded;
       const sw = Math.sin(this.phase);
-      this.legs[0].rotation.x = air ? -0.6 : sw * 0.9 * run;
-      this.legs[1].rotation.x = air ? 0.35 : -sw * 0.9 * run;
-      this.human.position.y = air ? 0 : Math.abs(Math.cos(this.phase)) * 0.06 * run;
+      const stride = this.inEnemy ? 0.5 : 0.9;
+      this.legs[0].rotation.x = air ? -0.6 : sw * stride * run;
+      this.legs[1].rotation.x = air ? 0.35 : -sw * stride * run;
+      this.human.position.y = air ? 0 : Math.abs(Math.cos(this.phase)) * 0.06 * run - (this.inEnemy ? 0.05 : 0);
       this.torso.rotation.x = 0.1 * run;
       const pitch = this.aimPitch, rel = angDiff(this.bodyYaw, this.aimYaw);
       this.torso.rotation.y = clamp(rel, -0.6, 0.6);
@@ -591,7 +630,8 @@ class Character {
       this.head.rotation.x = -pitch * 0.4;
       this.crest.scale.set(1, 1 + Math.sin(T * 9 + this.id) * 0.04 - this.vel.y * 0.012, 1);
       this.drips.forEach((d, i) => d.position.y = -0.1 - (i === 0 ? 0.02 : 0) + Math.sin(T * 7 + i) * 0.012 - Math.max(0, this.vel.y) * 0.004);
-      let k = 1 + this.swimPop * 0.25; if (this.sj) k = 1 + Math.min(this.sj.t, 0.6) * 0.35;
+      this.landSquash = Math.max(0, (this.landSquash || 0) - dt * 5);
+      let k = 1 + this.swimPop * 0.25 + this.landSquash * 0.3; if (this.sj) k = 1 + Math.min(this.sj.t, 0.6) * 0.35;
       this.human.scale.set(k, 2 - k, k);
       this.tankInk.scale.y = 0.32 * clamp(this.ink / 100, 0.02, 1); this.tankInk.position.y = -0.16 + this.tankInk.scale.y / 2;
       const fl = this.hurtFlash > 0 ? 0.8 : 0; this.mats.cloth.emissive.setRGB(fl, fl * 0.3, fl * 0.3); this.mats.skin.emissive.setRGB(fl, fl * 0.3, fl * 0.3);
