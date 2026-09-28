@@ -33,8 +33,9 @@ vm.runInContext(`(() => {
   const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) globalThis.__fails = (globalThis.__fails || 0) + 1; };
   // ---------- charger: store charge while swimming
   Profile.data.weapon = 'charger'; openLobby(); startMatch(); Input.locked = true;
+  const bf = CHARS.filter(c => c.team === 1).every(c => Math.cos(c.aimYaw) > 0.9) && CHARS.filter(c => c.team === 0).every(c => Math.cos(c.aimYaw) < -0.9);   // checked at spawn, before bots start turning
   while (G.state !== 'play') loop();
-  { const v = new THREE.Vector3(); loop(); camera.getWorldDirection(v); const bf = CHARS.filter(c => c.team === 1).every(c => Math.cos(c.aimYaw) > 0.9);
+  { const v = new THREE.Vector3(); loop(); camera.getWorldDirection(v);
     ok(v.z < -0.9 && Math.abs(Cam.yaw - Math.PI) < 0.05 && bf, 'match starts facing the battlefield (camera dir z=' + v.z.toFixed(2) + ', enemies face us too)'); }
   const P = PLAYER; G.bots.forEach(b => b.update = () => {});   // freeze bots
   CHARS.forEach(c => { if (c !== P) { c.pos.set(0, 0, -30 - c.id); c.intent.mx = c.intent.mz = 0; c.intent.fire = false; } });
