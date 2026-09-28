@@ -37,7 +37,8 @@ function defineMap() {
   SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }));
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
-const SPAWN = [{ x: 0, z: 42, y: 2.0, yaw: 0 }, { x: 0, z: -42, y: 2.0, yaw: Math.PI }];
+// yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
+const SPAWN = [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
 const DECK = [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
 function inRect(s, x, z) { return x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1; }
 function topAt(s, x, z) {
@@ -83,6 +84,7 @@ function resetPaint() {
 function buildWallAtlas() {
   const faces = [];
   for (const s of SOLIDS) {
+    if (s.t === 'ramp') { rampFaces(s, faces); continue; }
     if (s.t !== 'box') continue; s.faces = {};
     const dirs = s.bound ? [s.bound] : ['+x', '-x', '+z', '-z'];
     for (const d of dirs) {
@@ -94,6 +96,12 @@ function buildWallAtlas() {
       const f = { s, d, ax, plane: d === '+x' ? s.x1 : d === '-x' ? s.x0 : d === '+z' ? s.z1 : s.z0, a0: ax ? s.z0 : s.x0, a1: ax ? s.z1 : s.x1, h: s.h, nx: d === '+x' ? 1 : d === '-x' ? -1 : 0, nz: d === '+z' ? 1 : d === '-z' ? -1 : 0 };
       if (s.bound) { f.a0 = ax ? -ZH : -XH; f.a1 = ax ? ZH : XH; }
       s.faces[d] = f; faces.push(f);
+    }
+    // top of the perimeter walls: a flat paintable strip (u along the wall, v = distance from the inner edge)
+    if (s.bound) {
+      const ax = s.bound[1] === 'x', sgn = s.bound[0] === '-' ? 1 : -1;
+      const f = { s, cap: true, ax, inner: ax ? (sgn > 0 ? s.x0 : s.x1) : (sgn > 0 ? s.z0 : s.z1), sgn, a0: ax ? s.z0 : s.x0, a1: ax ? s.z1 : s.x1, h: ax ? s.x1 - s.x0 : s.z1 - s.z0, capY: s.h };
+      s.cap = f; faces.push(f);
     }
   }
   let PX = 10, ok = false, W = Paint.W, H = 1024, used = 0;
@@ -114,6 +122,22 @@ function buildWallAtlas() {
   Paint.wdata = new Uint8Array(W * H * 4); for (let k = 3; k < Paint.wdata.length; k += 4) Paint.wdata[k] = 255;
   Paint.wtex = new THREE.DataTexture(Paint.wdata, W, H, THREE.RGBAFormat);
   Paint.wtex.magFilter = THREE.LinearFilter; Paint.wtex.minFilter = THREE.LinearFilter; Paint.wtex.generateMipmaps = false; Paint.wtex.needsUpdate = true;
+}
+// ramps: the two triangular sides and the tall end are paintable walls too (skipped where another block covers them)
+function rampFaces(s, faces) {
+  s.faces = {}; const hi = Math.max(s.h0, s.h1), zAx = s.axis === 'z';
+  const highD = zAx ? (s.h1 > s.h0 ? '+z' : '-z') : (s.h1 > s.h0 ? '+x' : '-x');
+  for (const d of (zAx ? ['+x', '-x'] : ['+z', '-z']).concat([highD])) {
+    if (d === '+x' && s.x1 >= XH - 0.01) continue; if (d === '-x' && s.x0 <= -XH + 0.01) continue;
+    if (d === '+z' && s.z1 >= ZH - 0.01) continue; if (d === '-z' && s.z0 <= -ZH + 0.01) continue;
+    const ax = d[1] === 'x', nx = d === '+x' ? 1 : d === '-x' ? -1 : 0, nz = d === '+z' ? 1 : d === '-z' ? -1 : 0;
+    const plane = d === '+x' ? s.x1 : d === '-x' ? s.x0 : d === '+z' ? s.z1 : s.z0, a0 = ax ? s.z0 : s.x0, a1 = ax ? s.z1 : s.x1;
+    // covered by a neighbouring block?  (sample just outside the face, low down)
+    const am = (a0 + a1) / 2, ox = ax ? plane + nx * 0.05 : am, oz = ax ? am : plane + nz * 0.05;
+    if (d === highD && SOLIDS.some(o => o !== s && !o.bound && inRect(o, ox, oz) && topAt(o, ox, oz) >= hi - 0.05)) continue;
+    const f = { s, d, ax, plane, a0, a1, h: hi, nx, nz, ramp: true, side: d !== highD };
+    s.faces[d] = f; faces.push(f);
+  }
 }
 function makeShape(r) {
   const sh = { p1: rand(0, 6.28), p2: rand(0, 6.28), p3: rand(0, 6.28), sats: [] };
@@ -156,6 +180,12 @@ function splatFloor(x, y, z, r, team, tol = 0.7, wallsToo = true, dir = null) {
   Paint.dirty = true;
   if (wallsToo) {
     for (const f of Paint.faces) {
+      if (f.cap) {
+        if (Math.abs(y - f.capY) > 0.45) continue;
+        const along = f.ax ? z : x, across = ((f.ax ? x : z) - f.inner) * f.sgn;
+        if (across < -r || across > f.h + r || along < f.a0 - r || along > f.a1 + r) continue;
+        splatWall(f, along - f.a0, across, r, team, sh); continue;
+      }
       if (y > f.h + 0.3 || y < -0.1) continue;
       const dist = f.ax ? (x - f.plane) * f.nx : (z - f.plane) * f.nz;
       if (dist < -0.05 || dist > r) continue;
@@ -326,48 +356,49 @@ function buildArena() {
   // tops & ramps grouped by style
   const tops = {}, walls = {}, sides = [];
   const PX = Paint.PX, W = Paint.W, H = Paint.H;
+  // one wall quad (corners as [along, height]) with its slot in the paint atlas
+  const wallQuad = (style, f, corners) => {
+    const st = WALL_STYLE[style], su = st.su || f.h, pts = [], uv = [], puv = [], nuv = [];
+    for (const [a, y] of corners) {
+      pts.push(f.ax ? [f.plane, y, a] : [a, y, f.plane]);
+      uv.push([(a - f.a0) / su, st.vFull ? y / f.h : y / 3]);
+      puv.push([(f.rx + 1 + (a - f.a0) * PX) / W, (f.ry + 1 + y * PX) / H]);
+      nuv.push([a * 1.0 + f.plane * 0.37, y]);
+    }
+    (walls[style] = walls[style] || []).push(quadGeo(pts, uv, puv, nuv, [f.nx, 0, f.nz]));
+  };
   for (const s of SOLIDS) {
     if (s.bound) { /* inner faces + top cap */ }
     if (s.t === 'box') {
       const ts = TOP_STYLE[s.top] || TOP_STYLE.concrete, sc = ts.s;
       if (!s.bound) (tops[s.top] = tops[s.top] || []).push(quadGeo([[s.x0, s.h, s.z0], [s.x1, s.h, s.z0], [s.x1, s.h, s.z1], [s.x0, s.h, s.z1]], [[s.x0 / sc, s.z0 / sc], [s.x1 / sc, s.z0 / sc], [s.x1 / sc, s.z1 / sc], [s.x0 / sc, s.z1 / sc]], null, null, [0, 1, 0]));
       else {
-        sides.push(quadGeo([[s.x0, s.h, s.z0], [s.x1, s.h, s.z0], [s.x1, s.h, s.z1], [s.x0, s.h, s.z1]], [[0, 0], [1, 0], [1, 1], [0, 1]], null, null, [0, 1, 0]));
+        // paintable top strip
+        { const f = s.cap, cp = [], uv = [], puv = [], nuv = [];
+          for (const [a, c] of [[f.a0, 0], [f.a1, 0], [f.a1, f.h], [f.a0, f.h]]) {
+            const q = f.inner + c * f.sgn; cp.push(f.ax ? [q, s.h, a] : [a, s.h, q]);
+            uv.push([a / 3, c / 3]); puv.push([(f.rx + 1 + (a - f.a0) * PX) / W, (f.ry + 1 + c * PX) / H]); nuv.push([a + s.h * 0.37, c]);
+          }
+          (walls.stone = walls.stone || []).push(quadGeo(cp, uv, puv, nuv, [0, 1, 0])); }
         const ob = { '-x': ['+x', s.x1], '+x': ['-x', s.x0], '-z': ['+z', s.z1], '+z': ['-z', s.z0] }[s.bound];
         const L = s.bound[1] === 'x' ? [s.z0, s.z1] : [s.x0, s.x1], pl = ob[1], nn = ob[0];
         const pts = [[L[0], 0], [L[1], 0], [L[1], s.h], [L[0], s.h]].map(([a, y]) => s.bound[1] === 'x' ? [pl, y - 2.2, a] : [a, y - 2.2, pl]);
         pts[2][1] = pts[3][1] = s.h;
         sides.push(quadGeo(pts, [[0, 0], [L[1] - L[0], 0], [L[1] - L[0], 1], [0, 1]], null, null, nn[1] === 'x' ? [nn[0] === '+' ? 1 : -1, 0, 0] : [0, 0, nn[0] === '+' ? 1 : -1]));
       }
-      const st = WALL_STYLE[s.style];
-      for (const d in s.faces) {
-        const f = s.faces[d]; const L = f.a1 - f.a0, h = f.h;
-        const su = st.su || h, pts = [], uv = [], puv = [], nuv = [];
-        const corners = [[f.a0, 0], [f.a1, 0], [f.a1, h], [f.a0, h]];
-        for (const [a, y] of corners) {
-          pts.push(f.ax ? [f.plane, y, a] : [a, y, f.plane]);
-          uv.push([(a - f.a0) / su, st.vFull ? y / h : y / 3]);
-          puv.push([(f.rx + 1 + (a - f.a0) * PX) / W, (f.ry + 1 + y * PX) / H]);
-          nuv.push([a * 1.0 + f.plane * 0.37, y]);
-        }
-        (walls[s.style] = walls[s.style] || []).push(quadGeo(pts, uv, puv, nuv, [f.nx, 0, f.nz]));
-      }
+      for (const d in s.faces) { const f = s.faces[d]; wallQuad(s.style, f, [[f.a0, 0], [f.a1, 0], [f.a1, f.h], [f.a0, f.h]]); }
     } else {
       const sc = 2; const c = [[s.x0, s.z0], [s.x1, s.z0], [s.x1, s.z1], [s.x0, s.z1]];
       const p = c.map(([x, z]) => [x, topAt(s, x, z), z]);
       const n = new THREE.Vector3(...p[1]).sub(new THREE.Vector3(...p[0])).cross(new THREE.Vector3(...p[3]).sub(new THREE.Vector3(...p[0]))).normalize();
       if (n.y < 0) n.negate();
       (tops.grate = tops.grate || []).push(quadGeo(p, c.map(([x, z]) => [x / sc, z / sc]), null, null, [n.x, n.y, n.z]));
-      // sides (triangles as degenerate quads)
-      const lowEnd = s.h0 < s.h1 ? 0 : 1, hi = Math.max(s.h0, s.h1);
-      if (s.axis === 'z') {
-        const zl = lowEnd === 0 ? s.z0 : s.z1, zh = lowEnd === 0 ? s.z1 : s.z0;
-        [s.x0, s.x1].forEach((x, k) => sides.push(quadGeo([[x, 0, zl], [x, 0, zh], [x, hi, zh], [x, 0.001, zl]], [[0, 0], [1, 0], [1, 1], [0, 0]], null, null, [k ? 1 : -1, 0, 0])));
-        sides.push(quadGeo([[s.x0, 0, zh], [s.x1, 0, zh], [s.x1, hi, zh], [s.x0, hi, zh]], [[0, 0], [1, 0], [1, 1], [0, 1]], null, null, [0, 0, lowEnd === 0 ? 1 : -1]));
-      } else {
-        const xl = lowEnd === 0 ? s.x0 : s.x1, xh = lowEnd === 0 ? s.x1 : s.x0;
-        [s.z0, s.z1].forEach((z, k) => sides.push(quadGeo([[xl, 0, z], [xh, 0, z], [xh, hi, z], [xl, 0.001, z]], [[0, 0], [1, 0], [1, 1], [0, 0]], null, null, [0, 0, k ? 1 : -1])));
-        sides.push(quadGeo([[xh, 0, s.z0], [xh, 0, s.z1], [xh, hi, s.z1], [xh, hi, s.z0]], [[0, 0], [1, 0], [1, 1], [0, 1]], null, null, [lowEnd === 0 ? 1 : -1, 0, 0]));
+      // sides (triangles as degenerate quads) and the tall end: paintable walls
+      const hi = Math.max(s.h0, s.h1), lowAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z0 : s.z1) : (s.h0 < s.h1 ? s.x0 : s.x1), highAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z1 : s.z0) : (s.h0 < s.h1 ? s.x1 : s.x0);
+      for (const d in s.faces) {
+        const f = s.faces[d];
+        if (f.side) wallQuad('stone', f, [[lowAt, 0], [highAt, 0], [highAt, hi], [lowAt, 0.001]]);
+        else wallQuad('stone', f, [[f.a0, 0], [f.a1, 0], [f.a1, hi], [f.a0, hi]]);
       }
     }
   }

@@ -136,8 +136,8 @@ const Proj = {
   classify(s, prev, p) {
     if (s === true) return { type: 'floor', y: groundAt(p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
-    if (prev.y >= tPrev - 0.08) return { type: s.bound ? 'none' : 'floor', y: topAt(s, p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
-    if (s.t !== 'box' || !s.faces) return { type: 'none', y: p.y, n: new THREE.Vector3(0, 1, 0) };
+    if (prev.y >= tPrev - 0.08) return { type: 'floor', y: topAt(s, p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
+    if (!s.faces) return { type: 'none', y: p.y, n: new THREE.Vector3(0, 1, 0) };
     const ox = prev.x < s.x0 ? s.x0 - prev.x : prev.x > s.x1 ? prev.x - s.x1 : 0, oz = prev.z < s.z0 ? s.z0 - prev.z : prev.z > s.z1 ? prev.z - s.z1 : 0;
     const d = ox >= oz ? (prev.x < s.x0 ? '-x' : '+x') : (prev.z < s.z0 ? '-z' : '+z');
     const f = s.faces[d]; const n = new THREE.Vector3(d === '+x' ? 1 : d === '-x' ? -1 : 0, 0, d === '+z' ? 1 : d === '-z' ? -1 : 0);
@@ -148,7 +148,7 @@ const Proj = {
   splash(owner, p, n, dir, r, kind, face) {
     const team = owner.team, col = TEAM_HEX[team];
     const inside = Math.abs(p.x) < XH && Math.abs(p.z) < ZH;
-    if (kind === 'floor' && inside) {
+    if (kind === 'floor') {
       const hz = Math.hypot(dir.x, dir.z) || 1, graze = clamp(1 - Math.abs(dir.y), 0, 1);
       owner.addPaint(splatFloor(p.x, p.y, p.z, r * 0.62, team, 0.7, true, { ux: dir.x / hz, uz: dir.z / hz, k: 1 + graze * 0.9 }));
     } else if (kind === 'wall' && face) {
@@ -223,9 +223,10 @@ const Proj = {
     if (prev.y >= tPrev - 0.08) {
       const y = topAt(s, hx, hz);
       if (!s.bound && inside) floorHit(y);
+      else if (s.bound) splatFloor(hx, y, hz, r * 0.8, team, 0.7, true);     // top of the perimeter wall
       this.fx(hx, y + 0.05, hz, team, r, 0, 1, 0); return true;
     }
-    if (s.t === 'box' && s.faces) {
+    if (s.faces) {
       const ox = prev.x < s.x0 ? s.x0 - prev.x : prev.x > s.x1 ? prev.x - s.x1 : 0;
       const oz = prev.z < s.z0 ? s.z0 - prev.z : prev.z > s.z1 ? prev.z - s.z1 : 0;
       let d; if (ox >= oz) d = prev.x < s.x0 ? '-x' : '+x'; else d = prev.z < s.z0 ? '-z' : '+z';

@@ -35,7 +35,9 @@ const HUD = {
     const vig = clamp((100 - hp) / 100 * 0.9 + this.hurtV * 0.4, 0, 0.95);
     const ec = TEAM_HEX[1 - c.team];
     $('vignette').style.opacity = 0;
-    ScreenInk.update(dt, c.alive ? c.hp : 0, c.alive && c.inEnemy && !c.invuln());
+    ScreenInk.update(dt, c.alive ? c.hp : Cam.spec ? 100 : 0, c.alive && c.inEnemy && !c.invuln());     // watching a teammate: clear the ink off the screen
+    const st = $('specTag'), sn = !c.alive && Cam.spec ? '正在观看：' + Cam.spec.name : '';
+    if (st.textContent !== sn) { st.textContent = sn; st.classList.toggle('on', !!sn); }
     $('crosshair').classList.toggle('enemy', Cam.lock);
     const r2 = $('ret2');
     if (Cam.showLand && c.alive && c.state === 'play') {
@@ -60,6 +62,22 @@ const HUD = {
     }
     if (!c.alive) { $('deathCd').textContent = Math.max(1, Math.ceil(c.respawnT)); }
     this.mmT -= dt; if (this.mmT <= 0) { this.mmT = 0.2; this.drawMap(); }
+    // hold Tab: live scoreboard
+    const tabOn = !!Input.keys.Tab && (G.state === 'play' || G.state === 'intro') && !G.paused;
+    $('scoreTab').classList.toggle('show', tabOn);
+    if (tabOn) { this.tabT = (this.tabT || 0) - dt; if (this.tabT <= 0) { this.tabT = 0.25; this.renderTab(); } } else this.tabT = 0;
+  },
+  renderTab() {
+    const mine = PLAYER.team;
+    [0, 1].forEach(t => {
+      const list = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint), K = list.reduce((a, c) => a + c.kills, 0);
+      const row = c => {
+        const ready = c.special >= 100, sp = ready ? '<b>就绪</b>' : t === mine ? Math.floor(c.special) + '%' : '—';     // enemies: only "ready", like the top icons
+        return `<div class="st-r${c.isPlayer ? ' me' : ''}${c.alive ? '' : ' dead'}"><span class="w">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}</span><span class="n">${c.name}${c.isPlayer ? '<i>你</i>' : ''}${c.alive ? '' : '<em>' + Math.max(1, Math.ceil(c.respawnT)) + '</em>'}</span><span>${c.kills}</span><span>${c.assists}</span><span>${c.deaths}</span><span>${Math.round(c.paint)}p</span><span class="sp${ready ? ' on' : ''}">${sp}</span></div>`;
+      };
+      $(t ? 'stB' : 'stA').innerHTML = `<div class="st-th" style="--tc:${TEAM_HEX[t]}"><b>${t === mine ? '我方' : '对手'}</b><span>共击倒 ${K}</span></div>` + list.map(row).join('');
+    });
+    $('stTime').textContent = '剩余 ' + $('timer').textContent;
   },
   drawMap() {
     const D = this.img.data, B = this.base, O = Paint.owner, W = this.mw, H = this.mh, R = this.rgb;
@@ -319,7 +337,7 @@ function spawnTeams() {
 }
 function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProjectionMatrix(); }
 function startMatch() {
-  Sfx.init(); Sfx.stopMusic();
+  Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Proj.clear();
   spawnTeams(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
@@ -331,11 +349,11 @@ function startMatch() {
   $('hint').style.display = 'block';
   lockPointer();
 }
-function pauseGame() { if (G.state !== 'play' && G.state !== 'intro') return; G.paused = true; show('pause', true); Input.keys = {}; }
-function resumeGame() { G.paused = false; show('pause', false); clock.getDelta(); lockPointer(); }
+function pauseGame() { if (G.state !== 'play' && G.state !== 'intro') return; G.paused = true; show('pause', true); Input.keys = {}; Sfx.duck(true); }
+function resumeGame() { G.paused = false; show('pause', false); clock.getDelta(); lockPointer(); Sfx.duck(false); }
 function quitToTitle() {
   if (G.mapOpen) { G.mapOpen = false; $('minimap').classList.remove('big'); $('mapHint').classList.remove('show'); }
-  G.paused = false; show('pause', false); show('hud', false); show('results', false);
+  G.paused = false; show('pause', false); show('hud', false); show('results', false); Sfx.duck(false);
   if (document.pointerLockElement) document.exitPointerLock();
   gotoTitle();
 }
@@ -345,31 +363,97 @@ function endMatch() {
   CHARS.forEach(c => { c.intent.fire = false; c.intent.swim = false; c.intent.mx = c.intent.mz = 0; });
   if (Proj.pv) Proj.preview(null); Cam.bombAim = false; if (G.mapOpen) toggleMap(false);
 }
+// medals, like the original's awards: gold = best in the match, silver = best on your team
+const MEDALS = [
+  { t: '涂地最多', v: c => c.paint, ok: c => c.paint > 0 },
+  { t: '击倒最多', v: c => c.kills, ok: c => c.kills > 0 },
+  { t: '助攻最多', v: c => c.assists, ok: c => c.assists > 0 },
+  { t: '必杀技最多', v: c => c.specials, ok: c => c.specials > 0 },
+  { t: '最少阵亡', v: c => -c.deaths, ok: c => c.deaths <= 2 },
+  { t: '超级跳最多', v: c => c.sjumps, ok: c => c.sjumps > 0 }
+];
+// the other side of the awards: a cheeky "roast" badge when things went badly
+const ROASTS = [
+  { t: '送分快递', ok: c => c.deaths >= 4 && c.deaths >= Math.max(...CHARS.map(o => o.deaths)), say: ['对面的击倒数，有一半是你送的快递。', '倒下的次数比开枪的次数还让人印象深刻。', '复活点都快认识你了。'] },
+  { t: '和平主义者', ok: c => c.kills === 0 && c.assists === 0, say: ['一个人都没打倒，你是来劝架的吗？', '对面应该给你颁一个「最友善对手」奖。', '枪是拿来涂地的没错，但偶尔也可以对准人。'] },
+  { t: '路过的游客', ok: c => c.paint <= Math.min(...CHARS.map(o => o.paint)) + 0.5, say: ['这片广场好像跟你没什么关系。', '你涂的地，裁判拿放大镜才找到。', '来都来了，好歹多涂两下再走嘛。'] },
+  { t: '必杀收藏家', ok: c => c.specials === 0 && c.special >= 100, say: ['必杀技攒满了一局，舍不得按 Q？', 'Q 键：我一直在等你。'] }
+];
+const PRAISE = {
+  '涂地最多': ['整片广场都是你的颜色，裁判都看呆了！', '你一个人涂的地，够对面四个人加起来了。'],
+  '击倒最多': ['对面听到你的脚步声就想跑。', '全场最危险的人，就是你。'],
+  '助攻最多': ['没有你，队友的击倒至少少一半。', '最默契的队友，说的就是你。'],
+  '必杀技最多': ['Q 键都快被你按坏了！', '必杀技一个接一个，对面根本喘不过气。'],
+  '最少阵亡': ['全场最难打倒的人，就是你。', '稳！对面想打倒你都找不到机会。'],
+  '超级跳最多': ['哪里需要你，你就出现在哪里。', '空中飞人，全场到处都是你的身影。']
+};
+function roastsFor(c) { return ROASTS.filter(R => R.ok(c)).slice(0, 2); }
+// one line for the player: praise if you earned a medal, a cheeky roast if the match went badly
+function verdictLine(c) {
+  const md = medalsFor(c), rs = roastsFor(c), g = md.find(m => m.gold);
+  if (g) return { good: true, text: pick(PRAISE[g.t]) };
+  if (rs.length) return { good: false, text: pick(rs[0].say) };
+  if (md.length) return { good: true, text: pick(PRAISE[md[0].t]) };
+  return { good: true, text: '中规中矩，下一局争取拿块奖牌！' };
+}
+function medalsFor(c) {
+  const out = [];
+  for (const M of MEDALS) {
+    if (!M.ok(c)) continue; const v = M.v(c);
+    if (v >= Math.max(...CHARS.map(M.v))) out.push({ t: M.t, gold: true });
+    else if (v >= Math.max(...CHARS.filter(o => o.team === c.team).map(M.v))) out.push({ t: M.t, gold: false });
+  }
+  return out.sort((a, b) => b.gold - a.gold).slice(0, 3);
+}
+// results, following the original's flow: top-down judging → meter tug-of-war → WIN!/LOSE… → scoreboard (winners first) → your medals
 function showResults() {
   G.state = 'results'; show('hud', false); show('results', true); resetFov();
   if (document.pointerLockElement) document.exitPointerLock();
-  const p0 = Paint.teamCells[0] / Paint.total * 100, p1 = Paint.teamCells[1] / Paint.total * 100;
-  const A = $('barA'), B = $('barB'), V = $('verdict'), bd = $('board'), rb = $('resBtns');
-  A.style.transition = B.style.transition = 'none'; A.style.width = B.style.width = '0%'; A.textContent = B.textContent = '';
-  A.style.background = TEAM_HEX[0]; B.style.background = TEAM_HEX[1];
-  V.className = ''; V.style.opacity = 0; bd.classList.remove('show'); rb.classList.remove('show');
+  const rid = G.rid = (G.rid || 0) + 1, later = (ms, fn) => setTimeout(() => { if (G.rid === rid && G.state === 'results') fn(); }, ms);
+  const p0 = Paint.teamCells[0] / Paint.total * 100, p1 = Paint.teamCells[1] / Paint.total * 100, win = p0 >= p1;
+  const R = $('results'), A = $('barA'), B = $('barB'), V = $('verdict'), bd = $('board'), aw = $('awards'), rb = $('resBtns');
+  R.className = 'screen show judging';
+  A.style.transition = B.style.transition = 'none'; A.style.width = B.style.width = '0%'; A.style.background = TEAM_HEX[0]; B.style.background = TEAM_HEX[1];
+  $('pctA').textContent = $('pctB').textContent = ''; V.className = ''; V.innerHTML = ''; bd.innerHTML = ''; aw.innerHTML = '';
+  bd.classList.remove('show'); aw.classList.remove('show'); rb.classList.remove('show');
   $('judge').textContent = '裁判判定中…';
-  const sum = Math.max(p0 + p1, 1);
-  let beeps = 0; const bi = setInterval(() => { Sfx.beep(false); if (++beeps > 8) clearInterval(bi); }, 220);
-  setTimeout(() => { A.style.transition = B.style.transition = ''; A.style.width = (p0 / sum * 100) + '%'; B.style.width = (p1 / sum * 100) + '%'; }, 400);
-  setTimeout(() => {
-    A.textContent = p0.toFixed(1) + '%'; B.textContent = p1.toFixed(1) + '%';
-    const win = p0 >= p1; V.textContent = win ? '胜利！' : '失败…'; V.style.color = win ? TEAM_HEX[0] : '#9aa0b5'; V.style.opacity = 1; V.classList.add('show');
+  const sum = Math.max(p0 + p1, 1e-6), fa = p0 / sum * 100, fb = 100 - fa;
+  // tug of war: both colours creep in from the ends, see-saw in the middle, then snap to the real split
+  const steps = [[500, 20, 20], [1150, 36, 33], [1650, 40, 44], [2150, 46, 42], [2750, fa, fb]];
+  steps.forEach(([t, a, b], i) => later(t, () => {
+    const last = i === steps.length - 1;
+    A.style.transition = B.style.transition = last ? 'width .8s cubic-bezier(.2,.9,.3,1.15)' : 'width .45s ease-in-out';
+    A.style.width = a + '%'; B.style.width = b + '%'; Sfx.beep(last);
+  }));
+  later(3450, () => { $('pctA').textContent = p0.toFixed(1) + '%'; $('pctB').textContent = p1.toFixed(1) + '%'; R.classList.add('revealed', win ? 'winA' : 'winB'); });
+  later(3900, () => {
+    const col = win ? TEAM_HEX[0] : '#8f94a8';
+    V.style.setProperty('--vc', col);
+    V.innerHTML = `<svg class="vsplash" viewBox="0 0 200 200"><path d="${blobPath(win ? 2.2 : 5.3, 70)}" fill="${col}" stroke="#111" stroke-width="4"/></svg><span class="vt">${win ? 'WIN!' : 'LOSE…'}</span>`;
+    V.classList.add('show', win ? 'win' : 'lose');
     $('judge').textContent = win ? '你的队伍赢下了这片广场！' : '对手的颜色更胜一筹……';
-    Sfx.fanfare(win); flash(0.4);
-  }, 2900);
-  setTimeout(() => {
-    bd.innerHTML = [0, 1].map(t => {
-      const rows = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint).map(c => `<div class="r${c.isPlayer ? ' me' : ''}"><span>${weaponIcon(c.weapon.id, '#fff', 30, TEAM_HEX[t])}${c.name}</span><span>${Math.round(c.paint)}p</span><span>${c.kills}</span><span>${c.deaths}</span></div>`).join('');
-      return `<div class="tbl" style="border-color:${TEAM_HEX[t]}"><h4 style="color:${TEAM_HEX[t]}">${t === 0 ? '我方' : '对手'} · ${(t ? p1 : p0).toFixed(1)}%</h4><div class="r h"><span>名字</span><span>涂地</span><span>击倒</span><span>阵亡</span></div>${rows}</div>`;
-    }).join('');
-    bd.classList.add('show'); rb.classList.add('show');
-  }, 4200);
+    Sfx.fanfare(win); flash(win ? 0.45 : 0.2);
+  });
+  later(5800, () => {
+    R.classList.add('boarded');
+    const team = t => {
+      const won = (t === 0) === win, rows = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint).map((c, i) => {
+        const md = medalsFor(c).map(m => `<b class="${m.gold ? 'g' : 's'}" title="${m.t}（${m.gold ? '全场第一' : '队内第一'}）"></b>`).join('') + roastsFor(c).map(r => `<b class="x" title="${r.t}"></b>`).join('');
+        return `<div class="r${c.isPlayer ? ' me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}${c.name}${c.isPlayer ? '<i>你</i>' : ''}</span><span>${Math.round(c.paint)}p</span><span>${c.kills}<small>${c.assists ? ' +' + c.assists : ''}</small></span><span>${c.deaths}</span><span>${c.specials}</span><span class="md">${md}</span></div>`;
+      }).join('');
+      return `<div class="tbl ${won ? 'won' : 'lost'}" style="--tc:${TEAM_HEX[t]}"><div class="th"><b>${won ? 'WIN!' : 'LOSE…'}</b><span>${t === 0 ? '我方' : '对手'}</span><em>${(t ? p1 : p0).toFixed(1)}%</em></div><div class="r h"><span></span><span>名字</span><span>涂地</span><span>击倒 +助攻</span><span>阵亡</span><span>必杀</span><span>奖牌</span></div>${rows}</div>`;
+    };
+    bd.innerHTML = win ? team(0) + team(1) : team(1) + team(0);
+    bd.classList.add('show');
+  });
+  later(6600, () => {
+    const me = medalsFor(PLAYER), rs = roastsFor(PLAYER), line = verdictLine(PLAYER);
+    const chips = me.map(m => `<div class="mdl ${m.gold ? 'g' : 's'}"><b></b><div><span>${m.t}</span><small>${m.gold ? '全场第一' : '队内第一'}</small></div></div>`).concat(rs.map(r => `<div class="mdl x"><b></b><div><span>${r.t}</span><small>吐槽奖</small></div></div>`));
+    aw.innerHTML = `<div class="awrow"><h4>你的表现</h4>${chips.length ? chips.join('') : '<div class="mdl none"><span>这局没有拿到奖牌</span></div>'}</div><div class="quip ${line.good ? 'good' : 'bad'}">${line.text}</div>`;
+    aw.querySelectorAll('.mdl').forEach((el, i) => el.style.animationDelay = i * 0.12 + 's');
+    aw.classList.add('show'); rb.classList.add('show');
+    if (me.some(m => m.gold)) Sfx.chargeFull && Sfx.chargeFull();
+  });
 }
 function resetToAttract() {
   if (G.state === 'title') return;
@@ -454,7 +538,7 @@ function loop() {
     else if (G.state === 'intro') updateIntro(dt);
     else if (G.state === 'play') updatePlay(dt);
     else if (G.state === 'end') { G.endT += dt; if (G.endT > 2.6) showResults(); }
-    else if (G.state === 'results') { const a = t * 0.05; camera.position.set(Math.sin(a) * 18, 78, Math.cos(a) * 18 + 8); camera.lookAt(0, 0, 0); }
+    else if (G.state === 'results') { camera.position.set(0, 84, 10 + Math.sin(t * 0.2) * 0.6); camera.lookAt(0, 0, 0); }   // judges look at the map from straight above
     if (G.state === 'intro' || G.state === 'play' || G.state === 'end') {
       for (const c of CHARS) c.step(dt);
       // separation

@@ -33,7 +33,10 @@ vm.runInContext(`(() => {
   const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) globalThis.__fails = (globalThis.__fails || 0) + 1; };
   // ---------- charger: store charge while swimming
   Profile.data.weapon = 'charger'; openLobby(); startMatch(); Input.locked = true;
+  const bf = CHARS.filter(c => c.team === 1).every(c => Math.cos(c.aimYaw) > 0.9) && CHARS.filter(c => c.team === 0).every(c => Math.cos(c.aimYaw) < -0.9);   // checked at spawn, before bots start turning
   while (G.state !== 'play') loop();
+  { const v = new THREE.Vector3(); loop(); camera.getWorldDirection(v);
+    ok(v.z < -0.9 && Math.abs(Cam.yaw - Math.PI) < 0.05 && bf, 'match starts facing the battlefield (camera dir z=' + v.z.toFixed(2) + ', enemies face us too)'); }
   const P = PLAYER; G.bots.forEach(b => b.update = () => {});   // freeze bots
   CHARS.forEach(c => { if (c !== P) { c.pos.set(0, 0, -30 - c.id); c.intent.mx = c.intent.mz = 0; c.intent.fire = false; } });
   P.pos.set(0, 0, 20); P.vel.set(0, 0, 0); P.ink = 100;
@@ -171,5 +174,57 @@ vm.runInContext(`(() => {
   }
   // ---------- swim speed = 2x run
   ok(Math.abs(12.8 / 6.4 - 2) < 1e-9 && WEAPONS.charger.moveCharge === 1.35, 'speed ratios: swim 2.0x run, charging 21% of run');
+  // ================= v0.6 turf polish =================
+  {
+    // every surface takes ink: ramp sides and the top of the perimeter walls
+    const inkIn = f => { let n = 0; for (let j = 0; j < f.rh - 2; j++) for (let i = 0; i < f.rw - 2; i++) { const o = ((f.ry + 1 + j) * Paint.W + f.rx + 1 + i) * 4; if (Paint.wdata[o] > 128 || Paint.wdata[o + 1] > 128) n++; } return n; };
+    resetPaint();
+    const rampsOk = SOLIDS.filter(s => s.t === 'ramp').every(s => Object.values(s.faces).filter(f => f.side).length === 2);
+    const rp = SOLIDS.find(s => s.t === 'ramp' && s.axis === 'z' && s.faces['+x']), rf = rp.faces['+x'], zm = (rp.z0 + rp.z1) / 2, own = { team: 0, addPaint() { } };
+    Proj.impact(rp, new THREE.Vector3(rp.x1 + 0.3, 0.3, zm), new THREE.Vector3(rp.x1 - 0.05, 0.3, zm), 0, own, 1.0); for (let i = 0; i < 5; i++) loop();
+    const cap = Paint.faces.find(f => f.cap), cx = cap.ax ? cap.inner + 0.7 * cap.sgn : 3, cz = cap.ax ? 3 : cap.inner + 0.7 * cap.sgn;
+    Proj.impact(cap.s, new THREE.Vector3(cx, cap.capY + 0.3, cz), new THREE.Vector3(cx, cap.capY - 0.05, cz), 0, own, 1.0);
+    const bm = { team: 1, owner: { team: 1, addPaint() { } } };
+    splatFloor(rp.x1 + 0.5, 0, zm + 1, 2.5, 1, 1.6);
+    ok(rampsOk && inkIn(rf) > 50 && inkIn(cap) > 50 && Paint.faces.filter(f => f.cap).length === 4, 'ramp sides and perimeter wall tops take ink (ramp side ' + inkIn(rf) + ' px, wall top ' + inkIn(cap) + ' px)');
+    // assists / specials / super jumps are tracked
+    const vic = CHARS.find(c => c.team === 1), k1 = CHARS.find(c => c.team === 0 && c !== P), k2 = P;
+    vic.state = 'play'; vic.alive = true; vic.hp = 100; vic.invulnT = 0; vic.pos.set(10, 0, -20);
+    const a0 = k2.assists, kk = k1.kills; vic.damage(40, k2, 'rifle'); vic.damage(80, k1, 'rifle');
+    ok(k1.kills === kk + 1 && k2.assists === a0 + 1, 'kills and assists are counted (assist = hurt the victim within 4 s)');
+    const sp0 = P.specials; P.special = 100; P.startSpecial(); ok(P.specials === sp0 + 1, 'special uses are counted');
+    // medals: gold for best in the match, silver for best on the team
+    CHARS.forEach(c => { c.paint = 10; c.kills = 0; c.assists = 0; c.specials = 0; c.sjumps = 0; c.deaths = 3; });
+    P.paint = 999; const tm = CHARS.find(c => c.team === 0 && c !== P); tm.kills = 3; const en = CHARS.find(c => c.team === 1); en.kills = 5;
+    const mp = medalsFor(P), mt = medalsFor(tm), me = medalsFor(en);
+    ok(mp.some(m => m.gold && m.t === '涂地最多') && mt.some(m => !m.gold && m.t === '击倒最多') && me.some(m => m.gold && m.t === '击倒最多'), 'medals: gold = best in match, silver = best on team');
+    // Tab scoreboard
+    G.state = 'play'; Input.keys.Tab = true; HUD.tabT = 0; HUD.update(0.03);
+    const shown = $('scoreTab').classList.contains('show'), html = $('stA').innerHTML + $('stB').innerHTML;
+    Input.keys.Tab = false; HUD.update(0.03);
+    ok(shown && !$('scoreTab').classList.contains('show') && html.includes(P.name) && html.includes('共击倒'), 'holding Tab shows the live scoreboard, releasing hides it');
+    // praise when you did well, a cheeky roast when you didn't
+    CHARS.forEach(c => { c.paint = 50; c.kills = 1; c.assists = 0; c.specials = 1; c.sjumps = 0; c.deaths = 2; c.special = 0; });
+    const bad = CHARS.find(c => c.team === 0 && c !== P); bad.paint = 1; bad.kills = 0; bad.deaths = 9; bad.special = 100; bad.specials = 0;
+    const rb = roastsFor(bad).map(r => r.t), lb = verdictLine(bad);
+    P.paint = 999; const lp = verdictLine(P);
+    ok(rb.length >= 2 && !lb.good && lp.good && PRAISE['涂地最多'].includes(lp.text), 'awards: praise for the best, roast badges + a cheeky line for a bad game (' + rb.join('/') + ': ' + lb.text + ')');
+    // pause ducks the sound, resume brings it back
+    Sfx.duck(true); const d1 = Sfx.ducked; Sfx.duck(false);
+    ok(d1 && !Sfx.ducked, 'pausing ducks and muffles the sound, resuming restores it');
+    // knocked out: killer cam first, then watch a teammate, back to yourself on respawn
+    quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby('turf'); startMatch(); while (G.state !== 'play') loop();
+    const Q = PLAYER, foe = CHARS.find(c => c.team === 1); G.bots.forEach(b => b.update = () => {});
+    Q.invulnT = 0; Q.pos.set(0, 0, 20); for (let i = 0; i < 3; i++) loop();
+    Q.hp = 10; Q.damage(50, foe, 'rifle'); for (let i = 0; i < 20; i++) loop();
+    const early = Cam.spec; for (let i = 0; i < 60; i++) loop();
+    const mate = Cam.spec, dCam = mate ? camera.position.distanceTo(mate.pos) : 99, tag = $('specTag').textContent;
+    const pick = CHARS.find(c => c.team === 0 && c !== Q && c !== mate); HUD.mapAllies = [{ c: pick }]; HUD.pickAlly(0); for (let i = 0; i < 5; i++) loop();
+    const switched = Cam.spec === pick;
+    while (!Q.alive || Q.state !== 'play') loop(); loop();
+    const v2 = new THREE.Vector3(); camera.getWorldDirection(v2);
+    ok(!early && mate && mate.team === 0 && dCam < 9 && tag.includes(mate.name) && switched && !Cam.spec, 'knocked out: sees the attacker, then watches a teammate (' + (mate && mate.name) + ', cam ' + dCam.toFixed(1) + ' m), follows your super-jump pick, back to you on respawn');
+    ok(Q.state === 'play' && (Q.sj || Q.fly || v2.z < -0.5 || Q.pos.distanceTo(pick.pos) < 3), 'respawn: facing the battlefield or flying to the picked teammate');
+  }
 })()`, g);
 if (g.__fails) { console.log(g.__fails + ' FAILED'); process.exitCode = 1; } else console.log('ALL FEATURE TESTS PASSED');

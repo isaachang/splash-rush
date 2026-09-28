@@ -26,20 +26,27 @@ const DIFF = [
 
 /* --------------------------------------------------------------- audio */
 const Sfx = (() => {
-  let ctx = null, master, sfxG, musG, comp, noiseBuf;
+  let ctx = null, master, sfxG, musG, comp, noiseBuf, duckF, duckOn = false;
   const M = { on: false, next: 0, step: 0, bpm: 124, mode: 'title', timer: null };
   function init() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; return; }
     comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(ctx.destination);
-    master = ctx.createGain(); master.connect(comp);
+    duckF = ctx.createBiquadFilter(); duckF.type = 'lowpass'; duckF.frequency.value = 20000; duckF.Q.value = 0.7; duckF.connect(comp);
+    master = ctx.createGain(); master.connect(duckF);
     sfxG = ctx.createGain(); sfxG.connect(master);
     musG = ctx.createGain(); musG.connect(master);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     setVol();
   }
-  function setVol() { if (!ctx) return; master.gain.value = SETTINGS.vol; musG.gain.value = SETTINGS.mus * 0.5; }
+  function setVol() { if (!ctx) return; const k = duckOn ? 0.3 : 1; master.gain.cancelScheduledValues(ctx.currentTime); master.gain.value = SETTINGS.vol * k; musG.gain.value = SETTINGS.mus * 0.5; }
+  // pause: everything slowly gets quieter and muffled (as if heard from behind a door); resume brings it back
+  function duck(on) {
+    duckOn = on; if (!ctx) return; const t = ctx.currentTime, g = master.gain, f = duckF.frequency;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(SETTINGS.vol * (on ? 0.3 : 1), t + (on ? 0.7 : 0.35));
+    f.cancelScheduledValues(t); f.setValueAtTime(f.value, t); f.exponentialRampToValueAtTime(on ? 700 : 20000, t + (on ? 0.7 : 0.35));
+  }
   function env(g, t, a, peak, dcy) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dcy); }
   // stereo panning helper: returns a node to connect sounds into
   function panNode(pan) { if (!ctx || !pan || !ctx.createStereoPanner) return sfxG; const p = ctx.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); p.connect(sfxG); return p; }
@@ -90,7 +97,7 @@ const Sfx = (() => {
   }
   function stopMusic() { if (M.timer) clearInterval(M.timer); M.on = false; }
   return {
-    init, setVol, music, stopMusic,
+    init, setVol, music, stopMusic, duck, get ducked() { return duckOn; },
     // pressurised "pshh" + low thump, 3 variants with random pitch, panned by direction
     shoot(v, pan = 0) {
       if (!ctx) return; const d = panNode(pan), k = rand(0.92, 1.08), var_ = Math.floor(Math.random() * 3);

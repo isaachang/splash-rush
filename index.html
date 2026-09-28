@@ -128,24 +128,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #pause.show{display:flex}
 #pause h2{font-size:64px;font-weight:900;font-style:italic;-webkit-text-stroke:4px #111;paint-order:stroke fill;text-shadow:0 6px 0 #111;margin-bottom:10px}
 
-/* ---------- results ---------- */
-#results{background:rgba(8,6,22,.55);backdrop-filter:blur(3px)}
-#results .judge{position:absolute;top:8vh;left:0;right:0;text-align:center;font-size:30px;font-weight:900;letter-spacing:6px;text-shadow:0 3px 0 #000}
-#bars{position:absolute;left:50%;top:18vh;transform:translateX(-50%);width:min(900px,86vw);height:120px;display:flex;border:5px solid #111;border-radius:60px;overflow:hidden;background:#333;box-shadow:0 10px 0 #111}
-#bars div{height:100%;width:0;transition:width 2.2s cubic-bezier(.3,.1,.2,1);display:flex;align-items:center;font-size:44px;font-weight:900;-webkit-text-stroke:3px #111;paint-order:stroke fill;overflow:hidden;white-space:nowrap}
-#barA{justify-content:flex-start;padding-left:28px}
-#barB{justify-content:flex-end;padding-right:28px;margin-left:auto}
-#verdict{position:absolute;top:36vh;left:0;right:0;text-align:center;font-size:clamp(70px,12vw,170px);font-weight:900;font-style:italic;-webkit-text-stroke:8px #111;paint-order:stroke fill;text-shadow:0 10px 0 #111;opacity:0}
-#verdict.show{animation:pop .6s cubic-bezier(.2,1.8,.4,1) both}
-#board{position:absolute;left:50%;bottom:14vh;transform:translateX(-50%);display:flex;gap:30px;opacity:0;transition:opacity .6s}
-#board.show{opacity:1}
-.tbl{background:rgba(15,13,32,.88);border:4px solid #111;border-radius:22px;padding:14px 18px;min-width:330px;box-shadow:0 8px 0 #111}
-.tbl h4{font-size:18px;margin-bottom:8px;letter-spacing:3px}
-.tbl .r{display:grid;grid-template-columns:1fr 64px 44px 44px;gap:6px;padding:5px 0;font-weight:700;font-size:15px;border-top:2px solid rgba(255,255,255,.08)}
-.tbl .r.h{opacity:.6;font-size:12px;border:none}
-.tbl .r.me{color:#ffe45c}
-#resBtns{position:absolute;left:0;right:0;bottom:4vh;display:flex;justify-content:center;gap:20px;opacity:0;pointer-events:none;transition:opacity .5s}
-#resBtns.show{opacity:1;pointer-events:auto}
+/* ---------- results: see bottom of file ---------- */
 
 /* ---------- loadout card (home) ---------- */
 .loadcard{cursor:pointer;display:flex;align-items:center;gap:14px;background:#0e0d20;border:3px solid #111;border-radius:18px;padding:12px 14px;box-shadow:0 5px 0 #111;transition:transform .12s}
@@ -192,7 +175,6 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #chargeRing.on{display:block}
 #chargeRing.full #chargeArc{stroke:#ffe45c;filter:drop-shadow(0 0 4px #ffe45c)}
 #weapTag{position:absolute;right:30px;bottom:26px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.5);border:3px solid #111;border-radius:30px;padding:6px 16px 6px 10px;font-weight:900;font-size:15px}
-.tbl .r span:first-child{display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap}
 .kf svg{margin:0 4px}
 
 #chargeRing.low #chargeArc{stroke:rgba(255,255,255,.45)}
@@ -246,6 +228,109 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .logold.show{display:block}
 .logold .logv{opacity:.85}
 .pausever{margin-top:6px;opacity:.55;font-size:13px;font-weight:700;letter-spacing:1px}
+
+/* ---------- results (original-style flow) ---------- */
+#results{background:linear-gradient(180deg,rgba(8,6,22,.45),rgba(8,6,22,.1) 35%,rgba(8,6,22,.1) 65%,rgba(8,6,22,.5));transition:background .6s}
+#results.boarded{background:rgba(8,6,22,.74);backdrop-filter:blur(4px)}
+#rsJudge{position:absolute;top:5vh;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:10px;transition:opacity .4s}
+#refFlags{display:flex;gap:70px;height:90px}
+.flag{width:60px;height:90px;transform-origin:50% 100%;animation:flagwave .45s ease-in-out infinite alternate;filter:drop-shadow(0 5px 0 rgba(0,0,0,.5));transition:transform .55s cubic-bezier(.2,1.6,.4,1),opacity .4s}
+.flag.fb{animation-delay:.22s}
+@keyframes flagwave{from{transform:rotate(-9deg)}to{transform:rotate(9deg)}}
+#results.revealed .flag{animation:none}
+#results.winA .fa,#results.winB .fb{transform:translateY(-22px) scale(1.3)}
+#results.winA .fb,#results.winB .fa{transform:translateY(20px) scale(.75) rotate(-18deg);opacity:.45}
+.judge{font-size:28px;font-weight:900;letter-spacing:6px;text-shadow:0 3px 0 #000}
+#rsMeter{position:absolute;left:50%;bottom:15vh;transform:translateX(-50%);width:min(920px,86vw);transition:bottom .6s,width .6s}
+#bars{position:relative;height:100px;display:flex;border:5px solid #111;border-radius:60px;overflow:hidden;background:#3a3d4a;box-shadow:0 10px 0 #111,inset 0 4px 0 rgba(255,255,255,.08);transition:height .6s}
+#bars div{height:100%;width:0}
+#barB{margin-left:auto}
+#pctA,#pctB{position:absolute;top:0;bottom:0;display:flex;align-items:center;line-height:1;z-index:1;font-size:46px;font-weight:900;font-style:italic;-webkit-text-stroke:3px #111;paint-order:stroke fill;text-shadow:0 4px 0 #111;opacity:0;transition:opacity .3s,font-size .6s}
+#pctA{left:30px}#pctB{right:30px}
+#results.revealed #pctA,#results.revealed #pctB{opacity:1;animation:pop .4s both}
+#verdict{position:absolute;top:30vh;left:0;right:0;height:0;text-align:center;opacity:0;pointer-events:none;transition:top .6s,transform .6s;transform-origin:50% 0}
+#verdict .vt{position:relative;display:inline-block;font-size:clamp(90px,14vw,200px);font-weight:900;font-style:italic;color:#fff;-webkit-text-stroke:9px #111;paint-order:stroke fill;text-shadow:0 12px 0 #111;line-height:1}
+#verdict.lose .vt{color:#d4d7e2}
+#verdict .vsplash{position:absolute;left:50%;top:clamp(45px,7vw,100px);width:clamp(300px,42vw,620px);height:clamp(300px,42vw,620px);transform:translate(-50%,-50%) rotate(-8deg);filter:drop-shadow(0 10px 0 rgba(0,0,0,.45))}
+#verdict.show{opacity:1;animation:pop .6s cubic-bezier(.2,1.8,.4,1) both}
+#results.boarded #rsJudge{opacity:0}
+#results.boarded #verdict{animation:none;top:1.5vh;transform:scale(.36)}
+#results.boarded #rsMeter{bottom:calc(100% - 14vh - 40px);width:min(640px,70vw)}
+#results.boarded #bars{height:40px;border-width:4px;box-shadow:0 5px 0 #111}
+#results.boarded #pctA,#results.boarded #pctB{font-size:22px;-webkit-text-stroke:2px #111;animation:none}
+#board{position:absolute;left:50%;top:21vh;transform:translate(-50%,24px);width:min(1000px,94vw);display:flex;flex-direction:column;gap:12px;opacity:0;transition:opacity .5s,transform .5s}
+#board.show{opacity:1;transform:translate(-50%,0)}
+.tbl{background:rgba(15,13,32,.93);border:4px solid #111;border-left:12px solid var(--tc);border-radius:22px;padding:8px 16px 10px;box-shadow:0 8px 0 #111}
+.tbl .th{display:flex;align-items:center;gap:12px;margin-bottom:2px}
+.tbl .th b{background:var(--tc);color:#fff;-webkit-text-stroke:1.5px #111;paint-order:stroke fill;font-size:22px;font-style:italic;font-weight:900;padding:1px 14px;border-radius:14px;border:3px solid #111}
+.tbl.lost .th b{background:#5a5d6b}
+.tbl .th span{font-weight:900;letter-spacing:3px}
+.tbl .th em{margin-left:auto;font-family:"Arial Black","Arial Rounded MT Bold",sans-serif;font-style:italic;font-weight:900;font-size:20px;color:var(--tc);text-shadow:0 2px 0 #111,0 0 2px #111}
+.tbl .r{display:grid;grid-template-columns:28px 1fr 80px 90px 56px 56px 96px;gap:6px;align-items:center;padding:3px 6px;font-weight:700;font-size:15px;border-top:2px solid rgba(255,255,255,.07)}
+.tbl .r.h{opacity:.55;font-size:12px;border:none;padding-top:0;padding-bottom:0}
+.tbl .r.me{background:rgba(255,228,92,.13);color:#ffe45c;border-radius:10px}
+.tbl .r .rk{font-weight:900;opacity:.55}
+.tbl .r .nm{display:flex;align-items:center;gap:8px;overflow:hidden;white-space:nowrap}
+.tbl .r .nm i,.st-r .n i{font-style:normal;font-size:11px;background:#ffe45c;color:#111;border-radius:8px;padding:0 6px;border:2px solid #111}
+.tbl .r small{font-size:12px;opacity:.65}
+.md{display:flex;gap:4px}
+.md b,.mdl b{display:inline-block;border-radius:50%;border:2px solid #111;box-shadow:0 2px 0 rgba(0,0,0,.5)}
+.md b{width:20px;height:20px}
+.md b.g,.mdl.g b{background:radial-gradient(circle at 35% 30%,#fff7c0,#ffc21a 50%,#a86f00)}
+.md b.s,.mdl.s b{background:radial-gradient(circle at 35% 30%,#ffffff,#c9ced8 50%,#747a88)}
+#awards{position:absolute;left:50%;bottom:13vh;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;transition:opacity .4s;white-space:nowrap}
+#awards .awrow{display:flex;align-items:center;gap:12px}
+#awards .quip{font-weight:900;font-size:17px;padding:5px 16px;border-radius:14px;border:3px solid #111;background:rgba(15,13,32,.93);box-shadow:0 4px 0 #111;animation:pop .5s .35s both}
+#awards .quip.good{color:#ffe45c}#awards .quip.bad{color:#ff9aa8}
+#awards.show{opacity:1}
+#awards h4{font-size:15px;letter-spacing:3px;color:#ffe45c;margin-right:4px}
+.mdl{display:flex;align-items:center;gap:10px;background:rgba(15,13,32,.93);border:3px solid #111;border-radius:16px;padding:6px 14px 6px 8px;box-shadow:0 5px 0 #111;animation:pop .45s both}
+.mdl b{width:30px;height:30px;border-width:3px}
+.mdl span{display:block;font-weight:900;font-size:15px}.mdl small{font-size:11px;opacity:.7}
+.mdl.none{padding:8px 16px;opacity:.85}
+#resBtns{position:absolute;left:0;right:0;bottom:3vh;display:flex;justify-content:center;gap:20px;opacity:0;pointer-events:none;transition:opacity .5s}
+#resBtns.show{opacity:1;pointer-events:auto}
+/* ---------- Tab scoreboard ---------- */
+#scoreTab{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(760px,92vw);display:none;background:rgba(12,10,28,.9);border:4px solid #111;border-radius:24px;padding:14px 18px 16px;box-shadow:0 10px 0 rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+#scoreTab.show{display:block}
+.st-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.st-head b{font-size:26px;font-weight:900;font-style:italic;-webkit-text-stroke:1.5px #111;paint-order:stroke fill}
+.st-head span{font-weight:900;color:#ffe45c}.st-head small{margin-left:auto;opacity:.5;font-size:12px;font-weight:700}
+.st-cols,.st-r{display:grid;grid-template-columns:46px 1fr 56px 56px 56px 76px 64px;gap:6px;align-items:center}
+.st-cols{font-size:12px;opacity:.55;font-weight:700;padding:0 8px}
+.st-team{margin-top:8px;border-left:10px solid var(--tc,#555);border-radius:14px;background:rgba(255,255,255,.04);overflow:hidden}
+#stA{--tc:var(--c0)}#stB{--tc:var(--c1)}
+.st-th{display:flex;align-items:center;gap:12px;padding:5px 10px;background:rgba(0,0,0,.25)}
+.st-th b{color:var(--tc);font-weight:900;letter-spacing:3px;-webkit-text-stroke:.8px #111}
+.st-th span{font-size:12px;font-weight:700;opacity:.8}
+.st-r{padding:3px 8px;font-weight:700;font-size:15px;border-top:2px solid rgba(255,255,255,.06)}
+.st-r.me{background:rgba(255,228,92,.13);color:#ffe45c}
+.st-r.dead{opacity:.5}
+.st-r .n{display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
+.st-r .n em{font-style:normal;font-size:11px;background:#444;border:2px solid #111;border-radius:8px;padding:0 6px;color:#fff}
+.st-r .sp{font-size:13px;opacity:.8}.st-r .sp.on b{color:#ffe45c;animation:blink .5s infinite}
+#specTag{position:absolute;left:50%;top:140px;transform:translateX(-50%);display:none;font-weight:900;font-size:16px;background:rgba(0,0,0,.6);border:3px solid #111;border-radius:16px;padding:5px 16px;color:#fff;text-shadow:0 2px 0 #000}
+#specTag.on{display:block}
+/* roast badge: a cracked, grubby medal */
+.md b.x,.mdl.x b{background:linear-gradient(135deg,transparent 46%,#111 47%,#111 53%,transparent 54%),radial-gradient(circle at 35% 30%,#b9a58a,#7a6546 55%,#3e3322)}
+.mdl.x span{color:#ff9aa8}
+#results.boarded #verdict .vsplash{opacity:0;transition:opacity .3s}
+/* results footer: your awards card on the left, buttons on the right (one row, no stacking) */
+#rsFoot{position:absolute;left:50%;bottom:3.5vh;transform:translateX(-50%);width:min(1000px,94vw);display:flex;align-items:stretch;gap:16px}
+#rsFoot #awards{position:static;transform:none;left:auto;bottom:auto;flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:8px;background:rgba(15,13,32,.93);border:4px solid #111;border-radius:22px;padding:10px 18px;box-shadow:0 8px 0 #111;white-space:normal}
+#rsFoot #awards .awrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#rsFoot #awards h4{font-size:13px;letter-spacing:3px;color:#ffe45c;margin-right:4px}
+#rsFoot .mdl{background:rgba(255,255,255,.06);border:2px solid rgba(0,0,0,.6);border-radius:14px;padding:4px 12px 4px 6px;box-shadow:none}
+#rsFoot .mdl b{width:24px;height:24px;border-width:2px}
+#rsFoot .mdl span{font-size:14px}#rsFoot .mdl small{font-size:10px}
+#rsFoot #awards .quip{background:none;border:none;box-shadow:none;padding:0 2px;font-size:16px;animation:pop .5s .35s both}
+#rsFoot #awards .quip:before{content:"“";opacity:.6;margin-right:2px}#rsFoot #awards .quip:after{content:"”";opacity:.6;margin-left:2px}
+#rsFoot #resBtns{position:static;display:grid;grid-template-columns:1fr 1fr;gap:10px;width:320px;flex:none}
+#rsFoot .btn{font-size:17px;padding:10px 14px;letter-spacing:2px;border-width:4px;box-shadow:0 5px 0 #111}
+#rsFoot .btn:hover{animation:none}
+#rsFoot .rs-main{grid-column:1 / 3;font-size:24px;padding:12px;background:var(--c0);color:#fff;-webkit-text-stroke:1.5px #111;paint-order:stroke fill;text-shadow:0 3px 0 #111}
+#rsFoot .rs-sub{background:#2d2a52;color:#fff}
+#rsFoot .rs-ghost{background:transparent;color:#fff;border-color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.6)}
 </style></head><body>
 <canvas id="gl"></canvas>
 
@@ -319,7 +404,11 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   <div id="mapHint">点击队友（或按 1 / 2 / 3）超级跳过去 · 再按 M 关闭地图</div>
   <div id="center"></div>
   <div id="death"><div class="by" id="deathBy"></div><div class="cd" id="deathCd">5</div><div class="tip" id="deathTip"></div></div>
-  <div id="hint"><kbd>WASD</kbd>移动 <kbd>鼠标左键</kbd>射击 <kbd>Shift</kbd>潜墨 <kbd>空格</kbd>跳 <kbd>右键/E</kbd>炸弹 <kbd>Q</kbd>必杀 <kbd>M</kbd>地图/超级跳</div>
+  <div id="specTag"></div>
+  <div id="hint"><kbd>WASD</kbd>移动 <kbd>鼠标左键</kbd>射击 <kbd>Shift</kbd>潜墨 <kbd>空格</kbd>跳 <kbd>右键/E</kbd>炸弹 <kbd>Q</kbd>必杀 <kbd>M</kbd>地图/超级跳 <kbd>Tab</kbd>战况</div>
+  <div id="scoreTab"><div class="st-head"><b>战况</b><span id="stTime"></span><small>松开 Tab 关闭</small></div>
+    <div class="st-cols"><span></span><span>名字</span><span>击倒</span><span>助攻</span><span>阵亡</span><span>涂地</span><span>必杀</span></div>
+    <div class="st-team" id="stA"></div><div class="st-team" id="stB"></div></div>
 </div>
 
 <div id="pause" class="screen">
@@ -331,11 +420,15 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 </div>
 
 <div id="results" class="screen">
-  <div class="judge" id="judge">裁判判定中…</div>
-  <div id="bars"><div id="barA"></div><div id="barB"></div></div>
+  <div id="rsJudge"><div id="refFlags"><svg class="flag fa" viewBox="0 0 60 90"><rect x="4" y="4" width="5" height="84" rx="2" fill="#e8e8ee" stroke="#111" stroke-width="2.5"/><path d="M9 8 Q30 2 52 10 Q40 22 52 34 Q30 42 9 36Z" fill="var(--c0)" stroke="#111" stroke-width="3"/></svg><svg class="flag fb" viewBox="0 0 60 90"><rect x="51" y="4" width="5" height="84" rx="2" fill="#e8e8ee" stroke="#111" stroke-width="2.5"/><path d="M51 8 Q30 2 8 10 Q20 22 8 34 Q30 42 51 36Z" fill="var(--c1)" stroke="#111" stroke-width="3"/></svg></div>
+    <div class="judge" id="judge">裁判判定中…</div></div>
+  <div id="rsMeter"><div id="bars"><div id="barA"></div><div id="barB"></div><span id="pctA"></span><span id="pctB"></span></div></div>
   <div id="verdict"></div>
   <div id="board"></div>
-  <div id="resBtns"><button class="btn big" id="btnAgain">再来一局</button><button class="btn alt" id="btnChange">更换装备</button><button class="btn" id="btnMenu">主菜单</button></div>
+  <div id="rsFoot">
+    <div id="awards"></div>
+    <div id="resBtns"><button class="btn rs-main" id="btnAgain">再来一局</button><button class="btn rs-sub" id="btnChange">更换装备</button><button class="btn rs-ghost" id="btnMenu">主菜单</button></div>
+  </div>
 </div>
 
 <div class="modal" id="howto"><div class="card">
@@ -350,6 +443,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
     <div><kbd>右键</kbd> / <kbd>E</kbd></div><div>按住显示抛物线和落点，松开投掷墨水炸弹（消耗 70% 墨水）</div>
     <div><kbd>Q</kbd></div><div>必杀技「墨浪冲击」：跃向高空后砸地，大范围涂色并击倒周围敌人</div>
     <div><kbd>M</kbd></div><div>打开大地图；点击队友（或按 1/2/3）超级跳到他身边。阵亡时也可以选，复活后直接跳过去</div>
+    <div><kbd>Tab</kbd></div><div>按住查看战况：双方每个人的击倒、助攻、阵亡、涂地和必杀技状态</div>
     <div><kbd>Esc</kbd></div><div>暂停</div>
   </div>
   <div class="tips">
@@ -419,20 +513,27 @@ const DIFF = [
 
 /* --------------------------------------------------------------- audio */
 const Sfx = (() => {
-  let ctx = null, master, sfxG, musG, comp, noiseBuf;
+  let ctx = null, master, sfxG, musG, comp, noiseBuf, duckF, duckOn = false;
   const M = { on: false, next: 0, step: 0, bpm: 124, mode: 'title', timer: null };
   function init() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; return; }
     comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(ctx.destination);
-    master = ctx.createGain(); master.connect(comp);
+    duckF = ctx.createBiquadFilter(); duckF.type = 'lowpass'; duckF.frequency.value = 20000; duckF.Q.value = 0.7; duckF.connect(comp);
+    master = ctx.createGain(); master.connect(duckF);
     sfxG = ctx.createGain(); sfxG.connect(master);
     musG = ctx.createGain(); musG.connect(master);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     setVol();
   }
-  function setVol() { if (!ctx) return; master.gain.value = SETTINGS.vol; musG.gain.value = SETTINGS.mus * 0.5; }
+  function setVol() { if (!ctx) return; const k = duckOn ? 0.3 : 1; master.gain.cancelScheduledValues(ctx.currentTime); master.gain.value = SETTINGS.vol * k; musG.gain.value = SETTINGS.mus * 0.5; }
+  // pause: everything slowly gets quieter and muffled (as if heard from behind a door); resume brings it back
+  function duck(on) {
+    duckOn = on; if (!ctx) return; const t = ctx.currentTime, g = master.gain, f = duckF.frequency;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(SETTINGS.vol * (on ? 0.3 : 1), t + (on ? 0.7 : 0.35));
+    f.cancelScheduledValues(t); f.setValueAtTime(f.value, t); f.exponentialRampToValueAtTime(on ? 700 : 20000, t + (on ? 0.7 : 0.35));
+  }
   function env(g, t, a, peak, dcy) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dcy); }
   // stereo panning helper: returns a node to connect sounds into
   function panNode(pan) { if (!ctx || !pan || !ctx.createStereoPanner) return sfxG; const p = ctx.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); p.connect(sfxG); return p; }
@@ -483,7 +584,7 @@ const Sfx = (() => {
   }
   function stopMusic() { if (M.timer) clearInterval(M.timer); M.on = false; }
   return {
-    init, setVol, music, stopMusic,
+    init, setVol, music, stopMusic, duck, get ducked() { return duckOn; },
     // pressurised "pshh" + low thump, 3 variants with random pitch, panned by direction
     shoot(v, pan = 0) {
       if (!ctx) return; const d = panNode(pan), k = rand(0.92, 1.08), var_ = Math.floor(Math.random() * 3);
@@ -721,7 +822,8 @@ function defineMap() {
   SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }));
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
-const SPAWN = [{ x: 0, z: 42, y: 2.0, yaw: 0 }, { x: 0, z: -42, y: 2.0, yaw: Math.PI }];
+// yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
+const SPAWN = [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
 const DECK = [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
 function inRect(s, x, z) { return x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1; }
 function topAt(s, x, z) {
@@ -767,6 +869,7 @@ function resetPaint() {
 function buildWallAtlas() {
   const faces = [];
   for (const s of SOLIDS) {
+    if (s.t === 'ramp') { rampFaces(s, faces); continue; }
     if (s.t !== 'box') continue; s.faces = {};
     const dirs = s.bound ? [s.bound] : ['+x', '-x', '+z', '-z'];
     for (const d of dirs) {
@@ -778,6 +881,12 @@ function buildWallAtlas() {
       const f = { s, d, ax, plane: d === '+x' ? s.x1 : d === '-x' ? s.x0 : d === '+z' ? s.z1 : s.z0, a0: ax ? s.z0 : s.x0, a1: ax ? s.z1 : s.x1, h: s.h, nx: d === '+x' ? 1 : d === '-x' ? -1 : 0, nz: d === '+z' ? 1 : d === '-z' ? -1 : 0 };
       if (s.bound) { f.a0 = ax ? -ZH : -XH; f.a1 = ax ? ZH : XH; }
       s.faces[d] = f; faces.push(f);
+    }
+    // top of the perimeter walls: a flat paintable strip (u along the wall, v = distance from the inner edge)
+    if (s.bound) {
+      const ax = s.bound[1] === 'x', sgn = s.bound[0] === '-' ? 1 : -1;
+      const f = { s, cap: true, ax, inner: ax ? (sgn > 0 ? s.x0 : s.x1) : (sgn > 0 ? s.z0 : s.z1), sgn, a0: ax ? s.z0 : s.x0, a1: ax ? s.z1 : s.x1, h: ax ? s.x1 - s.x0 : s.z1 - s.z0, capY: s.h };
+      s.cap = f; faces.push(f);
     }
   }
   let PX = 10, ok = false, W = Paint.W, H = 1024, used = 0;
@@ -798,6 +907,22 @@ function buildWallAtlas() {
   Paint.wdata = new Uint8Array(W * H * 4); for (let k = 3; k < Paint.wdata.length; k += 4) Paint.wdata[k] = 255;
   Paint.wtex = new THREE.DataTexture(Paint.wdata, W, H, THREE.RGBAFormat);
   Paint.wtex.magFilter = THREE.LinearFilter; Paint.wtex.minFilter = THREE.LinearFilter; Paint.wtex.generateMipmaps = false; Paint.wtex.needsUpdate = true;
+}
+// ramps: the two triangular sides and the tall end are paintable walls too (skipped where another block covers them)
+function rampFaces(s, faces) {
+  s.faces = {}; const hi = Math.max(s.h0, s.h1), zAx = s.axis === 'z';
+  const highD = zAx ? (s.h1 > s.h0 ? '+z' : '-z') : (s.h1 > s.h0 ? '+x' : '-x');
+  for (const d of (zAx ? ['+x', '-x'] : ['+z', '-z']).concat([highD])) {
+    if (d === '+x' && s.x1 >= XH - 0.01) continue; if (d === '-x' && s.x0 <= -XH + 0.01) continue;
+    if (d === '+z' && s.z1 >= ZH - 0.01) continue; if (d === '-z' && s.z0 <= -ZH + 0.01) continue;
+    const ax = d[1] === 'x', nx = d === '+x' ? 1 : d === '-x' ? -1 : 0, nz = d === '+z' ? 1 : d === '-z' ? -1 : 0;
+    const plane = d === '+x' ? s.x1 : d === '-x' ? s.x0 : d === '+z' ? s.z1 : s.z0, a0 = ax ? s.z0 : s.x0, a1 = ax ? s.z1 : s.x1;
+    // covered by a neighbouring block?  (sample just outside the face, low down)
+    const am = (a0 + a1) / 2, ox = ax ? plane + nx * 0.05 : am, oz = ax ? am : plane + nz * 0.05;
+    if (d === highD && SOLIDS.some(o => o !== s && !o.bound && inRect(o, ox, oz) && topAt(o, ox, oz) >= hi - 0.05)) continue;
+    const f = { s, d, ax, plane, a0, a1, h: hi, nx, nz, ramp: true, side: d !== highD };
+    s.faces[d] = f; faces.push(f);
+  }
 }
 function makeShape(r) {
   const sh = { p1: rand(0, 6.28), p2: rand(0, 6.28), p3: rand(0, 6.28), sats: [] };
@@ -840,6 +965,12 @@ function splatFloor(x, y, z, r, team, tol = 0.7, wallsToo = true, dir = null) {
   Paint.dirty = true;
   if (wallsToo) {
     for (const f of Paint.faces) {
+      if (f.cap) {
+        if (Math.abs(y - f.capY) > 0.45) continue;
+        const along = f.ax ? z : x, across = ((f.ax ? x : z) - f.inner) * f.sgn;
+        if (across < -r || across > f.h + r || along < f.a0 - r || along > f.a1 + r) continue;
+        splatWall(f, along - f.a0, across, r, team, sh); continue;
+      }
       if (y > f.h + 0.3 || y < -0.1) continue;
       const dist = f.ax ? (x - f.plane) * f.nx : (z - f.plane) * f.nz;
       if (dist < -0.05 || dist > r) continue;
@@ -1010,48 +1141,49 @@ function buildArena() {
   // tops & ramps grouped by style
   const tops = {}, walls = {}, sides = [];
   const PX = Paint.PX, W = Paint.W, H = Paint.H;
+  // one wall quad (corners as [along, height]) with its slot in the paint atlas
+  const wallQuad = (style, f, corners) => {
+    const st = WALL_STYLE[style], su = st.su || f.h, pts = [], uv = [], puv = [], nuv = [];
+    for (const [a, y] of corners) {
+      pts.push(f.ax ? [f.plane, y, a] : [a, y, f.plane]);
+      uv.push([(a - f.a0) / su, st.vFull ? y / f.h : y / 3]);
+      puv.push([(f.rx + 1 + (a - f.a0) * PX) / W, (f.ry + 1 + y * PX) / H]);
+      nuv.push([a * 1.0 + f.plane * 0.37, y]);
+    }
+    (walls[style] = walls[style] || []).push(quadGeo(pts, uv, puv, nuv, [f.nx, 0, f.nz]));
+  };
   for (const s of SOLIDS) {
     if (s.bound) { /* inner faces + top cap */ }
     if (s.t === 'box') {
       const ts = TOP_STYLE[s.top] || TOP_STYLE.concrete, sc = ts.s;
       if (!s.bound) (tops[s.top] = tops[s.top] || []).push(quadGeo([[s.x0, s.h, s.z0], [s.x1, s.h, s.z0], [s.x1, s.h, s.z1], [s.x0, s.h, s.z1]], [[s.x0 / sc, s.z0 / sc], [s.x1 / sc, s.z0 / sc], [s.x1 / sc, s.z1 / sc], [s.x0 / sc, s.z1 / sc]], null, null, [0, 1, 0]));
       else {
-        sides.push(quadGeo([[s.x0, s.h, s.z0], [s.x1, s.h, s.z0], [s.x1, s.h, s.z1], [s.x0, s.h, s.z1]], [[0, 0], [1, 0], [1, 1], [0, 1]], null, null, [0, 1, 0]));
+        // paintable top strip
+        { const f = s.cap, cp = [], uv = [], puv = [], nuv = [];
+          for (const [a, c] of [[f.a0, 0], [f.a1, 0], [f.a1, f.h], [f.a0, f.h]]) {
+            const q = f.inner + c * f.sgn; cp.push(f.ax ? [q, s.h, a] : [a, s.h, q]);
+            uv.push([a / 3, c / 3]); puv.push([(f.rx + 1 + (a - f.a0) * PX) / W, (f.ry + 1 + c * PX) / H]); nuv.push([a + s.h * 0.37, c]);
+          }
+          (walls.stone = walls.stone || []).push(quadGeo(cp, uv, puv, nuv, [0, 1, 0])); }
         const ob = { '-x': ['+x', s.x1], '+x': ['-x', s.x0], '-z': ['+z', s.z1], '+z': ['-z', s.z0] }[s.bound];
         const L = s.bound[1] === 'x' ? [s.z0, s.z1] : [s.x0, s.x1], pl = ob[1], nn = ob[0];
         const pts = [[L[0], 0], [L[1], 0], [L[1], s.h], [L[0], s.h]].map(([a, y]) => s.bound[1] === 'x' ? [pl, y - 2.2, a] : [a, y - 2.2, pl]);
         pts[2][1] = pts[3][1] = s.h;
         sides.push(quadGeo(pts, [[0, 0], [L[1] - L[0], 0], [L[1] - L[0], 1], [0, 1]], null, null, nn[1] === 'x' ? [nn[0] === '+' ? 1 : -1, 0, 0] : [0, 0, nn[0] === '+' ? 1 : -1]));
       }
-      const st = WALL_STYLE[s.style];
-      for (const d in s.faces) {
-        const f = s.faces[d]; const L = f.a1 - f.a0, h = f.h;
-        const su = st.su || h, pts = [], uv = [], puv = [], nuv = [];
-        const corners = [[f.a0, 0], [f.a1, 0], [f.a1, h], [f.a0, h]];
-        for (const [a, y] of corners) {
-          pts.push(f.ax ? [f.plane, y, a] : [a, y, f.plane]);
-          uv.push([(a - f.a0) / su, st.vFull ? y / h : y / 3]);
-          puv.push([(f.rx + 1 + (a - f.a0) * PX) / W, (f.ry + 1 + y * PX) / H]);
-          nuv.push([a * 1.0 + f.plane * 0.37, y]);
-        }
-        (walls[s.style] = walls[s.style] || []).push(quadGeo(pts, uv, puv, nuv, [f.nx, 0, f.nz]));
-      }
+      for (const d in s.faces) { const f = s.faces[d]; wallQuad(s.style, f, [[f.a0, 0], [f.a1, 0], [f.a1, f.h], [f.a0, f.h]]); }
     } else {
       const sc = 2; const c = [[s.x0, s.z0], [s.x1, s.z0], [s.x1, s.z1], [s.x0, s.z1]];
       const p = c.map(([x, z]) => [x, topAt(s, x, z), z]);
       const n = new THREE.Vector3(...p[1]).sub(new THREE.Vector3(...p[0])).cross(new THREE.Vector3(...p[3]).sub(new THREE.Vector3(...p[0]))).normalize();
       if (n.y < 0) n.negate();
       (tops.grate = tops.grate || []).push(quadGeo(p, c.map(([x, z]) => [x / sc, z / sc]), null, null, [n.x, n.y, n.z]));
-      // sides (triangles as degenerate quads)
-      const lowEnd = s.h0 < s.h1 ? 0 : 1, hi = Math.max(s.h0, s.h1);
-      if (s.axis === 'z') {
-        const zl = lowEnd === 0 ? s.z0 : s.z1, zh = lowEnd === 0 ? s.z1 : s.z0;
-        [s.x0, s.x1].forEach((x, k) => sides.push(quadGeo([[x, 0, zl], [x, 0, zh], [x, hi, zh], [x, 0.001, zl]], [[0, 0], [1, 0], [1, 1], [0, 0]], null, null, [k ? 1 : -1, 0, 0])));
-        sides.push(quadGeo([[s.x0, 0, zh], [s.x1, 0, zh], [s.x1, hi, zh], [s.x0, hi, zh]], [[0, 0], [1, 0], [1, 1], [0, 1]], null, null, [0, 0, lowEnd === 0 ? 1 : -1]));
-      } else {
-        const xl = lowEnd === 0 ? s.x0 : s.x1, xh = lowEnd === 0 ? s.x1 : s.x0;
-        [s.z0, s.z1].forEach((z, k) => sides.push(quadGeo([[xl, 0, z], [xh, 0, z], [xh, hi, z], [xl, 0.001, z]], [[0, 0], [1, 0], [1, 1], [0, 0]], null, null, [0, 0, k ? 1 : -1])));
-        sides.push(quadGeo([[xh, 0, s.z0], [xh, 0, s.z1], [xh, hi, s.z1], [xh, hi, s.z0]], [[0, 0], [1, 0], [1, 1], [0, 1]], null, null, [lowEnd === 0 ? 1 : -1, 0, 0]));
+      // sides (triangles as degenerate quads) and the tall end: paintable walls
+      const hi = Math.max(s.h0, s.h1), lowAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z0 : s.z1) : (s.h0 < s.h1 ? s.x0 : s.x1), highAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z1 : s.z0) : (s.h0 < s.h1 ? s.x1 : s.x0);
+      for (const d in s.faces) {
+        const f = s.faces[d];
+        if (f.side) wallQuad('stone', f, [[lowAt, 0], [highAt, 0], [highAt, hi], [lowAt, 0.001]]);
+        else wallQuad('stone', f, [[f.a0, 0], [f.a1, 0], [f.a1, hi], [f.a0, hi]]);
       }
     }
   }
@@ -1353,6 +1485,19 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.6.0', date: '2026-09-29', time: '02:20', title: '结算与战况', items: [
+    '结算页按原版流程重做：俯视判定、比例条拉锯、胜方举旗、WIN! / LOSE…',
+    '计分板显示涂地、击倒、助攻、阵亡、必杀次数，赢的队伍排在上面',
+    '新增奖牌：全场第一金牌、队内第一银牌',
+    '新增吐槽奖：打得不好也会被「颁奖」，还附一句毒舌评语',
+    '对局中按住 Tab 可以查看双方战况',
+    '斜坡侧面和围墙顶部也能涂上墨水了',
+    '开局和复活时面朝战场，落地就能开打',
+    '阵亡后先看击倒你的人，然后切到队友视角观战',
+    '超级跳落地时溅开一大片墨水',
+    '暂停时声音渐渐变小变闷',
+    '版本日志只展开最近 3 个版本，并显示发布时间'
+  ] },
   { v: 'v0.5.2', date: '2026-09-28', time: '19:06', title: '武器差异化', items: [
     '重炮狙击蓄满的一炮更有冲击力：粗光束、大范围溅射、冲击波和震屏',
     '重炮狙击没蓄满时效果更小，只有蓄满才一枪击倒',
@@ -1479,6 +1624,7 @@ class Character {
     this.fireCd = 0; this.bombCd = 0; this.lastHurt = -99; this.lastShot = -99; this.invulnT = 0; this.respawnT = 0;
     this.sp = null; this.hurtFlash = 0; this.phase = 0; this.recoil = 0; this.swimPop = 0; this.inEnemy = false; this.lastAttacker = null;
     this.vel.set(0, 0, 0); this.kills = 0; this.deaths = 0; this.paint = 0; this.charge = 0; this.charging = false; this.stored = 0; this.lastVia = null; this.airSpeed = 0; this.sj = null; this.jumpTarget = null; this.dropY = null; this.dropSJ = false;
+    this.assists = 0; this.specials = 0; this.sjumps = 0; this.dmgBy = new Map();     // match stats (Tab panel / results)
     this.root.visible = true; this.ghost.visible = false;
   }
   buildModel() {
@@ -1656,6 +1802,7 @@ class Character {
   // continuous arc flight to a teammate (original-style super jump)
   beginFlight(t) {
     const p0 = this.pos.clone(), d = Math.hypot(t.pos.x - p0.x, t.pos.z - p0.z);
+    this.sjumps++;
     this.fly = { t: 0, p0, target: t, tp: t.pos.clone(), T: clamp(1.1 + d / 60, 1.2, 1.9), apex: clamp(9 + d * 0.22, 10, 20), last: p0.clone() };
     this.state = 'sjfly'; this.sj = null; this.grounded = false; this.swim = false; this.vel.set(0, 0, 0);
     this.showSJMarker(this.fly.tp); this.pulseSJMarker(0);
@@ -1673,6 +1820,7 @@ class Character {
   damage(amount, src, via) {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
+    if (src && src.team !== this.team) this.dmgBy.set(src, G.time);
     if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
     if (src && src.isPlayer) { Sfx.hit(amount >= 50); HUD.hitmark(false, amount); }
     if (this.hp <= 0) this.die(src, this.lastVia);
@@ -1685,6 +1833,9 @@ class Character {
     this.special = Math.floor(this.special * (1 - this.weapon.spLoss));
     const kc = killer ? killer.team : 1 - this.team;
     if (killer) killer.kills++;
+    // assist: anyone else on the other team who hurt us in the last 4 s
+    for (const [c, t] of this.dmgBy) if (c !== killer && c.team !== this.team && G.time - t < 4 && c.assists !== undefined) c.assists++;
+    this.dmgBy.clear();
     const gy = groundBelow(this.pos.x, this.pos.z, this.pos.y + 0.2, 0.3);
     splatFloor(this.pos.x, gy, this.pos.z, 2.2, kc, 1.0);
     Fx.burst(this.pos.x, this.pos.y + 0.8, this.pos.z, TEAM_HEX[kc], 42, 9, 0.2);
@@ -1715,7 +1866,7 @@ class Character {
     if (this.isPlayer) Sfx.chargeStop();
   }
   startSpecial() {
-    this.special = 0; this.sp = { phase: 0, t: 0 }; this.setSwim(false); this.stopCharge();
+    this.special = 0; this.specials++; this.sp = { phase: 0, t: 0 }; this.setSwim(false); this.stopCharge();
     this.vel.set(this.vel.x * 0.3, 13, this.vel.z * 0.3); this.grounded = false;
     if (sndVol(this.pos) > 0.05) Sfx.special();
     Fx.burst(this.pos.x, this.pos.y + 0.5, this.pos.z, TEAM_HEX[this.team], 20, 6, 0.15);
@@ -1744,9 +1895,13 @@ class Character {
       if (u >= 1) {
         this.pos.set(f.tp.x, ly, f.tp.z); this.vel.set(0, 0, 0); this.state = 'play'; this.grounded = true; this.invulnT = 0.4; this.fly = null; this.landSquash = 1;
         this.hideSJMarker(); this.human.visible = true; this.blob.visible = false;
-        splatFloor(this.pos.x, ly, this.pos.z, 1.9, this.team, 0.6, false);
-        Fx.burst(this.pos.x, ly + 0.3, this.pos.z, TEAM_HEX[this.team], 22, 6, 0.12); Fx.ring(this.pos.x, ly + 0.05, this.pos.z, TEAM_HEX[this.team], 3);
-        if (sndVol(this.pos) > 0.1) Sfx.land(sndVol(this.pos)); if (this.isPlayer) G.shake(0.35);
+        // landing splash: a big blot plus ink flung out all around the teammate
+        const col = TEAM_HEX[this.team], lp = this.pos;
+        this.addPaint(splatFloor(lp.x, ly, lp.z, 2.4, this.team, 0.7, true), false);
+        for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2 + rand(-0.2, 0.2), sp = rand(3.5, 6.5); Proj.spray(this, new THREE.Vector3(lp.x, ly + 0.5, lp.z), new THREE.Vector3(Math.cos(a) * sp, rand(3, 5.5), Math.sin(a) * sp), rand(0.4, 0.65)); }
+        Fx.burstDir(lp.x, ly + 0.2, lp.z, col, 30, 7.5, 0.13, 0, 1, 0, 0.9); Fx.burst(lp.x, ly + 0.3, lp.z, col, 16, 5, 0.1);
+        Fx.ring(lp.x, ly + 0.05, lp.z, col, 4.2); Fx.ring(lp.x, ly + 0.07, lp.z, '#ffffff', 2.6);
+        const lv = sndVol(lp); if (lv > 0.05) { Sfx.land(Math.max(0.6, lv)); Sfx.impact(lv, this.isPlayer ? 0 : sndPan(lp)); } if (this.isPlayer) G.shake(0.45);
       }
       this.syncModel(dt); return;
     }
@@ -2216,8 +2371,8 @@ const Proj = {
   classify(s, prev, p) {
     if (s === true) return { type: 'floor', y: groundAt(p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
-    if (prev.y >= tPrev - 0.08) return { type: s.bound ? 'none' : 'floor', y: topAt(s, p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
-    if (s.t !== 'box' || !s.faces) return { type: 'none', y: p.y, n: new THREE.Vector3(0, 1, 0) };
+    if (prev.y >= tPrev - 0.08) return { type: 'floor', y: topAt(s, p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
+    if (!s.faces) return { type: 'none', y: p.y, n: new THREE.Vector3(0, 1, 0) };
     const ox = prev.x < s.x0 ? s.x0 - prev.x : prev.x > s.x1 ? prev.x - s.x1 : 0, oz = prev.z < s.z0 ? s.z0 - prev.z : prev.z > s.z1 ? prev.z - s.z1 : 0;
     const d = ox >= oz ? (prev.x < s.x0 ? '-x' : '+x') : (prev.z < s.z0 ? '-z' : '+z');
     const f = s.faces[d]; const n = new THREE.Vector3(d === '+x' ? 1 : d === '-x' ? -1 : 0, 0, d === '+z' ? 1 : d === '-z' ? -1 : 0);
@@ -2228,7 +2383,7 @@ const Proj = {
   splash(owner, p, n, dir, r, kind, face) {
     const team = owner.team, col = TEAM_HEX[team];
     const inside = Math.abs(p.x) < XH && Math.abs(p.z) < ZH;
-    if (kind === 'floor' && inside) {
+    if (kind === 'floor') {
       const hz = Math.hypot(dir.x, dir.z) || 1, graze = clamp(1 - Math.abs(dir.y), 0, 1);
       owner.addPaint(splatFloor(p.x, p.y, p.z, r * 0.62, team, 0.7, true, { ux: dir.x / hz, uz: dir.z / hz, k: 1 + graze * 0.9 }));
     } else if (kind === 'wall' && face) {
@@ -2303,9 +2458,10 @@ const Proj = {
     if (prev.y >= tPrev - 0.08) {
       const y = topAt(s, hx, hz);
       if (!s.bound && inside) floorHit(y);
+      else if (s.bound) splatFloor(hx, y, hz, r * 0.8, team, 0.7, true);     // top of the perimeter wall
       this.fx(hx, y + 0.05, hz, team, r, 0, 1, 0); return true;
     }
-    if (s.t === 'box' && s.faces) {
+    if (s.faces) {
       const ox = prev.x < s.x0 ? s.x0 - prev.x : prev.x > s.x1 ? prev.x - s.x1 : 0;
       const oz = prev.z < s.z0 ? s.z0 - prev.z : prev.z > s.z1 ? prev.z - s.z1 : 0;
       let d; if (ox >= oz) d = prev.x < s.x0 ? '-x' : '+x'; else d = prev.z < s.z0 ? '-z' : '+z';
@@ -2760,18 +2916,42 @@ function playerControl(dt) {
   if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[W.sub].cost); else if (Proj.pv) Proj.preview(null);
   Cam.showLand = !c.swim;
 }
+// teammate to watch while dead: your super-jump pick, else keep the current one, else the nearest
+function spectateTarget(c) {
+  const ok = m => m && m !== c && m.team === c.team && m.alive && m.state !== 'dead';
+  if (ok(c.jumpTarget)) return c.jumpTarget;
+  if (ok(Cam.spec)) return Cam.spec;
+  let best = null, bd = 1e9; for (const m of CHARS) if (ok(m)) { const d = m.pos.distanceTo(c.pos); if (d < bd) { bd = d; best = m; } }
+  return best;
+}
 function updateCamera(dt) {
   const c = PLAYER;
   let px = c.pos.x, py = c.pos.y, pz = c.pos.z;
   if (c.state === 'dead') {
     const t = RESPAWN - c.respawnT;
-    const k = c.lastAttacker && c.lastAttacker.alive && t < 2.6 ? c.lastAttacker : null;
+    // 1) look at whoever knocked you out (like the original) ...
+    const k = c.lastAttacker && c.lastAttacker.alive && t < 2.0 ? c.lastAttacker : null;
+    // 2) ... then watch a teammate until you respawn (the super-jump pick if you chose one, else the nearest)
+    const mate = !k && t > 0.8 ? spectateTarget(c) : null;
+    Cam.spec = mate;
+    if (mate) {
+      const hs = Math.hypot(mate.vel.x, mate.vel.z), wantYaw = hs > 1 && mate.state === 'play' ? Math.atan2(mate.vel.x, mate.vel.z) : mate.aimYaw;
+      Cam.specYaw = Cam.specYaw === undefined ? wantYaw : Cam.specYaw + angDiff(Cam.specYaw, wantYaw) * Math.min(1, dt * 2.5);
+      const py = mate.pos.y + (mate.swim ? 1.1 : 1.5), fx = Math.sin(Cam.specYaw), fz = Math.cos(Cam.specYaw);
+      const want = new THREE.Vector3(mate.pos.x - fx * 5.4, py + 1.5, mate.pos.z - fz * 5.4);
+      const tb = segBlocked(mate.pos.x, py, mate.pos.z, want.x, want.y, want.z, 0.15); if (tb) want.lerpVectors(new THREE.Vector3(mate.pos.x, py, mate.pos.z), want, Math.max(0.15, tb - 0.08));
+      Cam.pos.lerp(want, 1 - Math.exp(-5 * dt)); camera.position.copy(Cam.pos);
+      camera.lookAt(mate.pos.x + fx * 6, py - 0.2, mate.pos.z + fz * 6);
+      return;
+    }
+    Cam.specYaw = undefined;
     const g = c.ghost.position;
     const tgt = k ? k.chest() : new THREE.Vector3(g.x, g.y, g.z);
     const want = new THREE.Vector3(c.pos.x - Math.sin(Cam.yaw) * 6, c.pos.y + 5, c.pos.z - Math.cos(Cam.yaw) * 6);
     Cam.pos.lerp(want, 1 - Math.exp(-3 * dt)); camera.position.copy(Cam.pos); camera.lookAt(tgt);
     return;
   }
+  Cam.spec = null; Cam.specYaw = undefined;
   const zt = c.charging ? 1 - 0.24 * c.charge : 1;
   Cam.zoom = damp(Cam.zoom, zt, 10, dt);
   const fv = SETTINGS.fov * Cam.zoom; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }
@@ -2833,7 +3013,9 @@ const HUD = {
     const vig = clamp((100 - hp) / 100 * 0.9 + this.hurtV * 0.4, 0, 0.95);
     const ec = TEAM_HEX[1 - c.team];
     $('vignette').style.opacity = 0;
-    ScreenInk.update(dt, c.alive ? c.hp : 0, c.alive && c.inEnemy && !c.invuln());
+    ScreenInk.update(dt, c.alive ? c.hp : Cam.spec ? 100 : 0, c.alive && c.inEnemy && !c.invuln());     // watching a teammate: clear the ink off the screen
+    const st = $('specTag'), sn = !c.alive && Cam.spec ? '正在观看：' + Cam.spec.name : '';
+    if (st.textContent !== sn) { st.textContent = sn; st.classList.toggle('on', !!sn); }
     $('crosshair').classList.toggle('enemy', Cam.lock);
     const r2 = $('ret2');
     if (Cam.showLand && c.alive && c.state === 'play') {
@@ -2858,6 +3040,22 @@ const HUD = {
     }
     if (!c.alive) { $('deathCd').textContent = Math.max(1, Math.ceil(c.respawnT)); }
     this.mmT -= dt; if (this.mmT <= 0) { this.mmT = 0.2; this.drawMap(); }
+    // hold Tab: live scoreboard
+    const tabOn = !!Input.keys.Tab && (G.state === 'play' || G.state === 'intro') && !G.paused;
+    $('scoreTab').classList.toggle('show', tabOn);
+    if (tabOn) { this.tabT = (this.tabT || 0) - dt; if (this.tabT <= 0) { this.tabT = 0.25; this.renderTab(); } } else this.tabT = 0;
+  },
+  renderTab() {
+    const mine = PLAYER.team;
+    [0, 1].forEach(t => {
+      const list = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint), K = list.reduce((a, c) => a + c.kills, 0);
+      const row = c => {
+        const ready = c.special >= 100, sp = ready ? '<b>就绪</b>' : t === mine ? Math.floor(c.special) + '%' : '—';     // enemies: only "ready", like the top icons
+        return `<div class="st-r${c.isPlayer ? ' me' : ''}${c.alive ? '' : ' dead'}"><span class="w">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}</span><span class="n">${c.name}${c.isPlayer ? '<i>你</i>' : ''}${c.alive ? '' : '<em>' + Math.max(1, Math.ceil(c.respawnT)) + '</em>'}</span><span>${c.kills}</span><span>${c.assists}</span><span>${c.deaths}</span><span>${Math.round(c.paint)}p</span><span class="sp${ready ? ' on' : ''}">${sp}</span></div>`;
+      };
+      $(t ? 'stB' : 'stA').innerHTML = `<div class="st-th" style="--tc:${TEAM_HEX[t]}"><b>${t === mine ? '我方' : '对手'}</b><span>共击倒 ${K}</span></div>` + list.map(row).join('');
+    });
+    $('stTime').textContent = '剩余 ' + $('timer').textContent;
   },
   drawMap() {
     const D = this.img.data, B = this.base, O = Paint.owner, W = this.mw, H = this.mh, R = this.rgb;
@@ -3117,7 +3315,7 @@ function spawnTeams() {
 }
 function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProjectionMatrix(); }
 function startMatch() {
-  Sfx.init(); Sfx.stopMusic();
+  Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Proj.clear();
   spawnTeams(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
@@ -3129,11 +3327,11 @@ function startMatch() {
   $('hint').style.display = 'block';
   lockPointer();
 }
-function pauseGame() { if (G.state !== 'play' && G.state !== 'intro') return; G.paused = true; show('pause', true); Input.keys = {}; }
-function resumeGame() { G.paused = false; show('pause', false); clock.getDelta(); lockPointer(); }
+function pauseGame() { if (G.state !== 'play' && G.state !== 'intro') return; G.paused = true; show('pause', true); Input.keys = {}; Sfx.duck(true); }
+function resumeGame() { G.paused = false; show('pause', false); clock.getDelta(); lockPointer(); Sfx.duck(false); }
 function quitToTitle() {
   if (G.mapOpen) { G.mapOpen = false; $('minimap').classList.remove('big'); $('mapHint').classList.remove('show'); }
-  G.paused = false; show('pause', false); show('hud', false); show('results', false);
+  G.paused = false; show('pause', false); show('hud', false); show('results', false); Sfx.duck(false);
   if (document.pointerLockElement) document.exitPointerLock();
   gotoTitle();
 }
@@ -3143,31 +3341,97 @@ function endMatch() {
   CHARS.forEach(c => { c.intent.fire = false; c.intent.swim = false; c.intent.mx = c.intent.mz = 0; });
   if (Proj.pv) Proj.preview(null); Cam.bombAim = false; if (G.mapOpen) toggleMap(false);
 }
+// medals, like the original's awards: gold = best in the match, silver = best on your team
+const MEDALS = [
+  { t: '涂地最多', v: c => c.paint, ok: c => c.paint > 0 },
+  { t: '击倒最多', v: c => c.kills, ok: c => c.kills > 0 },
+  { t: '助攻最多', v: c => c.assists, ok: c => c.assists > 0 },
+  { t: '必杀技最多', v: c => c.specials, ok: c => c.specials > 0 },
+  { t: '最少阵亡', v: c => -c.deaths, ok: c => c.deaths <= 2 },
+  { t: '超级跳最多', v: c => c.sjumps, ok: c => c.sjumps > 0 }
+];
+// the other side of the awards: a cheeky "roast" badge when things went badly
+const ROASTS = [
+  { t: '送分快递', ok: c => c.deaths >= 4 && c.deaths >= Math.max(...CHARS.map(o => o.deaths)), say: ['对面的击倒数，有一半是你送的快递。', '倒下的次数比开枪的次数还让人印象深刻。', '复活点都快认识你了。'] },
+  { t: '和平主义者', ok: c => c.kills === 0 && c.assists === 0, say: ['一个人都没打倒，你是来劝架的吗？', '对面应该给你颁一个「最友善对手」奖。', '枪是拿来涂地的没错，但偶尔也可以对准人。'] },
+  { t: '路过的游客', ok: c => c.paint <= Math.min(...CHARS.map(o => o.paint)) + 0.5, say: ['这片广场好像跟你没什么关系。', '你涂的地，裁判拿放大镜才找到。', '来都来了，好歹多涂两下再走嘛。'] },
+  { t: '必杀收藏家', ok: c => c.specials === 0 && c.special >= 100, say: ['必杀技攒满了一局，舍不得按 Q？', 'Q 键：我一直在等你。'] }
+];
+const PRAISE = {
+  '涂地最多': ['整片广场都是你的颜色，裁判都看呆了！', '你一个人涂的地，够对面四个人加起来了。'],
+  '击倒最多': ['对面听到你的脚步声就想跑。', '全场最危险的人，就是你。'],
+  '助攻最多': ['没有你，队友的击倒至少少一半。', '最默契的队友，说的就是你。'],
+  '必杀技最多': ['Q 键都快被你按坏了！', '必杀技一个接一个，对面根本喘不过气。'],
+  '最少阵亡': ['全场最难打倒的人，就是你。', '稳！对面想打倒你都找不到机会。'],
+  '超级跳最多': ['哪里需要你，你就出现在哪里。', '空中飞人，全场到处都是你的身影。']
+};
+function roastsFor(c) { return ROASTS.filter(R => R.ok(c)).slice(0, 2); }
+// one line for the player: praise if you earned a medal, a cheeky roast if the match went badly
+function verdictLine(c) {
+  const md = medalsFor(c), rs = roastsFor(c), g = md.find(m => m.gold);
+  if (g) return { good: true, text: pick(PRAISE[g.t]) };
+  if (rs.length) return { good: false, text: pick(rs[0].say) };
+  if (md.length) return { good: true, text: pick(PRAISE[md[0].t]) };
+  return { good: true, text: '中规中矩，下一局争取拿块奖牌！' };
+}
+function medalsFor(c) {
+  const out = [];
+  for (const M of MEDALS) {
+    if (!M.ok(c)) continue; const v = M.v(c);
+    if (v >= Math.max(...CHARS.map(M.v))) out.push({ t: M.t, gold: true });
+    else if (v >= Math.max(...CHARS.filter(o => o.team === c.team).map(M.v))) out.push({ t: M.t, gold: false });
+  }
+  return out.sort((a, b) => b.gold - a.gold).slice(0, 3);
+}
+// results, following the original's flow: top-down judging → meter tug-of-war → WIN!/LOSE… → scoreboard (winners first) → your medals
 function showResults() {
   G.state = 'results'; show('hud', false); show('results', true); resetFov();
   if (document.pointerLockElement) document.exitPointerLock();
-  const p0 = Paint.teamCells[0] / Paint.total * 100, p1 = Paint.teamCells[1] / Paint.total * 100;
-  const A = $('barA'), B = $('barB'), V = $('verdict'), bd = $('board'), rb = $('resBtns');
-  A.style.transition = B.style.transition = 'none'; A.style.width = B.style.width = '0%'; A.textContent = B.textContent = '';
-  A.style.background = TEAM_HEX[0]; B.style.background = TEAM_HEX[1];
-  V.className = ''; V.style.opacity = 0; bd.classList.remove('show'); rb.classList.remove('show');
+  const rid = G.rid = (G.rid || 0) + 1, later = (ms, fn) => setTimeout(() => { if (G.rid === rid && G.state === 'results') fn(); }, ms);
+  const p0 = Paint.teamCells[0] / Paint.total * 100, p1 = Paint.teamCells[1] / Paint.total * 100, win = p0 >= p1;
+  const R = $('results'), A = $('barA'), B = $('barB'), V = $('verdict'), bd = $('board'), aw = $('awards'), rb = $('resBtns');
+  R.className = 'screen show judging';
+  A.style.transition = B.style.transition = 'none'; A.style.width = B.style.width = '0%'; A.style.background = TEAM_HEX[0]; B.style.background = TEAM_HEX[1];
+  $('pctA').textContent = $('pctB').textContent = ''; V.className = ''; V.innerHTML = ''; bd.innerHTML = ''; aw.innerHTML = '';
+  bd.classList.remove('show'); aw.classList.remove('show'); rb.classList.remove('show');
   $('judge').textContent = '裁判判定中…';
-  const sum = Math.max(p0 + p1, 1);
-  let beeps = 0; const bi = setInterval(() => { Sfx.beep(false); if (++beeps > 8) clearInterval(bi); }, 220);
-  setTimeout(() => { A.style.transition = B.style.transition = ''; A.style.width = (p0 / sum * 100) + '%'; B.style.width = (p1 / sum * 100) + '%'; }, 400);
-  setTimeout(() => {
-    A.textContent = p0.toFixed(1) + '%'; B.textContent = p1.toFixed(1) + '%';
-    const win = p0 >= p1; V.textContent = win ? '胜利！' : '失败…'; V.style.color = win ? TEAM_HEX[0] : '#9aa0b5'; V.style.opacity = 1; V.classList.add('show');
+  const sum = Math.max(p0 + p1, 1e-6), fa = p0 / sum * 100, fb = 100 - fa;
+  // tug of war: both colours creep in from the ends, see-saw in the middle, then snap to the real split
+  const steps = [[500, 20, 20], [1150, 36, 33], [1650, 40, 44], [2150, 46, 42], [2750, fa, fb]];
+  steps.forEach(([t, a, b], i) => later(t, () => {
+    const last = i === steps.length - 1;
+    A.style.transition = B.style.transition = last ? 'width .8s cubic-bezier(.2,.9,.3,1.15)' : 'width .45s ease-in-out';
+    A.style.width = a + '%'; B.style.width = b + '%'; Sfx.beep(last);
+  }));
+  later(3450, () => { $('pctA').textContent = p0.toFixed(1) + '%'; $('pctB').textContent = p1.toFixed(1) + '%'; R.classList.add('revealed', win ? 'winA' : 'winB'); });
+  later(3900, () => {
+    const col = win ? TEAM_HEX[0] : '#8f94a8';
+    V.style.setProperty('--vc', col);
+    V.innerHTML = `<svg class="vsplash" viewBox="0 0 200 200"><path d="${blobPath(win ? 2.2 : 5.3, 70)}" fill="${col}" stroke="#111" stroke-width="4"/></svg><span class="vt">${win ? 'WIN!' : 'LOSE…'}</span>`;
+    V.classList.add('show', win ? 'win' : 'lose');
     $('judge').textContent = win ? '你的队伍赢下了这片广场！' : '对手的颜色更胜一筹……';
-    Sfx.fanfare(win); flash(0.4);
-  }, 2900);
-  setTimeout(() => {
-    bd.innerHTML = [0, 1].map(t => {
-      const rows = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint).map(c => `<div class="r${c.isPlayer ? ' me' : ''}"><span>${weaponIcon(c.weapon.id, '#fff', 30, TEAM_HEX[t])}${c.name}</span><span>${Math.round(c.paint)}p</span><span>${c.kills}</span><span>${c.deaths}</span></div>`).join('');
-      return `<div class="tbl" style="border-color:${TEAM_HEX[t]}"><h4 style="color:${TEAM_HEX[t]}">${t === 0 ? '我方' : '对手'} · ${(t ? p1 : p0).toFixed(1)}%</h4><div class="r h"><span>名字</span><span>涂地</span><span>击倒</span><span>阵亡</span></div>${rows}</div>`;
-    }).join('');
-    bd.classList.add('show'); rb.classList.add('show');
-  }, 4200);
+    Sfx.fanfare(win); flash(win ? 0.45 : 0.2);
+  });
+  later(5800, () => {
+    R.classList.add('boarded');
+    const team = t => {
+      const won = (t === 0) === win, rows = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint).map((c, i) => {
+        const md = medalsFor(c).map(m => `<b class="${m.gold ? 'g' : 's'}" title="${m.t}（${m.gold ? '全场第一' : '队内第一'}）"></b>`).join('') + roastsFor(c).map(r => `<b class="x" title="${r.t}"></b>`).join('');
+        return `<div class="r${c.isPlayer ? ' me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}${c.name}${c.isPlayer ? '<i>你</i>' : ''}</span><span>${Math.round(c.paint)}p</span><span>${c.kills}<small>${c.assists ? ' +' + c.assists : ''}</small></span><span>${c.deaths}</span><span>${c.specials}</span><span class="md">${md}</span></div>`;
+      }).join('');
+      return `<div class="tbl ${won ? 'won' : 'lost'}" style="--tc:${TEAM_HEX[t]}"><div class="th"><b>${won ? 'WIN!' : 'LOSE…'}</b><span>${t === 0 ? '我方' : '对手'}</span><em>${(t ? p1 : p0).toFixed(1)}%</em></div><div class="r h"><span></span><span>名字</span><span>涂地</span><span>击倒 +助攻</span><span>阵亡</span><span>必杀</span><span>奖牌</span></div>${rows}</div>`;
+    };
+    bd.innerHTML = win ? team(0) + team(1) : team(1) + team(0);
+    bd.classList.add('show');
+  });
+  later(6600, () => {
+    const me = medalsFor(PLAYER), rs = roastsFor(PLAYER), line = verdictLine(PLAYER);
+    const chips = me.map(m => `<div class="mdl ${m.gold ? 'g' : 's'}"><b></b><div><span>${m.t}</span><small>${m.gold ? '全场第一' : '队内第一'}</small></div></div>`).concat(rs.map(r => `<div class="mdl x"><b></b><div><span>${r.t}</span><small>吐槽奖</small></div></div>`));
+    aw.innerHTML = `<div class="awrow"><h4>你的表现</h4>${chips.length ? chips.join('') : '<div class="mdl none"><span>这局没有拿到奖牌</span></div>'}</div><div class="quip ${line.good ? 'good' : 'bad'}">${line.text}</div>`;
+    aw.querySelectorAll('.mdl').forEach((el, i) => el.style.animationDelay = i * 0.12 + 's');
+    aw.classList.add('show'); rb.classList.add('show');
+    if (me.some(m => m.gold)) Sfx.chargeFull && Sfx.chargeFull();
+  });
 }
 function resetToAttract() {
   if (G.state === 'title') return;
@@ -3252,7 +3516,7 @@ function loop() {
     else if (G.state === 'intro') updateIntro(dt);
     else if (G.state === 'play') updatePlay(dt);
     else if (G.state === 'end') { G.endT += dt; if (G.endT > 2.6) showResults(); }
-    else if (G.state === 'results') { const a = t * 0.05; camera.position.set(Math.sin(a) * 18, 78, Math.cos(a) * 18 + 8); camera.lookAt(0, 0, 0); }
+    else if (G.state === 'results') { camera.position.set(0, 84, 10 + Math.sin(t * 0.2) * 0.6); camera.lookAt(0, 0, 0); }   // judges look at the map from straight above
     if (G.state === 'intro' || G.state === 'play' || G.state === 'end') {
       for (const c of CHARS) c.step(dt);
       // separation
