@@ -306,6 +306,8 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .st-r .n{display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
 .st-r .n em{font-style:normal;font-size:11px;background:#444;border:2px solid #111;border-radius:8px;padding:0 6px;color:#fff}
 .st-r .sp{font-size:13px;opacity:.8}.st-r .sp.on b{color:#ffe45c;animation:blink .5s infinite}
+#specTag{position:absolute;left:50%;top:92px;transform:translateX(-50%);display:none;font-weight:900;font-size:16px;background:rgba(0,0,0,.6);border:3px solid #111;border-radius:16px;padding:5px 16px;color:#fff;text-shadow:0 2px 0 #000}
+#specTag.on{display:block}
 </style></head><body>
 <canvas id="gl"></canvas>
 
@@ -379,6 +381,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   <div id="mapHint">点击队友（或按 1 / 2 / 3）超级跳过去 · 再按 M 关闭地图</div>
   <div id="center"></div>
   <div id="death"><div class="by" id="deathBy"></div><div class="cd" id="deathCd">5</div><div class="tip" id="deathTip"></div></div>
+  <div id="specTag"></div>
   <div id="hint"><kbd>WASD</kbd>移动 <kbd>鼠标左键</kbd>射击 <kbd>Shift</kbd>潜墨 <kbd>空格</kbd>跳 <kbd>右键/E</kbd>炸弹 <kbd>Q</kbd>必杀 <kbd>M</kbd>地图/超级跳 <kbd>Tab</kbd>战况</div>
   <div id="scoreTab"><div class="st-head"><b>战况</b><span id="stTime"></span><small>松开 Tab 关闭</small></div>
     <div class="st-cols"><span></span><span>名字</span><span>击倒</span><span>助攻</span><span>阵亡</span><span>涂地</span><span>必杀</span></div>
@@ -787,7 +790,8 @@ function defineMap() {
   SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }));
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
-const SPAWN = [{ x: 0, z: 42, y: 2.0, yaw: 0 }, { x: 0, z: -42, y: 2.0, yaw: Math.PI }];
+// yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
+const SPAWN = [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
 const DECK = [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
 function inRect(s, x, z) { return x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1; }
 function topAt(s, x, z) {
@@ -2863,18 +2867,42 @@ function playerControl(dt) {
   if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[W.sub].cost); else if (Proj.pv) Proj.preview(null);
   Cam.showLand = !c.swim;
 }
+// teammate to watch while dead: your super-jump pick, else keep the current one, else the nearest
+function spectateTarget(c) {
+  const ok = m => m && m !== c && m.team === c.team && m.alive && m.state !== 'dead';
+  if (ok(c.jumpTarget)) return c.jumpTarget;
+  if (ok(Cam.spec)) return Cam.spec;
+  let best = null, bd = 1e9; for (const m of CHARS) if (ok(m)) { const d = m.pos.distanceTo(c.pos); if (d < bd) { bd = d; best = m; } }
+  return best;
+}
 function updateCamera(dt) {
   const c = PLAYER;
   let px = c.pos.x, py = c.pos.y, pz = c.pos.z;
   if (c.state === 'dead') {
     const t = RESPAWN - c.respawnT;
-    const k = c.lastAttacker && c.lastAttacker.alive && t < 2.6 ? c.lastAttacker : null;
+    // 1) look at whoever knocked you out (like the original) ...
+    const k = c.lastAttacker && c.lastAttacker.alive && t < 2.0 ? c.lastAttacker : null;
+    // 2) ... then watch a teammate until you respawn (the super-jump pick if you chose one, else the nearest)
+    const mate = !k && t > 0.8 ? spectateTarget(c) : null;
+    Cam.spec = mate;
+    if (mate) {
+      const hs = Math.hypot(mate.vel.x, mate.vel.z), wantYaw = hs > 1 && mate.state === 'play' ? Math.atan2(mate.vel.x, mate.vel.z) : mate.aimYaw;
+      Cam.specYaw = Cam.specYaw === undefined ? wantYaw : Cam.specYaw + angDiff(Cam.specYaw, wantYaw) * Math.min(1, dt * 2.5);
+      const py = mate.pos.y + (mate.swim ? 1.1 : 1.5), fx = Math.sin(Cam.specYaw), fz = Math.cos(Cam.specYaw);
+      const want = new THREE.Vector3(mate.pos.x - fx * 5.4, py + 1.5, mate.pos.z - fz * 5.4);
+      const tb = segBlocked(mate.pos.x, py, mate.pos.z, want.x, want.y, want.z, 0.15); if (tb) want.lerpVectors(new THREE.Vector3(mate.pos.x, py, mate.pos.z), want, Math.max(0.15, tb - 0.08));
+      Cam.pos.lerp(want, 1 - Math.exp(-5 * dt)); camera.position.copy(Cam.pos);
+      camera.lookAt(mate.pos.x + fx * 6, py - 0.2, mate.pos.z + fz * 6);
+      return;
+    }
+    Cam.specYaw = undefined;
     const g = c.ghost.position;
     const tgt = k ? k.chest() : new THREE.Vector3(g.x, g.y, g.z);
     const want = new THREE.Vector3(c.pos.x - Math.sin(Cam.yaw) * 6, c.pos.y + 5, c.pos.z - Math.cos(Cam.yaw) * 6);
     Cam.pos.lerp(want, 1 - Math.exp(-3 * dt)); camera.position.copy(Cam.pos); camera.lookAt(tgt);
     return;
   }
+  Cam.spec = null; Cam.specYaw = undefined;
   const zt = c.charging ? 1 - 0.24 * c.charge : 1;
   Cam.zoom = damp(Cam.zoom, zt, 10, dt);
   const fv = SETTINGS.fov * Cam.zoom; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }
@@ -2936,7 +2964,9 @@ const HUD = {
     const vig = clamp((100 - hp) / 100 * 0.9 + this.hurtV * 0.4, 0, 0.95);
     const ec = TEAM_HEX[1 - c.team];
     $('vignette').style.opacity = 0;
-    ScreenInk.update(dt, c.alive ? c.hp : 0, c.alive && c.inEnemy && !c.invuln());
+    ScreenInk.update(dt, c.alive ? c.hp : Cam.spec ? 100 : 0, c.alive && c.inEnemy && !c.invuln());     // watching a teammate: clear the ink off the screen
+    const st = $('specTag'), sn = !c.alive && Cam.spec ? '正在观看：' + Cam.spec.name : '';
+    if (st.textContent !== sn) { st.textContent = sn; st.classList.toggle('on', !!sn); }
     $('crosshair').classList.toggle('enemy', Cam.lock);
     const r2 = $('ret2');
     if (Cam.showLand && c.alive && c.state === 'play') {

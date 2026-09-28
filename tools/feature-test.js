@@ -34,6 +34,8 @@ vm.runInContext(`(() => {
   // ---------- charger: store charge while swimming
   Profile.data.weapon = 'charger'; openLobby(); startMatch(); Input.locked = true;
   while (G.state !== 'play') loop();
+  { const v = new THREE.Vector3(); loop(); camera.getWorldDirection(v); const bf = CHARS.filter(c => c.team === 1).every(c => Math.cos(c.aimYaw) > 0.9);
+    ok(v.z < -0.9 && Math.abs(Cam.yaw - Math.PI) < 0.05 && bf, 'match starts facing the battlefield (camera dir z=' + v.z.toFixed(2) + ', enemies face us too)'); }
   const P = PLAYER; G.bots.forEach(b => b.update = () => {});   // freeze bots
   CHARS.forEach(c => { if (c !== P) { c.pos.set(0, 0, -30 - c.id); c.intent.mx = c.intent.mz = 0; c.intent.fire = false; } });
   P.pos.set(0, 0, 20); P.vel.set(0, 0, 0); P.ink = 100;
@@ -200,6 +202,19 @@ vm.runInContext(`(() => {
     const shown = $('scoreTab').classList.contains('show'), html = $('stA').innerHTML + $('stB').innerHTML;
     Input.keys.Tab = false; HUD.update(0.03);
     ok(shown && !$('scoreTab').classList.contains('show') && html.includes(P.name) && html.includes('共击倒'), 'holding Tab shows the live scoreboard, releasing hides it');
+    // knocked out: killer cam first, then watch a teammate, back to yourself on respawn
+    quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby('turf'); startMatch(); while (G.state !== 'play') loop();
+    const Q = PLAYER, foe = CHARS.find(c => c.team === 1); G.bots.forEach(b => b.update = () => {});
+    Q.invulnT = 0; Q.pos.set(0, 0, 20); for (let i = 0; i < 3; i++) loop();
+    Q.hp = 10; Q.damage(50, foe, 'rifle'); for (let i = 0; i < 20; i++) loop();
+    const early = Cam.spec; for (let i = 0; i < 60; i++) loop();
+    const mate = Cam.spec, dCam = mate ? camera.position.distanceTo(mate.pos) : 99, tag = $('specTag').textContent;
+    const pick = CHARS.find(c => c.team === 0 && c !== Q && c !== mate); HUD.mapAllies = [{ c: pick }]; HUD.pickAlly(0); for (let i = 0; i < 5; i++) loop();
+    const switched = Cam.spec === pick;
+    while (!Q.alive || Q.state !== 'play') loop(); loop();
+    const v2 = new THREE.Vector3(); camera.getWorldDirection(v2);
+    ok(!early && mate && mate.team === 0 && dCam < 9 && tag.includes(mate.name) && switched && !Cam.spec, 'knocked out: sees the attacker, then watches a teammate (' + (mate && mate.name) + ', cam ' + dCam.toFixed(1) + ' m), follows your super-jump pick, back to you on respawn');
+    ok(Q.state === 'play' && (Q.sj || Q.fly || v2.z < -0.5 || Q.pos.distanceTo(pick.pos) < 3), 'respawn: facing the battlefield or flying to the picked teammate');
   }
 })()`, g);
 if (g.__fails) { console.log(g.__fails + ' FAILED'); process.exitCode = 1; } else console.log('ALL FEATURE TESTS PASSED');

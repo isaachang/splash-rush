@@ -305,3 +305,5 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .st-r .n{display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
 .st-r .n em{font-style:normal;font-size:11px;background:#444;border:2px solid #111;border-radius:8px;padding:0 6px;color:#fff}
 .st-r .sp{font-size:13px;opacity:.8}.st-r .sp.on b{color:#ffe45c;animation:blink .5s infinite}
+#specTag{position:absolute;left:50%;top:92px;transform:translateX(-50%);display:none;font-weight:900;font-size:16px;background:rgba(0,0,0,.6);border:3px solid #111;border-radius:16px;padding:5px 16px;color:#fff;text-shadow:0 2px 0 #000}
+#specTag.on{display:block}

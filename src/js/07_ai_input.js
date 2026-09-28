@@ -313,18 +313,42 @@ function playerControl(dt) {
   if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[W.sub].cost); else if (Proj.pv) Proj.preview(null);
   Cam.showLand = !c.swim;
 }
+// teammate to watch while dead: your super-jump pick, else keep the current one, else the nearest
+function spectateTarget(c) {
+  const ok = m => m && m !== c && m.team === c.team && m.alive && m.state !== 'dead';
+  if (ok(c.jumpTarget)) return c.jumpTarget;
+  if (ok(Cam.spec)) return Cam.spec;
+  let best = null, bd = 1e9; for (const m of CHARS) if (ok(m)) { const d = m.pos.distanceTo(c.pos); if (d < bd) { bd = d; best = m; } }
+  return best;
+}
 function updateCamera(dt) {
   const c = PLAYER;
   let px = c.pos.x, py = c.pos.y, pz = c.pos.z;
   if (c.state === 'dead') {
     const t = RESPAWN - c.respawnT;
-    const k = c.lastAttacker && c.lastAttacker.alive && t < 2.6 ? c.lastAttacker : null;
+    // 1) look at whoever knocked you out (like the original) ...
+    const k = c.lastAttacker && c.lastAttacker.alive && t < 2.0 ? c.lastAttacker : null;
+    // 2) ... then watch a teammate until you respawn (the super-jump pick if you chose one, else the nearest)
+    const mate = !k && t > 0.8 ? spectateTarget(c) : null;
+    Cam.spec = mate;
+    if (mate) {
+      const hs = Math.hypot(mate.vel.x, mate.vel.z), wantYaw = hs > 1 && mate.state === 'play' ? Math.atan2(mate.vel.x, mate.vel.z) : mate.aimYaw;
+      Cam.specYaw = Cam.specYaw === undefined ? wantYaw : Cam.specYaw + angDiff(Cam.specYaw, wantYaw) * Math.min(1, dt * 2.5);
+      const py = mate.pos.y + (mate.swim ? 1.1 : 1.5), fx = Math.sin(Cam.specYaw), fz = Math.cos(Cam.specYaw);
+      const want = new THREE.Vector3(mate.pos.x - fx * 5.4, py + 1.5, mate.pos.z - fz * 5.4);
+      const tb = segBlocked(mate.pos.x, py, mate.pos.z, want.x, want.y, want.z, 0.15); if (tb) want.lerpVectors(new THREE.Vector3(mate.pos.x, py, mate.pos.z), want, Math.max(0.15, tb - 0.08));
+      Cam.pos.lerp(want, 1 - Math.exp(-5 * dt)); camera.position.copy(Cam.pos);
+      camera.lookAt(mate.pos.x + fx * 6, py - 0.2, mate.pos.z + fz * 6);
+      return;
+    }
+    Cam.specYaw = undefined;
     const g = c.ghost.position;
     const tgt = k ? k.chest() : new THREE.Vector3(g.x, g.y, g.z);
     const want = new THREE.Vector3(c.pos.x - Math.sin(Cam.yaw) * 6, c.pos.y + 5, c.pos.z - Math.cos(Cam.yaw) * 6);
     Cam.pos.lerp(want, 1 - Math.exp(-3 * dt)); camera.position.copy(Cam.pos); camera.lookAt(tgt);
     return;
   }
+  Cam.spec = null; Cam.specYaw = undefined;
   const zt = c.charging ? 1 - 0.24 * c.charge : 1;
   Cam.zoom = damp(Cam.zoom, zt, 10, dt);
   const fv = SETTINGS.fov * Cam.zoom; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }

@@ -35,7 +35,9 @@ const HUD = {
     const vig = clamp((100 - hp) / 100 * 0.9 + this.hurtV * 0.4, 0, 0.95);
     const ec = TEAM_HEX[1 - c.team];
     $('vignette').style.opacity = 0;
-    ScreenInk.update(dt, c.alive ? c.hp : 0, c.alive && c.inEnemy && !c.invuln());
+    ScreenInk.update(dt, c.alive ? c.hp : Cam.spec ? 100 : 0, c.alive && c.inEnemy && !c.invuln());     // watching a teammate: clear the ink off the screen
+    const st = $('specTag'), sn = !c.alive && Cam.spec ? '正在观看：' + Cam.spec.name : '';
+    if (st.textContent !== sn) { st.textContent = sn; st.classList.toggle('on', !!sn); }
     $('crosshair').classList.toggle('enemy', Cam.lock);
     const r2 = $('ret2');
     if (Cam.showLand && c.alive && c.state === 'play') {

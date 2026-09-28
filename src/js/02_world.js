@@ -37,7 +37,8 @@ function defineMap() {
   SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }));
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
-const SPAWN = [{ x: 0, z: 42, y: 2.0, yaw: 0 }, { x: 0, z: -42, y: 2.0, yaw: Math.PI }];
+// yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
+const SPAWN = [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
 const DECK = [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
 function inRect(s, x, z) { return x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1; }
 function topAt(s, x, z) {
