@@ -220,6 +220,12 @@ class Character {
   onOwnDeck() { const d = DECK[this.team]; return this.pos.y > 1.9 && inRect(d, this.pos.x, this.pos.z); }
   inOwnBarrier() { return inBarrier(this.team, this.pos); }
   invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.state === 'sjfly' || this.inOwnBarrier(); }
+  // got hit by a bullet: flinch back a little and flash
+  onHit(dir, dmg) {
+    this.flinch = Math.min(1, (this.flinch || 0) + 0.6 + dmg / 120);
+    this.flinchDir = dir.clone();
+    this.vel.x += dir.x * 0.9; this.vel.z += dir.z * 0.9;
+  }
   canJumpTo(t) { return t && t !== this && t.team === this.team && t.alive && t.state === 'play' && !t.sj; }
   // super jump to a teammate: short crouch (vulnerable), launch, then land on them
   startSuperJump(t) {
@@ -264,7 +270,7 @@ class Character {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
     if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
-    if (src && src.isPlayer) { Sfx.hit(); HUD.hitmark(false); }
+    if (src && src.isPlayer) { Sfx.hit(amount >= 50); HUD.hitmark(false, amount); }
     if (this.hp <= 0) this.die(src, this.lastVia);
     return true;
   }
@@ -456,7 +462,11 @@ class Character {
           const spread = this.grounded ? W.spread : W.airSpread;
           dir.x += rand(-spread, spread); dir.y += rand(-spread, spread) * 0.6; dir.z += rand(-spread, spread); dir.normalize();
           Proj.shot(this, m, dir);
-          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) Sfx.shoot(v);
+          // muzzle: small ink flash + droplets spraying forward
+          Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.11, 0.06, TEAM_HEX[this.team], 0);
+          Fx.burstDir(m.x, m.y, m.z, TEAM_HEX[this.team], 3, 5, 0.045, dir.x, dir.y, dir.z, 0.35);
+          if (this.isPlayer) { Cam.kick = Math.min(0.014, (Cam.kick || 0) + 0.0045); }
+          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) Sfx.shoot(v, this.isPlayer ? 0 : sndPan(this.pos));
         } else if (this.isPlayer) HUD.lowInk();
       }
     } else if (W.type === 'charge') this.updateCharge(dt, I, T);
@@ -615,9 +625,9 @@ class Character {
       this.torso.rotation.x = 0.1 * run;
       const pitch = this.aimPitch, rel = angDiff(this.bodyYaw, this.aimYaw);
       this.torso.rotation.y = clamp(rel, -0.6, 0.6);
-      this.recoil = Math.max(0, this.recoil - dt * 12);
+      this.recoil = Math.max(0, this.recoil - dt * 14);
       this.arms[0].rotation.set(-Math.PI / 2 - pitch + this.recoil * 0.12, 0, 0);
-      this.gun.position.y = -0.33 + this.recoil * 0.04;
+      this.gun.position.y = -0.33 + this.recoil * 0.06;
       const firing = G.time - this.lastShot < 0.3;
       if (this.weapon.cls === 'charger') {
         // two-handed long gun: left hand supports the barrel; crouch while charging
@@ -634,7 +644,10 @@ class Character {
       let k = 1 + this.swimPop * 0.25 + this.landSquash * 0.3; if (this.sj) k = 1 + Math.min(this.sj.t, 0.6) * 0.35;
       this.human.scale.set(k, 2 - k, k);
       this.tankInk.scale.y = 0.32 * clamp(this.ink / 100, 0.02, 1); this.tankInk.position.y = -0.16 + this.tankInk.scale.y / 2;
-      const fl = this.hurtFlash > 0 ? 0.8 : 0; this.mats.cloth.emissive.setRGB(fl, fl * 0.3, fl * 0.3); this.mats.skin.emissive.setRGB(fl, fl * 0.3, fl * 0.3);
+      const fl = this.hurtFlash > 0.07 ? 0.9 : this.hurtFlash > 0 ? 0.35 : 0; this.mats.cloth.emissive.setRGB(fl, fl, fl); this.mats.skin.emissive.setRGB(fl, fl, fl);
+      // flinch: lean away from the hit for a moment
+      this.flinch = Math.max(0, (this.flinch || 0) - dt * 7);
+      if (this.flinch > 0 && this.flinchDir) { const f = this.flinch; this.torso.rotation.x -= f * 0.22; this.head.rotation.x -= f * 0.18; this.human.position.y -= f * 0.03; }
     } else {
       const sub = this.submerged;
       const showBody = !sub;

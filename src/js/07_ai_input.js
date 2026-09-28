@@ -303,7 +303,11 @@ function playerControl(dt) {
   const R = c.rangeNow(), D = mzl.distanceTo(hitP);
   // small reticle sits ON the aim line: on the aimed surface if it is within range, otherwise at max range
   if (D <= R) Cam.land.copy(hitP); else Cam.land.copy(mzl).addScaledVector(I.aimDir, R);
-  Cam.landDist = Math.min(D, R);
+  // ...but the ink leaves from the gun, not the camera: if something blocks the gun's line first, stick to that
+  const Lr = Math.min(D, R), tb = segBlocked(mzl.x, mzl.y, mzl.z, Cam.land.x, Cam.land.y, Cam.land.z, 0.2);
+  Cam.blocked = tb > 0 && tb * Lr < Lr - 0.35;
+  if (Cam.blocked) Cam.land.copy(mzl).addScaledVector(I.aimDir, tb * Lr);
+  Cam.landDist = Cam.blocked ? tb * Lr : Lr;
   const pr = W.type === 'charge' ? traceRay(c, mzl, I.aimDir, R, 0.3) : Proj.predict(c, mzl, I.aimDir);
   Cam.lock = !!pr.char;
   if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[W.sub].cost); else if (Proj.pv) Proj.preview(null);
@@ -342,5 +346,6 @@ function updateCamera(dt) {
   Cam.pos.copy(want);
   camera.position.copy(want);
   if (G.shakeAmt > 0) { camera.position.x += rand(-1, 1) * G.shakeAmt * 0.25; camera.position.y += rand(-1, 1) * G.shakeAmt * 0.25; G.shakeAmt = Math.max(0, G.shakeAmt - dt * 3); }
-  camera.lookAt(pivot.x + dir.x * 30 + shoulder.x, pivot.y + dir.y * 30, pivot.z + dir.z * 30 + shoulder.z);
+  Cam.kick = (Cam.kick || 0) * Math.exp(-dt * 22);
+  camera.lookAt(pivot.x + dir.x * 30 + shoulder.x, pivot.y + dir.y * 30 + Cam.kick * 30, pivot.z + dir.z * 30 + shoulder.z);
 }

@@ -88,9 +88,10 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #crosshair .dot{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.6)}
 #crosshair.enemy .ring{border-color:#ff3355;transform:scale(.8)}
 #hitmark{position:absolute;left:-22px;top:-22px;width:44px;height:44px;opacity:0}
-#hitmark.on{animation:hm .25s ease-out}
+#hitmark.on{animation:hm .22s ease-out}
+#hitmark path{filter:drop-shadow(0 0 2px rgba(0,0,0,.8))}
 #hitmark.kill{animation:hmk .5s ease-out}
-@keyframes hm{0%{opacity:1;transform:scale(1.4)}100%{opacity:0;transform:scale(1)}}
+@keyframes hm{0%{opacity:1;transform:scale(calc(var(--hs,1) * 1.35))}60%{opacity:.9}100%{opacity:0;transform:scale(var(--hs,1))}}
 @keyframes hmk{0%{opacity:1;transform:scale(2) rotate(45deg)}100%{opacity:0;transform:scale(1) rotate(0)}}
 #inkbar{position:absolute;left:calc(50% + 46px);top:calc(50% - 44px);width:18px;height:88px;border:3px solid #111;border-radius:12px;background:rgba(0,0,0,.35);overflow:hidden;box-shadow:0 0 0 2px rgba(255,255,255,.5);transition:opacity .3s}
 #inkfill{position:absolute;bottom:0;left:0;right:0;background:var(--c0);border-radius:6px}
@@ -426,6 +427,9 @@ const Sfx = (() => {
   }
   function setVol() { if (!ctx) return; master.gain.value = SETTINGS.vol; musG.gain.value = SETTINGS.mus * 0.5; }
   function env(g, t, a, peak, dcy) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dcy); }
+  // stereo panning helper: returns a node to connect sounds into
+  function panNode(pan) { if (!ctx || !pan || !ctx.createStereoPanner) return sfxG; const p = ctx.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); p.connect(sfxG); return p; }
+  let lastImpact = 0;
   function tone(type, f0, f1, dur, vol, dest, t0) {
     if (!ctx || vol < 0.002) return; const t = t0 ?? ctx.currentTime;
     const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t);
@@ -473,10 +477,32 @@ const Sfx = (() => {
   function stopMusic() { if (M.timer) clearInterval(M.timer); M.on = false; }
   return {
     init, setVol, music, stopMusic,
-    shoot(v) { tone('square', rand(800, 1000), 260, 0.05, 0.035 * v); noise(0.06, 0.09 * v, 'bandpass', 2600, 1.4); },
+    // pressurised "pshh" + low thump, 3 variants with random pitch, panned by direction
+    shoot(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), k = rand(0.92, 1.08), var_ = Math.floor(Math.random() * 3);
+      noise(0.07, 0.11 * v, 'bandpass', [2300, 2700, 2000][var_] * k, 1.1, [900, 1100, 800][var_] * k, d);
+      noise(0.035, 0.07 * v, 'highpass', 5200 * k, 0.8, null, d);
+      tone('sine', 190 * k, 70, 0.07, 0.12 * v, d);
+      tone('triangle', [620, 700, 560][var_] * k, 240, 0.04, 0.03 * v, d);
+    },
+    // wet "splat" when ink hits a surface (throttled so rapid fire doesn't pile up)
+    impact(v, pan = 0) {
+      if (!ctx || v < 0.04) return; const now = ctx.currentTime; if (now - lastImpact < 0.035) return; lastImpact = now;
+      const d = panNode(pan), k = rand(0.85, 1.15);
+      noise(0.09, 0.09 * v, 'lowpass', 1600 * k, 1.2, 300, d); tone('sine', 320 * k, 120, 0.06, 0.05 * v, d);
+    },
     splat(v) { noise(0.12, 0.07 * v, 'lowpass', 1200, 1, 250); },
-    hit() { tone('sine', 1300, 1900, 0.06, 0.14); },
-    kill() { tone('square', 600, 1200, 0.1, 0.1); tone('sine', 1600, 2600, 0.22, 0.1, null, ctx && ctx.currentTime + 0.07); },
+    // hit confirmation: bright tick + wet pop (+ extra body when the hit was heavy)
+    hit(heavy = false) {
+      if (!ctx) return; const t = ctx.currentTime, k = rand(0.96, 1.04);
+      tone('triangle', 1750 * k, 2350 * k, 0.05, 0.13); tone('sine', 3200 * k, null, 0.03, 0.05, null, t + 0.01);
+      noise(0.07, 0.12, 'bandpass', 1300 * k, 2.2, 600); tone('sine', 240, 110, 0.07, heavy ? 0.14 : 0.08);
+    },
+    kill() {
+      if (!ctx) return; const t = ctx.currentTime;
+      tone('square', 520, 1040, 0.09, 0.09); tone('triangle', 1560, 2600, 0.24, 0.11, null, t + 0.06); tone('sine', 2600, 3400, 0.18, 0.06, null, t + 0.12);
+      noise(0.35, 0.3, 'lowpass', 1800, 0.9, 180); tone('sine', 140, 50, 0.3, 0.25);
+    },
     hurt() { tone('sawtooth', 240, 110, 0.14, 0.09); noise(0.1, 0.12, 'lowpass', 700, 1); },
     swimIn() { tone('sine', 280, 950, 0.12, 0.14); noise(0.16, 0.12, 'bandpass', 900, 2, 300); },
     swimOut() { tone('sine', 820, 300, 0.1, 0.1); },
@@ -834,8 +860,7 @@ function cellIndex(x, z) { const i = Math.floor((x + XH) / CELL), j = Math.floor
 function ownerAt(x, y, z) { const k = cellIndex(x, z); if (k < 0) return -1; if (Math.abs(Paint.hgt[k] - y) > 0.4) return -2; return Paint.owner[k]; }
 function uploadPaint() {
   if (Paint.dirty) { Paint.tex.needsUpdate = true; Paint.dirty = false; }
-  Paint.wT = (Paint.wT || 0) + 1;
-  if (Paint.wdirty && Paint.wT >= 3) { Paint.wtex.needsUpdate = true; Paint.wdirty = false; Paint.wT = 0; }
+  if (Paint.wdirty) { Paint.wtex.needsUpdate = true; Paint.wdirty = false; }
 }
 
 /* ==================================================== PAINT MATERIALS */
@@ -1254,7 +1279,7 @@ const WEAPONS = {
     id: 'rifle', name: '墨浪步枪', en: 'SPLASH RIFLE', role: '全能 · 中距离', type: 'auto', cls: 'shooter',
     desc: '射速、射程、涂地都很均衡，3 发击倒。适合任何场合，新手首选。',
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
-    dmg: 36, dmgFar: 18, falloff: [0.16, 0.4], interval: 0.105, speed: 130, straight: 0.055, dragH: 18, dragV: 16, grav: 150,
+    dmg: 36, dmgFar: 18, falloff: [0.16, 0.4], interval: 0.105, speed: 130, straight: 0.05, dragH: 15.5, dragV: 7, grav: 80,
     spread: 0.045, airSpread: 0.1, cost: 0.92, splat: [0.95, 1.2],
     moveFire: 4.8, muzzleF: 0.55, range: 13, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,
@@ -1316,6 +1341,15 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.5.1', date: '2026-09-28', title: '打击感', items: [
+    '子弹改为连续的墨水流，开枪时能清楚看到墨水喷出去',
+    '弹道末端的下坠更平滑，射程不变',
+    '开枪时枪口喷墨、枪身后坐、镜头轻微上抬',
+    '墨水打到地面和墙上会溅起墨花并发出"啪嗒"声，墙上的墨迹不再慢半拍',
+    '打中敌人有专用命中音，对方会被打得一顿，命中标记随伤害变大',
+    '开枪声重做，远处的枪声能分出左右',
+    '修复被矮墙挡住时准星仍显示能打中的问题'
+  ] },
   { v: 'v0.5.0', date: '2026-09-28', title: '战斗手感收尾', items: [
     '步枪改为 3 枪击倒，对枪节奏更利落',
     '回血按原版调整：潜进自己的墨水约 1 秒回满',
@@ -1572,6 +1606,12 @@ class Character {
   onOwnDeck() { const d = DECK[this.team]; return this.pos.y > 1.9 && inRect(d, this.pos.x, this.pos.z); }
   inOwnBarrier() { return inBarrier(this.team, this.pos); }
   invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.state === 'sjfly' || this.inOwnBarrier(); }
+  // got hit by a bullet: flinch back a little and flash
+  onHit(dir, dmg) {
+    this.flinch = Math.min(1, (this.flinch || 0) + 0.6 + dmg / 120);
+    this.flinchDir = dir.clone();
+    this.vel.x += dir.x * 0.9; this.vel.z += dir.z * 0.9;
+  }
   canJumpTo(t) { return t && t !== this && t.team === this.team && t.alive && t.state === 'play' && !t.sj; }
   // super jump to a teammate: short crouch (vulnerable), launch, then land on them
   startSuperJump(t) {
@@ -1616,7 +1656,7 @@ class Character {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
     if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
-    if (src && src.isPlayer) { Sfx.hit(); HUD.hitmark(false); }
+    if (src && src.isPlayer) { Sfx.hit(amount >= 50); HUD.hitmark(false, amount); }
     if (this.hp <= 0) this.die(src, this.lastVia);
     return true;
   }
@@ -1808,7 +1848,11 @@ class Character {
           const spread = this.grounded ? W.spread : W.airSpread;
           dir.x += rand(-spread, spread); dir.y += rand(-spread, spread) * 0.6; dir.z += rand(-spread, spread); dir.normalize();
           Proj.shot(this, m, dir);
-          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) Sfx.shoot(v);
+          // muzzle: small ink flash + droplets spraying forward
+          Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.11, 0.06, TEAM_HEX[this.team], 0);
+          Fx.burstDir(m.x, m.y, m.z, TEAM_HEX[this.team], 3, 5, 0.045, dir.x, dir.y, dir.z, 0.35);
+          if (this.isPlayer) { Cam.kick = Math.min(0.014, (Cam.kick || 0) + 0.0045); }
+          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) Sfx.shoot(v, this.isPlayer ? 0 : sndPan(this.pos));
         } else if (this.isPlayer) HUD.lowInk();
       }
     } else if (W.type === 'charge') this.updateCharge(dt, I, T);
@@ -1967,9 +2011,9 @@ class Character {
       this.torso.rotation.x = 0.1 * run;
       const pitch = this.aimPitch, rel = angDiff(this.bodyYaw, this.aimYaw);
       this.torso.rotation.y = clamp(rel, -0.6, 0.6);
-      this.recoil = Math.max(0, this.recoil - dt * 12);
+      this.recoil = Math.max(0, this.recoil - dt * 14);
       this.arms[0].rotation.set(-Math.PI / 2 - pitch + this.recoil * 0.12, 0, 0);
-      this.gun.position.y = -0.33 + this.recoil * 0.04;
+      this.gun.position.y = -0.33 + this.recoil * 0.06;
       const firing = G.time - this.lastShot < 0.3;
       if (this.weapon.cls === 'charger') {
         // two-handed long gun: left hand supports the barrel; crouch while charging
@@ -1986,7 +2030,10 @@ class Character {
       let k = 1 + this.swimPop * 0.25 + this.landSquash * 0.3; if (this.sj) k = 1 + Math.min(this.sj.t, 0.6) * 0.35;
       this.human.scale.set(k, 2 - k, k);
       this.tankInk.scale.y = 0.32 * clamp(this.ink / 100, 0.02, 1); this.tankInk.position.y = -0.16 + this.tankInk.scale.y / 2;
-      const fl = this.hurtFlash > 0 ? 0.8 : 0; this.mats.cloth.emissive.setRGB(fl, fl * 0.3, fl * 0.3); this.mats.skin.emissive.setRGB(fl, fl * 0.3, fl * 0.3);
+      const fl = this.hurtFlash > 0.07 ? 0.9 : this.hurtFlash > 0 ? 0.35 : 0; this.mats.cloth.emissive.setRGB(fl, fl, fl); this.mats.skin.emissive.setRGB(fl, fl, fl);
+      // flinch: lean away from the hit for a moment
+      this.flinch = Math.max(0, (this.flinch || 0) - dt * 7);
+      if (this.flinch > 0 && this.flinchDir) { const f = this.flinch; this.torso.rotation.x -= f * 0.22; this.head.rotation.x -= f * 0.18; this.human.position.y -= f * 0.03; }
     } else {
       const sub = this.submerged;
       const showBody = !sub;
@@ -2005,7 +2052,14 @@ class Character {
 /* ============================================================== FX */
 const TEAM_HEX = ['#ff7a00', '#3346ff'];
 function sndVol(p) { const d = camera.position.distanceTo(p); return Math.pow(clamp(1 - d / 42, 0, 1), 1.4); }
-const _dm = new THREE.Object3D(), _col = new THREE.Color();
+const _dm = new THREE.Object3D(), _col = new THREE.Color(), _v3a = new THREE.Vector3();
+// stereo pan of a world position relative to the camera (-1 left .. 1 right)
+const _camF = new THREE.Vector3();
+function sndPan(p) {
+  const dx = p.x - camera.position.x, dz = p.z - camera.position.z, l = Math.hypot(dx, dz); if (l < 0.5) return 0;
+  camera.getWorldDirection(_camF); const rx = -_camF.z, rz = _camF.x;      // camera right vector on the ground plane
+  return clamp((dx * rx + dz * rz) / l, -1, 1) * 0.8;
+}
 const Fx = {
   N: 1400, parts: [], mesh: null, rings: [], ringPool: [], beams: [],
   init() {
@@ -2091,7 +2145,9 @@ const Fx = {
 const Proj = {
   shots: [], bombs: [], mesh: null, N: 700,
   init() {
-    this.mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshStandardMaterial({ roughness: 0.12, emissive: 0xffffff, emissiveIntensity: 0.25 }), this.N);
+    // ink blobs: glossy, a bit emissive so they read against any background; 3 instances per bullet (stream look)
+    this.mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 9), new THREE.MeshStandardMaterial({ roughness: 0.08, metalness: 0, emissive: 0xffffff, emissiveIntensity: 0.22, envMapIntensity: 1.3 }), this.N * 3);
+    this.pending = [];
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.mesh.frustumCulled = false; this.mesh.count = 0; this.mesh.setColorAt(0, _col.set('#fff'));
     scene.add(this.mesh);
     this.bombGeo = new THREE.SphereGeometry(0.2, 16, 12); this.bandGeo = new THREE.TorusGeometry(0.2, 0.035, 6, 20);
@@ -2099,8 +2155,10 @@ const Proj = {
   shot(owner, o, dir) {
     if (this.shots.length > this.N - 10) this.shots.shift();
     const W = owner.weapon;
-    this.shots.push({ owner, team: owner.team, W, p: o.clone(), v: dir.multiplyScalar(W.speed), t: 0, dist: 0, nextDrop: rand(1.4, 2.4), kind: 'shot', r: rand(W.splat[0], W.splat[1]) });
+    this.shots.push({ owner, team: owner.team, W, p: o.clone(), rp: o.clone(), v: dir.multiplyScalar(W.speed), t: 0, dist: 0, nextDrop: rand(0.7, 1.1), kind: 'shot', r: rand(W.splat[0], W.splat[1]), wob: rand(0, 6.28) });
   },
+  // paint that lands in two beats: a smaller core now, the full splat a moment later (reads as "splashing open")
+  splatLater(delay, fn) { this.pending.push({ t: delay, fn }); },
   // one physics step of a shooter bullet (shared by the real bullet and the aim predictor)
   stepShot(b, h) {
     const W = b.W; b.t += h;
@@ -2118,7 +2176,7 @@ const Proj = {
     }
     return { end: b.p.clone(), t: b.t };
   },
-  drop(owner, p, vy) { this.shots.push({ owner, team: owner.team, p: p.clone(), v: new THREE.Vector3(rand(-0.4, 0.4), vy, rand(-0.4, 0.4)), t: 1, kind: 'drop', r: rand(0.38, 0.5) }); },
+  drop(owner, p, vy) { this.shots.push({ owner, team: owner.team, p: p.clone(), v: new THREE.Vector3(rand(-0.15, 0.15), vy, rand(-0.15, 0.15)), t: 1, kind: 'drop', r: rand(0.3, 0.38) }); },
   // ballistic ink droplet that paints where it lands (big = splashes again on landing)
   spray(owner, p, v, r, big = false) { if (this.shots.length > this.N - 5) return; this.shots.push({ owner, team: owner.team, p: p.clone(), v: v.clone(), t: 1, kind: 'drop', r, sz: 0.045 + r * 0.13, big }); },
   // what did a straight ray / projectile hit?  -> floor (with height) or wall (with face)
@@ -2198,28 +2256,40 @@ const Proj = {
     // returns true if absorbed
     let hx = p.x, hz = p.z;
     const inside = Math.abs(hx) < XH && Math.abs(hz) < ZH;
-    if (s === true) { if (inside) { const g = groundAt(hx, hz); const gained = splatFloor(hx, g, hz, r, team, 0.7, r > 0.8); owner.addPaint(gained); this.fx(hx, g + 0.05, hz, team, r); } return true; }
+    const floorHit = (y) => {
+      if (r > 0.8) { owner.addPaint(splatFloor(hx, y, hz, r * 0.6, team, 0.7, false)); this.splatLater(0.05, () => owner.addPaint(splatFloor(hx, y, hz, r, team, 0.7, true))); }
+      else owner.addPaint(splatFloor(hx, y, hz, r, team, 0.7, false));
+    };
+    if (s === true) { if (inside) { const g = groundAt(hx, hz); floorHit(g); this.fx(hx, g + 0.05, hz, team, r, 0, 1, 0); } return true; }
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
     if (prev.y >= tPrev - 0.08) {
       const y = topAt(s, hx, hz);
-      if (!s.bound && inside) { const gained = splatFloor(hx, y, hz, r, team, 0.7, r > 0.8); owner.addPaint(gained); }
-      this.fx(hx, y + 0.05, hz, team, r); return true;
+      if (!s.bound && inside) floorHit(y);
+      this.fx(hx, y + 0.05, hz, team, r, 0, 1, 0); return true;
     }
     if (s.t === 'box' && s.faces) {
       const ox = prev.x < s.x0 ? s.x0 - prev.x : prev.x > s.x1 ? prev.x - s.x1 : 0;
       const oz = prev.z < s.z0 ? s.z0 - prev.z : prev.z > s.z1 ? prev.z - s.z1 : 0;
       let d; if (ox >= oz) d = prev.x < s.x0 ? '-x' : '+x'; else d = prev.z < s.z0 ? '-z' : '+z';
       const f = s.faces[d];
-      if (f) { const along = f.ax ? p.z : p.x; splatWall(f, along - f.a0, clamp(p.y, 0, f.h), r * 0.8, team); }
-      this.fx(d[1] === 'x' ? (d[0] === '+' ? s.x1 : s.x0) : hx, p.y, d[1] === 'z' ? (d[0] === '+' ? s.z1 : s.z0) : hz, team, r);
+      if (f) { const along = f.ax ? p.z : p.x, wy = clamp(p.y, 0, f.h); splatWall(f, along - f.a0, wy, r * 0.5, team); this.splatLater(0.05, () => splatWall(f, along - f.a0, wy, r * 0.8, team)); }
+      const nx = d === '+x' ? 1 : d === '-x' ? -1 : 0, nz = d === '+z' ? 1 : d === '-z' ? -1 : 0;
+      this.fx(d[1] === 'x' ? (d[0] === '+' ? s.x1 : s.x0) : hx, p.y, d[1] === 'z' ? (d[0] === '+' ? s.z1 : s.z0) : hz, team, r, nx, 0, nz);
     }
     return true;
   },
-  fx(x, y, z, team, r) {
-    if (r > 0.6) { Fx.burst(x, y, z, TEAM_HEX[team], 4, 2.5, 0.07); const v = sndVol(new THREE.Vector3(x, y, z)); if (v > 0.2 && Math.random() < 0.5) Sfx.splat(v * 0.6); }
+  // splash crown along the surface normal + wet impact sound
+  fx(x, y, z, team, r, nx = 0, ny = 1, nz = 0) {
+    if (r <= 0.6) return;
+    const col = TEAM_HEX[team];
+    Fx.burstDir(x + nx * 0.05, y + ny * 0.05, z + nz * 0.05, col, 9, 3.4, 0.075, nx, ny, nz, 0.9);
+    Fx.burstDir(x, y, z, col, 3, 1.4, 0.14, nx, ny, nz, 0.5);
+    const p = _v3a.set(x, y, z), v = sndVol(p); if (v > 0.05) Sfx.impact(v * 0.8, sndPan(p));
   },
   update(dt) {
+    for (let i = this.pending.length - 1; i >= 0; i--) { const q = this.pending[i]; q.t -= dt; if (q.t <= 0) { this.pending.splice(i, 1); q.fn(); } }
     const S = this.shots;
+    for (const b of S) if (b.kind === 'shot') { if (!b.rp) b.rp = b.p.clone(); b.rq = b.rp.clone(); }
     for (let i = S.length - 1; i >= 0; i--) {
       const b = S[i]; let dead = false;
       const sub = clamp(Math.ceil(b.v.length() * dt / 0.3), 2, 14), h = dt / sub;
@@ -2228,10 +2298,16 @@ const Proj = {
         if (b.kind === 'shot') {
           this.stepShot(b, h);
           b.dist += b.v.length() * h;
-          if (b.dist > b.nextDrop) { b.nextDrop += rand(1.2, 2.0); if (Math.random() < 0.6 && S.length < this.N) this.drop(b.owner, b.p, b.v.y * 0.1); }
+          if (b.dist > b.nextDrop) { b.nextDrop += rand(0.8, 1.2); if (S.length < this.N) this.drop(b.owner, b.p, b.v.y * 0.1); }
+          if (Math.random() < 0.06) Fx.add(b.p.x, b.p.y, b.p.z, b.v.x * 0.02 + rand(-0.4, 0.4), rand(-0.5, 0.4), b.v.z * 0.02 + rand(-0.4, 0.4), rand(0.04, 0.07), 0.35, TEAM_HEX[b.team], 18);
         } else { b.v.y -= 25 * h; b.p.addScaledVector(b.v, h); }
         if (b.kind === 'shot') {
-          for (const c of CHARS) { if (c.team !== b.team && this.hitChar(c, b.p, 0.14)) { c.damage(this.shotDamage(b), b.owner); Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 7, 3, 0.07, -b.v.x, -b.v.y, -b.v.z, 0.8); dead = true; break; } }
+          for (const c of CHARS) { if (c.team !== b.team && this.hitChar(c, b.p, 0.14)) {
+            const dmg = this.shotDamage(b), vn = b.v.clone().normalize();
+            if (c.damage(dmg, b.owner)) c.onHit(vn, dmg);
+            Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 12, 4, 0.085, -vn.x + rand(-0.3, 0.3), 0.4, -vn.z + rand(-0.3, 0.3), 0.9);
+            Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 4, 2, 0.15, vn.x, 0.2, vn.z, 0.6);
+            dead = true; break; } }
           if (dead) break;
         }
         if (inBarrier(1 - b.team, b.p)) { Fx.burst(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 3, 1.5, 0.05); Barrier.flash(1 - b.team); dead = true; break; }
@@ -2270,14 +2346,26 @@ const Proj = {
       b.g.position.copy(b.p); b.g.rotation.x += dt * 6;
     }
     // render shots
-    let n = 0;
+    let n = 0; const cap = this.N * 3;
     for (const b of S) {
-      if (n >= this.N) break;
-      const s = b.kind === 'shot' ? 0.12 : (b.sz || 0.07);
-      const len = b.kind === 'shot' ? s * (1.6 + b.v.length() * 0.028) : s * 1.4;
-      _dm.position.copy(b.p); _dm.scale.set(s, s, len);
-      _dm.lookAt(b.p.x + b.v.x, b.p.y + b.v.y, b.p.z + b.v.z); _dm.updateMatrix();
-      this.mesh.setMatrixAt(n, _dm.matrix); this.mesh.setColorAt(n, _col.set(TEAM_HEX[b.team])); n++;
+      if (n >= cap - 3) break;
+      _col.set(TEAM_HEX[b.team]);
+      if (b.kind === 'shot') {
+        // head blob + 2 trailing blobs between last frame's and this frame's position -> a continuous stream
+        const sp = b.v.length(), s = 0.19 * (1 + Math.sin(G.time * 40 + b.wob) * 0.06), len = s * (1.3 + Math.min(sp * 0.012, 1.7));
+        const from = b.rq || b.p;
+        for (let k = 0; k < 3; k++) {
+          const u = 1 - k / 3, sk = s * (1 - k * 0.18);
+          _dm.position.lerpVectors(from, b.p, u); _dm.scale.set(sk, sk, len * (1 - k * 0.15));
+          _dm.lookAt(_dm.position.x + b.v.x, _dm.position.y + b.v.y, _dm.position.z + b.v.z); _dm.updateMatrix();
+          this.mesh.setMatrixAt(n, _dm.matrix); this.mesh.setColorAt(n, _col); n++;
+        }
+        b.rp.copy(b.p);
+      } else {
+        const s = b.sz || 0.07; _dm.position.copy(b.p); _dm.scale.set(s, s, s * 1.4);
+        _dm.lookAt(b.p.x + b.v.x, b.p.y + b.v.y, b.p.z + b.v.z); _dm.updateMatrix();
+        this.mesh.setMatrixAt(n, _dm.matrix); this.mesh.setColorAt(n, _col); n++;
+      }
     }
     this.mesh.count = n; this.mesh.instanceMatrix.needsUpdate = true; if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
   },
@@ -2288,7 +2376,7 @@ const Proj = {
     const v = sndVol(p); Sfx.boom(v); if (v > 0.3) G.shake(v * 0.7);
     for (const c of CHARS) { if (c.team === b.team || !c.alive) continue; const d = c.chest().distanceTo(p); if (d < 3.6) c.damage(d < 1.4 ? 180 : lerp(80, 30, (d - 1.4) / 2.2), b.owner, 'bomb'); }
   },
-  clear() { this.shots.length = 0; this.bombs.forEach(b => scene.remove(b.g)); this.bombs.length = 0; }
+  clear() { this.shots.length = 0; this.pending.length = 0; this.bombs.forEach(b => scene.remove(b.g)); this.bombs.length = 0; }
 };
 
 /* ======================================================== SPAWN BARRIER
@@ -2624,7 +2712,11 @@ function playerControl(dt) {
   const R = c.rangeNow(), D = mzl.distanceTo(hitP);
   // small reticle sits ON the aim line: on the aimed surface if it is within range, otherwise at max range
   if (D <= R) Cam.land.copy(hitP); else Cam.land.copy(mzl).addScaledVector(I.aimDir, R);
-  Cam.landDist = Math.min(D, R);
+  // ...but the ink leaves from the gun, not the camera: if something blocks the gun's line first, stick to that
+  const Lr = Math.min(D, R), tb = segBlocked(mzl.x, mzl.y, mzl.z, Cam.land.x, Cam.land.y, Cam.land.z, 0.2);
+  Cam.blocked = tb > 0 && tb * Lr < Lr - 0.35;
+  if (Cam.blocked) Cam.land.copy(mzl).addScaledVector(I.aimDir, tb * Lr);
+  Cam.landDist = Cam.blocked ? tb * Lr : Lr;
   const pr = W.type === 'charge' ? traceRay(c, mzl, I.aimDir, R, 0.3) : Proj.predict(c, mzl, I.aimDir);
   Cam.lock = !!pr.char;
   if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[W.sub].cost); else if (Proj.pv) Proj.preview(null);
@@ -2663,7 +2755,8 @@ function updateCamera(dt) {
   Cam.pos.copy(want);
   camera.position.copy(want);
   if (G.shakeAmt > 0) { camera.position.x += rand(-1, 1) * G.shakeAmt * 0.25; camera.position.y += rand(-1, 1) * G.shakeAmt * 0.25; G.shakeAmt = Math.max(0, G.shakeAmt - dt * 3); }
-  camera.lookAt(pivot.x + dir.x * 30 + shoulder.x, pivot.y + dir.y * 30, pivot.z + dir.z * 30 + shoulder.z);
+  Cam.kick = (Cam.kick || 0) * Math.exp(-dt * 22);
+  camera.lookAt(pivot.x + dir.x * 30 + shoulder.x, pivot.y + dir.y * 30 + Cam.kick * 30, pivot.z + dir.z * 30 + shoulder.z);
 }
 /* ================================================================ HUD */
 const TIPS = ['潜进自己的墨水里，墨水和体力都会飞快恢复', '把墙涂成自己的颜色，潜墨朝墙走就能爬上去', '踩在敌方墨水里会减速掉血——先把脚下涂掉', '涂地可以给必杀技充能，满了按 Q', '炸弹会弹一下再爆炸，适合扔到掩体后面', '获胜看的是地面覆盖率，不是击倒数'];
@@ -2773,7 +2866,10 @@ const HUD = {
   },
   hurt(amount = 25, src = null) { this.hurtV = 1; ScreenInk.hit(amount, src); },
   tip(t) { const el = $('tip'); el.textContent = t; el.classList.add('on'); clearTimeout(this._tt); this._tt = setTimeout(() => el.classList.remove('on'), 1100); },
-  hitmark(kill) { const h = $('hitmark'); h.classList.remove('on', 'kill'); void h.offsetWidth; h.classList.add(kill ? 'kill' : 'on'); },
+  hitmark(kill, dmg = 36) {
+    const h = $('hitmark'); h.classList.remove('on', 'kill'); void h.offsetWidth;
+    h.style.setProperty('--hs', kill ? 1.6 : clamp(0.85 + dmg / 90, 0.9, 1.6)); h.classList.add(kill ? 'kill' : 'on');
+  },
   lowInk() { if (this.lowInkT <= 0) Sfx.beep(false); this.lowInkT = 0.8; },
   killfeed(k, v, via) {
     const el = document.createElement('div'); el.className = 'kf';

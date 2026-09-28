@@ -1,7 +1,14 @@
 /* ============================================================== FX */
 const TEAM_HEX = ['#ff7a00', '#3346ff'];
 function sndVol(p) { const d = camera.position.distanceTo(p); return Math.pow(clamp(1 - d / 42, 0, 1), 1.4); }
-const _dm = new THREE.Object3D(), _col = new THREE.Color();
+const _dm = new THREE.Object3D(), _col = new THREE.Color(), _v3a = new THREE.Vector3();
+// stereo pan of a world position relative to the camera (-1 left .. 1 right)
+const _camF = new THREE.Vector3();
+function sndPan(p) {
+  const dx = p.x - camera.position.x, dz = p.z - camera.position.z, l = Math.hypot(dx, dz); if (l < 0.5) return 0;
+  camera.getWorldDirection(_camF); const rx = -_camF.z, rz = _camF.x;      // camera right vector on the ground plane
+  return clamp((dx * rx + dz * rz) / l, -1, 1) * 0.8;
+}
 const Fx = {
   N: 1400, parts: [], mesh: null, rings: [], ringPool: [], beams: [],
   init() {
@@ -87,7 +94,9 @@ const Fx = {
 const Proj = {
   shots: [], bombs: [], mesh: null, N: 700,
   init() {
-    this.mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshStandardMaterial({ roughness: 0.12, emissive: 0xffffff, emissiveIntensity: 0.25 }), this.N);
+    // ink blobs: glossy, a bit emissive so they read against any background; 3 instances per bullet (stream look)
+    this.mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 9), new THREE.MeshStandardMaterial({ roughness: 0.08, metalness: 0, emissive: 0xffffff, emissiveIntensity: 0.22, envMapIntensity: 1.3 }), this.N * 3);
+    this.pending = [];
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.mesh.frustumCulled = false; this.mesh.count = 0; this.mesh.setColorAt(0, _col.set('#fff'));
     scene.add(this.mesh);
     this.bombGeo = new THREE.SphereGeometry(0.2, 16, 12); this.bandGeo = new THREE.TorusGeometry(0.2, 0.035, 6, 20);
@@ -95,8 +104,10 @@ const Proj = {
   shot(owner, o, dir) {
     if (this.shots.length > this.N - 10) this.shots.shift();
     const W = owner.weapon;
-    this.shots.push({ owner, team: owner.team, W, p: o.clone(), v: dir.multiplyScalar(W.speed), t: 0, dist: 0, nextDrop: rand(1.4, 2.4), kind: 'shot', r: rand(W.splat[0], W.splat[1]) });
+    this.shots.push({ owner, team: owner.team, W, p: o.clone(), rp: o.clone(), v: dir.multiplyScalar(W.speed), t: 0, dist: 0, nextDrop: rand(0.7, 1.1), kind: 'shot', r: rand(W.splat[0], W.splat[1]), wob: rand(0, 6.28) });
   },
+  // paint that lands in two beats: a smaller core now, the full splat a moment later (reads as "splashing open")
+  splatLater(delay, fn) { this.pending.push({ t: delay, fn }); },
   // one physics step of a shooter bullet (shared by the real bullet and the aim predictor)
   stepShot(b, h) {
     const W = b.W; b.t += h;
@@ -114,7 +125,7 @@ const Proj = {
     }
     return { end: b.p.clone(), t: b.t };
   },
-  drop(owner, p, vy) { this.shots.push({ owner, team: owner.team, p: p.clone(), v: new THREE.Vector3(rand(-0.4, 0.4), vy, rand(-0.4, 0.4)), t: 1, kind: 'drop', r: rand(0.38, 0.5) }); },
+  drop(owner, p, vy) { this.shots.push({ owner, team: owner.team, p: p.clone(), v: new THREE.Vector3(rand(-0.15, 0.15), vy, rand(-0.15, 0.15)), t: 1, kind: 'drop', r: rand(0.3, 0.38) }); },
   // ballistic ink droplet that paints where it lands (big = splashes again on landing)
   spray(owner, p, v, r, big = false) { if (this.shots.length > this.N - 5) return; this.shots.push({ owner, team: owner.team, p: p.clone(), v: v.clone(), t: 1, kind: 'drop', r, sz: 0.045 + r * 0.13, big }); },
   // what did a straight ray / projectile hit?  -> floor (with height) or wall (with face)
@@ -194,28 +205,40 @@ const Proj = {
     // returns true if absorbed
     let hx = p.x, hz = p.z;
     const inside = Math.abs(hx) < XH && Math.abs(hz) < ZH;
-    if (s === true) { if (inside) { const g = groundAt(hx, hz); const gained = splatFloor(hx, g, hz, r, team, 0.7, r > 0.8); owner.addPaint(gained); this.fx(hx, g + 0.05, hz, team, r); } return true; }
+    const floorHit = (y) => {
+      if (r > 0.8) { owner.addPaint(splatFloor(hx, y, hz, r * 0.6, team, 0.7, false)); this.splatLater(0.05, () => owner.addPaint(splatFloor(hx, y, hz, r, team, 0.7, true))); }
+      else owner.addPaint(splatFloor(hx, y, hz, r, team, 0.7, false));
+    };
+    if (s === true) { if (inside) { const g = groundAt(hx, hz); floorHit(g); this.fx(hx, g + 0.05, hz, team, r, 0, 1, 0); } return true; }
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
     if (prev.y >= tPrev - 0.08) {
       const y = topAt(s, hx, hz);
-      if (!s.bound && inside) { const gained = splatFloor(hx, y, hz, r, team, 0.7, r > 0.8); owner.addPaint(gained); }
-      this.fx(hx, y + 0.05, hz, team, r); return true;
+      if (!s.bound && inside) floorHit(y);
+      this.fx(hx, y + 0.05, hz, team, r, 0, 1, 0); return true;
     }
     if (s.t === 'box' && s.faces) {
       const ox = prev.x < s.x0 ? s.x0 - prev.x : prev.x > s.x1 ? prev.x - s.x1 : 0;
       const oz = prev.z < s.z0 ? s.z0 - prev.z : prev.z > s.z1 ? prev.z - s.z1 : 0;
       let d; if (ox >= oz) d = prev.x < s.x0 ? '-x' : '+x'; else d = prev.z < s.z0 ? '-z' : '+z';
       const f = s.faces[d];
-      if (f) { const along = f.ax ? p.z : p.x; splatWall(f, along - f.a0, clamp(p.y, 0, f.h), r * 0.8, team); }
-      this.fx(d[1] === 'x' ? (d[0] === '+' ? s.x1 : s.x0) : hx, p.y, d[1] === 'z' ? (d[0] === '+' ? s.z1 : s.z0) : hz, team, r);
+      if (f) { const along = f.ax ? p.z : p.x, wy = clamp(p.y, 0, f.h); splatWall(f, along - f.a0, wy, r * 0.5, team); this.splatLater(0.05, () => splatWall(f, along - f.a0, wy, r * 0.8, team)); }
+      const nx = d === '+x' ? 1 : d === '-x' ? -1 : 0, nz = d === '+z' ? 1 : d === '-z' ? -1 : 0;
+      this.fx(d[1] === 'x' ? (d[0] === '+' ? s.x1 : s.x0) : hx, p.y, d[1] === 'z' ? (d[0] === '+' ? s.z1 : s.z0) : hz, team, r, nx, 0, nz);
     }
     return true;
   },
-  fx(x, y, z, team, r) {
-    if (r > 0.6) { Fx.burst(x, y, z, TEAM_HEX[team], 4, 2.5, 0.07); const v = sndVol(new THREE.Vector3(x, y, z)); if (v > 0.2 && Math.random() < 0.5) Sfx.splat(v * 0.6); }
+  // splash crown along the surface normal + wet impact sound
+  fx(x, y, z, team, r, nx = 0, ny = 1, nz = 0) {
+    if (r <= 0.6) return;
+    const col = TEAM_HEX[team];
+    Fx.burstDir(x + nx * 0.05, y + ny * 0.05, z + nz * 0.05, col, 9, 3.4, 0.075, nx, ny, nz, 0.9);
+    Fx.burstDir(x, y, z, col, 3, 1.4, 0.14, nx, ny, nz, 0.5);
+    const p = _v3a.set(x, y, z), v = sndVol(p); if (v > 0.05) Sfx.impact(v * 0.8, sndPan(p));
   },
   update(dt) {
+    for (let i = this.pending.length - 1; i >= 0; i--) { const q = this.pending[i]; q.t -= dt; if (q.t <= 0) { this.pending.splice(i, 1); q.fn(); } }
     const S = this.shots;
+    for (const b of S) if (b.kind === 'shot') { if (!b.rp) b.rp = b.p.clone(); b.rq = b.rp.clone(); }
     for (let i = S.length - 1; i >= 0; i--) {
       const b = S[i]; let dead = false;
       const sub = clamp(Math.ceil(b.v.length() * dt / 0.3), 2, 14), h = dt / sub;
@@ -224,10 +247,16 @@ const Proj = {
         if (b.kind === 'shot') {
           this.stepShot(b, h);
           b.dist += b.v.length() * h;
-          if (b.dist > b.nextDrop) { b.nextDrop += rand(1.2, 2.0); if (Math.random() < 0.6 && S.length < this.N) this.drop(b.owner, b.p, b.v.y * 0.1); }
+          if (b.dist > b.nextDrop) { b.nextDrop += rand(0.8, 1.2); if (S.length < this.N) this.drop(b.owner, b.p, b.v.y * 0.1); }
+          if (Math.random() < 0.06) Fx.add(b.p.x, b.p.y, b.p.z, b.v.x * 0.02 + rand(-0.4, 0.4), rand(-0.5, 0.4), b.v.z * 0.02 + rand(-0.4, 0.4), rand(0.04, 0.07), 0.35, TEAM_HEX[b.team], 18);
         } else { b.v.y -= 25 * h; b.p.addScaledVector(b.v, h); }
         if (b.kind === 'shot') {
-          for (const c of CHARS) { if (c.team !== b.team && this.hitChar(c, b.p, 0.14)) { c.damage(this.shotDamage(b), b.owner); Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 7, 3, 0.07, -b.v.x, -b.v.y, -b.v.z, 0.8); dead = true; break; } }
+          for (const c of CHARS) { if (c.team !== b.team && this.hitChar(c, b.p, 0.14)) {
+            const dmg = this.shotDamage(b), vn = b.v.clone().normalize();
+            if (c.damage(dmg, b.owner)) c.onHit(vn, dmg);
+            Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 12, 4, 0.085, -vn.x + rand(-0.3, 0.3), 0.4, -vn.z + rand(-0.3, 0.3), 0.9);
+            Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 4, 2, 0.15, vn.x, 0.2, vn.z, 0.6);
+            dead = true; break; } }
           if (dead) break;
         }
         if (inBarrier(1 - b.team, b.p)) { Fx.burst(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 3, 1.5, 0.05); Barrier.flash(1 - b.team); dead = true; break; }
@@ -266,14 +295,26 @@ const Proj = {
       b.g.position.copy(b.p); b.g.rotation.x += dt * 6;
     }
     // render shots
-    let n = 0;
+    let n = 0; const cap = this.N * 3;
     for (const b of S) {
-      if (n >= this.N) break;
-      const s = b.kind === 'shot' ? 0.12 : (b.sz || 0.07);
-      const len = b.kind === 'shot' ? s * (1.6 + b.v.length() * 0.028) : s * 1.4;
-      _dm.position.copy(b.p); _dm.scale.set(s, s, len);
-      _dm.lookAt(b.p.x + b.v.x, b.p.y + b.v.y, b.p.z + b.v.z); _dm.updateMatrix();
-      this.mesh.setMatrixAt(n, _dm.matrix); this.mesh.setColorAt(n, _col.set(TEAM_HEX[b.team])); n++;
+      if (n >= cap - 3) break;
+      _col.set(TEAM_HEX[b.team]);
+      if (b.kind === 'shot') {
+        // head blob + 2 trailing blobs between last frame's and this frame's position -> a continuous stream
+        const sp = b.v.length(), s = 0.19 * (1 + Math.sin(G.time * 40 + b.wob) * 0.06), len = s * (1.3 + Math.min(sp * 0.012, 1.7));
+        const from = b.rq || b.p;
+        for (let k = 0; k < 3; k++) {
+          const u = 1 - k / 3, sk = s * (1 - k * 0.18);
+          _dm.position.lerpVectors(from, b.p, u); _dm.scale.set(sk, sk, len * (1 - k * 0.15));
+          _dm.lookAt(_dm.position.x + b.v.x, _dm.position.y + b.v.y, _dm.position.z + b.v.z); _dm.updateMatrix();
+          this.mesh.setMatrixAt(n, _dm.matrix); this.mesh.setColorAt(n, _col); n++;
+        }
+        b.rp.copy(b.p);
+      } else {
+        const s = b.sz || 0.07; _dm.position.copy(b.p); _dm.scale.set(s, s, s * 1.4);
+        _dm.lookAt(b.p.x + b.v.x, b.p.y + b.v.y, b.p.z + b.v.z); _dm.updateMatrix();
+        this.mesh.setMatrixAt(n, _dm.matrix); this.mesh.setColorAt(n, _col); n++;
+      }
     }
     this.mesh.count = n; this.mesh.instanceMatrix.needsUpdate = true; if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
   },
@@ -284,7 +325,7 @@ const Proj = {
     const v = sndVol(p); Sfx.boom(v); if (v > 0.3) G.shake(v * 0.7);
     for (const c of CHARS) { if (c.team === b.team || !c.alive) continue; const d = c.chest().distanceTo(p); if (d < 3.6) c.damage(d < 1.4 ? 180 : lerp(80, 30, (d - 1.4) / 2.2), b.owner, 'bomb'); }
   },
-  clear() { this.shots.length = 0; this.bombs.forEach(b => scene.remove(b.g)); this.bombs.length = 0; }
+  clear() { this.shots.length = 0; this.pending.length = 0; this.bombs.forEach(b => scene.remove(b.g)); this.bombs.length = 0; }
 };
 
 /* ======================================================== SPAWN BARRIER

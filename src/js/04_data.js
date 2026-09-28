@@ -13,7 +13,7 @@ const WEAPONS = {
     id: 'rifle', name: '墨浪步枪', en: 'SPLASH RIFLE', role: '全能 · 中距离', type: 'auto', cls: 'shooter',
     desc: '射速、射程、涂地都很均衡，3 发击倒。适合任何场合，新手首选。',
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
-    dmg: 36, dmgFar: 18, falloff: [0.16, 0.4], interval: 0.105, speed: 130, straight: 0.055, dragH: 18, dragV: 16, grav: 150,
+    dmg: 36, dmgFar: 18, falloff: [0.16, 0.4], interval: 0.105, speed: 130, straight: 0.05, dragH: 15.5, dragV: 7, grav: 80,
     spread: 0.045, airSpread: 0.1, cost: 0.92, splat: [0.95, 1.2],
     moveFire: 4.8, muzzleF: 0.55, range: 13, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,
@@ -75,6 +75,15 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.5.1', date: '2026-09-28', title: '打击感', items: [
+    '子弹改为连续的墨水流，开枪时能清楚看到墨水喷出去',
+    '弹道末端的下坠更平滑，射程不变',
+    '开枪时枪口喷墨、枪身后坐、镜头轻微上抬',
+    '墨水打到地面和墙上会溅起墨花并发出"啪嗒"声，墙上的墨迹不再慢半拍',
+    '打中敌人有专用命中音，对方会被打得一顿，命中标记随伤害变大',
+    '开枪声重做，远处的枪声能分出左右',
+    '修复被矮墙挡住时准星仍显示能打中的问题'
+  ] },
   { v: 'v0.5.0', date: '2026-09-28', title: '战斗手感收尾', items: [
     '步枪改为 3 枪击倒，对枪节奏更利落',
     '回血按原版调整：潜进自己的墨水约 1 秒回满',

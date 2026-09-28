@@ -188,8 +188,7 @@ function cellIndex(x, z) { const i = Math.floor((x + XH) / CELL), j = Math.floor
 function ownerAt(x, y, z) { const k = cellIndex(x, z); if (k < 0) return -1; if (Math.abs(Paint.hgt[k] - y) > 0.4) return -2; return Paint.owner[k]; }
 function uploadPaint() {
   if (Paint.dirty) { Paint.tex.needsUpdate = true; Paint.dirty = false; }
-  Paint.wT = (Paint.wT || 0) + 1;
-  if (Paint.wdirty && Paint.wT >= 3) { Paint.wtex.needsUpdate = true; Paint.wdirty = false; Paint.wT = 0; }
+  if (Paint.wdirty) { Paint.wtex.needsUpdate = true; Paint.wdirty = false; }
 }
 
 /* ==================================================== PAINT MATERIALS */

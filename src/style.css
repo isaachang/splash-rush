@@ -87,9 +87,10 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #crosshair .dot{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.6)}
 #crosshair.enemy .ring{border-color:#ff3355;transform:scale(.8)}
 #hitmark{position:absolute;left:-22px;top:-22px;width:44px;height:44px;opacity:0}
-#hitmark.on{animation:hm .25s ease-out}
+#hitmark.on{animation:hm .22s ease-out}
+#hitmark path{filter:drop-shadow(0 0 2px rgba(0,0,0,.8))}
 #hitmark.kill{animation:hmk .5s ease-out}
-@keyframes hm{0%{opacity:1;transform:scale(1.4)}100%{opacity:0;transform:scale(1)}}
+@keyframes hm{0%{opacity:1;transform:scale(calc(var(--hs,1) * 1.35))}60%{opacity:.9}100%{opacity:0;transform:scale(var(--hs,1))}}
 @keyframes hmk{0%{opacity:1;transform:scale(2) rotate(45deg)}100%{opacity:0;transform:scale(1) rotate(0)}}
 #inkbar{position:absolute;left:calc(50% + 46px);top:calc(50% - 44px);width:18px;height:88px;border:3px solid #111;border-radius:12px;background:rgba(0,0,0,.35);overflow:hidden;box-shadow:0 0 0 2px rgba(255,255,255,.5);transition:opacity .3s}
 #inkfill{position:absolute;bottom:0;left:0;right:0;background:var(--c0);border-radius:6px}
