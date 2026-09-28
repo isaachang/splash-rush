@@ -314,12 +314,19 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .md b.x,.mdl.x b{background:linear-gradient(135deg,transparent 46%,#111 47%,#111 53%,transparent 54%),radial-gradient(circle at 35% 30%,#b9a58a,#7a6546 55%,#3e3322)}
 .mdl.x span{color:#ff9aa8}
 #results.boarded #verdict .vsplash{opacity:0;transition:opacity .3s}
-/* live turf meter (top of the screen during a match) */
-#turfMeter{position:absolute;top:98px;left:50%;transform:translateX(-50%);width:min(460px,48vw)}
-.tm-bar{position:relative;height:26px;display:flex;border:3px solid #111;border-radius:16px;overflow:hidden;background:#3a3d4a;box-shadow:0 4px 0 rgba(0,0,0,.5)}
-#tmA,#tmB{height:100%;width:50%;transition:width .7s cubic-bezier(.3,.1,.2,1)}
-#tmB{margin-left:auto}
-.tm-bar:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(255,255,255,.55)}
-.tm-bar span{position:absolute;top:0;bottom:0;display:flex;align-items:center;line-height:1;z-index:1;font-size:15px;font-weight:900;font-style:italic;color:#fff;-webkit-text-stroke:2px #111;paint-order:stroke fill;transition:transform .2s}
-#tmPA{left:10px}#tmPB{right:10px}
-.tm-bar span.up{transform:scale(1.18)}
+/* results footer: your awards card on the left, buttons on the right (one row, no stacking) */
+#rsFoot{position:absolute;left:50%;bottom:3.5vh;transform:translateX(-50%);width:min(1000px,94vw);display:flex;align-items:stretch;gap:16px}
+#rsFoot #awards{position:static;transform:none;left:auto;bottom:auto;flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:8px;background:rgba(15,13,32,.93);border:4px solid #111;border-radius:22px;padding:10px 18px;box-shadow:0 8px 0 #111;white-space:normal}
+#rsFoot #awards .awrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#rsFoot #awards h4{font-size:13px;letter-spacing:3px;color:#ffe45c;margin-right:4px}
+#rsFoot .mdl{background:rgba(255,255,255,.06);border:2px solid rgba(0,0,0,.6);border-radius:14px;padding:4px 12px 4px 6px;box-shadow:none}
+#rsFoot .mdl b{width:24px;height:24px;border-width:2px}
+#rsFoot .mdl span{font-size:14px}#rsFoot .mdl small{font-size:10px}
+#rsFoot #awards .quip{background:none;border:none;box-shadow:none;padding:0 2px;font-size:16px;animation:pop .5s .35s both}
+#rsFoot #awards .quip:before{content:"“";opacity:.6;margin-right:2px}#rsFoot #awards .quip:after{content:"”";opacity:.6;margin-left:2px}
+#rsFoot #resBtns{position:static;display:grid;grid-template-columns:1fr 1fr;gap:10px;width:320px;flex:none}
+#rsFoot .btn{font-size:17px;padding:10px 14px;letter-spacing:2px;border-width:4px;box-shadow:0 5px 0 #111}
+#rsFoot .btn:hover{animation:none}
+#rsFoot .rs-main{grid-column:1 / 3;font-size:24px;padding:12px;background:var(--c0);color:#fff;-webkit-text-stroke:1.5px #111;paint-order:stroke fill;text-shadow:0 3px 0 #111}
+#rsFoot .rs-sub{background:#2d2a52;color:#fff}
+#rsFoot .rs-ghost{background:transparent;color:#fff;border-color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.6)}

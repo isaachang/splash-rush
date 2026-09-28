@@ -208,10 +208,6 @@ vm.runInContext(`(() => {
     const rb = roastsFor(bad).map(r => r.t), lb = verdictLine(bad);
     P.paint = 999; const lp = verdictLine(P);
     ok(rb.length >= 2 && !lb.good && lp.good && PRAISE['涂地最多'].includes(lp.text), 'awards: praise for the best, roast badges + a cheeky line for a bad game (' + rb.join('/') + ': ' + lb.text + ')');
-    // live turf meter follows the paint
-    resetPaint(); splatFloor(0, 0, 20, 6, 0, 1); splatFloor(0, 0, -20, 3, 1, 1); HUD.tmT = 0; HUD.update(0.03);
-    const wA = parseFloat($('tmA').style.width), tA = $('tmPA').textContent;
-    ok(wA > 70 && wA < 90 && tA.endsWith('%') && parseFloat(tA) > 0, 'live turf meter: our side pushes in as we paint more (' + wA.toFixed(0) + '% of the bar, ' + tA + ' of the map)');
     // pause ducks the sound, resume brings it back
     Sfx.duck(true); const d1 = Sfx.ducked; Sfx.duck(false);
     ok(d1 && !Sfx.ducked, 'pausing ducks and muffles the sound, resuming restores it');
