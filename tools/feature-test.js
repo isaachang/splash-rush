@@ -139,6 +139,19 @@ vm.runInContext(`(() => {
   splatFloor(6, 0, 12, 3, 0, 1, false); for (let i = 0; i < 45; i++) loop();
   ok(!P.inEnemy && ScreenInk.sticky < 0.1, 'leaving enemy ink: screen goo fades (' + ScreenInk.sticky.toFixed(2) + ')');
   ok(VERSION === RELEASES[0].v && RELEASES.every(r => r.items.length >= 3), 'version badge ' + VERSION + ' and release notes (' + RELEASES.length + ' versions)');
+  // ================= v0.5.1 hit feel =================
+  // reticle: a low wall between the gun and the target -> small reticle sticks to the wall
+  Profile.data.weapon = 'rifle';
+  { const W = WEAPONS.rifle; ok(W.grav === 72 && W.range === 16, 'longer, smoother rifle ballistics (range 16 m)'); }
+  const w = SOLIDS.find(s => s.t === 'box' && s.h > 1 && s.h < 1.3 && s.z0 > 20);   // front cover wall near our spawn
+  Cam.yaw = Math.PI; Cam.pitch = 0.02; P.pos.set((w.x0 + w.x1) / 2, 0, w.z1 + 1.2); P.vel.set(0, 0, 0); P.state = 'play'; P.alive = true; Input.keys = {};
+  for (let i = 0; i < 4; i++) loop();
+  ok(Cam.blocked && Math.abs(Cam.land.z - w.z1) < 0.6, 'wall between gun and aim point: small reticle sticks to the wall (blocked=' + Cam.blocked + ', z=' + Cam.land.z.toFixed(2) + ' wall=' + w.z1 + ')');
+  // bullets render as a 3-blob stream and paint lands in two beats
+  Proj.shots.length = 0; const mate = CHARS.find(c => c.team === 0 && !c.isPlayer && c.weapon.id === 'rifle') || rif; Proj.shot(mate, P.muzzle(), new THREE.Vector3(0, 0, 1)); loop();
+  ok(Proj.mesh.count >= 3, 'each bullet renders as a stream of blobs (' + Proj.mesh.count + ' instances)');
+  let seenPending = false; for (let i = 0; i < 20; i++) { loop(); if (Proj.pending.length) seenPending = true; }
+  ok(seenPending && Proj.pending.length === 0, 'impact paint lands in two beats (core, then full splat)');
   // ---------- swim speed = 2x run
   ok(Math.abs(12.8 / 6.4 - 2) < 1e-9 && WEAPONS.charger.moveCharge === 1.35, 'speed ratios: swim 2.0x run, charging 21% of run');
 })()`, g);

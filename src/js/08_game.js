@@ -106,7 +106,10 @@ const HUD = {
   },
   hurt(amount = 25, src = null) { this.hurtV = 1; ScreenInk.hit(amount, src); },
   tip(t) { const el = $('tip'); el.textContent = t; el.classList.add('on'); clearTimeout(this._tt); this._tt = setTimeout(() => el.classList.remove('on'), 1100); },
-  hitmark(kill) { const h = $('hitmark'); h.classList.remove('on', 'kill'); void h.offsetWidth; h.classList.add(kill ? 'kill' : 'on'); },
+  hitmark(kill, dmg = 36) {
+    const h = $('hitmark'); h.classList.remove('on', 'kill'); void h.offsetWidth;
+    h.style.setProperty('--hs', kill ? 1.6 : clamp(0.85 + dmg / 90, 0.9, 1.6)); h.classList.add(kill ? 'kill' : 'on');
+  },
   lowInk() { if (this.lowInkT <= 0) Sfx.beep(false); this.lowInkT = 0.8; },
   killfeed(k, v, via) {
     const el = document.createElement('div'); el.className = 'kf';

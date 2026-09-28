@@ -41,6 +41,9 @@ const Sfx = (() => {
   }
   function setVol() { if (!ctx) return; master.gain.value = SETTINGS.vol; musG.gain.value = SETTINGS.mus * 0.5; }
   function env(g, t, a, peak, dcy) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dcy); }
+  // stereo panning helper: returns a node to connect sounds into
+  function panNode(pan) { if (!ctx || !pan || !ctx.createStereoPanner) return sfxG; const p = ctx.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); p.connect(sfxG); return p; }
+  let lastImpact = 0;
   function tone(type, f0, f1, dur, vol, dest, t0) {
     if (!ctx || vol < 0.002) return; const t = t0 ?? ctx.currentTime;
     const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t);
@@ -88,10 +91,32 @@ const Sfx = (() => {
   function stopMusic() { if (M.timer) clearInterval(M.timer); M.on = false; }
   return {
     init, setVol, music, stopMusic,
-    shoot(v) { tone('square', rand(800, 1000), 260, 0.05, 0.035 * v); noise(0.06, 0.09 * v, 'bandpass', 2600, 1.4); },
+    // pressurised "pshh" + low thump, 3 variants with random pitch, panned by direction
+    shoot(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), k = rand(0.92, 1.08), var_ = Math.floor(Math.random() * 3);
+      noise(0.07, 0.11 * v, 'bandpass', [2300, 2700, 2000][var_] * k, 1.1, [900, 1100, 800][var_] * k, d);
+      noise(0.035, 0.07 * v, 'highpass', 5200 * k, 0.8, null, d);
+      tone('sine', 190 * k, 70, 0.07, 0.12 * v, d);
+      tone('triangle', [620, 700, 560][var_] * k, 240, 0.04, 0.03 * v, d);
+    },
+    // wet "splat" when ink hits a surface (throttled so rapid fire doesn't pile up)
+    impact(v, pan = 0) {
+      if (!ctx || v < 0.04) return; const now = ctx.currentTime; if (now - lastImpact < 0.035) return; lastImpact = now;
+      const d = panNode(pan), k = rand(0.85, 1.15);
+      noise(0.09, 0.09 * v, 'lowpass', 1600 * k, 1.2, 300, d); tone('sine', 320 * k, 120, 0.06, 0.05 * v, d);
+    },
     splat(v) { noise(0.12, 0.07 * v, 'lowpass', 1200, 1, 250); },
-    hit() { tone('sine', 1300, 1900, 0.06, 0.14); },
-    kill() { tone('square', 600, 1200, 0.1, 0.1); tone('sine', 1600, 2600, 0.22, 0.1, null, ctx && ctx.currentTime + 0.07); },
+    // hit confirmation: bright tick + wet pop (+ extra body when the hit was heavy)
+    hit(heavy = false) {
+      if (!ctx) return; const t = ctx.currentTime, k = rand(0.96, 1.04);
+      tone('triangle', 1750 * k, 2350 * k, 0.05, 0.13); tone('sine', 3200 * k, null, 0.03, 0.05, null, t + 0.01);
+      noise(0.07, 0.12, 'bandpass', 1300 * k, 2.2, 600); tone('sine', 240, 110, 0.07, heavy ? 0.14 : 0.08);
+    },
+    kill() {
+      if (!ctx) return; const t = ctx.currentTime;
+      tone('square', 520, 1040, 0.09, 0.09); tone('triangle', 1560, 2600, 0.24, 0.11, null, t + 0.06); tone('sine', 2600, 3400, 0.18, 0.06, null, t + 0.12);
+      noise(0.35, 0.3, 'lowpass', 1800, 0.9, 180); tone('sine', 140, 50, 0.3, 0.25);
+    },
     hurt() { tone('sawtooth', 240, 110, 0.14, 0.09); noise(0.1, 0.12, 'lowpass', 700, 1); },
     swimIn() { tone('sine', 280, 950, 0.12, 0.14); noise(0.16, 0.12, 'bandpass', 900, 2, 300); },
     swimOut() { tone('sine', 820, 300, 0.1, 0.1); },
