@@ -46,12 +46,12 @@
 - **完整对局流程**：战前准备（选武器、看阵容）→ 开局飞行镜头 → 对局 → 裁判判定 → 结算
 - **单文件、零依赖**：整个游戏就是一个 HTML 文件，音乐和音效也是程序实时合成的
 
-<!-- 截图：把游戏截图放进 docs/screenshots/，再取消下面这段注释
 ## 📸 截图
+
 <p align="center">
-  <img src="docs/screenshots/title.png" width="49%"> <img src="docs/screenshots/battle.png" width="49%">
+  <img src="docs/screenshots/title.jpg" width="49%" alt="主页"> <img src="docs/screenshots/lobby.jpg" width="49%" alt="战前准备">
 </p>
--->
+<p align="center"><sub>主页（背景是实时涂地的竞技场） · 战前准备（选武器、看阵容）</sub></p>
 
 ## 🛠 开发
 
