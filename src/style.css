@@ -237,4 +237,11 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .logv .hd small{margin-left:auto;opacity:.55;font-size:12px}
 .logv .hd i{font-style:normal;font-size:11px;font-weight:900;background:var(--c0);color:#111;border-radius:10px;padding:1px 8px;border:2px solid #111}
 .logv ul{margin:0;padding-left:20px;line-height:1.75;font-size:14px;opacity:.92}
+.logmore{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:4px 0 18px;padding:11px;border:3px dashed #3a3566;border-radius:16px;background:transparent;color:#fff;font:inherit;font-weight:900;font-size:14px;opacity:.75;cursor:pointer;transition:opacity .15s,border-color .15s,background .15s}
+.logmore:hover{opacity:1;border-color:var(--c0);background:#0f0d22}
+.logmore em{font-style:normal;display:inline-block;transition:transform .2s}
+.logmore.open em{transform:rotate(180deg)}
+.logold{display:none}
+.logold.show{display:block}
+.logold .logv{opacity:.85}
 .pausever{margin-top:6px;opacity:.55;font-size:13px;font-weight:700;letter-spacing:1px}

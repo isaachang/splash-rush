@@ -138,7 +138,7 @@ vm.runInContext(`(() => {
   ok(P.inEnemy && ScreenInk.sticky > 0.5, 'standing in enemy ink: screen goo rises (' + ScreenInk.sticky.toFixed(2) + ')');
   splatFloor(6, 0, 12, 3, 0, 1, false); for (let i = 0; i < 45; i++) loop();
   ok(!P.inEnemy && ScreenInk.sticky < 0.1, 'leaving enemy ink: screen goo fades (' + ScreenInk.sticky.toFixed(2) + ')');
-  ok(VERSION === RELEASES[0].v && RELEASES.every(r => r.items.length >= 3), 'version badge ' + VERSION + ' and release notes (' + RELEASES.length + ' versions)');
+  ok(VERSION === RELEASES[0].v && RELEASES.every(r => r.items.length >= 3 && r.date.length === 10 && typeof r.time === 'string' && r.time.length === 5 && r.time[2] === ':'), 'version badge ' + VERSION + ' and release notes with date+time (' + RELEASES.length + ' versions)');
   // ================= v0.5.1 hit feel =================
   // reticle: a low wall between the gun and the target -> small reticle sticks to the wall
   Profile.data.weapon = 'rifle';

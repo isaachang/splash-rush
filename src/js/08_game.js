@@ -523,8 +523,12 @@ function initUI() {
   titleSplats(); renderLoadCard();
   // version badge + release notes
   $('verTxt').textContent = VERSION; $('pauseVer').textContent = 'SPLASH RUSH ' + VERSION;
-  $('logList').innerHTML = RELEASES.map((r, i) => `<div class="logv${i === 0 ? ' cur' : ''}"><div class="hd"><b>${r.v}</b><span>${r.title}</span>${i === 0 ? '<i>当前版本</i>' : ''}<small>${r.date}</small></div><ul>${r.items.map(t => `<li>${t}</li>`).join('')}</ul></div>`).join('');
-  $('btnLog').onclick = () => { Sfx.init(); Sfx.click(); show('changelog', true); };
+  const LOG_SHOW = 3, logItem = (r, i) => `<div class="logv${i === 0 ? ' cur' : ''}"><div class="hd"><b>${r.v}</b><span>${r.title}</span>${i === 0 ? '<i>当前版本</i>' : ''}<small>${r.date} ${r.time || ''}</small></div><ul>${r.items.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
+  const logOld = RELEASES.slice(LOG_SHOW);
+  $('logList').innerHTML = RELEASES.slice(0, LOG_SHOW).map(logItem).join('') + (logOld.length ? `<button class="logmore" id="logMore">更早的版本（${logOld.length}）<em>▾</em></button><div class="logold" id="logOld">${logOld.map((r, i) => logItem(r, i + LOG_SHOW)).join('')}</div>` : '');
+  const logFold = open => { const o = $('logOld'), b = $('logMore'); if (!o) return; o.classList.toggle('show', open); b.classList.toggle('open', open); b.firstChild.textContent = open ? '收起更早的版本 ' : `更早的版本（${logOld.length}）`; };
+  if ($('logMore')) $('logMore').onclick = () => { Sfx.click(); const open = !$('logOld').classList.contains('show'); logFold(open); if (open && $('logMore').scrollIntoView) $('logMore').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  $('btnLog').onclick = () => { Sfx.init(); Sfx.click(); logFold(false); $('logList').parentNode.scrollTop = 0; show('changelog', true); };
 }
 
 /* ---------------------------------------------------------------- boot */
