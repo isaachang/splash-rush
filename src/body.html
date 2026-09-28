@@ -56,6 +56,7 @@
   <div id="vignette"></div>
   <canvas id="inkCanvas"></canvas>
   <div id="topbar"><div class="team" id="teamA"></div><div id="timer">3:00</div><div class="team" id="teamB"></div></div>
+  <div id="turfMeter"><div class="tm-bar"><div id="tmA"></div><div id="tmB"></div><span id="tmPA">0.0%</span><span id="tmPB">0.0%</span></div></div>
   <div id="crosshair"><div class="ring"></div><div class="dot"></div>
     <svg id="chargeRing" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="9"/><circle id="chargeArc" cx="50" cy="50" r="40" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="251.3" stroke-dashoffset="251.3" stroke-linecap="round"/></svg>
     <svg id="hitmark" viewBox="0 0 44 44"><g stroke="#fff" stroke-width="4" stroke-linecap="round"><path d="M6 6l9 9M38 6l-9 9M6 38l9-9M38 38l-9-9"/></g></svg></div>
@@ -88,7 +89,7 @@
 <div id="results" class="screen">
   <div id="rsJudge"><div id="refFlags"><svg class="flag fa" viewBox="0 0 60 90"><rect x="4" y="4" width="5" height="84" rx="2" fill="#e8e8ee" stroke="#111" stroke-width="2.5"/><path d="M9 8 Q30 2 52 10 Q40 22 52 34 Q30 42 9 36Z" fill="var(--c0)" stroke="#111" stroke-width="3"/></svg><svg class="flag fb" viewBox="0 0 60 90"><rect x="51" y="4" width="5" height="84" rx="2" fill="#e8e8ee" stroke="#111" stroke-width="2.5"/><path d="M51 8 Q30 2 8 10 Q20 22 8 34 Q30 42 51 36Z" fill="var(--c1)" stroke="#111" stroke-width="3"/></svg></div>
     <div class="judge" id="judge">裁判判定中…</div></div>
-  <div id="rsMeter"><div id="bars"><div id="barA"></div><div id="barB"></div></div><span id="pctA"></span><span id="pctB"></span></div>
+  <div id="rsMeter"><div id="bars"><div id="barA"></div><div id="barB"></div><span id="pctA"></span><span id="pctB"></span></div></div>
   <div id="verdict"></div>
   <div id="board"></div>
   <div id="awards"></div>

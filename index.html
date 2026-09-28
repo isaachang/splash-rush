@@ -245,7 +245,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #bars{position:relative;height:100px;display:flex;border:5px solid #111;border-radius:60px;overflow:hidden;background:#3a3d4a;box-shadow:0 10px 0 #111,inset 0 4px 0 rgba(255,255,255,.08);transition:height .6s}
 #bars div{height:100%;width:0}
 #barB{margin-left:auto}
-#pctA,#pctB{position:absolute;top:0;height:110px;display:flex;align-items:center;font-size:46px;font-weight:900;font-style:italic;-webkit-text-stroke:3px #111;paint-order:stroke fill;text-shadow:0 4px 0 #111;opacity:0;transition:opacity .3s,font-size .6s}
+#pctA,#pctB{position:absolute;top:0;bottom:0;display:flex;align-items:center;line-height:1;z-index:1;font-size:46px;font-weight:900;font-style:italic;-webkit-text-stroke:3px #111;paint-order:stroke fill;text-shadow:0 4px 0 #111;opacity:0;transition:opacity .3s,font-size .6s}
 #pctA{left:30px}#pctB{right:30px}
 #results.revealed #pctA,#results.revealed #pctB{opacity:1;animation:pop .4s both}
 #verdict{position:absolute;top:30vh;left:0;right:0;height:0;text-align:center;opacity:0;pointer-events:none;transition:top .6s,transform .6s;transform-origin:50% 0}
@@ -257,7 +257,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #results.boarded #verdict{animation:none;top:1.5vh;transform:scale(.36)}
 #results.boarded #rsMeter{bottom:calc(100% - 14vh - 40px);width:min(640px,70vw)}
 #results.boarded #bars{height:40px;border-width:4px;box-shadow:0 5px 0 #111}
-#results.boarded #pctA,#results.boarded #pctB{height:48px;font-size:22px;-webkit-text-stroke:2px #111;animation:none}
+#results.boarded #pctA,#results.boarded #pctB{font-size:22px;-webkit-text-stroke:2px #111;animation:none}
 #board{position:absolute;left:50%;top:21vh;transform:translate(-50%,24px);width:min(1000px,94vw);display:flex;flex-direction:column;gap:12px;opacity:0;transition:opacity .5s,transform .5s}
 #board.show{opacity:1;transform:translate(-50%,0)}
 .tbl{background:rgba(15,13,32,.93);border:4px solid #111;border-left:12px solid var(--tc);border-radius:22px;padding:8px 16px 10px;box-shadow:0 8px 0 #111}
@@ -265,7 +265,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .tbl .th b{background:var(--tc);color:#fff;-webkit-text-stroke:1.5px #111;paint-order:stroke fill;font-size:22px;font-style:italic;font-weight:900;padding:1px 14px;border-radius:14px;border:3px solid #111}
 .tbl.lost .th b{background:#5a5d6b}
 .tbl .th span{font-weight:900;letter-spacing:3px}
-.tbl .th em{margin-left:auto;font-style:normal;font-weight:900;font-size:20px;color:var(--tc);-webkit-text-stroke:1px #111}
+.tbl .th em{margin-left:auto;font-family:"Arial Black","Arial Rounded MT Bold",sans-serif;font-style:italic;font-weight:900;font-size:20px;color:var(--tc);text-shadow:0 2px 0 #111,0 0 2px #111}
 .tbl .r{display:grid;grid-template-columns:28px 1fr 80px 90px 56px 56px 96px;gap:6px;align-items:center;padding:3px 6px;font-weight:700;font-size:15px;border-top:2px solid rgba(255,255,255,.07)}
 .tbl .r.h{opacity:.55;font-size:12px;border:none;padding-top:0;padding-bottom:0}
 .tbl .r.me{background:rgba(255,228,92,.13);color:#ffe45c;border-radius:10px}
@@ -309,11 +309,21 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .st-r .n{display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
 .st-r .n em{font-style:normal;font-size:11px;background:#444;border:2px solid #111;border-radius:8px;padding:0 6px;color:#fff}
 .st-r .sp{font-size:13px;opacity:.8}.st-r .sp.on b{color:#ffe45c;animation:blink .5s infinite}
-#specTag{position:absolute;left:50%;top:92px;transform:translateX(-50%);display:none;font-weight:900;font-size:16px;background:rgba(0,0,0,.6);border:3px solid #111;border-radius:16px;padding:5px 16px;color:#fff;text-shadow:0 2px 0 #000}
+#specTag{position:absolute;left:50%;top:140px;transform:translateX(-50%);display:none;font-weight:900;font-size:16px;background:rgba(0,0,0,.6);border:3px solid #111;border-radius:16px;padding:5px 16px;color:#fff;text-shadow:0 2px 0 #000}
 #specTag.on{display:block}
 /* roast badge: a cracked, grubby medal */
 .md b.x,.mdl.x b{background:linear-gradient(135deg,transparent 46%,#111 47%,#111 53%,transparent 54%),radial-gradient(circle at 35% 30%,#b9a58a,#7a6546 55%,#3e3322)}
 .mdl.x span{color:#ff9aa8}
+#results.boarded #verdict .vsplash{opacity:0;transition:opacity .3s}
+/* live turf meter (top of the screen during a match) */
+#turfMeter{position:absolute;top:98px;left:50%;transform:translateX(-50%);width:min(460px,48vw)}
+.tm-bar{position:relative;height:26px;display:flex;border:3px solid #111;border-radius:16px;overflow:hidden;background:#3a3d4a;box-shadow:0 4px 0 rgba(0,0,0,.5)}
+#tmA,#tmB{height:100%;width:50%;transition:width .7s cubic-bezier(.3,.1,.2,1)}
+#tmB{margin-left:auto}
+.tm-bar:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(255,255,255,.55)}
+.tm-bar span{position:absolute;top:0;bottom:0;display:flex;align-items:center;line-height:1;z-index:1;font-size:15px;font-weight:900;font-style:italic;color:#fff;-webkit-text-stroke:2px #111;paint-order:stroke fill;transition:transform .2s}
+#tmPA{left:10px}#tmPB{right:10px}
+.tm-bar span.up{transform:scale(1.18)}
 </style></head><body>
 <canvas id="gl"></canvas>
 
@@ -373,6 +383,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   <div id="vignette"></div>
   <canvas id="inkCanvas"></canvas>
   <div id="topbar"><div class="team" id="teamA"></div><div id="timer">3:00</div><div class="team" id="teamB"></div></div>
+  <div id="turfMeter"><div class="tm-bar"><div id="tmA"></div><div id="tmB"></div><span id="tmPA">0.0%</span><span id="tmPB">0.0%</span></div></div>
   <div id="crosshair"><div class="ring"></div><div class="dot"></div>
     <svg id="chargeRing" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="9"/><circle id="chargeArc" cx="50" cy="50" r="40" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="251.3" stroke-dashoffset="251.3" stroke-linecap="round"/></svg>
     <svg id="hitmark" viewBox="0 0 44 44"><g stroke="#fff" stroke-width="4" stroke-linecap="round"><path d="M6 6l9 9M38 6l-9 9M6 38l9-9M38 38l-9-9"/></g></svg></div>
@@ -405,7 +416,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 <div id="results" class="screen">
   <div id="rsJudge"><div id="refFlags"><svg class="flag fa" viewBox="0 0 60 90"><rect x="4" y="4" width="5" height="84" rx="2" fill="#e8e8ee" stroke="#111" stroke-width="2.5"/><path d="M9 8 Q30 2 52 10 Q40 22 52 34 Q30 42 9 36Z" fill="var(--c0)" stroke="#111" stroke-width="3"/></svg><svg class="flag fb" viewBox="0 0 60 90"><rect x="51" y="4" width="5" height="84" rx="2" fill="#e8e8ee" stroke="#111" stroke-width="2.5"/><path d="M51 8 Q30 2 8 10 Q20 22 8 34 Q30 42 51 36Z" fill="var(--c1)" stroke="#111" stroke-width="3"/></svg></div>
     <div class="judge" id="judge">裁判判定中…</div></div>
-  <div id="rsMeter"><div id="bars"><div id="barA"></div><div id="barB"></div></div><span id="pctA"></span><span id="pctB"></span></div>
+  <div id="rsMeter"><div id="bars"><div id="barA"></div><div id="barB"></div><span id="pctA"></span><span id="pctB"></span></div></div>
   <div id="verdict"></div>
   <div id="board"></div>
   <div id="awards"></div>
@@ -2964,6 +2975,7 @@ const HUD = {
     const hx = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
     this.rgb = [hx(TEAM_HEX[0]), hx(TEAM_HEX[1])];
     $('killfeed').innerHTML = '';
+    $('tmA').style.background = TEAM_HEX[0]; $('tmB').style.background = TEAM_HEX[1]; this.tmT = 0; this.tmLast = [0, 0];
   },
   update(dt) {
     const c = PLAYER; if (!c) return;
@@ -3008,6 +3020,14 @@ const HUD = {
     }
     if (!c.alive) { $('deathCd').textContent = Math.max(1, Math.ceil(c.respawnT)); }
     this.mmT -= dt; if (this.mmT <= 0) { this.mmT = 0.2; this.drawMap(); }
+    // live turf meter: each side's share of the inked ground, pushing into the other side as it grows
+    this.tmT = (this.tmT || 0) - dt;
+    if (this.tmT <= 0) {
+      this.tmT = 0.25; const p = [0, 1].map(t => Paint.teamCells[t] / Paint.total * 100), s = p[0] + p[1], a = s > 0.05 ? p[0] / s * 100 : 50;
+      $('tmA').style.width = a + '%'; $('tmB').style.width = (100 - a) + '%';
+      ['tmPA', 'tmPB'].forEach((id, t) => { const el = $(id); el.textContent = p[t].toFixed(1) + '%'; el.classList.toggle('up', p[t] - (this.tmLast[t] || 0) > 0.15); });
+      this.tmLast = p;
+    }
     // hold Tab: live scoreboard
     const tabOn = !!Input.keys.Tab && (G.state === 'play' || G.state === 'intro') && !G.paused;
     $('scoreTab').classList.toggle('show', tabOn);

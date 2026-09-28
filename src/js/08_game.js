@@ -18,6 +18,7 @@ const HUD = {
     const hx = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
     this.rgb = [hx(TEAM_HEX[0]), hx(TEAM_HEX[1])];
     $('killfeed').innerHTML = '';
+    $('tmA').style.background = TEAM_HEX[0]; $('tmB').style.background = TEAM_HEX[1]; this.tmT = 0; this.tmLast = [0, 0];
   },
   update(dt) {
     const c = PLAYER; if (!c) return;
@@ -62,6 +63,14 @@ const HUD = {
     }
     if (!c.alive) { $('deathCd').textContent = Math.max(1, Math.ceil(c.respawnT)); }
     this.mmT -= dt; if (this.mmT <= 0) { this.mmT = 0.2; this.drawMap(); }
+    // live turf meter: each side's share of the inked ground, pushing into the other side as it grows
+    this.tmT = (this.tmT || 0) - dt;
+    if (this.tmT <= 0) {
+      this.tmT = 0.25; const p = [0, 1].map(t => Paint.teamCells[t] / Paint.total * 100), s = p[0] + p[1], a = s > 0.05 ? p[0] / s * 100 : 50;
+      $('tmA').style.width = a + '%'; $('tmB').style.width = (100 - a) + '%';
+      ['tmPA', 'tmPB'].forEach((id, t) => { const el = $(id); el.textContent = p[t].toFixed(1) + '%'; el.classList.toggle('up', p[t] - (this.tmLast[t] || 0) > 0.15); });
+      this.tmLast = p;
+    }
     // hold Tab: live scoreboard
     const tabOn = !!Input.keys.Tab && (G.state === 'play' || G.state === 'intro') && !G.paused;
     $('scoreTab').classList.toggle('show', tabOn);
