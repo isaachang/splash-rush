@@ -14,7 +14,7 @@ const WEAPONS = {
     desc: '射速、射程、涂地都很均衡，3 发击倒。适合任何场合，新手首选。',
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
     dmg: 36, dmgFar: 18, falloff: [0.18, 0.42], interval: 0.105, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
-    spread: 0.045, airSpread: 0.1, cost: 0.92, splat: [0.95, 1.2],
+    spread: 0.045, airSpread: 0.1, cost: 1.1, splat: [0.95, 1.2],
     moveFire: 4.8, muzzleF: 0.55, range: 16, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,
     stats: { range: 4, dmg: 3, rate: 4, paint: 3, mobility: 4 }
@@ -23,7 +23,7 @@ const WEAPONS = {
     id: 'charger', name: '重炮狙击', en: 'HEAVY CANNON', role: '远程 · 狙击', type: 'charge', cls: 'charger',
     desc: '按住蓄力、松开发射，蓄得越久射程越远、伤害越高，蓄满一发击倒。弹道沿途涂出墨线，落点大范围溅射。蓄力时会暴露激光瞄准线，近身很吃亏。',
     chargeTime: 0.95, minCharge: 0, minRange: 11, maxRange: 30, dmgMin: 40, dmgMax: 100, dmgFull: 160,
-    costMin: 3, costFull: 18, lineR: 0.5, impactR: [1.0, 2.8], moveCharge: 1.35, moveFire: 1.35, muzzleF: 1.05, range: 30, storeTime: 1.25, spLoss: 0.5,
+    costMin: 3, costFull: 18, lineR: 0.5, lineRFull: 0.8, impactR: [1.0, 2.0], impactFull: 3.6, moveCharge: 1.35, moveFire: 1.35, muzzleF: 1.05, range: 30, storeTime: 1.25, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 36,
     stats: { range: 5, dmg: 5, rate: 1, paint: 2, mobility: 2 }
   }
@@ -75,6 +75,12 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.5.2', date: '2026-09-28', title: '武器差异化', items: [
+    '重炮狙击蓄满的一炮更有冲击力：粗光束、大范围溅射、冲击波和震屏',
+    '重炮狙击没蓄满时效果更小，只有蓄满才一枪击倒',
+    '墨水炸弹扔得更远，跳起来扔能扔得更远',
+    '墨浪步枪一罐墨可以打的发数减少（约 108 → 90 发）'
+  ] },
   { v: 'v0.5.1', date: '2026-09-28', title: '打击感', items: [
     '子弹改为连续的墨水流，开枪时能清楚看到墨水喷出去',
     '射程增加约 3 米（有效射程 13 → 16 米），弹道末端的下坠更平滑',

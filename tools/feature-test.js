@@ -152,6 +152,23 @@ vm.runInContext(`(() => {
   ok(Proj.mesh.count >= 3, 'each bullet renders as a stream of blobs (' + Proj.mesh.count + ' instances)');
   let seenPending = false; for (let i = 0; i < 20; i++) { loop(); if (Proj.pending.length) seenPending = true; }
   ok(seenPending && Proj.pending.length === 0, 'impact paint lands in two beats (core, then full splat)');
+  // ================= v0.5.2 weapon identity =================
+  ok(WEAPONS.rifle.cost === 1.1 && Math.floor(100 / WEAPONS.rifle.cost) === 90, 'rifle tank holds ~90 shots (1.1% per shot)');
+  // bomb: standing vs jump throw distance (read from the arc preview)
+  P.pos.set(-9, 0, 27); P.vel.set(0, 0, 0); P.grounded = true; Cam.yaw = Math.PI; Cam.pitch = 0; P.aimYaw = Math.PI; P.aimPitch = 0; loop();
+  const dirB = new THREE.Vector3(0, 0, -1);
+  Proj.preview(P, dirB, true); const dStand = Math.abs(Proj.pvRing.position.z - P.pos.z);
+  P.grounded = false; P.vel.set(0, 3, 0); P.pos.y = 0.9; Proj.preview(P, dirB, true); const dJump = Math.abs(Proj.pvRing.position.z - P.pos.z);
+  P.grounded = true; P.pos.y = 0; P.vel.set(0, 0, 0); Proj.preview(null);
+  ok(dStand > 8.5 && dStand < 11 && dJump > dStand * 1.25, 'bomb: standing throw ' + dStand.toFixed(1) + ' m, jump throw ' + dJump.toFixed(1) + ' m');
+  // charger: full charge paints far more than a mid charge
+  const ch = CHARS.find(c => c.weapon.id === 'charger' && c.team === 1) || CHARS.find(c => c.weapon.id === 'charger');
+  if (ch) {
+    const tryShot = (charge, z) => { resetPaint(); ch.pos.set(20, 0, z); ch.aimYaw = Math.PI; ch.aimPitch = -0.25; ch.ink = 100; ch.state = 'play'; ch.alive = true; ch.intent.aimDir = null;
+      ch.fireCharger(charge, ch.intent); for (let i = 0; i < 40; i++) loop(); return Paint.teamCells[ch.team]; };
+    const mid = tryShot(0.6, 0), fullC = tryShot(1, 0);
+    ok(fullC > mid * 1.8, 'charger: full-charge shot paints much more than a 60% shot (' + fullC + ' vs ' + mid + ' cells)');
+  }
   // ---------- swim speed = 2x run
   ok(Math.abs(12.8 / 6.4 - 2) < 1e-9 && WEAPONS.charger.moveCharge === 1.35, 'speed ratios: swim 2.0x run, charging 21% of run');
 })()`, g);

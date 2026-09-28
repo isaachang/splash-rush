@@ -517,35 +517,46 @@ class Character {
     const range = lerp(W.minRange, W.maxRange, ct);
     const tr = traceRay(this, m, dir, range, 0.2);
     // ink line along the path
-    let gained = 0; const lr = W.lineR * (0.7 + 0.3 * c);
-    for (let t = 1.0; t < tr.t - 0.6; t += 0.75) {
+    const full = c >= 0.999;
+    let gained = 0; const lr = full ? W.lineRFull : W.lineR * (0.7 + 0.3 * c), stepL = full ? 0.6 : 0.75;
+    for (let t = 1.0; t < tr.t - 0.6; t += stepL) {
       const qx = m.x + dir.x * t, qy = m.y + dir.y * t, qz = m.z + dir.z * t;
       if (Math.abs(qx) > XH || Math.abs(qz) > ZH) continue;
       const gy = groundBelow(qx, qz, qy, 0); if (qy - gy > 7) continue;
       gained += splatFloor(qx + rand(-0.1, 0.1), gy, qz + rand(-0.1, 0.1), lr * rand(0.8, 1.15), this.team, 0.7, false);
     }
     this.addPaint(gained);
-    const ir = lerp(W.impactR[0], W.impactR[1], ct), col = TEAM_HEX[this.team];
+    const ir = full ? W.impactFull : lerp(W.impactR[0], W.impactR[1], ct), col = TEAM_HEX[this.team];
+    let impactAt = null;
     if (tr.char) {
       const dmg = c >= 0.999 ? W.dmgFull : lerp(W.dmgMin, W.dmgMax, ct);
       const e = tr.char; e.damage(dmg, this, W.id);
-      Proj.splash(this, new THREE.Vector3(e.pos.x, groundBelow(e.pos.x, e.pos.z, e.pos.y + 0.3, 0.3), e.pos.z), new THREE.Vector3(0, 1, 0), dir, ir * 0.6, 'floor');
-      Fx.burstDir(tr.end.x, tr.end.y, tr.end.z, col, 16, 5, 0.1, dir.x, dir.y + 0.3, dir.z, 0.6);
+      impactAt = new THREE.Vector3(e.pos.x, groundBelow(e.pos.x, e.pos.z, e.pos.y + 0.3, 0.3), e.pos.z);
+      Proj.splash(this, impactAt, new THREE.Vector3(0, 1, 0), dir, ir * (full ? 0.8 : 0.6), 'floor');
+      Fx.burstDir(tr.end.x, tr.end.y, tr.end.z, col, full ? 34 : 16, full ? 8 : 5, full ? 0.13 : 0.1, dir.x, dir.y + 0.3, dir.z, 0.7);
     } else if (tr.solid) {
       const h = Proj.classify(tr.solid, tr.prev, tr.end);
-      if (h.type === 'floor') Proj.splash(this, new THREE.Vector3(tr.end.x, h.y, tr.end.z), h.n, dir, ir, 'floor');
-      else if (h.type === 'wall') Proj.splash(this, h.pt, h.n, dir, ir * 0.85, 'wall', h.face);
-      if (c >= 0.999 && h.type === 'floor') Fx.ring(tr.end.x, h.y + 0.06, tr.end.z, col, ir * 1.3);
+      if (h.type === 'floor') { impactAt = new THREE.Vector3(tr.end.x, h.y, tr.end.z); Proj.splash(this, impactAt, h.n, dir, ir, 'floor'); }
+      else if (h.type === 'wall') { impactAt = h.pt.clone(); Proj.splash(this, h.pt, h.n, dir, ir * 0.85, 'wall', h.face); }
     } else if (tr.barrier) {
       Fx.burst(tr.end.x, tr.end.y, tr.end.z, col, 8, 3, 0.07); Barrier.flash(1 - this.team);
     } else {
       // out of range: the ink slug loses energy and falls, splashing where it lands
       Proj.spray(this, tr.end, dir.clone().multiplyScalar(11), ir * 0.7, true);
     }
-    Fx.beam(m, tr.end, col, 0.035 + 0.05 * c);
-    Fx.burst(m.x, m.y, m.z, col, 6, 3, 0.07);
+    // full charge = a "big" shot: thick lingering beam, huge crown, shockwave, secondary drops, heavy boom
+    if (full && impactAt) {
+      const gy = groundBelow(impactAt.x, impactAt.z, impactAt.y + 0.5, 0.6);
+      Fx.burstDir(impactAt.x, gy + 0.2, impactAt.z, col, 30, 8.5, 0.14, 0, 1, 0, 0.8);
+      Fx.ring(impactAt.x, gy + 0.07, impactAt.z, col, 5); Fx.ring(impactAt.x, gy + 0.08, impactAt.z, '#ffffff', 3.2);
+      for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 + rand(-0.2, 0.2), sp = rand(4, 7); Proj.spray(this, new THREE.Vector3(impactAt.x, gy + 0.4, impactAt.z), new THREE.Vector3(Math.cos(a) * sp, rand(4, 7), Math.sin(a) * sp), rand(0.45, 0.7)); }
+      if (PLAYER && PLAYER.alive) { const dd = PLAYER.pos.distanceTo(impactAt); if (dd < 12 && !this.isPlayer) G.shake(0.6 * (1 - dd / 12)); }
+    }
+    Fx.beam(m, tr.end, col, full ? 0.16 : 0.035 + 0.025 * c, full);
+    Fx.burst(m.x, m.y, m.z, col, full ? 14 : 6, full ? 5 : 3, full ? 0.1 : 0.07);
     const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.7); if (v > 0.03) Sfx.cannon(v, c);
-    if (this.isPlayer) G.shake(0.25 + 0.35 * c);
+    if (full && impactAt) { const vi = sndVol(impactAt); if (vi > 0.03) Sfx.cannonImpact(vi, sndPan(impactAt)); }
+    if (this.isPlayer) G.shake(full ? 0.75 : 0.2 + 0.25 * c);
   }
   updateLaser() {
     if (!this.laser) return;

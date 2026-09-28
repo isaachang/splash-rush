@@ -39,14 +39,18 @@ const Fx = {
   },
   spark(x, y, z, col) { this.add(x + rand(-0.2, 0.2), y + rand(-0.2, 0.2), z + rand(-0.2, 0.2), rand(-1, 1), rand(0, 2), rand(-1, 1), rand(0.05, 0.1), rand(0.3, 0.5), col, 6); },
   wake(x, y, z, col) { this.add(x + rand(-0.3, 0.3), y, z + rand(-0.3, 0.3), rand(-0.6, 0.6), rand(1.5, 3), rand(-0.6, 0.6), rand(0.05, 0.1), 0.35, col, 14); },
-  beam(a, b, col, w) {
+  beamPart(a, b, col, w, life, op) {
     let m = this.beams.find(m => !m.visible);
-    if (!m) { if (this.beams.length > 12) m = this.beams[0]; else { m = new THREE.Mesh(GEO.beam, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false })); scene.add(m); this.beams.push(m); } }
-    m.visible = true; m.material.color.set(col); m.position.copy(a); m.lookAt(b); m.userData = { t: 0, w, len: a.distanceTo(b) };
-    m.scale.set(w, w, m.userData.len);
-    let c = this.beams.find(x => x !== m && !x.visible);
-    if (!c) { c = new THREE.Mesh(GEO.beam, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, fog: false })); scene.add(c); this.beams.push(c); }
-    c.visible = true; c.position.copy(a); c.lookAt(b); c.userData = { t: 0, w: w * 0.4, len: m.userData.len }; c.scale.set(w * 0.4, w * 0.4, c.userData.len);
+    if (!m) { if (this.beams.length > 18) m = this.beams[0]; else { m = new THREE.Mesh(GEO.beam, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false })); scene.add(m); this.beams.push(m); } }
+    m.visible = true; m.material.color.set(col); m.position.copy(a); m.lookAt(b); m.userData = { t: 0, w, len: a.distanceTo(b), life, op };
+    m.scale.set(w, w, m.userData.len); m.material.opacity = op;
+  },
+  // coloured beam + white core; big=true adds an outer glow and lingers longer (full-charge shot)
+  beam(a, b, col, w, big = false) {
+    const life = big ? 0.38 : 0.22;
+    this.beamPart(a, b, col, w, life, 1);
+    this.beamPart(a, b, '#ffffff', w * 0.4, life * 0.8, 1);
+    if (big) this.beamPart(a, b, col, w * 2.2, life * 1.1, 0.35);
   },
   ring(x, y, z, col, r) {
     const m = this.ringPool.find(m => !m.visible) || this.ringPool[0];
@@ -77,9 +81,9 @@ const Fx = {
     }
     this.mesh.count = n; this.mesh.instanceMatrix.needsUpdate = true; if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
     for (const m of this.beams) {
-      if (!m.visible) continue; const u = m.userData; u.t += dt; const k = u.t / 0.22;
+      if (!m.visible) continue; const u = m.userData; u.t += dt; const k = u.t / (u.life || 0.22);
       if (k >= 1) { m.visible = false; continue; }
-      const w = u.w * (1 - k * 0.7); m.scale.set(w, w, u.len); m.material.opacity = 1 - k;
+      const w = u.w * (1 - k * 0.7); m.scale.set(w, w, u.len); m.material.opacity = (u.op ?? 1) * (1 - k * k);
     }
     for (const m of this.rings) {
       if (!m.visible) continue; const u = m.userData; u.t += dt; const k = u.t / 0.45;
@@ -172,7 +176,12 @@ const Proj = {
     this.bombs.push({ owner, team: owner.team, p: o.clone(), v, g, light, fuse: -1, bounces: 0 });
     if (sndVol(o) > 0.05) Sfx.throwB(sndVol(o));
   },
-  bombVel(owner, dir) { const v = dir.clone().multiplyScalar(13); v.y += 5.5; v.x += owner.vel.x * 0.5; v.z += owner.vel.z * 0.5; return v; },
+  bombVel(owner, dir) {
+    const air = !owner.grounded, v = dir.clone().multiplyScalar(air ? 14 * 1.12 : 14);
+    v.y += 5.5; v.x += owner.vel.x * 0.5; v.z += owner.vel.z * 0.5;
+    if (air) v.y += Math.max(0, owner.vel.y) * 0.3;      // jump-throw: carries the jump's upward speed -> flies further
+    return v;
+  },
   // throw-arc preview (player holds the sub button)
   preview(owner, dir, ok) {
     if (!this.pv) {
