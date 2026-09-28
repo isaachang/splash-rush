@@ -530,6 +530,11 @@ const Sfx = (() => {
     chargeReady() { tone('triangle', 990, null, 0.06, 0.08); },
     fizzle() { noise(0.12, 0.1, 'bandpass', 1500, 2, 500); tone('sine', 500, 200, 0.1, 0.05); },
     chargeFull() { tone('sine', 1760, null, 0.12, 0.12); tone('sine', 2640, null, 0.18, 0.08, null, ctx && ctx.currentTime + 0.05); },
+    cannonImpact(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), t = ctx.currentTime;
+      noise(0.9, 0.5 * v, 'lowpass', 1400, 0.8, 60, d); tone('sine', 110, 32, 0.8, 0.45 * v, d);
+      noise(0.25, 0.25 * v, 'bandpass', 900, 1.5, 300, d, t + 0.05); tone('triangle', 70, 40, 1.2, 0.12 * v, d, t + 0.1);
+    },
     cannon(v, c) { noise(0.35 + c * 0.3, (0.25 + c * 0.35) * v, 'lowpass', 2400, 0.9, 120); tone('square', 520, 60, 0.25, 0.12 * v); tone('sine', 150, 40, 0.4 + c * 0.2, (0.3 + c * 0.3) * v); noise(0.06, 0.25 * v, 'highpass', 3000, 1); },
     get ctx() { return ctx; }
   };
@@ -1280,7 +1285,7 @@ const WEAPONS = {
     desc: '射速、射程、涂地都很均衡，3 发击倒。适合任何场合，新手首选。',
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
     dmg: 36, dmgFar: 18, falloff: [0.18, 0.42], interval: 0.105, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
-    spread: 0.045, airSpread: 0.1, cost: 0.92, splat: [0.95, 1.2],
+    spread: 0.045, airSpread: 0.1, cost: 1.42, splat: [0.95, 1.2],
     moveFire: 4.8, muzzleF: 0.55, range: 16, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,
     stats: { range: 4, dmg: 3, rate: 4, paint: 3, mobility: 4 }
@@ -1289,7 +1294,7 @@ const WEAPONS = {
     id: 'charger', name: '重炮狙击', en: 'HEAVY CANNON', role: '远程 · 狙击', type: 'charge', cls: 'charger',
     desc: '按住蓄力、松开发射，蓄得越久射程越远、伤害越高，蓄满一发击倒。弹道沿途涂出墨线，落点大范围溅射。蓄力时会暴露激光瞄准线，近身很吃亏。',
     chargeTime: 0.95, minCharge: 0, minRange: 11, maxRange: 30, dmgMin: 40, dmgMax: 100, dmgFull: 160,
-    costMin: 3, costFull: 18, lineR: 0.5, impactR: [1.0, 2.8], moveCharge: 1.35, moveFire: 1.35, muzzleF: 1.05, range: 30, storeTime: 1.25, spLoss: 0.5,
+    costMin: 3, costFull: 18, lineR: 0.5, lineRFull: 0.8, impactR: [1.0, 2.0], impactFull: 3.6, moveCharge: 1.35, moveFire: 1.35, muzzleF: 1.05, range: 30, storeTime: 1.25, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 36,
     stats: { range: 5, dmg: 5, rate: 1, paint: 2, mobility: 2 }
   }
@@ -1341,6 +1346,12 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.5.2', date: '2026-09-28', title: '武器差异化', items: [
+    '重炮狙击蓄满的一炮更有冲击力：粗光束、大范围溅射、冲击波和震屏',
+    '重炮狙击没蓄满时效果更小，只有蓄满才一枪击倒',
+    '墨水炸弹扔得更远，跳起来扔能扔得更远',
+    '墨浪步枪一罐墨可以打的发数减少（约 108 → 70 发）'
+  ] },
   { v: 'v0.5.1', date: '2026-09-28', title: '打击感', items: [
     '子弹改为连续的墨水流，开枪时能清楚看到墨水喷出去',
     '射程增加约 3 米（有效射程 13 → 16 米），弹道末端的下坠更平滑',
@@ -1903,35 +1914,46 @@ class Character {
     const range = lerp(W.minRange, W.maxRange, ct);
     const tr = traceRay(this, m, dir, range, 0.2);
     // ink line along the path
-    let gained = 0; const lr = W.lineR * (0.7 + 0.3 * c);
-    for (let t = 1.0; t < tr.t - 0.6; t += 0.75) {
+    const full = c >= 0.999;
+    let gained = 0; const lr = full ? W.lineRFull : W.lineR * (0.7 + 0.3 * c), stepL = full ? 0.6 : 0.75;
+    for (let t = 1.0; t < tr.t - 0.6; t += stepL) {
       const qx = m.x + dir.x * t, qy = m.y + dir.y * t, qz = m.z + dir.z * t;
       if (Math.abs(qx) > XH || Math.abs(qz) > ZH) continue;
       const gy = groundBelow(qx, qz, qy, 0); if (qy - gy > 7) continue;
       gained += splatFloor(qx + rand(-0.1, 0.1), gy, qz + rand(-0.1, 0.1), lr * rand(0.8, 1.15), this.team, 0.7, false);
     }
     this.addPaint(gained);
-    const ir = lerp(W.impactR[0], W.impactR[1], ct), col = TEAM_HEX[this.team];
+    const ir = full ? W.impactFull : lerp(W.impactR[0], W.impactR[1], ct), col = TEAM_HEX[this.team];
+    let impactAt = null;
     if (tr.char) {
       const dmg = c >= 0.999 ? W.dmgFull : lerp(W.dmgMin, W.dmgMax, ct);
       const e = tr.char; e.damage(dmg, this, W.id);
-      Proj.splash(this, new THREE.Vector3(e.pos.x, groundBelow(e.pos.x, e.pos.z, e.pos.y + 0.3, 0.3), e.pos.z), new THREE.Vector3(0, 1, 0), dir, ir * 0.6, 'floor');
-      Fx.burstDir(tr.end.x, tr.end.y, tr.end.z, col, 16, 5, 0.1, dir.x, dir.y + 0.3, dir.z, 0.6);
+      impactAt = new THREE.Vector3(e.pos.x, groundBelow(e.pos.x, e.pos.z, e.pos.y + 0.3, 0.3), e.pos.z);
+      Proj.splash(this, impactAt, new THREE.Vector3(0, 1, 0), dir, ir * (full ? 0.8 : 0.6), 'floor');
+      Fx.burstDir(tr.end.x, tr.end.y, tr.end.z, col, full ? 34 : 16, full ? 8 : 5, full ? 0.13 : 0.1, dir.x, dir.y + 0.3, dir.z, 0.7);
     } else if (tr.solid) {
       const h = Proj.classify(tr.solid, tr.prev, tr.end);
-      if (h.type === 'floor') Proj.splash(this, new THREE.Vector3(tr.end.x, h.y, tr.end.z), h.n, dir, ir, 'floor');
-      else if (h.type === 'wall') Proj.splash(this, h.pt, h.n, dir, ir * 0.85, 'wall', h.face);
-      if (c >= 0.999 && h.type === 'floor') Fx.ring(tr.end.x, h.y + 0.06, tr.end.z, col, ir * 1.3);
+      if (h.type === 'floor') { impactAt = new THREE.Vector3(tr.end.x, h.y, tr.end.z); Proj.splash(this, impactAt, h.n, dir, ir, 'floor'); }
+      else if (h.type === 'wall') { impactAt = h.pt.clone(); Proj.splash(this, h.pt, h.n, dir, ir * 0.85, 'wall', h.face); }
     } else if (tr.barrier) {
       Fx.burst(tr.end.x, tr.end.y, tr.end.z, col, 8, 3, 0.07); Barrier.flash(1 - this.team);
     } else {
       // out of range: the ink slug loses energy and falls, splashing where it lands
       Proj.spray(this, tr.end, dir.clone().multiplyScalar(11), ir * 0.7, true);
     }
-    Fx.beam(m, tr.end, col, 0.035 + 0.05 * c);
-    Fx.burst(m.x, m.y, m.z, col, 6, 3, 0.07);
+    // full charge = a "big" shot: thick lingering beam, huge crown, shockwave, secondary drops, heavy boom
+    if (full && impactAt) {
+      const gy = groundBelow(impactAt.x, impactAt.z, impactAt.y + 0.5, 0.6);
+      Fx.burstDir(impactAt.x, gy + 0.2, impactAt.z, col, 30, 8.5, 0.14, 0, 1, 0, 0.8);
+      Fx.ring(impactAt.x, gy + 0.07, impactAt.z, col, 5); Fx.ring(impactAt.x, gy + 0.08, impactAt.z, '#ffffff', 3.2);
+      for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 + rand(-0.2, 0.2), sp = rand(4, 7); Proj.spray(this, new THREE.Vector3(impactAt.x, gy + 0.4, impactAt.z), new THREE.Vector3(Math.cos(a) * sp, rand(4, 7), Math.sin(a) * sp), rand(0.45, 0.7)); }
+      if (PLAYER && PLAYER.alive) { const dd = PLAYER.pos.distanceTo(impactAt); if (dd < 12 && !this.isPlayer) G.shake(0.6 * (1 - dd / 12)); }
+    }
+    Fx.beam(m, tr.end, col, full ? 0.16 : 0.035 + 0.025 * c, full);
+    Fx.burst(m.x, m.y, m.z, col, full ? 14 : 6, full ? 5 : 3, full ? 0.1 : 0.07);
     const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.7); if (v > 0.03) Sfx.cannon(v, c);
-    if (this.isPlayer) G.shake(0.25 + 0.35 * c);
+    if (full && impactAt) { const vi = sndVol(impactAt); if (vi > 0.03) Sfx.cannonImpact(vi, sndPan(impactAt)); }
+    if (this.isPlayer) G.shake(full ? 0.75 : 0.2 + 0.25 * c);
   }
   updateLaser() {
     if (!this.laser) return;
@@ -2090,14 +2112,18 @@ const Fx = {
   },
   spark(x, y, z, col) { this.add(x + rand(-0.2, 0.2), y + rand(-0.2, 0.2), z + rand(-0.2, 0.2), rand(-1, 1), rand(0, 2), rand(-1, 1), rand(0.05, 0.1), rand(0.3, 0.5), col, 6); },
   wake(x, y, z, col) { this.add(x + rand(-0.3, 0.3), y, z + rand(-0.3, 0.3), rand(-0.6, 0.6), rand(1.5, 3), rand(-0.6, 0.6), rand(0.05, 0.1), 0.35, col, 14); },
-  beam(a, b, col, w) {
+  beamPart(a, b, col, w, life, op) {
     let m = this.beams.find(m => !m.visible);
-    if (!m) { if (this.beams.length > 12) m = this.beams[0]; else { m = new THREE.Mesh(GEO.beam, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false })); scene.add(m); this.beams.push(m); } }
-    m.visible = true; m.material.color.set(col); m.position.copy(a); m.lookAt(b); m.userData = { t: 0, w, len: a.distanceTo(b) };
-    m.scale.set(w, w, m.userData.len);
-    let c = this.beams.find(x => x !== m && !x.visible);
-    if (!c) { c = new THREE.Mesh(GEO.beam, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, fog: false })); scene.add(c); this.beams.push(c); }
-    c.visible = true; c.position.copy(a); c.lookAt(b); c.userData = { t: 0, w: w * 0.4, len: m.userData.len }; c.scale.set(w * 0.4, w * 0.4, c.userData.len);
+    if (!m) { if (this.beams.length > 18) m = this.beams[0]; else { m = new THREE.Mesh(GEO.beam, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false })); scene.add(m); this.beams.push(m); } }
+    m.visible = true; m.material.color.set(col); m.position.copy(a); m.lookAt(b); m.userData = { t: 0, w, len: a.distanceTo(b), life, op };
+    m.scale.set(w, w, m.userData.len); m.material.opacity = op;
+  },
+  // coloured beam + white core; big=true adds an outer glow and lingers longer (full-charge shot)
+  beam(a, b, col, w, big = false) {
+    const life = big ? 0.38 : 0.22;
+    this.beamPart(a, b, col, w, life, 1);
+    this.beamPart(a, b, '#ffffff', w * 0.4, life * 0.8, 1);
+    if (big) this.beamPart(a, b, col, w * 2.2, life * 1.1, 0.35);
   },
   ring(x, y, z, col, r) {
     const m = this.ringPool.find(m => !m.visible) || this.ringPool[0];
@@ -2128,9 +2154,9 @@ const Fx = {
     }
     this.mesh.count = n; this.mesh.instanceMatrix.needsUpdate = true; if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
     for (const m of this.beams) {
-      if (!m.visible) continue; const u = m.userData; u.t += dt; const k = u.t / 0.22;
+      if (!m.visible) continue; const u = m.userData; u.t += dt; const k = u.t / (u.life || 0.22);
       if (k >= 1) { m.visible = false; continue; }
-      const w = u.w * (1 - k * 0.7); m.scale.set(w, w, u.len); m.material.opacity = 1 - k;
+      const w = u.w * (1 - k * 0.7); m.scale.set(w, w, u.len); m.material.opacity = (u.op ?? 1) * (1 - k * k);
     }
     for (const m of this.rings) {
       if (!m.visible) continue; const u = m.userData; u.t += dt; const k = u.t / 0.45;
@@ -2223,7 +2249,12 @@ const Proj = {
     this.bombs.push({ owner, team: owner.team, p: o.clone(), v, g, light, fuse: -1, bounces: 0 });
     if (sndVol(o) > 0.05) Sfx.throwB(sndVol(o));
   },
-  bombVel(owner, dir) { const v = dir.clone().multiplyScalar(13); v.y += 5.5; v.x += owner.vel.x * 0.5; v.z += owner.vel.z * 0.5; return v; },
+  bombVel(owner, dir) {
+    const air = !owner.grounded, v = dir.clone().multiplyScalar(air ? 14 * 1.12 : 14);
+    v.y += 5.5; v.x += owner.vel.x * 0.5; v.z += owner.vel.z * 0.5;
+    if (air) v.y += Math.max(0, owner.vel.y) * 0.3;      // jump-throw: carries the jump's upward speed -> flies further
+    return v;
+  },
   // throw-arc preview (player holds the sub button)
   preview(owner, dir, ok) {
     if (!this.pv) {

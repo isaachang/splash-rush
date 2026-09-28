@@ -144,6 +144,11 @@ const Sfx = (() => {
     chargeReady() { tone('triangle', 990, null, 0.06, 0.08); },
     fizzle() { noise(0.12, 0.1, 'bandpass', 1500, 2, 500); tone('sine', 500, 200, 0.1, 0.05); },
     chargeFull() { tone('sine', 1760, null, 0.12, 0.12); tone('sine', 2640, null, 0.18, 0.08, null, ctx && ctx.currentTime + 0.05); },
+    cannonImpact(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), t = ctx.currentTime;
+      noise(0.9, 0.5 * v, 'lowpass', 1400, 0.8, 60, d); tone('sine', 110, 32, 0.8, 0.45 * v, d);
+      noise(0.25, 0.25 * v, 'bandpass', 900, 1.5, 300, d, t + 0.05); tone('triangle', 70, 40, 1.2, 0.12 * v, d, t + 0.1);
+    },
     cannon(v, c) { noise(0.35 + c * 0.3, (0.25 + c * 0.35) * v, 'lowpass', 2400, 0.9, 120); tone('square', 520, 60, 0.25, 0.12 * v); tone('sine', 150, 40, 0.4 + c * 0.2, (0.3 + c * 0.3) * v); noise(0.06, 0.25 * v, 'highpass', 3000, 1); },
     get ctx() { return ctx; }
   };

@@ -52,7 +52,7 @@ git push
 
 # 7. 发布版本：更新 CHANGELOG.md、README 版本号、src/js/04_data.js 的 RELEASES（游戏内版本日志），然后打标签
 git tag -a v0.4.0 -m "v0.4.0 准星与操作手感原版化"
-git push --tags
+./tools/publish.sh      # 推送 main + 标签，并强制触发 GitHub Pages 部署、等它部署完成
 ```
 
 > ⚠️ `src/` 改了以后一定要重新运行 `./tools/build.sh`，并把 `index.html` 一起提交。在线试玩读的是 `index.html`。
