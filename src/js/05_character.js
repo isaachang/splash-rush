@@ -75,6 +75,7 @@ class Character {
     this.fireCd = 0; this.bombCd = 0; this.lastHurt = -99; this.lastShot = -99; this.invulnT = 0; this.respawnT = 0;
     this.sp = null; this.hurtFlash = 0; this.phase = 0; this.recoil = 0; this.swimPop = 0; this.inEnemy = false; this.lastAttacker = null;
     this.vel.set(0, 0, 0); this.kills = 0; this.deaths = 0; this.paint = 0; this.charge = 0; this.charging = false; this.stored = 0; this.lastVia = null; this.airSpeed = 0; this.sj = null; this.jumpTarget = null; this.dropY = null; this.dropSJ = false;
+    this.assists = 0; this.specials = 0; this.sjumps = 0; this.dmgBy = new Map();     // match stats (Tab panel / results)
     this.root.visible = true; this.ghost.visible = false;
   }
   buildModel() {
@@ -252,6 +253,7 @@ class Character {
   // continuous arc flight to a teammate (original-style super jump)
   beginFlight(t) {
     const p0 = this.pos.clone(), d = Math.hypot(t.pos.x - p0.x, t.pos.z - p0.z);
+    this.sjumps++;
     this.fly = { t: 0, p0, target: t, tp: t.pos.clone(), T: clamp(1.1 + d / 60, 1.2, 1.9), apex: clamp(9 + d * 0.22, 10, 20), last: p0.clone() };
     this.state = 'sjfly'; this.sj = null; this.grounded = false; this.swim = false; this.vel.set(0, 0, 0);
     this.showSJMarker(this.fly.tp); this.pulseSJMarker(0);
@@ -269,6 +271,7 @@ class Character {
   damage(amount, src, via) {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
+    if (src && src.team !== this.team) this.dmgBy.set(src, G.time);
     if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
     if (src && src.isPlayer) { Sfx.hit(amount >= 50); HUD.hitmark(false, amount); }
     if (this.hp <= 0) this.die(src, this.lastVia);
@@ -281,6 +284,9 @@ class Character {
     this.special = Math.floor(this.special * (1 - this.weapon.spLoss));
     const kc = killer ? killer.team : 1 - this.team;
     if (killer) killer.kills++;
+    // assist: anyone else on the other team who hurt us in the last 4 s
+    for (const [c, t] of this.dmgBy) if (c !== killer && c.team !== this.team && G.time - t < 4 && c.assists !== undefined) c.assists++;
+    this.dmgBy.clear();
     const gy = groundBelow(this.pos.x, this.pos.z, this.pos.y + 0.2, 0.3);
     splatFloor(this.pos.x, gy, this.pos.z, 2.2, kc, 1.0);
     Fx.burst(this.pos.x, this.pos.y + 0.8, this.pos.z, TEAM_HEX[kc], 42, 9, 0.2);
@@ -311,7 +317,7 @@ class Character {
     if (this.isPlayer) Sfx.chargeStop();
   }
   startSpecial() {
-    this.special = 0; this.sp = { phase: 0, t: 0 }; this.setSwim(false); this.stopCharge();
+    this.special = 0; this.specials++; this.sp = { phase: 0, t: 0 }; this.setSwim(false); this.stopCharge();
     this.vel.set(this.vel.x * 0.3, 13, this.vel.z * 0.3); this.grounded = false;
     if (sndVol(this.pos) > 0.05) Sfx.special();
     Fx.burst(this.pos.x, this.pos.y + 0.5, this.pos.z, TEAM_HEX[this.team], 20, 6, 0.15);

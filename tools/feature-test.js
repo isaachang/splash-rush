@@ -171,5 +171,35 @@ vm.runInContext(`(() => {
   }
   // ---------- swim speed = 2x run
   ok(Math.abs(12.8 / 6.4 - 2) < 1e-9 && WEAPONS.charger.moveCharge === 1.35, 'speed ratios: swim 2.0x run, charging 21% of run');
+  // ================= v0.6 turf polish =================
+  {
+    // every surface takes ink: ramp sides and the top of the perimeter walls
+    const inkIn = f => { let n = 0; for (let j = 0; j < f.rh - 2; j++) for (let i = 0; i < f.rw - 2; i++) { const o = ((f.ry + 1 + j) * Paint.W + f.rx + 1 + i) * 4; if (Paint.wdata[o] > 128 || Paint.wdata[o + 1] > 128) n++; } return n; };
+    resetPaint();
+    const rampsOk = SOLIDS.filter(s => s.t === 'ramp').every(s => Object.values(s.faces).filter(f => f.side).length === 2);
+    const rp = SOLIDS.find(s => s.t === 'ramp' && s.axis === 'z' && s.faces['+x']), rf = rp.faces['+x'], zm = (rp.z0 + rp.z1) / 2, own = { team: 0, addPaint() { } };
+    Proj.impact(rp, new THREE.Vector3(rp.x1 + 0.3, 0.3, zm), new THREE.Vector3(rp.x1 - 0.05, 0.3, zm), 0, own, 1.0); for (let i = 0; i < 5; i++) loop();
+    const cap = Paint.faces.find(f => f.cap), cx = cap.ax ? cap.inner + 0.7 * cap.sgn : 3, cz = cap.ax ? 3 : cap.inner + 0.7 * cap.sgn;
+    Proj.impact(cap.s, new THREE.Vector3(cx, cap.capY + 0.3, cz), new THREE.Vector3(cx, cap.capY - 0.05, cz), 0, own, 1.0);
+    const bm = { team: 1, owner: { team: 1, addPaint() { } } };
+    splatFloor(rp.x1 + 0.5, 0, zm + 1, 2.5, 1, 1.6);
+    ok(rampsOk && inkIn(rf) > 50 && inkIn(cap) > 50 && Paint.faces.filter(f => f.cap).length === 4, 'ramp sides and perimeter wall tops take ink (ramp side ' + inkIn(rf) + ' px, wall top ' + inkIn(cap) + ' px)');
+    // assists / specials / super jumps are tracked
+    const vic = CHARS.find(c => c.team === 1), k1 = CHARS.find(c => c.team === 0 && c !== P), k2 = P;
+    vic.state = 'play'; vic.alive = true; vic.hp = 100; vic.invulnT = 0; vic.pos.set(10, 0, -20);
+    const a0 = k2.assists, kk = k1.kills; vic.damage(40, k2, 'rifle'); vic.damage(80, k1, 'rifle');
+    ok(k1.kills === kk + 1 && k2.assists === a0 + 1, 'kills and assists are counted (assist = hurt the victim within 4 s)');
+    const sp0 = P.specials; P.special = 100; P.startSpecial(); ok(P.specials === sp0 + 1, 'special uses are counted');
+    // medals: gold for best in the match, silver for best on the team
+    CHARS.forEach(c => { c.paint = 10; c.kills = 0; c.assists = 0; c.specials = 0; c.sjumps = 0; c.deaths = 3; });
+    P.paint = 999; const tm = CHARS.find(c => c.team === 0 && c !== P); tm.kills = 3; const en = CHARS.find(c => c.team === 1); en.kills = 5;
+    const mp = medalsFor(P), mt = medalsFor(tm), me = medalsFor(en);
+    ok(mp.some(m => m.gold && m.t === '涂地最多') && mt.some(m => !m.gold && m.t === '击倒最多') && me.some(m => m.gold && m.t === '击倒最多'), 'medals: gold = best in match, silver = best on team');
+    // Tab scoreboard
+    G.state = 'play'; Input.keys.Tab = true; HUD.tabT = 0; HUD.update(0.03);
+    const shown = $('scoreTab').classList.contains('show'), html = $('stA').innerHTML + $('stB').innerHTML;
+    Input.keys.Tab = false; HUD.update(0.03);
+    ok(shown && !$('scoreTab').classList.contains('show') && html.includes(P.name) && html.includes('共击倒'), 'holding Tab shows the live scoreboard, releasing hides it');
+  }
 })()`, g);
 if (g.__fails) { console.log(g.__fails + ' FAILED'); process.exitCode = 1; } else console.log('ALL FEATURE TESTS PASSED');

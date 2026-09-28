@@ -70,7 +70,10 @@
   <div id="mapHint">点击队友（或按 1 / 2 / 3）超级跳过去 · 再按 M 关闭地图</div>
   <div id="center"></div>
   <div id="death"><div class="by" id="deathBy"></div><div class="cd" id="deathCd">5</div><div class="tip" id="deathTip"></div></div>
-  <div id="hint"><kbd>WASD</kbd>移动 <kbd>鼠标左键</kbd>射击 <kbd>Shift</kbd>潜墨 <kbd>空格</kbd>跳 <kbd>右键/E</kbd>炸弹 <kbd>Q</kbd>必杀 <kbd>M</kbd>地图/超级跳</div>
+  <div id="hint"><kbd>WASD</kbd>移动 <kbd>鼠标左键</kbd>射击 <kbd>Shift</kbd>潜墨 <kbd>空格</kbd>跳 <kbd>右键/E</kbd>炸弹 <kbd>Q</kbd>必杀 <kbd>M</kbd>地图/超级跳 <kbd>Tab</kbd>战况</div>
+  <div id="scoreTab"><div class="st-head"><b>战况</b><span id="stTime"></span><small>松开 Tab 关闭</small></div>
+    <div class="st-cols"><span></span><span>名字</span><span>击倒</span><span>助攻</span><span>阵亡</span><span>涂地</span><span>必杀</span></div>
+    <div class="st-team" id="stA"></div><div class="st-team" id="stB"></div></div>
 </div>
 
 <div id="pause" class="screen">
@@ -82,10 +85,12 @@
 </div>
 
 <div id="results" class="screen">
-  <div class="judge" id="judge">裁判判定中…</div>
-  <div id="bars"><div id="barA"></div><div id="barB"></div></div>
+  <div id="rsJudge"><div id="refFlags"><svg class="flag fa" viewBox="0 0 60 90"><rect x="4" y="4" width="5" height="84" rx="2" fill="#e8e8ee" stroke="#111" stroke-width="2.5"/><path d="M9 8 Q30 2 52 10 Q40 22 52 34 Q30 42 9 36Z" fill="var(--c0)" stroke="#111" stroke-width="3"/></svg><svg class="flag fb" viewBox="0 0 60 90"><rect x="51" y="4" width="5" height="84" rx="2" fill="#e8e8ee" stroke="#111" stroke-width="2.5"/><path d="M51 8 Q30 2 8 10 Q20 22 8 34 Q30 42 51 36Z" fill="var(--c1)" stroke="#111" stroke-width="3"/></svg></div>
+    <div class="judge" id="judge">裁判判定中…</div></div>
+  <div id="rsMeter"><div id="bars"><div id="barA"></div><div id="barB"></div></div><span id="pctA"></span><span id="pctB"></span></div>
   <div id="verdict"></div>
   <div id="board"></div>
+  <div id="awards"></div>
   <div id="resBtns"><button class="btn big" id="btnAgain">再来一局</button><button class="btn alt" id="btnChange">更换装备</button><button class="btn" id="btnMenu">主菜单</button></div>
 </div>
 
@@ -101,6 +106,7 @@
     <div><kbd>右键</kbd> / <kbd>E</kbd></div><div>按住显示抛物线和落点，松开投掷墨水炸弹（消耗 70% 墨水）</div>
     <div><kbd>Q</kbd></div><div>必杀技「墨浪冲击」：跃向高空后砸地，大范围涂色并击倒周围敌人</div>
     <div><kbd>M</kbd></div><div>打开大地图；点击队友（或按 1/2/3）超级跳到他身边。阵亡时也可以选，复活后直接跳过去</div>
+    <div><kbd>Tab</kbd></div><div>按住查看战况：双方每个人的击倒、助攻、阵亡、涂地和必杀技状态</div>
     <div><kbd>Esc</kbd></div><div>暂停</div>
   </div>
   <div class="tips">
