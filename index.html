@@ -238,6 +238,13 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .logv .hd small{margin-left:auto;opacity:.55;font-size:12px}
 .logv .hd i{font-style:normal;font-size:11px;font-weight:900;background:var(--c0);color:#111;border-radius:10px;padding:1px 8px;border:2px solid #111}
 .logv ul{margin:0;padding-left:20px;line-height:1.75;font-size:14px;opacity:.92}
+.logmore{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:4px 0 18px;padding:11px;border:3px dashed #3a3566;border-radius:16px;background:transparent;color:#fff;font:inherit;font-weight:900;font-size:14px;opacity:.75;cursor:pointer;transition:opacity .15s,border-color .15s,background .15s}
+.logmore:hover{opacity:1;border-color:var(--c0);background:#0f0d22}
+.logmore em{font-style:normal;display:inline-block;transition:transform .2s}
+.logmore.open em{transform:rotate(180deg)}
+.logold{display:none}
+.logold.show{display:block}
+.logold .logv{opacity:.85}
 .pausever{margin-top:6px;opacity:.55;font-size:13px;font-weight:700;letter-spacing:1px}
 </style></head><body>
 <canvas id="gl"></canvas>
@@ -1346,13 +1353,13 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
-  { v: 'v0.5.2', date: '2026-09-28', title: '武器差异化', items: [
+  { v: 'v0.5.2', date: '2026-09-28', time: '19:06', title: '武器差异化', items: [
     '重炮狙击蓄满的一炮更有冲击力：粗光束、大范围溅射、冲击波和震屏',
     '重炮狙击没蓄满时效果更小，只有蓄满才一枪击倒',
     '墨水炸弹扔得更远，跳起来扔能扔得更远',
     '墨浪步枪一罐墨可以打的发数减少（约 108 → 70 发）'
   ] },
-  { v: 'v0.5.1', date: '2026-09-28', title: '打击感', items: [
+  { v: 'v0.5.1', date: '2026-09-28', time: '18:29', title: '打击感', items: [
     '子弹改为连续的墨水流，开枪时能清楚看到墨水喷出去',
     '射程增加约 3 米（有效射程 13 → 16 米），弹道末端的下坠更平滑',
     '开枪时枪口喷墨、枪身后坐、镜头轻微上抬',
@@ -1361,7 +1368,7 @@ const RELEASES = [
     '开枪声重做，远处的枪声能分出左右',
     '修复被矮墙挡住时准星仍显示能打中的问题'
   ] },
-  { v: 'v0.5.0', date: '2026-09-28', title: '战斗手感收尾', items: [
+  { v: 'v0.5.0', date: '2026-09-28', time: '16:29', title: '战斗手感收尾', items: [
     '步枪改为 3 枪击倒，对枪节奏更利落',
     '回血按原版调整：潜进自己的墨水约 1 秒回满',
     '踩进敌方墨水掉血更快，并新增脚下冒墨、屏幕底部被墨黏住、咕叽声等提示',
@@ -1369,7 +1376,7 @@ const RELEASES = [
     '新增超级跳：按 M 打开地图点队友，沿弧线飞到他身边；阵亡时也能选',
     '修复潜墨时起跳会突然减速、跳不远的问题'
   ] },
-  { v: 'v0.4.0', date: '2026-09-28', title: '操作手感向原版靠拢', items: [
+  { v: 'v0.4.0', date: '2026-09-28', time: '15:52', title: '操作手感向原版靠拢', items: [
     '镜头改为居中，准星位于角色头顶上方',
     '修复两个准星上下错开的问题',
     '炸弹改为按住预览抛物线、松开投掷',
@@ -1377,18 +1384,18 @@ const RELEASES = [
     '新增出生点防护罩；阵亡会损失一半必杀充能',
     '受击时屏幕边缘溅上墨水，血越少越多'
   ] },
-  { v: 'v0.3.0', date: '2026-09-27', title: '弹道与瞄准', items: [
+  { v: 'v0.3.0', date: '2026-09-27', time: '23:58', title: '弹道与瞄准', items: [
     '步枪子弹改为近乎瞬间命中、末端下坠，射程更清楚',
     '狙击改为蓄多少都能发射',
     '新增双准星和"这一枪能打中"的提示',
     '墨水飞溅改为更真实的液体效果'
   ] },
-  { v: 'v0.2.0', date: '2026-09-27', title: '第二把武器', items: [
+  { v: 'v0.2.0', date: '2026-09-27', time: '20:14', title: '第二把武器', items: [
     '新增重炮狙击：蓄力、激光瞄准线、蓄满一枪击倒',
     '新增战前准备页面：选武器、看阵容、调难度和时长',
     '自动保存名字、武器和设置'
   ] },
-  { v: 'v0.1.0', date: '2026-09-27', title: '首个可玩版本', items: [
+  { v: 'v0.1.0', date: '2026-09-27', time: '18:23', title: '首个可玩版本', items: [
     '4 对 4 涂地对战：射击、潜墨、爬墙、炸弹、必杀技',
     '潮汐码头广场地图，完整的开局、对局、结算流程',
     '修复启动后一直停在加载画面的问题'
@@ -3314,8 +3321,12 @@ function initUI() {
   titleSplats(); renderLoadCard();
   // version badge + release notes
   $('verTxt').textContent = VERSION; $('pauseVer').textContent = 'SPLASH RUSH ' + VERSION;
-  $('logList').innerHTML = RELEASES.map((r, i) => `<div class="logv${i === 0 ? ' cur' : ''}"><div class="hd"><b>${r.v}</b><span>${r.title}</span>${i === 0 ? '<i>当前版本</i>' : ''}<small>${r.date}</small></div><ul>${r.items.map(t => `<li>${t}</li>`).join('')}</ul></div>`).join('');
-  $('btnLog').onclick = () => { Sfx.init(); Sfx.click(); show('changelog', true); };
+  const LOG_SHOW = 3, logItem = (r, i) => `<div class="logv${i === 0 ? ' cur' : ''}"><div class="hd"><b>${r.v}</b><span>${r.title}</span>${i === 0 ? '<i>当前版本</i>' : ''}<small>${r.date} ${r.time || ''}</small></div><ul>${r.items.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
+  const logOld = RELEASES.slice(LOG_SHOW);
+  $('logList').innerHTML = RELEASES.slice(0, LOG_SHOW).map(logItem).join('') + (logOld.length ? `<button class="logmore" id="logMore">更早的版本（${logOld.length}）<em>▾</em></button><div class="logold" id="logOld">${logOld.map((r, i) => logItem(r, i + LOG_SHOW)).join('')}</div>` : '');
+  const logFold = open => { const o = $('logOld'), b = $('logMore'); if (!o) return; o.classList.toggle('show', open); b.classList.toggle('open', open); b.firstChild.textContent = open ? '收起更早的版本 ' : `更早的版本（${logOld.length}）`; };
+  if ($('logMore')) $('logMore').onclick = () => { Sfx.click(); const open = !$('logOld').classList.contains('show'); logFold(open); if (open && $('logMore').scrollIntoView) $('logMore').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  $('btnLog').onclick = () => { Sfx.init(); Sfx.click(); logFold(false); $('logList').parentNode.scrollTop = 0; show('changelog', true); };
 }
 
 /* ---------------------------------------------------------------- boot */
