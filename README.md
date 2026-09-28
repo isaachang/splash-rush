@@ -17,7 +17,7 @@
 
 | 方式 | 步骤 |
 |---|---|
-| **在线玩** | 打开 **https://isaachang.github.io/splash-rush/**，点「开始对战」 |
+| **在线玩** | 打开 [isaachang.github.io/splash-rush](https://isaachang.github.io/splash-rush/)，点「开始对战」 |
 | **本地玩** | 下载 [`index.html`](index.html)，双击用 Chrome / Edge / Safari 打开，不需要安装，也不需要联网 |
 
 > 进入对局后游戏会锁定鼠标，按 <kbd>Esc</kbd> 暂停并释放鼠标。
