@@ -142,7 +142,7 @@ vm.runInContext(`(() => {
   // ================= v0.5.1 hit feel =================
   // reticle: a low wall between the gun and the target -> small reticle sticks to the wall
   Profile.data.weapon = 'rifle';
-  { const W = WEAPONS.rifle; ok(W.grav === 80 && W.dragH === 15.5, 'smoother bullet drop parameters'); }
+  { const W = WEAPONS.rifle; ok(W.grav === 72 && W.range === 16, 'longer, smoother rifle ballistics (range 16 m)'); }
   const w = SOLIDS.find(s => s.t === 'box' && s.h > 1 && s.h < 1.3 && s.z0 > 20);   // front cover wall near our spawn
   Cam.yaw = Math.PI; Cam.pitch = 0.02; P.pos.set((w.x0 + w.x1) / 2, 0, w.z1 + 1.2); P.vel.set(0, 0, 0); P.state = 'play'; P.alive = true; Input.keys = {};
   for (let i = 0; i < 4; i++) loop();
