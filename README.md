@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.6.1-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.7.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -39,9 +39,10 @@
 ## ✨ 特色
 
 - **实时涂地**：每一发墨水都会涂在地面和墙上，墨面有光泽和厚度，飞溅的墨滴落到哪就涂到哪
-- **两把手感不同的武器**
+- **三把手感不同的武器**
   - **墨浪步枪**：全能型，子弹几乎瞬间直飞，末端下坠，3 发击倒
   - **重炮狙击**：蓄力瞬间命中，蓄满一发击倒；沿途涂出墨线，有激光瞄准线
+  - **重型加特林**：按住就扫射，射速极快、射程远，但一罐墨只够约 40 发
 - **潜墨与爬墙**：在自己的墨水里游动、隐身、1 秒回满血，还能沿着涂过的墙往上爬
 - **超级跳**：打开地图点队友，从天而降直接跳到他身边
 - **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分三档

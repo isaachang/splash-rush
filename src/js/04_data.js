@@ -49,7 +49,8 @@ WEAPONS.blaster = {
   stats: { range: 4, dmg: 5, rate: 1, paint: 1, mobility: 3 }
 };
 WEAPONS.charger.charges = true;
-const WEAPON_ORDER = ['rifle', 'charger', 'splatling', 'blaster'];
+// (the range blaster is kept in the code but not offered for now)
+const WEAPON_ORDER = ['rifle', 'charger', 'splatling'];
 const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'], ['paint', '涂地'], ['mobility', '机动']];
 
 /* ---------------------------------------------------------- icons */
@@ -85,7 +86,7 @@ const Profile = {
   load() {
     try { const s = localStorage.getItem(PROFILE_KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) Object.assign(this.data, d); } } catch (e) { }
     if (!this.data.look) this.data.look = randomLook();
-    if (!WEAPONS[this.data.weapon]) this.data.weapon = 'rifle';
+    if (!WEAPON_ORDER.includes(this.data.weapon)) this.data.weapon = 'rifle';
     const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
   },
   save() {
@@ -98,6 +99,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.7.0', date: '2026-09-29', time: '15:16', title: '重型加特林', items: [
+    '新武器「重型加特林」：按住就扫射，射速极快、射程远，但一罐墨只够打约 40 发',
+    '加特林有自己专属的射击音效',
+    '对局里的 AI 会随机带上重炮狙击或重型加特林'
+  ] },
   { v: 'v0.6.1', date: '2026-09-29', time: '14:04', title: '更粗的墨水', items: [
     '子弹变粗变大，打中时溅起更大的墨花',
     '落地墨迹稍微变大，涂地更快一点',

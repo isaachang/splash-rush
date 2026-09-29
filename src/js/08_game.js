@@ -313,7 +313,7 @@ function rollRoster() {
   for (let t = 0; t < 2; t++) {
     const slots = t === 0 ? [0, 2, 3] : [0, 1, 2, 3];
     // each team: a couple of the special weapons (never two of the same), the rest carry rifles
-    const specials = ['charger', 'splatling', 'blaster'].sort(() => Math.random() - 0.5).slice(0, randi(1, 2)), freeSlots = slots.slice().sort(() => Math.random() - 0.5);
+    const specials = ['charger', 'splatling'].sort(() => Math.random() - 0.5).slice(0, randi(1, 2)), freeSlots = slots.slice().sort(() => Math.random() - 0.5);
     const give = {}; specials.forEach((w, k) => { if (k < freeSlots.length) give[freeSlots[k]] = w; });
     for (let i = 0; i < 4; i++) {
       const isP = t === 0 && i === 1;
@@ -325,7 +325,7 @@ function rollRoster() {
 function enforceRoster() {
   // at most one charger per team (the player's own pick takes priority)
   const me = G.roster[0][1]; me.weapon = Profile.data.weapon; me.name = GAME.name || '玩家';
-  for (const w of ['charger', 'splatling', 'blaster']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) m.weapon = 'rifle'; seen = true; } }); });
+  for (const w of ['charger', 'splatling']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) m.weapon = 'rifle'; seen = true; } }); });
 }
 function spawnTeams() {
   clearChars();
