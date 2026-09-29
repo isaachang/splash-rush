@@ -28,7 +28,7 @@ const HUD = {
     $('inkbar').classList.toggle('low', c.ink < 20);
     $('inkbar').style.opacity = c.ink > 99.5 && !c.swim ? 0.45 : 1;
     this.lowInkT = Math.max(0, this.lowInkT - dt); $('inkwarn').style.opacity = this.lowInkT > 0 ? 1 : 0;
-    $('subw').classList.toggle('no', c.ink < 70 / c.inkK);
+    $('subw').classList.toggle('no', c.ink < SUBS[c.weapon.sub].cost / c.inkK);
     $('spRing').style.strokeDashoffset = 264 * (1 - c.special / 100);
     $('special').classList.toggle('ready', c.special >= 100);
     const hp = c.alive ? c.hp / c.maxHp * 100 : 100; this.hurtV = Math.max(0, this.hurtV - dt * 2);
@@ -314,7 +314,7 @@ function rollRoster() {
     const slots = t === 0 ? [0, 2, 3] : [0, 1, 2, 3];
     for (let i = 0; i < 4; i++) {
       const isP = t === 0 && i === 1;
-      R[t].push({ name: isP ? (GAME.name || '玩家') : names.pop(), isPlayer: isP, ...(() => { if (isP) return { weapon: Profile.data.weapon, char: Profile.data.char }; const ch = GAME.uniformChars ? Profile.data.char : pick(CHAR_ORDER); return { char: ch, weapon: GAME.uniformChars ? pick(['rifle', 'rifle', 'charger', 'splatling']) : pick(CHARACTERS[ch].weapons) }; })(), look: isP ? Profile.data.look : randomLook(), role: roles[(i + t) % 4] });
+      R[t].push({ name: isP ? (GAME.name || '玩家') : names.pop(), isPlayer: isP, ...(() => { if (isP) { const pc = CHARACTERS[Profile.data.char] || CHARACTERS.sa; if (!pc.weapons.includes(Profile.data.weapon)) Profile.data.weapon = pc.weapons[0]; return { weapon: Profile.data.weapon, char: Profile.data.char }; } const ch = GAME.uniformChars ? Profile.data.char : pick(CHAR_ORDER); return { char: ch, weapon: GAME.uniformChars ? pick(['rifle', 'rifle', 'charger', 'splatling']) : pick(CHARACTERS[ch].weapons) }; })(), look: isP ? Profile.data.look : randomLook(), role: roles[(i + t) % 4] });
     }
   }
   G.roster = R; enforceRoster();
@@ -480,11 +480,10 @@ function weaponFacts(W, C) {
 function barsHTML(v) { let s = '<div class="sbar">'; for (let i = 1; i <= 5; i++) s += `<i class="${i <= v ? 'on' : ''}" style="--d:${i * 0.045}s"></i>`; return s + '</div>'; }
 function charPageHTML(C) {
   const pc = v => Math.round(v * 100), cls = (v, b) => v > b ? 'up' : v < b ? 'dn' : '';
-  const rows = [['生命', C.bars.hp, C.hp, cls(C.hp, 100), ''], ['走路', C.bars.speed, pc(C.runK), cls(pc(C.runK), 100), '%'], ['潜墨', C.bars.speed, pc(C.swimK), cls(pc(C.swimK), 100), '%'], ['墨水', C.bars.ink, pc(C.inkCap), cls(pc(C.inkCap), 100), '%']];
-  const extra = [C.inkRegen > 1 ? `回墨 +${Math.round((C.inkRegen - 1) * 100)}%` : '', C.knockK < 1 ? '几乎不会被击退' : C.knockK > 1 ? '容易被击退' : ''].filter(Boolean);
+  const rows = [['生命', C.bars.hp, C.hp, cls(C.hp, 100), ''], ['移速', C.bars.speed, pc(C.runK), cls(pc(C.runK), 100), '%'], ['潜行', C.bars.speed, pc(C.swimK), cls(pc(C.swimK), 100), '%'], ['墨水', C.bars.ink, pc(C.inkCap), cls(pc(C.inkCap), 100), '%']];
   return `<div class="phead"><b>${C.name}</b><span class="en">${C.en}</span><em>${C.role}</em></div><p class="pdesc">${C.desc}</p>
     <div class="srows">${rows.map(([l, b, v, c, u], i) => `<div class="srow" style="--r:${i * 0.06}s"><span>${l}</span>${barsHTML(clamp(b, 1, 5))}<em class="${c}" data-n="${v}" data-u="${u}">${v}${u}</em></div>`).join('')}</div>
-    ${extra.length ? `<div class="ptags">${extra.map(t => `<span>${t}</span>`).join('')}</div>` : ''}`;
+`;
 }
 function weapPageHTML(C) {
   return `<div class="wcards">${C.weapons.map((w, i) => {
