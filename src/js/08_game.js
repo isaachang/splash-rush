@@ -296,7 +296,7 @@ const ScreenInk = {
 
 /* ============================================================== GAME */
 const G = { mapOpen: false, roster: null, state: 'boot', time: 0, left: 180, shakeAmt: 0, paused: false, introT: 0, endT: 0, bots: [], titleT: 0, flags: {}, shake(a) { this.shakeAmt = Math.max(this.shakeAmt, a); } };
-function show(id, on) { $(id).classList.toggle('show', on); }
+function show(id, on) { $(id).classList.toggle('show', on); if (id === 'lobby') G.lobbyOpen = on; }
 function flash(a = 0.8) { const f = $('flash'); f.style.transition = 'none'; f.style.opacity = a; requestAnimationFrame(() => { f.style.transition = 'opacity .5s'; f.style.opacity = 0; }); }
 function applyPalette() {
   const p = PALETTES[GAME.pal]; TEAM_HEX[0] = p[0]; TEAM_HEX[1] = p[1];
@@ -466,37 +466,67 @@ function gotoTitle() {
   resetToAttract(); show('lobby', false); show('title', true); renderLoadCard();
 }
 function openLobby() {
-  resetToAttract(); rollRoster(); renderLobby();
+  resetToAttract(); rollRoster(); G.lobbyTab = 'char'; renderLobby(); setTimeout(lobbyAnimate, 30);
   show('title', false); show('results', false); show('lobby', true);
 }
 function statBars(v) { let s = '<div class="bar">'; for (let i = 1; i <= 5; i++) s += `<i class="${i <= v ? 'on' : ''}"></i>`; return s + '</div>'; }
-// character card: portrait, role, three stat bars; the picked character opens up to show its weapons (operator-style loadout)
-function charCard(id, sel) {
-  const C = CHARACTERS[id], pc = (v, base) => { const p = Math.round(v * 100); return `<em class="${p > base ? 'up' : p < base ? 'dn' : ''}">${p}%</em>`; };
-  const weap = sel ? `<div class="loadout"><div class="lh">武器<small>${C.weapons.length > 1 ? '点击切换' : '专属武器'}</small></div><div class="lw">${C.weapons.map(w => { const W = WEAPONS[w], on = w === Profile.data.weapon; return `<button class="wopt${on ? ' sel' : ''}" data-w="${w}">${weaponIcon(w, '#fff', 58)}<span><b>${W.name}</b><small>${W.role}</small></span>${on ? '<i>✔</i>' : ''}</button>`; }).join('')}</div><div class="wdesc2">${WEAPONS[Profile.data.weapon].desc}</div></div>` : `<div class="wmini">${C.weapons.map(w => weaponIcon(w, '#fff', 34)).join('')}<span>${C.weapons.map(w => WEAPONS[w].name).join(' / ')}</span></div>`;
-  return `<div class="ccard${sel ? ' sel' : ''}" data-id="${id}"><div class="crow"><div class="pt">${charIcon(id, 72)}${sel ? '<span class="tag">出战</span>' : ''}</div>
-    <div class="ci"><div class="nm"><b>${C.name}</b><span class="en">${C.en}</span></div><span class="role">${C.role}</span>
-      <div class="cst"><span>生命</span>${statBars(C.bars.hp)}<em class="${C.hp > 100 ? 'up' : C.hp < 100 ? 'dn' : ''}">${C.hp}</em><span>移速</span>${statBars(C.bars.speed)}${pc(C.runK, 100)}<span>墨水</span>${statBars(C.bars.ink)}${pc(C.inkCap, 100)}</div></div></div>
-    ${sel ? `<div class="cdesc">${C.desc}</div>` : ''}${weap}</div>`;
+// ---- loadout screen: portrait row, then a panel with a "character" and a "weapon" page
+// key numbers for a weapon in the hands of a given character (ink tank size matters)
+function weaponFacts(W, C) {
+  const hp = 100, k = C.inkCap;
+  if (W.type === 'charge') return [['击倒', '满蓄 1 枪'], ['射程', W.minRange + '–' + W.maxRange + ' 米'], ['蓄满', W.chargeTime + ' 秒'], ['一罐墨', '满蓄 ' + Math.floor(100 * k / W.costFull) + ' 枪']];
+  return [['击倒', Math.ceil(hp / W.dmg) + ' 发'], ['射程', W.range + ' 米'], ['射速', Math.round(1 / W.interval) + ' 发/秒'], ['一罐墨', Math.floor(100 * k / W.cost) + ' 发']];
+}
+function barsHTML(v) { let s = '<div class="sbar">'; for (let i = 1; i <= 5; i++) s += `<i class="${i <= v ? 'on' : ''}" style="--d:${i * 0.045}s"></i>`; return s + '</div>'; }
+function charPageHTML(C) {
+  const pc = v => Math.round(v * 100), cls = (v, b) => v > b ? 'up' : v < b ? 'dn' : '';
+  const rows = [['生命', C.bars.hp, C.hp, cls(C.hp, 100), ''], ['走路', C.bars.speed, pc(C.runK), cls(pc(C.runK), 100), '%'], ['潜墨', C.bars.speed, pc(C.swimK), cls(pc(C.swimK), 100), '%'], ['墨水', C.bars.ink, pc(C.inkCap), cls(pc(C.inkCap), 100), '%']];
+  const extra = [C.inkRegen > 1 ? `回墨 +${Math.round((C.inkRegen - 1) * 100)}%` : '', C.knockK < 1 ? '几乎不会被击退' : C.knockK > 1 ? '容易被击退' : ''].filter(Boolean);
+  return `<div class="phead"><b>${C.name}</b><span class="en">${C.en}</span><em>${C.role}</em></div><p class="pdesc">${C.desc}</p>
+    <div class="srows">${rows.map(([l, b, v, c, u], i) => `<div class="srow" style="--r:${i * 0.06}s"><span>${l}</span>${barsHTML(clamp(b, 1, 5))}<em class="${c}" data-n="${v}" data-u="${u}">${v}${u}</em></div>`).join('')}</div>
+    ${extra.length ? `<div class="ptags">${extra.map(t => `<span>${t}</span>`).join('')}</div>` : ''}`;
+}
+function weapPageHTML(C) {
+  return `<div class="wcards">${C.weapons.map((w, i) => {
+    const W = WEAPONS[w], on = w === Profile.data.weapon;
+    return `<div class="wcard2${on ? ' sel' : ''}" data-w="${w}" style="--r:${i * 0.08}s">
+      <div class="wtop"><span class="wi">${weaponIcon(w, '#fff', 74)}</span><span class="wn"><b>${W.name}</b><small>${W.role}</small></span>${C.weapons.length > 1 ? `<span class="pick">${on ? '使用中' : '点击换上'}</span>` : '<span class="pick ex">专属</span>'}</div>
+      <div class="wfacts">${weaponFacts(W, C).map(([l, v]) => `<span><small>${l}</small><b>${v}</b></span>`).join('')}</div>
+      <div class="wstats">${STAT_LABELS.map(([k, l]) => `<span>${l}</span>${barsHTML(W.stats[k])}`).join('')}</div>
+      <div class="wkit"><span>副武器 <b>${SUBS[W.sub].name}</b></span><span>必杀技 <b>${SPECIALS[W.special].name}</b></span></div>
+      <p class="wd">${W.desc}</p></div>`;
+  }).join('')}</div>`;
 }
 function renderLobby() {
   const CH = CHARACTERS[Profile.data.char];
   if (!CH.weapons.includes(Profile.data.weapon)) Profile.data.weapon = CH.weapons[0];
-  const cur = Profile.data.weapon;
-  $('charList').innerHTML = CHAR_ORDER.map(id => charCard(id, id === Profile.data.char)).join('');
-  $('charList').querySelectorAll('.ccard').forEach(el => el.onclick = e => {
-    const wb = e.target.closest && e.target.closest('.wopt');
-    Sfx.init(); Sfx.click();
-    if (wb) { if (Profile.data.weapon !== wb.dataset.w) { Profile.data.weapon = wb.dataset.w; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard(); } return; }
-    if (Profile.data.char === el.dataset.id) return;
-    Profile.data.char = el.dataset.id; Profile.data.weapon = CHARACTERS[el.dataset.id].weapons[0]; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard();
+  const cur = Profile.data.weapon, tab = G.lobbyTab || 'char';
+  $('charPick').innerHTML = CHAR_ORDER.map(id => { const C = CHARACTERS[id]; return `<button class="ctile${id === CH.id ? ' sel' : ''}" data-id="${id}"><span class="pt">${charIcon(id, 64)}</span><b>${C.name}</b><small>${C.role}</small></button>`; }).join('');
+  $('charPick').querySelectorAll('.ctile').forEach(el => el.onclick = () => {
+    Sfx.init(); Sfx.click(); if (Profile.data.char === el.dataset.id) return;
+    Profile.data.char = el.dataset.id; Profile.data.weapon = CHARACTERS[el.dataset.id].weapons[0]; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard(); lobbyAnimate();
   });
-  // preview: the chosen character holding its chosen weapon
-  Preview.show(Profile.data.char, cur);
+  $('infoTabs').querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.tab === tab));
+  $('infoTabs').dataset.tab = tab;
+  $('pgChar').innerHTML = charPageHTML(CH); $('pgWeap').innerHTML = weapPageHTML(CH);
+  $('pgChar').classList.toggle('show', tab === 'char'); $('pgWeap').classList.toggle('show', tab === 'weap');
+  $('pgWeap').querySelectorAll('.wcard2').forEach(el => el.onclick = () => {
+    Sfx.init(); Sfx.click(); if (Profile.data.weapon === el.dataset.w) return;
+    Profile.data.weapon = el.dataset.w; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard(); lobbyAnimate();
+  });
+  // preview: the character on its pedestal; on the weapon page it raises the gun and the camera moves in
+  Preview.show(Profile.data.char, cur); Preview.mode = tab;
   $('pvName').textContent = CH.name; $('pvRole').textContent = CH.role + ' · ' + WEAPONS[cur].name;
   ['rosterA', 'rosterB'].forEach((id, t) => {
     $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}"><span class="cp">${charIcon(m.char, 34, TEAM_HEX[t])}</span><span class="rt"><b>${m.name}${m.isPlayer ? '（你）' : ''}</b><small>${CHARACTERS[m.char].name} · ${WEAPONS[m.weapon].name}</small></span><span class="rw">${weaponIcon(m.weapon, '#fff', 34, TEAM_HEX[t])}</span></div>`).join('');
   });
+}
+// replay the entrance animations of the visible page (bars fill, numbers count up)
+function lobbyAnimate() {
+  const pg = $((G.lobbyTab || 'char') === 'char' ? 'pgChar' : 'pgWeap'); if (!pg) return;
+  pg.classList.remove('anim'); void pg.offsetWidth; pg.classList.add('anim');
+  const nums = pg.querySelectorAll ? pg.querySelectorAll('em[data-n]') : [];
+  nums.forEach(el => { const n = +el.dataset.n, u = el.dataset.u; let t0 = null; const step = ts => { if (t0 === null) t0 = ts; const k = Math.min(1, (ts - t0) / 450), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(n * e) + u; if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); });
 }
 function renderLoadCard() {
   const w = WEAPONS[Profile.data.weapon], C = CHARACTERS[Profile.data.char];
@@ -507,11 +537,11 @@ function renderLoadCard() {
    Its own small renderer: the chosen character on a pedestal, slowly
    turning; drag to spin it.                                          */
 const Preview = {
-  key: '', yaw: 0.5, drag: null, idleT: 0,
+  key: '', yaw: 0.5, drag: null, idleT: 0, mode: 'char', raise: 0.2, zoom: 0,
   init() {
     const cv = $('pvCanvas'); this.cv = cv;
     try { this.r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); } catch (e) { this.r = null; return; }
-    if (this.r.setPixelRatio) this.r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    if (this.r.setPixelRatio) this.r.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));     // small panel: 1.5x is plenty
     if (this.r.outputColorSpace !== undefined) this.r.outputColorSpace = THREE.SRGBColorSpace;
     this.r.toneMapping = THREE.ACESFilmicToneMapping;
     const sc = this.sc = new THREE.Scene();
@@ -524,7 +554,8 @@ const Preview = {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.97, 0.05, 8, 48), this.ringM); ring.rotation.x = Math.PI / 2; ped.add(ring);
     this.splatM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
     const sp = new THREE.Mesh(new THREE.CircleGeometry(0.7, 28), this.splatM); sp.rotation.x = -Math.PI / 2; sp.position.y = 0.005; ped.add(sp);
-    this.cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); this.cam.position.set(0, 1.35, 4.7); this.cam.lookAt(0, 0.82, 0);
+    this.cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); this.cam.position.set(0, 1.35, 4.7); this.cam.lookAt(0, 0.82, 0); this.look = new THREE.Vector3(0, 0.82, 0);
+    this.shots = [];
     const ev = (n, f) => cv.addEventListener && cv.addEventListener(n, f);
     ev('pointerdown', e => { this.drag = { x: e.clientX, yaw: this.yaw }; if (cv.setPointerCapture) try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
     ev('pointermove', e => { if (this.drag) { this.yaw = this.drag.yaw + (e.clientX - this.drag.x) * 0.012; this.idleT = 2.5; } });
@@ -536,19 +567,32 @@ const Preview = {
     this.ringM.color.set(TEAM_HEX[0]); this.splatM.color.set(TEAM_HEX[0]);
     if (key === this.key && this.c) return;
     this.key = key;
+    const sameChar = this.c && this.c.cs.id === charId;
     if (this.c) { this.ped.remove(this.c.root); }
     const c = new Character('pv', 0, true, { weapon: weaponId, char: charId });
+    this.raise = sameChar ? 0 : this.raise * 0.3;          // new weapon: it comes back up into the hands; new character: fresh pose
     scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot);
     c.pos.set(0, 0, 0); c.vel.set(0, 0, 0); c.grounded = true; c.state = 'play'; c.lastShot = -99; this.ped.add(c.root); this.c = c;
-    this.pop = 1;
+    this.pop = sameChar ? 0.4 : 1; this.enter = sameChar ? 1 : 0;
   },
   update(dt) {
     if (!this.r || !this.c || !$('lobby').classList.contains('show')) return;
     const cv = this.cv, w = cv.clientWidth || 400, h = cv.clientHeight || 400;
     if (w !== this.w || h !== this.h) { this.w = w; this.h = h; this.r.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix(); }
-    this.idleT = Math.max(0, this.idleT - dt); if (!this.drag && this.idleT <= 0) this.yaw += dt * 0.55;
-    const c = this.c; c.bodyYaw = c.aimYaw = this.yaw; c.aimPitch = -0.04; c.pos.set(0, 0, 0);
-    c.syncModel(dt); c.root.position.set(0, 0, 0);
+    const wm = this.mode === 'weap', c = this.c;
+    // yaw: slow turntable on the character page; on the weapon page ease into a 3/4 pose that shows the gun
+    this.idleT = Math.max(0, this.idleT - dt);
+    if (!this.drag && this.idleT <= 0) { if (wm) this.yaw += angDiff(this.yaw, 1.05) * Math.min(1, dt * 3.2); else this.yaw += dt * 0.55; }
+    // camera: full body <-> weapon close-up (smooth)
+    this.zoom = damp(this.zoom, wm ? 1 : 0, 5, dt); const z = this.zoom, e = z * z * (3 - 2 * z);
+    const xw = { splatling: 0.3, charger: 0.15 }[c.weapon.id] || 0, nar = clamp(1.1 - this.cam.aspect, 0, 0.5);   // long guns / narrow panels: step back a bit
+    this.cam.position.set(lerp(0, 0.4 + xw, e), lerp(1.35, 1.3, e), lerp(4.7, 4.0 + xw * 2 + nar * 2, e)); this.look.set(lerp(0, 0.5 + xw, e), lerp(0.82, 0.98, e), 0); this.cam.lookAt(this.look);
+    // arms: weapon held low on the character page, raised and aimed on the weapon page
+    this.raise = damp(this.raise, wm ? 1 : 0.15, 6, dt); this.enter = Math.min(1, (this.enter || 0) + dt * 3.5);
+    c.bodyYaw = c.aimYaw = this.yaw; c.aimPitch = lerp(-0.5, -0.03, this.raise); c.pos.set(0, 0, 0); c.lastShot = wm ? G.time : -99;
+    c.syncModel(dt); c.root.position.set(0, (1 - this.enter) * -0.25, 0);
+    const ek = 0.85 + 0.15 * (1 - Math.pow(1 - this.enter, 3)); c.root.scale.set((c.look.bodyW || 1) * ek, (c.look.bodyH || 1) * ek, (c.look.bodyW || 1) * ek);
+    if (this.raise < 0.98) { c.arms[1].rotation.x = lerp(0.1, c.arms[1].rotation.x, this.raise); c.torso.rotation.y *= this.raise; }
     this.pop = Math.max(0, (this.pop || 0) - dt * 4); const s = 1 + this.pop * 0.12; this.ped.scale.set(s, s, s);
     this.r.render(this.sc, this.cam);
   }
@@ -613,7 +657,8 @@ function loop() {
     Proj.update(dt); Fx.update(dt); Barrier.update(dt, t);
     uploadPaint(); updateWorld(t, dt);
   }
-  renderer.render(scene, camera);
+  G.frameN = (G.frameN || 0) + 1;
+  if (!G.lobbyOpen || G.frameN % 6 === 0) renderer.render(scene, camera);
 }
 
 /* ------------------------------------------------------------ UI wiring */
@@ -653,6 +698,7 @@ function initUI() {
   $('btnStart').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
   $('loadCard').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
   $('btnBack').onclick = () => { Sfx.click(); show('lobby', false); show('title', true); renderLoadCard(); };
+  $('infoTabs').querySelectorAll('button').forEach(b => b.onclick = () => { Sfx.init(); Sfx.click(); if (G.lobbyTab === b.dataset.tab) return; G.lobbyTab = b.dataset.tab; renderLobby(); lobbyAnimate(); });
   $('btnGo').onclick = () => { Sfx.click(); Profile.save(); enforceRoster(); startMatch(); };
   $('btnChange').onclick = () => { Sfx.click(); openLobby(); };
   $('btnHow').onclick = () => { Sfx.init(); Sfx.click(); show('howto', true); };
