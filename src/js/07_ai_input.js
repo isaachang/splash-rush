@@ -148,10 +148,23 @@ class Bot {
       if (!c.charging) { I.fire = true; this.goal = close ? 0.3 : d > 20 ? 1 : 0.8 + Math.random() * 0.2; this.holdT = 0; }
       else { this.holdT += dt; I.fire = (c.charge < Math.min(this.goal, 0.999) || Math.abs(yawErr) > tol) && this.holdT < 2.6; }
     } else if (c.charging) I.fire = true;
-    if (close && c.ink > 75 && Math.random() < dt * 0.5) { I.bomb = true; I.fire = false; }
+    if (c.subId === 'cover') {
+      // put a board up between us and a far-off enemy, then charge behind it
+      const mine = Cover.list.some(v => v.owner === c);
+      if (!mine && !close && d > 10 && !c.charging && c.grounded && Math.abs(yawErr) < 0.5 && c.ink >= SUBS.cover.cost / c.inkK + 20 && (this.coverWant || Math.random() < dt * 0.5)) { I.bomb = true; I.fire = false; this.coverWant = false; this.reactT = Math.max(this.reactT, 0.35); return; }
+    } else if (close && c.ink > 75 && Math.random() < dt * 0.5) { I.bomb = true; I.fire = false; }
     if (c.special >= 100 && d < 7 && Math.random() < dt * 2) I.special = true; else I.special = false;
     if (close && c.hp < 50 && ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team && Math.random() < D.dodge * dt * 3) this.swimT = 0.6;
     if (this.swimT > 0) { this.swimT -= dt; I.swim = true; I.fire = false; I.mx = -fx; I.mz = -fz; }
+  }
+  // after throwing a curling bomb: swim along its ink path right behind it
+  curlFollow(dt, e, d) {
+    if (!(this.curlT > 0)) return false;
+    const c = this.c, I = c.intent; this.curlT -= dt;
+    const dx = e.pos.x - c.pos.x, dz = e.pos.z - c.pos.z, l = Math.hypot(dx, dz) || 1, on = ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team;
+    I.swim = on; I.fire = false; I.mx = dx / l; I.mz = dz / l;
+    if (d < 3.5 || (!on && this.curlT < 1.2)) { this.curlT = 0; return false; }
+    return true;
   }
   followPath(I, speed = 1) {
     const c = this.c;
@@ -168,7 +181,7 @@ class Bot {
     this.scanT -= dt;
     if (this.scanT <= 0) {
       this.scanT = 0.2; const e = this.findEnemy();
-      if (e && e !== this.enemy) this.reactT = D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0);
+      if (e && e !== this.enemy) { this.reactT = D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0); this.coverWant = c.subId === 'cover' && Math.random() < 0.7; }
       this.enemy = e;
     }
     if (c.ink < (c.weapon.charges ? 20 : 10) && this.mode !== 'refill') { this.mode = 'refill'; this.path = []; if (!this.findRefill()) this.path = []; }
@@ -183,6 +196,7 @@ class Bot {
       // -------- fight
       const d = e.pos.distanceTo(c.pos);
       if (c.weapon.charges) { this.chargerFight(dt, e, d, D); this.path = []; return; }
+      if (c.subId === 'curling' && this.curlFollow(dt, e, d)) { this.path = []; return; }
       this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.25, 0.5); const m = D.err * d; this.err.set(rand(-m, m), rand(-m, m) * 0.6, rand(-m, m)); }
       const wid = c.weapon.id, tt = shotTime(d, wid); const tp = e.chest().addScaledVector(e.vel, tt * 0.9).add(this.err);
       const m = c.muzzle(); const dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
@@ -199,7 +213,8 @@ class Bot {
       if (Math.random() < dt * 0.7 * D.dodge && c.grounded) I.jump = true;
       if (c.hp < 45 && ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team && Math.random() < D.dodge) { this.swimT = 0.5; }
       if (this.swimT > 0) { this.swimT -= dt; I.swim = true; I.fire = false; }
-      if (d > 5 && d < 12 && c.ink > 75 && Math.random() < dt * 0.35) { I.bomb = true; c.aimPitch += 0.28; }
+      if (c.subId === 'curling') { if (d > 6 && d < 15 && c.ink >= SUBS.curling.cost / c.inkK + 8 && c.grounded && Math.abs(dy_) < 0.2 && Math.random() < dt * 0.7) { I.bomb = true; I.fire = false; this.curlT = 1.6; } }
+      else if (d > 5 && d < 12 && c.ink > 75 && Math.random() < dt * 0.35) { I.bomb = true; c.aimPitch += 0.28; }
       if (c.special >= 100 && d < 7 && Math.random() < dt * 2) I.special = true; else I.special = false;
       this.path = [];
       return;
@@ -230,7 +245,8 @@ class Bot {
     else if (c.charging) this.pull(I);
     else if (chg ? c.ink > 38 && (ah !== c.team || Math.random() < 0.15) : c.ink > 6 && (ah !== c.team || Math.random() < 0.3)) this.pull(I, chg ? rand(0.3, 0.7) : 1);
     if (c.special >= 100 && ((this.target && this.linger > 0.5) || (ah === 1 - c.team && Math.random() < dt * 0.6))) I.special = true;
-    if (c.ink > 90 && Math.random() < dt * 0.08) { I.bomb = true; c.aimPitch = 0.25; }
+    if (c.subId === 'bomb' || !c.subId) { if (c.ink > 90 && Math.random() < dt * 0.08) { I.bomb = true; c.aimPitch = 0.25; } }
+    else if (c.subId === 'curling' && moving && c.ink > 90 && c.grounded && Math.random() < dt * 0.2) { c.aimYaw = Math.atan2(I.mx, I.mz); c.aimPitch = 0; I.bomb = true; }
   }
 }
 
@@ -323,7 +339,7 @@ function playerControl(dt) {
   Cam.landDist = Cam.blocked ? tb * Lr : Lr;
   const pr = W.type === 'charge' ? traceRay(c, mzl, I.aimDir, R, 0.3) : Proj.predict(c, mzl, I.aimDir);
   Cam.lock = !!pr.char;
-  if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[W.sub].cost / c.inkK); else if (Proj.pv) Proj.preview(null);
+  if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[c.subId].cost / c.inkK); else if (Proj.pv) Proj.preview(null);
   Cam.showLand = !c.swim;
 }
 // teammate to watch while dead: your super-jump pick, else keep the current one, else the nearest

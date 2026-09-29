@@ -161,7 +161,7 @@ const Proj = {
       this.stepShot(b, h);
       if (b.W.fuse && b.t >= b.W.fuse) return { end: b.p.clone(), t: b.t };                 // blaster shell airbursts here
       for (const e of CHARS) if (e.team !== owner.team && !e.submerged && this.hitChar(e, b.p, 0.14)) return { end: b.p.clone(), char: e, t: b.t };
-      if (solidAt(b.p.x, b.p.y, b.p.z) || b.p.y < -3) return { end: b.p.clone(), t: b.t };
+      if (solidAt(b.p.x, b.p.y, b.p.z) || b.p.y < -3 || (Cover.list.length && Cover.at(owner.team, b.p.x, b.p.y, b.p.z))) return { end: b.p.clone(), t: b.t };
     }
     return { end: b.p.clone(), t: b.t };
   },
@@ -212,6 +212,48 @@ const Proj = {
     this.bombs.push({ owner, team: owner.team, p: o.clone(), v, g, light, fuse: -1, bounces: 0 });
     if (sndVol(o) > 0.05) Sfx.throwB(sndVol(o));
   },
+  // ---- curling bomb: slides along the ground laying a path of ink, bounces off walls, explodes when the fuse runs out
+  curling(owner, dir) {
+    const g = new THREE.Group();
+    if (!this.curlGeo) { this.curlGeo = new THREE.CylinderGeometry(0.3, 0.36, 0.2, 20); this.curlHandle = new THREE.TorusGeometry(0.11, 0.035, 6, 12, Math.PI); this.curlDark = new THREE.MeshStandardMaterial({ color: 0x1d1f28, roughness: 0.3, metalness: 0.5 }); }
+    const body = new THREE.Mesh(this.curlGeo, TEAMMAT[owner.team]); body.position.y = 0.1; body.castShadow = true; g.add(body);
+    const light = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffffff, emissiveIntensity: 0 });
+    const band = new THREE.Mesh(this.bandGeo, light); band.rotation.x = Math.PI / 2; band.scale.setScalar(1.6); band.position.y = 0.19; g.add(band);
+    const handle = new THREE.Mesh(this.curlHandle, this.curlDark); handle.position.y = 0.2; g.add(handle);
+    const st = this.curlStart(owner, dir);
+    g.position.copy(st.p); scene.add(g);
+    this.bombs.push(Object.assign(st, { curl: true, owner, team: owner.team, g, light, fuse: 2.2, trail: 0 }));
+    if (sndVol(st.p) > 0.05) Sfx.throwB(sndVol(st.p));
+  },
+  curlStart(owner, dir) {
+    const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
+    const p = new THREE.Vector3(owner.pos.x + f.x * 0.8, 0, owner.pos.z + f.z * 0.8); p.y = groundBelow(p.x, p.z, owner.pos.y + 0.1, 0.5);   // start at our feet, not on top of a wall in front
+    if (solidAt(p.x, p.y + 0.15, p.z)) p.copy(owner.pos);
+    const sp = 11 + Math.max(0, owner.vel.x * f.x + owner.vel.z * f.z) * 0.3;
+    return { p, v: f.multiplyScalar(sp), vy: 0 };
+  },
+  // one physics step (shared by the real bomb and the aim preview); returns true if it bounced
+  curlStep(b, dt) {
+    const sp = Math.hypot(b.v.x, b.v.z); if (sp > 1e-3) { const k = Math.max(0, sp - 4.6 * dt) / sp; b.v.x *= k; b.v.z *= k; }
+    let bounced = false;
+    const blocked = (x, z) => Math.abs(x) > XH - 0.35 || Math.abs(z) > ZH - 0.35 || !!solidAt(x, b.p.y + 0.18, z) || inBarrier(1 - b.team, new THREE.Vector3(x, b.p.y, z)) || !!Cover.at(b.team, x, b.p.y + 0.18, z);
+    const nx = b.p.x + b.v.x * dt; if (blocked(nx, b.p.z)) { b.v.x *= -0.8; bounced = true; } else b.p.x = nx;
+    const nz = b.p.z + b.v.z * dt; if (blocked(b.p.x, nz)) { b.v.z *= -0.8; bounced = true; } else b.p.z = nz;
+    const g = groundBelow(b.p.x, b.p.z, b.p.y + 0.5, 0);
+    if (b.p.y > g + 0.01) { b.vy -= 22 * dt; b.p.y = Math.max(g, b.p.y + b.vy * dt); if (b.p.y <= g) b.vy = 0; } else { b.p.y = g; b.vy = 0; }
+    return bounced;
+  },
+  updateCurl(b, dt) {
+    b.fuse -= dt;
+    const sp = Math.hypot(b.v.x, b.v.z);
+    if (this.curlStep(b, dt)) { const v = sndVol(b.p); if (v > 0.05) Sfx.impact(v * 0.6, sndPan(b.p)); }
+    b.trail += sp * dt;
+    if (b.trail > 0.32 && b.vy === 0) { b.trail = 0; b.owner.addPaint(splatFloor(b.p.x, b.p.y, b.p.z, 0.62, b.team, 0.6, true)); if (Math.random() < 0.6) Fx.burst(b.p.x, b.p.y + 0.1, b.p.z, TEAM_HEX[b.team], 2, 1.5, 0.05); }
+    for (const c of CHARS) if (c.team !== b.team && c.alive && c.state === 'play' && Math.hypot(c.pos.x - b.p.x, c.pos.z - b.p.z) < 0.75 && Math.abs(c.pos.y - b.p.y) < 1.2) b.fuse = Math.min(b.fuse, 0.15);
+    b.light.emissiveIntensity = b.fuse < 0.8 ? (Math.sin(b.fuse * 40) > 0 ? 2.5 : 0) : 0.4;
+    b.g.position.copy(b.p); b.g.rotation.y += sp * dt * 1.5;
+    return b.fuse <= 0;
+  },
   bombVel(owner, dir) {
     const air = !owner.grounded, v = dir.clone().multiplyScalar(air ? 14 * 1.12 : 14);
     v.y += 5.5; v.x += owner.vel.x * 0.5; v.z += owner.vel.z * 0.5;
@@ -226,9 +268,21 @@ const Proj = {
       this.pvRing = new THREE.Mesh(new THREE.RingGeometry(2.9, 3.4, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide, fog: false }));
       this.pvRing.rotation.x = -Math.PI / 2; scene.add(this.pvRing); this.pv = true;
     }
-    if (!owner) { this.pvDots.count = 0; this.pvRing.visible = false; return; }
+    if (!owner) { this.pvDots.count = 0; this.pvRing.visible = false; Cover.ghost(null); return; }
     const col = ok ? TEAM_HEX[owner.team] : '#9aa0aa';
     this.pvMat.color.set(col); this.pvRing.material.color.set(col);
+    if (owner.subId === 'curling') {
+      // straight slide along the ground (with bounces), ring where it will blow up
+      const b = this.curlStart(owner, dir); b.team = owner.team; let n = 0;
+      for (let i = 0; i < 132; i++) {
+        this.curlStep(b, 1 / 60);
+        if (i % 4 === 1 && n < 40) { _dm.position.set(b.p.x, b.p.y + 0.08, b.p.z); _dm.scale.setScalar(0.07); _dm.rotation.set(0, 0, 0); _dm.updateMatrix(); this.pvDots.setMatrixAt(n++, _dm.matrix); }
+      }
+      this.pvDots.count = n; this.pvDots.instanceMatrix.needsUpdate = true;
+      this.pvRing.visible = true; this.pvRing.position.set(b.p.x, b.p.y + 0.05, b.p.z); this.pvRing.scale.setScalar(2.8 / 3.4);
+      return;
+    }
+    if (owner.subId === 'cover') { this.pvDots.count = 0; this.pvRing.visible = false; Cover.ghost(owner, dir, ok); return; }
     const p = owner.muzzle(), v = this.bombVel(owner, dir), h = 1 / 60; let n = 0, prev = p.clone(), hit = null;
     for (let i = 0; i < 180 && !hit; i++) {
       prev.copy(p); v.y -= 22 * h; p.addScaledVector(v, h);
@@ -242,7 +296,8 @@ const Proj = {
   hitChar(c, p, rad) {
     if (!c.alive || c.state !== 'play') return false;
     let y0, y1, r;
-    if (c.swim) { y0 = y1 = c.pos.y + 0.25; r = 0.45; } else { y0 = c.pos.y + 0.35; y1 = c.pos.y + 1.35; r = 0.42; }
+    const hk = (c.cs && c.cs.hitK) || 1;                        // bigger body (石墩) = bigger target
+    if (c.swim) { y0 = y1 = c.pos.y + 0.25; r = 0.45; } else { y0 = c.pos.y + 0.35; y1 = c.pos.y + 0.35 + 1.0 * ((c.look && c.look.bodyH) || 1); r = 0.42 * hk; }
     const cy = clamp(p.y, y0, y1), dx = p.x - c.pos.x, dy = p.y - cy, dz = p.z - c.pos.z;
     return dx * dx + dy * dy + dz * dz < (r + rad) * (r + rad);
   },
@@ -309,6 +364,7 @@ const Proj = {
           if (b.blast && b.t >= b.W.fuse) { const W = b.W; this.blastAt(b.owner, b.p.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id); dead = true; break; }
         }
         if (inBarrier(1 - b.team, b.p)) { Fx.burst(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 3, 1.5, 0.05); Barrier.flash(1 - b.team); dead = true; break; }
+        if (Cover.list.length) { const cv = Cover.at(b.team, b.p.x, b.p.y, b.p.z); if (cv) { Cover.hit(cv, b.kind === 'shot' ? this.shotDamage(b) : 0, b.p, b.team, b.kind === 'shot' ? b.r : 0); if (b.blast) { const W = b.W; this.blastAt(b.owner, prev.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id); } dead = true; break; } }
         const s = solidAt(b.p.x, b.p.y, b.p.z);
         if (s) {
           if (b.big) { const h = this.classify(s, prev, b.p); if (h.type !== 'none') this.splash(b.owner, h.type === 'wall' ? h.pt : new THREE.Vector3(b.p.x, h.y, b.p.z), h.n, b.v.clone().normalize(), b.r, h.type, h.face); if (sndVol(b.p) > 0.1) Sfx.splat(sndVol(b.p)); }
@@ -323,9 +379,11 @@ const Proj = {
     // bombs
     for (let i = this.bombs.length - 1; i >= 0; i--) {
       const b = this.bombs[i];
+      if (b.curl) { if (this.updateCurl(b, dt)) { this.explode(b); scene.remove(b.g); this.bombs.splice(i, 1); } else if (b.p.y < -3) { scene.remove(b.g); this.bombs.splice(i, 1); } continue; }
       if (b.fuse < 0) {
         const prev = b.p.clone(); b.v.y -= 22 * dt; b.p.addScaledVector(b.v, dt);
         if (inBarrier(1 - b.team, b.p)) { b.p.copy(prev); b.v.x *= -0.35; b.v.z *= -0.35; Barrier.flash(1 - b.team); }
+        else { const cv = Cover.at(b.team, b.p.x, b.p.y, b.p.z); if (cv) { b.p.copy(prev); b.v.x *= -0.35; b.v.z *= -0.35; Cover.hit(cv, 0, b.p); } }
         for (const c of CHARS) if (c.team !== b.team && this.hitChar(c, b.p, 0.2)) { b.fuse = 0.25; b.v.set(0, 0, 0); break; }
         const s = solidAt(b.p.x, b.p.y, b.p.z);
         if (s) {
@@ -369,13 +427,16 @@ const Proj = {
     this.mesh.count = n; this.mesh.instanceMatrix.needsUpdate = true; if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
   },
   explode(b) {
-    const p = b.p, g = groundBelow(p.x, p.z, p.y + 0.1, 0.4);
-    const gained = splatFloor(p.x, g, p.z, 3.4, b.team, 1.6); b.owner.addPaint(gained);
-    Fx.burst(p.x, g + 0.3, p.z, TEAM_HEX[b.team], 50, 10, 0.2); Fx.ring(p.x, g + 0.06, p.z, TEAM_HEX[b.team], 4.5);
-    const v = sndVol(p); Sfx.boom(v); if (v > 0.3) G.shake(v * 0.7);
-    for (const c of CHARS) { if (c.team === b.team || !c.alive) continue; const d = c.chest().distanceTo(p); if (d < 3.6) c.damage(d < 1.4 ? 180 : lerp(80, 30, (d - 1.4) / 2.2), b.owner, 'bomb'); }
+    const p = b.p, g = groundBelow(p.x, p.z, p.y + 0.1, 0.4), cu = !!b.curl;
+    // curling bomb: a smaller blast than the splat bomb (like the original)
+    const pr = cu ? 2.7 : 3.4, R = cu ? 2.9 : 3.6, core = cu ? 1.1 : 1.4, edge = cu ? 70 : 80;
+    const gained = splatFloor(p.x, g, p.z, pr, b.team, 1.6); b.owner.addPaint(gained);
+    Fx.burst(p.x, g + 0.3, p.z, TEAM_HEX[b.team], cu ? 40 : 50, cu ? 8 : 10, 0.2); Fx.ring(p.x, g + 0.06, p.z, TEAM_HEX[b.team], cu ? 3.6 : 4.5);
+    const v = sndVol(p); Sfx.boom(v * (cu ? 0.8 : 1)); if (v > 0.3) G.shake(v * (cu ? 0.5 : 0.7));
+    for (const c of CHARS) { if (c.team === b.team || !c.alive) continue; const d = c.chest().distanceTo(p); if (d < R) c.damage(d < core ? 180 : lerp(edge, 30, (d - core) / (R - core)), b.owner, cu ? 'curling' : 'bomb'); }
+    Cover.blast(b.team, p, R, cu ? 110 : 140);                         // bombs are the answer to a cover
   },
-  clear() { this.shots.length = 0; this.pending.length = 0; this.bombs.forEach(b => scene.remove(b.g)); this.bombs.length = 0; }
+  clear() { this.shots.length = 0; this.pending.length = 0; this.bombs.forEach(b => scene.remove(b.g)); this.bombs.length = 0; Cover.clear(); }
 };
 
 /* ======================================================== SPAWN BARRIER
@@ -405,4 +466,128 @@ const Barrier = {
     this.tex.offset.y = (time * 0.15) % 1;
     this.meshes.forEach((m, t) => { this.glow[t] = Math.max(0, this.glow[t] - dt * 3); m.material.color.set(TEAM_HEX[t]); m.material.opacity = 0.2 + this.glow[t] * 0.45; });
   }
+};
+
+/* ===================================================== GRAFFITI COVER
+   满满's sub weapon: a spray-painted board. Enemy ink stops on it (and
+   wears it down); your own team's ink passes straight through. Players
+   walk through it (no collision), so it never blocks paths or the AI.  */
+const Cover = {
+  list: [], texCache: {}, W: 2.4, H: 1.6, T: 0.14,
+  texFor(team) {
+    const col = TEAM_HEX[team]; if (this.texCache[col]) return this.texCache[col];
+    let sd = 11; const rn = () => (sd = (sd * 9301 + 49297) % 233280) / 233280;
+    const t = canvasTex(240, 160, (g, w, h) => {
+      g.fillStyle = '#262734'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = 'rgba(255,255,255,.05)'; g.lineWidth = 2;
+      for (let y = 20; y < h; y += 20) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); for (let x = (y / 20) % 2 ? 0 : 20; x < w; x += 40) { g.beginPath(); g.moveTo(x, y - 20); g.lineTo(x, y); g.stroke(); } }
+      // big team-colour splat with drips
+      g.fillStyle = col; g.beginPath(); g.arc(w * 0.46, h * 0.5, 46, 0, Math.PI * 2); g.fill();
+      for (let k = 0; k < 11; k++) { const a = k / 11 * Math.PI * 2 + rn() * 0.4, d = 44 + rn() * 16, r = 9 + rn() * 12; g.beginPath(); g.arc(w * 0.46 + Math.cos(a) * d, h * 0.5 + Math.sin(a) * d * 0.8, r, 0, Math.PI * 2); g.fill(); }
+      for (let k = 0; k < 6; k++) { const x = w * 0.3 + rn() * w * 0.34, l = 16 + rn() * 34, y = h * 0.62; g.fillRect(x - 3, y, 6, l); g.beginPath(); g.arc(x, y + l, 5, 0, Math.PI * 2); g.fill(); }
+      for (let k = 0; k < 14; k++) { g.beginPath(); g.arc(rn() * w, rn() * h, 1.5 + rn() * 3, 0, Math.PI * 2); g.fill(); }
+      // tag
+      g.save(); g.translate(w * 0.47, h * 0.52); g.rotate(-0.12);
+      g.font = 'italic 900 50px "Arial Black", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineJoin = 'round'; g.lineWidth = 10; g.strokeStyle = '#111'; g.strokeText('INK!', 0, 0); g.fillStyle = '#fff'; g.fillText('INK!', 0, 0);
+      g.restore();
+      g.strokeStyle = '#ffe45c'; g.lineWidth = 4; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(w * 0.8, h * 0.18); g.lineTo(w * 0.86, h * 0.3); g.lineTo(w * 0.92, h * 0.16); g.stroke();
+      g.beginPath(); g.moveTo(w * 0.1, h * 0.8); g.quadraticCurveTo(w * 0.2, h * 0.68, w * 0.3, h * 0.82); g.stroke();
+      g.strokeStyle = col; g.lineWidth = 8; g.strokeRect(4, 4, w - 8, h - 8);
+    }, false);
+    this.texCache[col] = t; return t;
+  },
+  // where the board goes: ~3 m ahead on the ground, pulled closer if a wall is in the way
+  spot(owner, f) {
+    for (const d of [3, 2.5, 2, 1.5, 1.1]) {
+      const x = clamp(owner.pos.x + f.x * d, -XH + 1.3, XH - 1.3), z = clamp(owner.pos.z + f.z * d, -ZH + 1.3, ZH - 1.3);
+      const y = groundBelow(x, z, owner.pos.y + 0.6, 0.6);
+      if (solidAt(x, y + 0.8, z) || Math.abs(y - owner.pos.y) > 1.2) continue;
+      return { x, y, z };
+    }
+    return { x: owner.pos.x + f.x * 0.9, y: owner.pos.y, z: owner.pos.z + f.z * 0.9 };
+  },
+  place(owner, dir) {
+    const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
+    for (const c of this.list.slice()) if (c.owner === owner) this.breakIt(c, true);          // one board each
+    const sp = this.spot(owner, f), yaw = Math.atan2(f.x, f.z), team = owner.team;
+    if (!this.geo) { this.geo = new THREE.BoxGeometry(this.W, this.H, this.T); this.darkM = new THREE.MeshStandardMaterial({ color: 0x1b1c24, roughness: 0.5, metalness: 0.3 }); this.decalGeo = new THREE.CircleGeometry(1, 12); this.decalM = [0, 1].map(() => new THREE.MeshBasicMaterial({ color: 0xffffff })); }
+    const face = new THREE.MeshStandardMaterial({ map: this.texFor(team), roughness: 0.55, emissive: 0x000000 });
+    const g = new THREE.Group(); g.position.set(sp.x, sp.y, sp.z); g.rotation.y = yaw;
+    const board = new THREE.Mesh(this.geo, [this.darkM, this.darkM, this.darkM, this.darkM, face, face]); board.position.y = this.H / 2 + 0.1; board.castShadow = true; g.add(board);
+    const top = new THREE.Mesh(this.geo, TEAMMAT[team]); top.scale.set(1.03, 0.05, 1.5); top.position.y = this.H + 0.12; g.add(top);
+    [-1, 1].forEach(s => { const ft = new THREE.Mesh(this.geo, this.darkM); ft.scale.set(0.08, 0.1, 3.6); ft.position.set(s * (this.W / 2 - 0.25), 0.08, 0); g.add(ft); });
+    scene.add(g);
+    const cv = { owner, team, x: sp.x, y: sp.y, z: sp.z, ax: Math.cos(yaw), az: -Math.sin(yaw), nx: f.x, nz: f.z, hp: SUBS.cover.hp, t: SUBS.cover.life, g, board, face, grow: 0, flash: 0, wob: 0, decals: [] };
+    this.list.push(cv);
+    // a puddle of our ink behind it: swim there to refill in cover
+    owner.addPaint(splatFloor(sp.x - f.x * 0.9, sp.y, sp.z - f.z * 0.9, 1.8, team, 1.0, true));
+    const colr = TEAM_HEX[team];
+    for (let k = 0; k < 7; k++) { const u = (k / 6 - 0.5) * this.W; Fx.burstDir(sp.x + cv.ax * u, sp.y + 0.1, sp.z + cv.az * u, colr, 3, 4, 0.08, 0, 1, 0, 0.5); }
+    const v = sndVol(g.position); if (v > 0.03) Sfx.spray(v, sndPan(g.position));
+    return cv;
+  },
+  // enemy board (of someone not on `team`) at this point?
+  at(team, x, y, z) {
+    for (const c of this.list) {
+      if (c.team === team || c.grow < 0.25) continue;
+      const dx = x - c.x, dz = z - c.z, lu = dx * c.ax + dz * c.az, ln = dx * c.nx + dz * c.nz;
+      if (Math.abs(lu) < this.W / 2 && Math.abs(ln) < 0.24 && y > c.y - 0.1 && y < c.y + 0.12 + this.H * Math.min(1, c.grow)) return c;
+    }
+    return null;
+  },
+  // ink hit the board: splash off it, leave a mark, wear it down
+  hit(c, dmg, p, team = 1 - c.team, r = 0) {
+    c.hp -= dmg; if (dmg > 0) { c.flash = 1; c.wob = Math.min(1, c.wob + 0.35 + dmg / 150); }
+    const side = Math.sign((p.x - c.x) * c.nx + (p.z - c.z) * c.nz) || 1, col = TEAM_HEX[team];
+    Fx.burstDir(p.x, p.y, p.z, col, dmg > 60 ? 16 : 7, 3.4, 0.08, c.nx * side, 0.35, c.nz * side, 0.85);
+    if (r > 0 && dmg > 0) {
+      let m = c.decals.length >= 14 ? c.decals.shift() : null;
+      if (!m) m = new THREE.Mesh(this.decalGeo, this.decalM[team]); else m.material = this.decalM[team];
+      this.decalM[team].color.set(col);
+      const lu = clamp((p.x - c.x) * c.ax + (p.z - c.z) * c.az, -this.W / 2 + 0.15, this.W / 2 - 0.15), ly = clamp(p.y - c.y, 0.25, this.H - 0.05);
+      m.position.set(lu, ly, side * (this.T / 2 + 0.006)); m.rotation.set(0, side > 0 ? 0 : Math.PI, rand(0, 6)); m.scale.setScalar(clamp(r * 0.28, 0.12, 0.42) * rand(0.8, 1.2)); c.g.add(m); c.decals.push(m);
+    }
+    const v = sndVol(p); if (v > 0.05) Sfx.impact(v * 0.7, sndPan(p));
+    if (c.hp <= 0) this.breakIt(c);
+  },
+  // explosions nearby hurt it (bombs are the counter)
+  blast(team, p, R, dmg) {
+    for (const c of this.list.slice()) {
+      if (c.team === team) continue;
+      const lu = clamp((p.x - c.x) * c.ax + (p.z - c.z) * c.az, -this.W / 2, this.W / 2), qx = c.x + c.ax * lu, qz = c.z + c.az * lu;
+      const d = Math.hypot(p.x - qx, p.z - qz, Math.max(0, p.y - (c.y + this.H))); if (d < R) this.hit(c, dmg * (1 - 0.5 * d / R), new THREE.Vector3(qx, c.y + 0.8, qz), team);
+    }
+  },
+  breakIt(c, quiet = false) {
+    const i = this.list.indexOf(c); if (i < 0) return; this.list.splice(i, 1);
+    scene.remove(c.g); c.face.dispose();
+    if (quiet) return;
+    const col = TEAM_HEX[c.team];
+    for (let k = 0; k < 5; k++) { const u = (k / 4 - 0.5) * this.W; Fx.burst(c.x + c.ax * u, c.y + 0.9, c.z + c.az * u, col, 9, 5, 0.13); }
+    Fx.ring(c.x, c.y + 0.06, c.z, col, 2.6);
+    splatFloor(c.x, c.y, c.z, 1.4, c.team, 0.9, true);
+    const v = sndVol(c.g.position); if (v > 0.03) Sfx.crack(v, sndPan(c.g.position));
+  },
+  update(dt) {
+    for (const c of this.list.slice()) {
+      c.t -= dt; if (c.t <= 0) { this.breakIt(c); continue; }
+      c.grow = Math.min(1, c.grow + dt / 0.32); const k = c.grow, ob = 1 + 2.4 * Math.pow(k - 1, 3) + 1.4 * Math.pow(k - 1, 2);
+      c.g.scale.set(1 + 0.12 * Math.sin(Math.PI * k) * (1 - k), Math.max(0.02, ob), 1);
+      c.flash = Math.max(0, c.flash - dt * 6); c.wob = Math.max(0, c.wob - dt * 3);
+      c.face.emissive.setScalar(c.flash * 0.35); const hk = 0.55 + 0.45 * clamp(c.hp / SUBS.cover.hp, 0, 1); c.face.color.setRGB(hk, hk, hk);
+      c.g.rotation.z = Math.sin(G.time * 45) * 0.035 * c.wob;
+      c.g.visible = c.t > 1.2 || Math.sin(c.t * 26) > -0.4;                   // blinks before it runs out
+    }
+  },
+  // aim preview while holding E: a see-through board where it will stand
+  ghost(owner, dir, ok) {
+    if (!owner) { if (this.gh) this.gh.visible = false; return; }
+    if (!this.gh) { this.ghM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false, fog: false }); this.gh = new THREE.Mesh(new THREE.BoxGeometry(this.W, this.H, this.T), this.ghM); scene.add(this.gh); }
+    const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
+    const sp = this.spot(owner, f); this.gh.visible = true; this.gh.position.set(sp.x, sp.y + this.H / 2 + 0.1, sp.z); this.gh.rotation.y = Math.atan2(f.x, f.z);
+    this.ghM.color.set(ok ? TEAM_HEX[owner.team] : '#9aa0aa'); this.ghM.opacity = 0.22 + Math.sin(G.time * 8) * 0.06;
+  },
+  clear() { this.list.slice().forEach(c => this.breakIt(c, true)); if (this.gh) this.gh.visible = false; }
 };

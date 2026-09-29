@@ -735,6 +735,16 @@ const Sfx = (() => {
       noise(0.09, 0.09 * v, 'lowpass', 1600 * k, 1.2, 300, d); tone('sine', 320 * k, 120, 0.06, 0.05 * v, d);
     },
     splat(v) { noise(0.12, 0.07 * v, 'lowpass', 1200, 1, 250); },
+    // spray can: rattle + long hiss (graffiti cover going up), and a wet crack when it breaks
+    spray(v, pan = 0) {
+      if (!ctx || v < 0.03) return; const d = panNode(pan), t = ctx.currentTime;
+      for (let k = 0; k < 2; k++) tone('square', 1900, 1500, 0.025, 0.02 * v, d, t + k * 0.06);
+      noise(0.42, 0.1 * v, 'highpass', 3800, 0.7, 5200, d, t + 0.1); noise(0.3, 0.06 * v, 'bandpass', 2400, 1.2, 1800, d, t + 0.12);
+    },
+    crack(v, pan = 0) {
+      if (!ctx || v < 0.03) return; const d = panNode(pan);
+      noise(0.22, 0.16 * v, 'lowpass', 1400, 1.1, 260, d); tone('triangle', 420, 90, 0.16, 0.09 * v, d); noise(0.06, 0.08 * v, 'highpass', 4200, 1, null, d);
+    },
     // hit confirmation: bright tick + wet pop (+ extra body when the hit was heavy)
     hit(heavy = false) {
       if (!ctx) return; const t = ctx.currentTime, k = rand(0.96, 1.04);
@@ -1565,7 +1575,11 @@ function updateWorld(t, dt) {
    loadout from here; appearance is stored separately (LOOK) so that
    gameplay and visuals stay decoupled.                               */
 const SUBS = {
-  bomb: { id: 'bomb', name: '墨水炸弹', cost: 56, desc: '抛出后弹一下再爆炸，大范围涂色并造成伤害' }
+  bomb: { id: 'bomb', name: '墨水炸弹', short: '炸弹', cost: 56, desc: '抛出后弹一下再爆炸，大范围涂色并造成伤害' },
+  // like the original's curling bomb: slides along the ground laying a path of ink you can swim behind
+  curling: { id: 'curling', name: '冰壶炸弹', short: '冰壶', cost: 56, desc: '贴着地面快速滑出去，一路铺出一条墨路，撞墙会反弹，滑到头爆炸。潜进墨路跟在后面冲，就能快速贴近敌人' },
+  // graffiti cover: a spray-painted board that stops enemy ink; your own team shoots straight through it
+  cover: { id: 'cover', name: '涂鸦掩体', short: '掩体', cost: 56, hp: 300, life: 10, desc: '在前方立起一块涂鸦板，挡住敌人的子弹，自己人的子弹能穿过去。脚下会铺一片墨，可以躲在后面潜墨回墨。能被打坏，最多存在 10 秒' }
 };
 const SPECIALS = {
   surge: { id: 'surge', name: '墨浪冲击', desc: '跃向高空后砸地，大范围涂色并击倒周围敌人' }
@@ -1623,28 +1637,28 @@ const CHARACTERS = {
   sa: {
     id: 'sa', name: '阿飒', en: 'SWIFT', role: '疾风 · 游击', tag: '跑得最快的街头涂鸦手',
     desc: '全场最快：移速、潜行都快一大截，适合绕后偷袭、抢地盘。但身板最薄，墨罐也小，要省着打，挨两下就得撤。',
-    hp: 80, runK: 1.25, swimK: 1.15, inkCap: 0.8, inkRegen: 1, knockK: 1.2, weapons: ['rifle'],
+    hp: 80, runK: 1.25, swimK: 1.15, inkCap: 0.8, inkRegen: 1, knockK: 1.2, weapons: ['rifle'], sub: 'curling',
     look: { skin: '#f3c39b', cloth: '#f5f5f2', cloth2: '#40c0b0', pants: '#23242c', hat: 'band', hatColor: '#40c0b0', trim: '#5ad1ff', hair: 'tail', bodyW: 0.92, bodyH: 1.0, tankK: 0.9, crestK: 1.35 },
     bars: { hp: 1, speed: 5, ink: 1 }, weaponNote: '专属武器'
   },
   man: {
     id: 'man', name: '满满', en: 'TANKFUL', role: '墨罐 · 持久', tag: '背着超大墨罐的涂地狂',
     desc: '背着一个超大墨罐的狙击手，墨水多 20%，回墨也更快，重炮狙击一罐能多打一枪。身板偏薄，被近身就赶紧潜进墨里换位置。',
-    hp: 85, runK: 0.95, swimK: 1.1, inkCap: 1.2, inkRegen: 1.15, knockK: 1, weapons: ['charger'],
+    hp: 85, runK: 0.95, swimK: 1.1, inkCap: 1.2, inkRegen: 1.15, knockK: 1, weapons: ['charger'], sub: 'cover',
     look: { skin: '#dba577', cloth: '#ffcf3f', cloth2: '#2a2b35', pants: '#1f3050', hat: 'phones', hatColor: '#2a2b35', trim: '#f0f0f0', hair: 'twin', bodyW: 1.0, bodyH: 1.0, tankK: 1.45, crestK: 1.0 },
     bars: { hp: 2, speed: 3, ink: 4 }, weaponNote: '专属武器'
   },
   dun: {
     id: 'dun', name: '石墩', en: 'BULWARK', role: '重装 · 肉盾', tag: '挨打也不退一步的大块头',
-    desc: '体格最壮，生命值最高（步枪要 5 发才倒），被打中几乎不后仰、不被推开，端着加特林顶在最前面。代价是全场最慢，扫射时更慢。',
-    hp: 160, runK: 0.7, swimK: 0.8, inkCap: 1, inkRegen: 1, knockK: 0.4, weapons: ['splatling'],
-    look: { skin: '#7d4d31', cloth: '#3b3f52', cloth2: '#ff8a3d', pants: '#2a2b35', hat: 'goggles', hatColor: '#3b3f52', trim: '#ffd23a', hair: 'fin', bodyW: 1.14, bodyH: 1.05, tankK: 1.05, crestK: 0.8 },
+    desc: '又壮又胖，生命值最高（步枪要 5 发才倒），被打中几乎不后仰、不被推开，端着加特林顶在最前面。代价是全场最慢、跳得低，身板大也更容易被打中。',
+    hp: 160, runK: 0.6, swimK: 0.7, inkCap: 1, inkRegen: 1, knockK: 0.4, jumpK: 0.85, hitK: 1.3, weapons: ['splatling'], sub: 'bomb',
+    look: { skin: '#7d4d31', cloth: '#3b3f52', cloth2: '#ff8a3d', pants: '#2a2b35', hat: 'goggles', hatColor: '#3b3f52', trim: '#ffd23a', hair: 'fin', bodyW: 1.04, bodyH: 1.02, fat: 1, tankK: 1.05, crestK: 0.8 },
     bars: { hp: 5, speed: 1, ink: 3 }, weaponNote: '专属武器'
   }
 };
 const CHAR_ORDER = ['sa', 'man', 'dun'];
 // baseline body used by the automated mechanics tests (not selectable)
-CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'charger', 'splatling', 'blaster'] });
+CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', sub: null, hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'charger', 'splatling', 'blaster'] });
 // the character that carries a given weapon (first match)
 function charForWeapon(w) { return CHAR_ORDER.find(id => CHARACTERS[id].weapons.includes(w)) || 'sa'; }
 // portrait: head with tentacle hair in team colour + each character's accessory (SVG, used in cards and lists)
@@ -1653,12 +1667,13 @@ function charIcon(id, w = 64, accent = 'var(--c0)') {
   const hair = id === 'sa'
     ? `<path d="M14 30 Q12 8 32 6 Q52 8 50 30 Z" style="fill:${accent}" ${st}/><path d="M48 18 Q62 22 60 44 Q56 36 50 30 Z" style="fill:${accent}" ${st}/>`
     : id === 'dun'
-      ? `<path d="M12 32 Q12 10 32 9 Q52 10 52 32 Z" style="fill:${accent}" ${st}/><path d="M24 12 L32 -2 L40 12 Z" style="fill:${accent}" ${st}/>`
+      ? `<path d="M9 33 Q10 10 32 9 Q54 10 55 33 Z" style="fill:${accent}" ${st}/><path d="M24 12 L32 -2 L40 12 Z" style="fill:${accent}" ${st}/>`
       : `<path d="M12 32 Q10 8 32 6 Q54 8 52 32 Z" style="fill:${accent}" ${st}/><path d="M12 26 Q2 34 6 52 Q12 46 14 34 Z" style="fill:${accent}" ${st}/><path d="M52 26 Q62 34 58 52 Q52 46 50 34 Z" style="fill:${accent}" ${st}/>`;
   const acc = id === 'sa' ? `<rect x="12" y="20" width="40" height="6" rx="3" fill="${L.hatColor}" ${st}/>`
     : id === 'dun' ? `<circle cx="24" cy="15" r="6" fill="#9aa3b5" ${st}/><circle cx="40" cy="15" r="6" fill="#9aa3b5" ${st}/>`
       : `<path d="M11 30 Q32 -4 53 30" fill="none" stroke="#111" stroke-width="5"/><rect x="6" y="27" width="9" height="13" rx="4" fill="${L.hatColor}" ${st}/><rect x="49" y="27" width="9" height="13" rx="4" fill="${L.hatColor}" ${st}/>`;
-  return `<svg viewBox="0 0 64 64" width="${w}" height="${w}" style="vertical-align:middle;overflow:visible"><ellipse cx="32" cy="34" rx="19" ry="18" fill="${L.skin}" ${st}/><rect x="15" y="30" width="34" height="9" rx="4.5" fill="#111"/><circle cx="25" cy="34.5" r="3" fill="#fff"/><circle cx="39" cy="34.5" r="3" fill="#fff"/>${hair}${acc}<path d="M20 52 Q32 60 44 52 L44 62 L20 62 Z" fill="${L.cloth}" ${st}/></svg>`;
+  const fat = id === 'dun', rx = fat ? 23 : 19, chin = fat ? `<path d="M17 44 Q32 55 47 44" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>` : '';
+  return `<svg viewBox="0 0 64 64" width="${w}" height="${w}" style="vertical-align:middle;overflow:visible">${fat ? `<path d="M10 52 Q32 44 54 52 L58 64 L6 64 Z" fill="${L.cloth}" ${st}/>` : ''}<ellipse cx="32" cy="${fat ? 35 : 34}" rx="${rx}" ry="${fat ? 19 : 18}" fill="${L.skin}" ${st}/>${chin}<rect x="${fat ? 12 : 15}" y="30" width="${fat ? 40 : 34}" height="9" rx="4.5" fill="#111"/><circle cx="25" cy="34.5" r="3" fill="#fff"/><circle cx="39" cy="34.5" r="3" fill="#fff"/>${hair}${acc}${fat ? '' : `<path d="M20 52 Q32 60 44 52 L44 62 L20 62 Z" fill="${L.cloth}" ${st}/>`}</svg>`;
 }
 
 /* ---------------------------------------------------------- icons */
@@ -1669,6 +1684,8 @@ function weaponIcon(id, color = '#fff', w = 64, accent = 'var(--c0)') {
   else if (id === 'charger') body = `<rect x="4" y="14" width="22" height="9" rx="3" fill="${color}" ${st}/><rect x="24" y="15.5" width="36" height="5" rx="2" fill="${color}" ${st}/><rect x="14" y="7" width="16" height="5" rx="2.5" fill="${color}" ${st}/><rect x="10" y="21" width="6" height="8" rx="2" fill="${color}" ${st}/><circle cx="8" cy="12" r="4.5" style="fill:${accent}" ${st}/>`;
   else if (id === 'splatling') body = `<rect x="4" y="11" width="20" height="14" rx="4" fill="${color}" ${st}/><rect x="22" y="9" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="15" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="21" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="30" y="7" width="5" height="20" rx="2" style="fill:${accent}" ${st}/><circle cx="12" cy="8" r="5" style="fill:${accent}" ${st}/>`;
   else if (id === 'blaster') body = `<rect x="4" y="12" width="22" height="10" rx="3" fill="${color}" ${st}/><rect x="22" y="9" width="26" height="16" rx="5" fill="${color}" ${st}/><rect x="46" y="6" width="12" height="22" rx="4" style="fill:${accent}" ${st}/><rect x="10" y="20" width="6" height="9" rx="2" fill="${color}" ${st}/>`;
+  else if (id === 'curling') body = `<ellipse cx="32" cy="22" rx="16" ry="6" style="fill:${accent}" ${st}/><rect x="17" y="14" width="30" height="8" rx="3" style="fill:${accent}" ${st}/><path d="M28 14 V8 H38" fill="none" stroke="#111" stroke-width="5" stroke-linecap="round"/><path d="M28 14 V8 H38" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>`;
+  else if (id === 'cover') body = `<rect x="14" y="3" width="36" height="22" rx="3" fill="#2a2b35" ${st}/><path d="M20 18 Q24 6 32 12 T44 8 L44 20 L20 20Z" style="fill:${accent}"/><path d="M19 10 q4 -4 8 0 t8 0" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/><rect x="18" y="25" width="5" height="5" fill="#2a2b35" ${st}/><rect x="41" y="25" width="5" height="5" fill="#2a2b35" ${st}/>`;
   else if (id === 'bomb') body = `<circle cx="32" cy="17" r="11" style="fill:${accent}" ${st}/><rect x="21" y="15" width="22" height="4" fill="${color}" ${st}/><rect x="29" y="3" width="6" height="5" rx="1" fill="${color}" ${st}/>`;
   else if (id === 'surge') body = `<path d="M8 26 Q20 6 32 18 T56 10 L56 28 L8 28Z" style="fill:${accent}" ${st}/><path d="M32 2 L32 16 M26 10 L32 16 L38 10" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round"/>`;
   else body = `<circle cx="32" cy="16" r="10" fill="${color}" ${st}/>`;
@@ -1871,6 +1888,7 @@ function traceRay(owner, o, dir, range, step = 0.2) {
   for (let t = step; t <= range; t += step) {
     p.set(o.x + dir.x * t, o.y + dir.y * t, o.z + dir.z * t);
     if (inBarrier(1 - owner.team, p)) return { end: p.clone(), barrier: true, t };
+    if (Cover.list.length) { const cv = Cover.at(owner.team, p.x, p.y, p.z); if (cv) return { end: p.clone(), cover: cv, t }; }
     for (const e of CHARS) if (e.team !== owner.team && Proj.hitChar(e, p, 0.12)) return { end: p.clone(), char: e, t };
     const s = solidAt(p.x, p.y, p.z);
     if (s) return { end: p.clone(), solid: s, prev: prev.clone(), t };
@@ -1890,6 +1908,7 @@ class Character {
     this.weapon = WEAPONS[opts.weapon] || WEAPONS.rifle;
     // character: body + stats (hp, speed, ink tank); the look comes from the character
     this.cs = CHARACTERS[opts.char] || CHARACTERS.man; this.maxHp = this.cs.hp; this.inkK = this.cs.inkCap;
+    this.subId = this.cs.sub || this.weapon.sub;              // sub weapon (E) belongs to the character
     this.look = Object.assign({}, opts.look || randomLook(), this.cs.look);
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3();
     this.yaw = 0; this.aimYaw = 0; this.aimPitch = 0; this.bodyYaw = 0;
@@ -1921,29 +1940,32 @@ class Character {
     const T = TEAMMAT[this.team];
     const root = new THREE.Group(); this.root = root;
     const human = new THREE.Group(); root.add(human); this.human = human;
+    const F = L.fat || 0;                                     // chubby build (石墩): round belly, thick limbs, wide shoulders
     // legs
     this.legs = [-1, 1].map(s => {
-      const hip = new THREE.Group(); hip.position.set(s * 0.12, 0.5, 0); human.add(hip);
-      hip.add(mesh(GEO.cap(0.085, 0.26), pants, 0, -0.2, 0));
-      const shoe = mesh(GEO.cap(0.09, 0.14), white, 0, -0.44, 0.05, 1.1, 1, 1); shoe.rotation.x = Math.PI / 2; hip.add(shoe);
-      const sole = mesh(GEO.cap(0.092, 0.14), T, 0, -0.47, 0.05, 1.12, 0.45, 1.02); sole.rotation.x = Math.PI / 2; hip.add(sole);
+      const hip = new THREE.Group(); hip.position.set(s * (0.12 + 0.05 * F), 0.5, 0); human.add(hip);
+      hip.add(mesh(GEO.cap(0.085, 0.26), pants, 0, -0.2, 0, 1 + 0.55 * F, 1, 1 + 0.5 * F));
+      const shoe = mesh(GEO.cap(0.09, 0.14), white, 0, -0.44, 0.05, 1.1 + 0.4 * F, 1, 1 + 0.2 * F); shoe.rotation.x = Math.PI / 2; hip.add(shoe);
+      const sole = mesh(GEO.cap(0.092, 0.14), T, 0, -0.47, 0.05, 1.12 + 0.4 * F, 0.45, 1.02 + 0.2 * F); sole.rotation.x = Math.PI / 2; hip.add(sole);
       return hip;
     });
     // torso
     const torso = new THREE.Group(); torso.position.y = 0.5; human.add(torso); this.torso = torso;
-    torso.add(mesh(GEO.cap(0.215, 0.22), cloth, 0, 0.27, 0, 1.08, 1, 0.92));
-    const hood = mesh(new THREE.TorusGeometry(0.15, 0.06, 8, 16), cloth2, 0, 0.53, -0.02); hood.rotation.x = Math.PI / 2; torso.add(hood);
-    const emb = mesh(new THREE.CircleGeometry(0.06, 16), T, 0, 0.33, 0.205); torso.add(emb);
-    const belt = mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 20), dark, 0, 0.08, 0); belt.rotation.x = Math.PI / 2; torso.add(belt);
+    torso.add(mesh(GEO.cap(0.215, 0.22), cloth, 0, 0.27, 0, 1.08 + 0.42 * F, 1, 0.92 + 0.4 * F));
+    if (F) torso.add(mesh(GEO.sphere, cloth, 0, 0.17, 0.07 * F, 0.33 * F, 0.27 * F, 0.3 * F));          // round belly
+    const hood = mesh(new THREE.TorusGeometry(0.15, 0.06, 8, 16), cloth2, 0, 0.53, -0.02, 1 + 0.35 * F, 1 + 0.35 * F, 1 + 0.3 * F); hood.rotation.x = Math.PI / 2; torso.add(hood);
+    const emb = mesh(new THREE.CircleGeometry(0.06, 16), T, 0, 0.33, 0.205 + 0.1 * F); torso.add(emb);
+    const belt = mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 20), dark, 0, 0.08, 0.03 * F, 1 + 0.55 * F, 1 + 0.5 * F, 1); belt.rotation.x = Math.PI / 2; torso.add(belt);
     // backpack ink tank
-    const tank = new THREE.Group(); tank.position.set(0, 0.3, -0.26); torso.add(tank); if (L.tankK) { tank.scale.setScalar(L.tankK); tank.position.z = -0.26 - (L.tankK - 1) * 0.1; }
+    const tank = new THREE.Group(); tank.position.set(0, 0.3, -0.26 - 0.08 * F); torso.add(tank); if (L.tankK) { tank.scale.setScalar(L.tankK); tank.position.z = -0.26 - 0.08 * F - (L.tankK - 1) * 0.1; }
     tank.add(mesh(GEO.cyl, glass, 0, 0, 0, 0.12, 0.34, 0.12));
     this.tankInk = mesh(GEO.cyl, T, 0, 0, 0, 0.1, 0.32, 0.1); tank.add(this.tankInk);
     tank.add(mesh(GEO.cyl, metal, 0, 0.19, 0, 0.13, 0.05, 0.13)); tank.add(mesh(GEO.cyl, metal, 0, -0.19, 0, 0.13, 0.05, 0.13));
-    [-1, 1].forEach(s => { const st = mesh(new THREE.BoxGeometry(0.04, 0.42, 0.03), dark, s * 0.1, 0.28, -0.19); st.rotation.x = 0.2; torso.add(st); });
+    [-1, 1].forEach(s => { const st = mesh(new THREE.BoxGeometry(0.04, 0.42, 0.03), dark, s * (0.1 + 0.04 * F), 0.28, -0.19 - 0.08 * F); st.rotation.x = 0.2; torso.add(st); });
     // head
-    const head = new THREE.Group(); head.position.y = 0.62; torso.add(head); this.head = head;
+    const head = new THREE.Group(); head.position.y = 0.62 - 0.03 * F; torso.add(head); this.head = head;
     head.add(mesh(GEO.sphere, skin, 0, 0.2, 0, 0.27, 0.26, 0.26));
+    if (F) head.add(mesh(GEO.sphere, skin, 0, 0.1, 0.03, 0.25, 0.14, 0.22));                        // double chin / chubby cheeks
     const visor = mesh(new THREE.CylinderGeometry(0.276, 0.276, 0.13, 24, 1, true, -1.9, 3.8), dark, 0, 0.21, 0); visor.material = dark; head.add(visor);
     visor.material.side = THREE.DoubleSide;
     this.eyes = [-1, 1].map(s => { const e = mesh(GEO.sphere, eyeM, s * 0.095, 0.215, 0.262, 0.045, 0.05, 0.02); head.add(e); return e; });
@@ -1965,9 +1987,9 @@ class Character {
     else if (hat === 'cap') { const brim = mesh(GEO.cyl, hc, 0, 0.3, 0.2, 0.2, 0.02, 0.14); brim.rotation.x = 0.15; head.add(brim); }
     // arms
     this.arms = [-1, 1].map(s => {
-      const sh = new THREE.Group(); sh.position.set(s * 0.27, 0.43, 0); torso.add(sh);
-      sh.add(mesh(GEO.cap(0.07, 0.2), cloth, 0, -0.15, 0));
-      sh.add(mesh(GEO.sphere, white, 0, -0.3, 0, 0.075));
+      const sh = new THREE.Group(); sh.position.set(s * (0.27 + 0.1 * F), 0.43, 0); torso.add(sh);
+      sh.add(mesh(GEO.cap(0.07, 0.2), cloth, 0, -0.15, 0, 1 + 0.5 * F, 1, 1 + 0.5 * F));
+      sh.add(mesh(GEO.sphere, white, 0, -0.3, 0, 0.075 * (1 + 0.3 * F)));
       return sh;
     });
     // sockets: weapons attach here (keeps weapon models independent of the body model)
@@ -2252,7 +2274,7 @@ class Character {
     const tx = I.mx * maxSp, tz = I.mz * maxSp;
     const ax = tx - this.vel.x, az = tz - this.vel.z, al = Math.hypot(ax, az), maxA = acc * dt;
     if (al > maxA) { this.vel.x += ax / al * maxA; this.vel.z += az / al * maxA; } else { this.vel.x = tx; this.vel.z = tz; }
-    if (I.jump && this.grounded && !this.sp) { this.airSpeed = Math.hypot(this.vel.x, this.vel.z); this.vel.y = this.swim ? 9.8 : 8.3; this.grounded = false; if (this.isPlayer) Sfx.jump(); if (this.swim) Fx.burst(this.pos.x, this.pos.y + 0.1, this.pos.z, TEAM_HEX[this.team], 6, 3, 0.08); }
+    if (I.jump && this.grounded && !this.sp) { this.airSpeed = Math.hypot(this.vel.x, this.vel.z); this.vel.y = (this.swim ? 9.8 : 8.3) * Math.sqrt(this.cs.jumpK || 1); this.grounded = false; if (this.isPlayer) Sfx.jump(); if (this.swim) Fx.burst(this.pos.x, this.pos.y + 0.1, this.pos.z, TEAM_HEX[this.team], 6, 3, 0.08); }
     I.jump = false;
     // horizontal integrate + collide
     const px = this.pos.x, pz = this.pos.z;
@@ -2316,11 +2338,11 @@ class Character {
     } else if (W.charges) this.updateCharge(dt, I, T);
     else if (W.type === 'blaster') this.updateBlaster(dt, I, T);
     if (I.bomb && !this.swim && !this.sp && this.bombCd <= 0 && G.state === 'play') {
-      const bc = SUBS[this.weapon.sub].cost / this.inkK;
+      const bc = SUBS[this.subId].cost / this.inkK;
       if (this.ink >= bc) {
         this.ink -= bc; this.bombCd = 0.6; this.lastShot = T;
         const dir = I.aimDir ? I.aimDir.clone() : new THREE.Vector3(Math.sin(this.aimYaw) * Math.cos(this.aimPitch), Math.sin(this.aimPitch), Math.cos(this.aimYaw) * Math.cos(this.aimPitch));
-        Proj.bomb(this, this.muzzle(), dir);
+        if (this.subId === 'curling') Proj.curling(this, dir); else if (this.subId === 'cover') Cover.place(this, dir); else Proj.bomb(this, this.muzzle(), dir);
       } else if (this.isPlayer) HUD.lowInk();
     }
     I.bomb = false;
@@ -2401,6 +2423,8 @@ class Character {
       else if (h.type === 'wall') { impactAt = h.pt.clone(); Proj.splash(this, h.pt, h.n, dir, ir * 0.85, 'wall', h.face); }
     } else if (tr.barrier) {
       Fx.burst(tr.end.x, tr.end.y, tr.end.z, col, 8, 3, 0.07); Barrier.flash(1 - this.team);
+    } else if (tr.cover) {
+      Cover.hit(tr.cover, full ? W.dmgFull : lerp(W.dmgMin, W.dmgMax, ct), tr.end, this.team, ir * 0.7);
     } else {
       // out of range: the ink slug loses energy and falls, splashing where it lands
       Proj.spray(this, tr.end, dir.clone().multiplyScalar(11), ir * 0.7, true);
@@ -2699,7 +2723,7 @@ const Proj = {
       this.stepShot(b, h);
       if (b.W.fuse && b.t >= b.W.fuse) return { end: b.p.clone(), t: b.t };                 // blaster shell airbursts here
       for (const e of CHARS) if (e.team !== owner.team && !e.submerged && this.hitChar(e, b.p, 0.14)) return { end: b.p.clone(), char: e, t: b.t };
-      if (solidAt(b.p.x, b.p.y, b.p.z) || b.p.y < -3) return { end: b.p.clone(), t: b.t };
+      if (solidAt(b.p.x, b.p.y, b.p.z) || b.p.y < -3 || (Cover.list.length && Cover.at(owner.team, b.p.x, b.p.y, b.p.z))) return { end: b.p.clone(), t: b.t };
     }
     return { end: b.p.clone(), t: b.t };
   },
@@ -2750,6 +2774,48 @@ const Proj = {
     this.bombs.push({ owner, team: owner.team, p: o.clone(), v, g, light, fuse: -1, bounces: 0 });
     if (sndVol(o) > 0.05) Sfx.throwB(sndVol(o));
   },
+  // ---- curling bomb: slides along the ground laying a path of ink, bounces off walls, explodes when the fuse runs out
+  curling(owner, dir) {
+    const g = new THREE.Group();
+    if (!this.curlGeo) { this.curlGeo = new THREE.CylinderGeometry(0.3, 0.36, 0.2, 20); this.curlHandle = new THREE.TorusGeometry(0.11, 0.035, 6, 12, Math.PI); this.curlDark = new THREE.MeshStandardMaterial({ color: 0x1d1f28, roughness: 0.3, metalness: 0.5 }); }
+    const body = new THREE.Mesh(this.curlGeo, TEAMMAT[owner.team]); body.position.y = 0.1; body.castShadow = true; g.add(body);
+    const light = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffffff, emissiveIntensity: 0 });
+    const band = new THREE.Mesh(this.bandGeo, light); band.rotation.x = Math.PI / 2; band.scale.setScalar(1.6); band.position.y = 0.19; g.add(band);
+    const handle = new THREE.Mesh(this.curlHandle, this.curlDark); handle.position.y = 0.2; g.add(handle);
+    const st = this.curlStart(owner, dir);
+    g.position.copy(st.p); scene.add(g);
+    this.bombs.push(Object.assign(st, { curl: true, owner, team: owner.team, g, light, fuse: 2.2, trail: 0 }));
+    if (sndVol(st.p) > 0.05) Sfx.throwB(sndVol(st.p));
+  },
+  curlStart(owner, dir) {
+    const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
+    const p = new THREE.Vector3(owner.pos.x + f.x * 0.8, 0, owner.pos.z + f.z * 0.8); p.y = groundBelow(p.x, p.z, owner.pos.y + 0.1, 0.5);   // start at our feet, not on top of a wall in front
+    if (solidAt(p.x, p.y + 0.15, p.z)) p.copy(owner.pos);
+    const sp = 11 + Math.max(0, owner.vel.x * f.x + owner.vel.z * f.z) * 0.3;
+    return { p, v: f.multiplyScalar(sp), vy: 0 };
+  },
+  // one physics step (shared by the real bomb and the aim preview); returns true if it bounced
+  curlStep(b, dt) {
+    const sp = Math.hypot(b.v.x, b.v.z); if (sp > 1e-3) { const k = Math.max(0, sp - 4.6 * dt) / sp; b.v.x *= k; b.v.z *= k; }
+    let bounced = false;
+    const blocked = (x, z) => Math.abs(x) > XH - 0.35 || Math.abs(z) > ZH - 0.35 || !!solidAt(x, b.p.y + 0.18, z) || inBarrier(1 - b.team, new THREE.Vector3(x, b.p.y, z)) || !!Cover.at(b.team, x, b.p.y + 0.18, z);
+    const nx = b.p.x + b.v.x * dt; if (blocked(nx, b.p.z)) { b.v.x *= -0.8; bounced = true; } else b.p.x = nx;
+    const nz = b.p.z + b.v.z * dt; if (blocked(b.p.x, nz)) { b.v.z *= -0.8; bounced = true; } else b.p.z = nz;
+    const g = groundBelow(b.p.x, b.p.z, b.p.y + 0.5, 0);
+    if (b.p.y > g + 0.01) { b.vy -= 22 * dt; b.p.y = Math.max(g, b.p.y + b.vy * dt); if (b.p.y <= g) b.vy = 0; } else { b.p.y = g; b.vy = 0; }
+    return bounced;
+  },
+  updateCurl(b, dt) {
+    b.fuse -= dt;
+    const sp = Math.hypot(b.v.x, b.v.z);
+    if (this.curlStep(b, dt)) { const v = sndVol(b.p); if (v > 0.05) Sfx.impact(v * 0.6, sndPan(b.p)); }
+    b.trail += sp * dt;
+    if (b.trail > 0.32 && b.vy === 0) { b.trail = 0; b.owner.addPaint(splatFloor(b.p.x, b.p.y, b.p.z, 0.62, b.team, 0.6, true)); if (Math.random() < 0.6) Fx.burst(b.p.x, b.p.y + 0.1, b.p.z, TEAM_HEX[b.team], 2, 1.5, 0.05); }
+    for (const c of CHARS) if (c.team !== b.team && c.alive && c.state === 'play' && Math.hypot(c.pos.x - b.p.x, c.pos.z - b.p.z) < 0.75 && Math.abs(c.pos.y - b.p.y) < 1.2) b.fuse = Math.min(b.fuse, 0.15);
+    b.light.emissiveIntensity = b.fuse < 0.8 ? (Math.sin(b.fuse * 40) > 0 ? 2.5 : 0) : 0.4;
+    b.g.position.copy(b.p); b.g.rotation.y += sp * dt * 1.5;
+    return b.fuse <= 0;
+  },
   bombVel(owner, dir) {
     const air = !owner.grounded, v = dir.clone().multiplyScalar(air ? 14 * 1.12 : 14);
     v.y += 5.5; v.x += owner.vel.x * 0.5; v.z += owner.vel.z * 0.5;
@@ -2764,9 +2830,21 @@ const Proj = {
       this.pvRing = new THREE.Mesh(new THREE.RingGeometry(2.9, 3.4, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide, fog: false }));
       this.pvRing.rotation.x = -Math.PI / 2; scene.add(this.pvRing); this.pv = true;
     }
-    if (!owner) { this.pvDots.count = 0; this.pvRing.visible = false; return; }
+    if (!owner) { this.pvDots.count = 0; this.pvRing.visible = false; Cover.ghost(null); return; }
     const col = ok ? TEAM_HEX[owner.team] : '#9aa0aa';
     this.pvMat.color.set(col); this.pvRing.material.color.set(col);
+    if (owner.subId === 'curling') {
+      // straight slide along the ground (with bounces), ring where it will blow up
+      const b = this.curlStart(owner, dir); b.team = owner.team; let n = 0;
+      for (let i = 0; i < 132; i++) {
+        this.curlStep(b, 1 / 60);
+        if (i % 4 === 1 && n < 40) { _dm.position.set(b.p.x, b.p.y + 0.08, b.p.z); _dm.scale.setScalar(0.07); _dm.rotation.set(0, 0, 0); _dm.updateMatrix(); this.pvDots.setMatrixAt(n++, _dm.matrix); }
+      }
+      this.pvDots.count = n; this.pvDots.instanceMatrix.needsUpdate = true;
+      this.pvRing.visible = true; this.pvRing.position.set(b.p.x, b.p.y + 0.05, b.p.z); this.pvRing.scale.setScalar(2.8 / 3.4);
+      return;
+    }
+    if (owner.subId === 'cover') { this.pvDots.count = 0; this.pvRing.visible = false; Cover.ghost(owner, dir, ok); return; }
     const p = owner.muzzle(), v = this.bombVel(owner, dir), h = 1 / 60; let n = 0, prev = p.clone(), hit = null;
     for (let i = 0; i < 180 && !hit; i++) {
       prev.copy(p); v.y -= 22 * h; p.addScaledVector(v, h);
@@ -2780,7 +2858,8 @@ const Proj = {
   hitChar(c, p, rad) {
     if (!c.alive || c.state !== 'play') return false;
     let y0, y1, r;
-    if (c.swim) { y0 = y1 = c.pos.y + 0.25; r = 0.45; } else { y0 = c.pos.y + 0.35; y1 = c.pos.y + 1.35; r = 0.42; }
+    const hk = (c.cs && c.cs.hitK) || 1;                        // bigger body (石墩) = bigger target
+    if (c.swim) { y0 = y1 = c.pos.y + 0.25; r = 0.45; } else { y0 = c.pos.y + 0.35; y1 = c.pos.y + 0.35 + 1.0 * ((c.look && c.look.bodyH) || 1); r = 0.42 * hk; }
     const cy = clamp(p.y, y0, y1), dx = p.x - c.pos.x, dy = p.y - cy, dz = p.z - c.pos.z;
     return dx * dx + dy * dy + dz * dz < (r + rad) * (r + rad);
   },
@@ -2847,6 +2926,7 @@ const Proj = {
           if (b.blast && b.t >= b.W.fuse) { const W = b.W; this.blastAt(b.owner, b.p.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id); dead = true; break; }
         }
         if (inBarrier(1 - b.team, b.p)) { Fx.burst(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 3, 1.5, 0.05); Barrier.flash(1 - b.team); dead = true; break; }
+        if (Cover.list.length) { const cv = Cover.at(b.team, b.p.x, b.p.y, b.p.z); if (cv) { Cover.hit(cv, b.kind === 'shot' ? this.shotDamage(b) : 0, b.p, b.team, b.kind === 'shot' ? b.r : 0); if (b.blast) { const W = b.W; this.blastAt(b.owner, prev.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id); } dead = true; break; } }
         const s = solidAt(b.p.x, b.p.y, b.p.z);
         if (s) {
           if (b.big) { const h = this.classify(s, prev, b.p); if (h.type !== 'none') this.splash(b.owner, h.type === 'wall' ? h.pt : new THREE.Vector3(b.p.x, h.y, b.p.z), h.n, b.v.clone().normalize(), b.r, h.type, h.face); if (sndVol(b.p) > 0.1) Sfx.splat(sndVol(b.p)); }
@@ -2861,9 +2941,11 @@ const Proj = {
     // bombs
     for (let i = this.bombs.length - 1; i >= 0; i--) {
       const b = this.bombs[i];
+      if (b.curl) { if (this.updateCurl(b, dt)) { this.explode(b); scene.remove(b.g); this.bombs.splice(i, 1); } else if (b.p.y < -3) { scene.remove(b.g); this.bombs.splice(i, 1); } continue; }
       if (b.fuse < 0) {
         const prev = b.p.clone(); b.v.y -= 22 * dt; b.p.addScaledVector(b.v, dt);
         if (inBarrier(1 - b.team, b.p)) { b.p.copy(prev); b.v.x *= -0.35; b.v.z *= -0.35; Barrier.flash(1 - b.team); }
+        else { const cv = Cover.at(b.team, b.p.x, b.p.y, b.p.z); if (cv) { b.p.copy(prev); b.v.x *= -0.35; b.v.z *= -0.35; Cover.hit(cv, 0, b.p); } }
         for (const c of CHARS) if (c.team !== b.team && this.hitChar(c, b.p, 0.2)) { b.fuse = 0.25; b.v.set(0, 0, 0); break; }
         const s = solidAt(b.p.x, b.p.y, b.p.z);
         if (s) {
@@ -2907,13 +2989,16 @@ const Proj = {
     this.mesh.count = n; this.mesh.instanceMatrix.needsUpdate = true; if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
   },
   explode(b) {
-    const p = b.p, g = groundBelow(p.x, p.z, p.y + 0.1, 0.4);
-    const gained = splatFloor(p.x, g, p.z, 3.4, b.team, 1.6); b.owner.addPaint(gained);
-    Fx.burst(p.x, g + 0.3, p.z, TEAM_HEX[b.team], 50, 10, 0.2); Fx.ring(p.x, g + 0.06, p.z, TEAM_HEX[b.team], 4.5);
-    const v = sndVol(p); Sfx.boom(v); if (v > 0.3) G.shake(v * 0.7);
-    for (const c of CHARS) { if (c.team === b.team || !c.alive) continue; const d = c.chest().distanceTo(p); if (d < 3.6) c.damage(d < 1.4 ? 180 : lerp(80, 30, (d - 1.4) / 2.2), b.owner, 'bomb'); }
+    const p = b.p, g = groundBelow(p.x, p.z, p.y + 0.1, 0.4), cu = !!b.curl;
+    // curling bomb: a smaller blast than the splat bomb (like the original)
+    const pr = cu ? 2.7 : 3.4, R = cu ? 2.9 : 3.6, core = cu ? 1.1 : 1.4, edge = cu ? 70 : 80;
+    const gained = splatFloor(p.x, g, p.z, pr, b.team, 1.6); b.owner.addPaint(gained);
+    Fx.burst(p.x, g + 0.3, p.z, TEAM_HEX[b.team], cu ? 40 : 50, cu ? 8 : 10, 0.2); Fx.ring(p.x, g + 0.06, p.z, TEAM_HEX[b.team], cu ? 3.6 : 4.5);
+    const v = sndVol(p); Sfx.boom(v * (cu ? 0.8 : 1)); if (v > 0.3) G.shake(v * (cu ? 0.5 : 0.7));
+    for (const c of CHARS) { if (c.team === b.team || !c.alive) continue; const d = c.chest().distanceTo(p); if (d < R) c.damage(d < core ? 180 : lerp(edge, 30, (d - core) / (R - core)), b.owner, cu ? 'curling' : 'bomb'); }
+    Cover.blast(b.team, p, R, cu ? 110 : 140);                         // bombs are the answer to a cover
   },
-  clear() { this.shots.length = 0; this.pending.length = 0; this.bombs.forEach(b => scene.remove(b.g)); this.bombs.length = 0; }
+  clear() { this.shots.length = 0; this.pending.length = 0; this.bombs.forEach(b => scene.remove(b.g)); this.bombs.length = 0; Cover.clear(); }
 };
 
 /* ======================================================== SPAWN BARRIER
@@ -2943,6 +3028,130 @@ const Barrier = {
     this.tex.offset.y = (time * 0.15) % 1;
     this.meshes.forEach((m, t) => { this.glow[t] = Math.max(0, this.glow[t] - dt * 3); m.material.color.set(TEAM_HEX[t]); m.material.opacity = 0.2 + this.glow[t] * 0.45; });
   }
+};
+
+/* ===================================================== GRAFFITI COVER
+   满满's sub weapon: a spray-painted board. Enemy ink stops on it (and
+   wears it down); your own team's ink passes straight through. Players
+   walk through it (no collision), so it never blocks paths or the AI.  */
+const Cover = {
+  list: [], texCache: {}, W: 2.4, H: 1.6, T: 0.14,
+  texFor(team) {
+    const col = TEAM_HEX[team]; if (this.texCache[col]) return this.texCache[col];
+    let sd = 11; const rn = () => (sd = (sd * 9301 + 49297) % 233280) / 233280;
+    const t = canvasTex(240, 160, (g, w, h) => {
+      g.fillStyle = '#262734'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = 'rgba(255,255,255,.05)'; g.lineWidth = 2;
+      for (let y = 20; y < h; y += 20) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); for (let x = (y / 20) % 2 ? 0 : 20; x < w; x += 40) { g.beginPath(); g.moveTo(x, y - 20); g.lineTo(x, y); g.stroke(); } }
+      // big team-colour splat with drips
+      g.fillStyle = col; g.beginPath(); g.arc(w * 0.46, h * 0.5, 46, 0, Math.PI * 2); g.fill();
+      for (let k = 0; k < 11; k++) { const a = k / 11 * Math.PI * 2 + rn() * 0.4, d = 44 + rn() * 16, r = 9 + rn() * 12; g.beginPath(); g.arc(w * 0.46 + Math.cos(a) * d, h * 0.5 + Math.sin(a) * d * 0.8, r, 0, Math.PI * 2); g.fill(); }
+      for (let k = 0; k < 6; k++) { const x = w * 0.3 + rn() * w * 0.34, l = 16 + rn() * 34, y = h * 0.62; g.fillRect(x - 3, y, 6, l); g.beginPath(); g.arc(x, y + l, 5, 0, Math.PI * 2); g.fill(); }
+      for (let k = 0; k < 14; k++) { g.beginPath(); g.arc(rn() * w, rn() * h, 1.5 + rn() * 3, 0, Math.PI * 2); g.fill(); }
+      // tag
+      g.save(); g.translate(w * 0.47, h * 0.52); g.rotate(-0.12);
+      g.font = 'italic 900 50px "Arial Black", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineJoin = 'round'; g.lineWidth = 10; g.strokeStyle = '#111'; g.strokeText('INK!', 0, 0); g.fillStyle = '#fff'; g.fillText('INK!', 0, 0);
+      g.restore();
+      g.strokeStyle = '#ffe45c'; g.lineWidth = 4; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(w * 0.8, h * 0.18); g.lineTo(w * 0.86, h * 0.3); g.lineTo(w * 0.92, h * 0.16); g.stroke();
+      g.beginPath(); g.moveTo(w * 0.1, h * 0.8); g.quadraticCurveTo(w * 0.2, h * 0.68, w * 0.3, h * 0.82); g.stroke();
+      g.strokeStyle = col; g.lineWidth = 8; g.strokeRect(4, 4, w - 8, h - 8);
+    }, false);
+    this.texCache[col] = t; return t;
+  },
+  // where the board goes: ~3 m ahead on the ground, pulled closer if a wall is in the way
+  spot(owner, f) {
+    for (const d of [3, 2.5, 2, 1.5, 1.1]) {
+      const x = clamp(owner.pos.x + f.x * d, -XH + 1.3, XH - 1.3), z = clamp(owner.pos.z + f.z * d, -ZH + 1.3, ZH - 1.3);
+      const y = groundBelow(x, z, owner.pos.y + 0.6, 0.6);
+      if (solidAt(x, y + 0.8, z) || Math.abs(y - owner.pos.y) > 1.2) continue;
+      return { x, y, z };
+    }
+    return { x: owner.pos.x + f.x * 0.9, y: owner.pos.y, z: owner.pos.z + f.z * 0.9 };
+  },
+  place(owner, dir) {
+    const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
+    for (const c of this.list.slice()) if (c.owner === owner) this.breakIt(c, true);          // one board each
+    const sp = this.spot(owner, f), yaw = Math.atan2(f.x, f.z), team = owner.team;
+    if (!this.geo) { this.geo = new THREE.BoxGeometry(this.W, this.H, this.T); this.darkM = new THREE.MeshStandardMaterial({ color: 0x1b1c24, roughness: 0.5, metalness: 0.3 }); this.decalGeo = new THREE.CircleGeometry(1, 12); this.decalM = [0, 1].map(() => new THREE.MeshBasicMaterial({ color: 0xffffff })); }
+    const face = new THREE.MeshStandardMaterial({ map: this.texFor(team), roughness: 0.55, emissive: 0x000000 });
+    const g = new THREE.Group(); g.position.set(sp.x, sp.y, sp.z); g.rotation.y = yaw;
+    const board = new THREE.Mesh(this.geo, [this.darkM, this.darkM, this.darkM, this.darkM, face, face]); board.position.y = this.H / 2 + 0.1; board.castShadow = true; g.add(board);
+    const top = new THREE.Mesh(this.geo, TEAMMAT[team]); top.scale.set(1.03, 0.05, 1.5); top.position.y = this.H + 0.12; g.add(top);
+    [-1, 1].forEach(s => { const ft = new THREE.Mesh(this.geo, this.darkM); ft.scale.set(0.08, 0.1, 3.6); ft.position.set(s * (this.W / 2 - 0.25), 0.08, 0); g.add(ft); });
+    scene.add(g);
+    const cv = { owner, team, x: sp.x, y: sp.y, z: sp.z, ax: Math.cos(yaw), az: -Math.sin(yaw), nx: f.x, nz: f.z, hp: SUBS.cover.hp, t: SUBS.cover.life, g, board, face, grow: 0, flash: 0, wob: 0, decals: [] };
+    this.list.push(cv);
+    // a puddle of our ink behind it: swim there to refill in cover
+    owner.addPaint(splatFloor(sp.x - f.x * 0.9, sp.y, sp.z - f.z * 0.9, 1.8, team, 1.0, true));
+    const colr = TEAM_HEX[team];
+    for (let k = 0; k < 7; k++) { const u = (k / 6 - 0.5) * this.W; Fx.burstDir(sp.x + cv.ax * u, sp.y + 0.1, sp.z + cv.az * u, colr, 3, 4, 0.08, 0, 1, 0, 0.5); }
+    const v = sndVol(g.position); if (v > 0.03) Sfx.spray(v, sndPan(g.position));
+    return cv;
+  },
+  // enemy board (of someone not on `team`) at this point?
+  at(team, x, y, z) {
+    for (const c of this.list) {
+      if (c.team === team || c.grow < 0.25) continue;
+      const dx = x - c.x, dz = z - c.z, lu = dx * c.ax + dz * c.az, ln = dx * c.nx + dz * c.nz;
+      if (Math.abs(lu) < this.W / 2 && Math.abs(ln) < 0.24 && y > c.y - 0.1 && y < c.y + 0.12 + this.H * Math.min(1, c.grow)) return c;
+    }
+    return null;
+  },
+  // ink hit the board: splash off it, leave a mark, wear it down
+  hit(c, dmg, p, team = 1 - c.team, r = 0) {
+    c.hp -= dmg; if (dmg > 0) { c.flash = 1; c.wob = Math.min(1, c.wob + 0.35 + dmg / 150); }
+    const side = Math.sign((p.x - c.x) * c.nx + (p.z - c.z) * c.nz) || 1, col = TEAM_HEX[team];
+    Fx.burstDir(p.x, p.y, p.z, col, dmg > 60 ? 16 : 7, 3.4, 0.08, c.nx * side, 0.35, c.nz * side, 0.85);
+    if (r > 0 && dmg > 0) {
+      let m = c.decals.length >= 14 ? c.decals.shift() : null;
+      if (!m) m = new THREE.Mesh(this.decalGeo, this.decalM[team]); else m.material = this.decalM[team];
+      this.decalM[team].color.set(col);
+      const lu = clamp((p.x - c.x) * c.ax + (p.z - c.z) * c.az, -this.W / 2 + 0.15, this.W / 2 - 0.15), ly = clamp(p.y - c.y, 0.25, this.H - 0.05);
+      m.position.set(lu, ly, side * (this.T / 2 + 0.006)); m.rotation.set(0, side > 0 ? 0 : Math.PI, rand(0, 6)); m.scale.setScalar(clamp(r * 0.28, 0.12, 0.42) * rand(0.8, 1.2)); c.g.add(m); c.decals.push(m);
+    }
+    const v = sndVol(p); if (v > 0.05) Sfx.impact(v * 0.7, sndPan(p));
+    if (c.hp <= 0) this.breakIt(c);
+  },
+  // explosions nearby hurt it (bombs are the counter)
+  blast(team, p, R, dmg) {
+    for (const c of this.list.slice()) {
+      if (c.team === team) continue;
+      const lu = clamp((p.x - c.x) * c.ax + (p.z - c.z) * c.az, -this.W / 2, this.W / 2), qx = c.x + c.ax * lu, qz = c.z + c.az * lu;
+      const d = Math.hypot(p.x - qx, p.z - qz, Math.max(0, p.y - (c.y + this.H))); if (d < R) this.hit(c, dmg * (1 - 0.5 * d / R), new THREE.Vector3(qx, c.y + 0.8, qz), team);
+    }
+  },
+  breakIt(c, quiet = false) {
+    const i = this.list.indexOf(c); if (i < 0) return; this.list.splice(i, 1);
+    scene.remove(c.g); c.face.dispose();
+    if (quiet) return;
+    const col = TEAM_HEX[c.team];
+    for (let k = 0; k < 5; k++) { const u = (k / 4 - 0.5) * this.W; Fx.burst(c.x + c.ax * u, c.y + 0.9, c.z + c.az * u, col, 9, 5, 0.13); }
+    Fx.ring(c.x, c.y + 0.06, c.z, col, 2.6);
+    splatFloor(c.x, c.y, c.z, 1.4, c.team, 0.9, true);
+    const v = sndVol(c.g.position); if (v > 0.03) Sfx.crack(v, sndPan(c.g.position));
+  },
+  update(dt) {
+    for (const c of this.list.slice()) {
+      c.t -= dt; if (c.t <= 0) { this.breakIt(c); continue; }
+      c.grow = Math.min(1, c.grow + dt / 0.32); const k = c.grow, ob = 1 + 2.4 * Math.pow(k - 1, 3) + 1.4 * Math.pow(k - 1, 2);
+      c.g.scale.set(1 + 0.12 * Math.sin(Math.PI * k) * (1 - k), Math.max(0.02, ob), 1);
+      c.flash = Math.max(0, c.flash - dt * 6); c.wob = Math.max(0, c.wob - dt * 3);
+      c.face.emissive.setScalar(c.flash * 0.35); const hk = 0.55 + 0.45 * clamp(c.hp / SUBS.cover.hp, 0, 1); c.face.color.setRGB(hk, hk, hk);
+      c.g.rotation.z = Math.sin(G.time * 45) * 0.035 * c.wob;
+      c.g.visible = c.t > 1.2 || Math.sin(c.t * 26) > -0.4;                   // blinks before it runs out
+    }
+  },
+  // aim preview while holding E: a see-through board where it will stand
+  ghost(owner, dir, ok) {
+    if (!owner) { if (this.gh) this.gh.visible = false; return; }
+    if (!this.gh) { this.ghM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false, fog: false }); this.gh = new THREE.Mesh(new THREE.BoxGeometry(this.W, this.H, this.T), this.ghM); scene.add(this.gh); }
+    const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
+    const sp = this.spot(owner, f); this.gh.visible = true; this.gh.position.set(sp.x, sp.y + this.H / 2 + 0.1, sp.z); this.gh.rotation.y = Math.atan2(f.x, f.z);
+    this.ghM.color.set(ok ? TEAM_HEX[owner.team] : '#9aa0aa'); this.ghM.opacity = 0.22 + Math.sin(G.time * 8) * 0.06;
+  },
+  clear() { this.list.slice().forEach(c => this.breakIt(c, true)); if (this.gh) this.gh.visible = false; }
 };
 /* ============================================================ NAV GRID */
 const NAV = { W: XH * 2, H: ZH * 2, h: null, cost: null };
@@ -3094,10 +3303,23 @@ class Bot {
       if (!c.charging) { I.fire = true; this.goal = close ? 0.3 : d > 20 ? 1 : 0.8 + Math.random() * 0.2; this.holdT = 0; }
       else { this.holdT += dt; I.fire = (c.charge < Math.min(this.goal, 0.999) || Math.abs(yawErr) > tol) && this.holdT < 2.6; }
     } else if (c.charging) I.fire = true;
-    if (close && c.ink > 75 && Math.random() < dt * 0.5) { I.bomb = true; I.fire = false; }
+    if (c.subId === 'cover') {
+      // put a board up between us and a far-off enemy, then charge behind it
+      const mine = Cover.list.some(v => v.owner === c);
+      if (!mine && !close && d > 10 && !c.charging && c.grounded && Math.abs(yawErr) < 0.5 && c.ink >= SUBS.cover.cost / c.inkK + 20 && (this.coverWant || Math.random() < dt * 0.5)) { I.bomb = true; I.fire = false; this.coverWant = false; this.reactT = Math.max(this.reactT, 0.35); return; }
+    } else if (close && c.ink > 75 && Math.random() < dt * 0.5) { I.bomb = true; I.fire = false; }
     if (c.special >= 100 && d < 7 && Math.random() < dt * 2) I.special = true; else I.special = false;
     if (close && c.hp < 50 && ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team && Math.random() < D.dodge * dt * 3) this.swimT = 0.6;
     if (this.swimT > 0) { this.swimT -= dt; I.swim = true; I.fire = false; I.mx = -fx; I.mz = -fz; }
+  }
+  // after throwing a curling bomb: swim along its ink path right behind it
+  curlFollow(dt, e, d) {
+    if (!(this.curlT > 0)) return false;
+    const c = this.c, I = c.intent; this.curlT -= dt;
+    const dx = e.pos.x - c.pos.x, dz = e.pos.z - c.pos.z, l = Math.hypot(dx, dz) || 1, on = ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team;
+    I.swim = on; I.fire = false; I.mx = dx / l; I.mz = dz / l;
+    if (d < 3.5 || (!on && this.curlT < 1.2)) { this.curlT = 0; return false; }
+    return true;
   }
   followPath(I, speed = 1) {
     const c = this.c;
@@ -3114,7 +3336,7 @@ class Bot {
     this.scanT -= dt;
     if (this.scanT <= 0) {
       this.scanT = 0.2; const e = this.findEnemy();
-      if (e && e !== this.enemy) this.reactT = D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0);
+      if (e && e !== this.enemy) { this.reactT = D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0); this.coverWant = c.subId === 'cover' && Math.random() < 0.7; }
       this.enemy = e;
     }
     if (c.ink < (c.weapon.charges ? 20 : 10) && this.mode !== 'refill') { this.mode = 'refill'; this.path = []; if (!this.findRefill()) this.path = []; }
@@ -3129,6 +3351,7 @@ class Bot {
       // -------- fight
       const d = e.pos.distanceTo(c.pos);
       if (c.weapon.charges) { this.chargerFight(dt, e, d, D); this.path = []; return; }
+      if (c.subId === 'curling' && this.curlFollow(dt, e, d)) { this.path = []; return; }
       this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.25, 0.5); const m = D.err * d; this.err.set(rand(-m, m), rand(-m, m) * 0.6, rand(-m, m)); }
       const wid = c.weapon.id, tt = shotTime(d, wid); const tp = e.chest().addScaledVector(e.vel, tt * 0.9).add(this.err);
       const m = c.muzzle(); const dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
@@ -3145,7 +3368,8 @@ class Bot {
       if (Math.random() < dt * 0.7 * D.dodge && c.grounded) I.jump = true;
       if (c.hp < 45 && ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team && Math.random() < D.dodge) { this.swimT = 0.5; }
       if (this.swimT > 0) { this.swimT -= dt; I.swim = true; I.fire = false; }
-      if (d > 5 && d < 12 && c.ink > 75 && Math.random() < dt * 0.35) { I.bomb = true; c.aimPitch += 0.28; }
+      if (c.subId === 'curling') { if (d > 6 && d < 15 && c.ink >= SUBS.curling.cost / c.inkK + 8 && c.grounded && Math.abs(dy_) < 0.2 && Math.random() < dt * 0.7) { I.bomb = true; I.fire = false; this.curlT = 1.6; } }
+      else if (d > 5 && d < 12 && c.ink > 75 && Math.random() < dt * 0.35) { I.bomb = true; c.aimPitch += 0.28; }
       if (c.special >= 100 && d < 7 && Math.random() < dt * 2) I.special = true; else I.special = false;
       this.path = [];
       return;
@@ -3176,7 +3400,8 @@ class Bot {
     else if (c.charging) this.pull(I);
     else if (chg ? c.ink > 38 && (ah !== c.team || Math.random() < 0.15) : c.ink > 6 && (ah !== c.team || Math.random() < 0.3)) this.pull(I, chg ? rand(0.3, 0.7) : 1);
     if (c.special >= 100 && ((this.target && this.linger > 0.5) || (ah === 1 - c.team && Math.random() < dt * 0.6))) I.special = true;
-    if (c.ink > 90 && Math.random() < dt * 0.08) { I.bomb = true; c.aimPitch = 0.25; }
+    if (c.subId === 'bomb' || !c.subId) { if (c.ink > 90 && Math.random() < dt * 0.08) { I.bomb = true; c.aimPitch = 0.25; } }
+    else if (c.subId === 'curling' && moving && c.ink > 90 && c.grounded && Math.random() < dt * 0.2) { c.aimYaw = Math.atan2(I.mx, I.mz); c.aimPitch = 0; I.bomb = true; }
   }
 }
 
@@ -3269,7 +3494,7 @@ function playerControl(dt) {
   Cam.landDist = Cam.blocked ? tb * Lr : Lr;
   const pr = W.type === 'charge' ? traceRay(c, mzl, I.aimDir, R, 0.3) : Proj.predict(c, mzl, I.aimDir);
   Cam.lock = !!pr.char;
-  if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[W.sub].cost / c.inkK); else if (Proj.pv) Proj.preview(null);
+  if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[c.subId].cost / c.inkK); else if (Proj.pv) Proj.preview(null);
   Cam.showLand = !c.swim;
 }
 // teammate to watch while dead: your super-jump pick, else keep the current one, else the nearest
@@ -3362,7 +3587,7 @@ const HUD = {
     $('inkbar').classList.toggle('low', c.ink < 20);
     $('inkbar').style.opacity = c.ink > 99.5 && !c.swim ? 0.45 : 1;
     this.lowInkT = Math.max(0, this.lowInkT - dt); $('inkwarn').style.opacity = this.lowInkT > 0 ? 1 : 0;
-    $('subw').classList.toggle('no', c.ink < SUBS[c.weapon.sub].cost / c.inkK);
+    $('subw').classList.toggle('no', c.ink < SUBS[c.subId].cost / c.inkK);
     $('spRing').style.strokeDashoffset = 264 * (1 - c.special / 100);
     $('special').classList.toggle('ready', c.special >= 100);
     const hp = c.alive ? c.hp / c.maxHp * 100 : 100; this.hurtV = Math.max(0, this.hurtV - dt * 2);
@@ -3677,6 +3902,7 @@ function startMatch() {
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov();
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
+  $('subw').innerHTML = '<i></i>' + SUBS[PLAYER.subId].short;
   Cam.yaw = SPAWN[0].yaw; Cam.pitch = -0.08; Cam.pivotY = SPAWN[0].y + 1.5;
   show('title', false); show('lobby', false); show('results', false); show('pause', false); show('hud', true);
   $('death').classList.remove('show'); $('center').innerHTML = '';
@@ -3826,7 +4052,7 @@ function weapPageHTML(C) {
       <div class="wtop"><span class="wi">${weaponIcon(w, '#fff', 74)}</span><span class="wn"><b>${W.name}</b><small>${W.role}</small></span>${C.weapons.length > 1 ? `<span class="pick">${on ? '使用中' : '点击换上'}</span>` : '<span class="pick ex">专属</span>'}</div>
       <div class="wfacts">${weaponFacts(W, C).map(([l, v]) => `<span><small>${l}</small><b>${v}</b></span>`).join('')}</div>
       <div class="wstats">${STAT_LABELS.map(([k, l]) => `<span>${l}</span>${barsHTML(W.stats[k])}`).join('')}</div>
-      <div class="wkit"><span>副武器 <b>${SUBS[W.sub].name}</b></span><span>必杀技 <b>${SPECIALS[W.special].name}</b></span></div>
+      <div class="wkit"><span>副武器 <b>${SUBS[C.sub || W.sub].name}</b></span><span>必杀技 <b>${SPECIALS[W.special].name}</b></span></div>
       <p class="wd">${W.desc}</p></div>`;
   }).join('')}</div>`;
 }
@@ -3866,7 +4092,7 @@ function lobbyAnimate() {
 function renderLoadCard() {
   const w = WEAPONS[Profile.data.weapon], C = CHARACTERS[Profile.data.char];
   $('lcIcon').innerHTML = charIcon(C.id, 58) + `<span class="lcw">${weaponIcon(w.id, '#fff', 40)}</span>`; $('lcName').textContent = C.name + ' · ' + w.name; $('lcRole').textContent = C.role + ' / ' + w.role;
-  $('lcKit').textContent = SUBS[w.sub].name + ' · ' + SPECIALS[w.special].name;
+  $('lcKit').textContent = SUBS[C.sub || w.sub].name + ' · ' + SPECIALS[w.special].name;
 }
 /* ------------------------------------------------ lobby 3D preview
    Its own small renderer: the chosen character on a pedestal, slowly
@@ -4042,7 +4268,7 @@ function loop() {
       if (G.state !== 'intro') updateCamera(dt);
       HUD.update(dt);
     }
-    Proj.update(dt); Fx.update(dt); Barrier.update(dt, t);
+    Proj.update(dt); Cover.update(dt); Fx.update(dt); Barrier.update(dt, t);
     uploadPaint(); updateWorld(t, dt);
   }
   G.frameN = (G.frameN || 0) + 1;

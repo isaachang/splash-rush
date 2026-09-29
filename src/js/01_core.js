@@ -113,6 +113,16 @@ const Sfx = (() => {
       noise(0.09, 0.09 * v, 'lowpass', 1600 * k, 1.2, 300, d); tone('sine', 320 * k, 120, 0.06, 0.05 * v, d);
     },
     splat(v) { noise(0.12, 0.07 * v, 'lowpass', 1200, 1, 250); },
+    // spray can: rattle + long hiss (graffiti cover going up), and a wet crack when it breaks
+    spray(v, pan = 0) {
+      if (!ctx || v < 0.03) return; const d = panNode(pan), t = ctx.currentTime;
+      for (let k = 0; k < 2; k++) tone('square', 1900, 1500, 0.025, 0.02 * v, d, t + k * 0.06);
+      noise(0.42, 0.1 * v, 'highpass', 3800, 0.7, 5200, d, t + 0.1); noise(0.3, 0.06 * v, 'bandpass', 2400, 1.2, 1800, d, t + 0.12);
+    },
+    crack(v, pan = 0) {
+      if (!ctx || v < 0.03) return; const d = panNode(pan);
+      noise(0.22, 0.16 * v, 'lowpass', 1400, 1.1, 260, d); tone('triangle', 420, 90, 0.16, 0.09 * v, d); noise(0.06, 0.08 * v, 'highpass', 4200, 1, null, d);
+    },
     // hit confirmation: bright tick + wet pop (+ extra body when the hit was heavy)
     hit(heavy = false) {
       if (!ctx) return; const t = ctx.currentTime, k = rand(0.96, 1.04);
