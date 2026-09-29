@@ -47,11 +47,18 @@ function buildWeaponModel(id, T, trimHex) {
     g.add(rx(mesh(new THREE.TorusGeometry(0.066, 0.012, 6, 16), trim, 0, -0.01, -0.3), 0));
     g.add(mesh(new THREE.BoxGeometry(0.06, 0.13, 0.06), body, 0, -0.085, 0.02));
   } else {
-    g.add(mesh(new THREE.BoxGeometry(0.1, 0.12, 0.36), body, 0, 0.02, 0.12));
-    g.add(rx(mesh(GEO.cyl, trim, 0, 0.03, 0.36, 0.035, 0.18, 0.035)));
-    g.add(rx(mesh(GEO.cyl, T, 0, 0.12, 0.08, 0.05, 0.16, 0.05)));
-    g.add(mesh(new THREE.BoxGeometry(0.06, 0.12, 0.06), body, 0, -0.07, 0.02));
-    g.add(mesh(new THREE.TorusGeometry(0.05, 0.015, 6, 12), trim, 0, 0.03, 0.46));
+    // rifle: shoulder stock, long receiver, handguard + barrel, team-colour ink magazine and a top ink chamber
+    g.add(mesh(new THREE.BoxGeometry(0.075, 0.12, 0.2), body, 0, -0.015, -0.24));                 // stock (reaches the shoulder)
+    g.add(mesh(new THREE.BoxGeometry(0.08, 0.035, 0.05), trim, 0, -0.015, -0.345));                 // butt pad
+    g.add(mesh(new THREE.BoxGeometry(0.06, 0.07, 0.1), body, 0, 0.01, -0.11));
+    g.add(mesh(new THREE.BoxGeometry(0.1, 0.12, 0.4), body, 0, 0.02, 0.1));                        // receiver
+    g.add(mesh(new THREE.BoxGeometry(0.09, 0.085, 0.2), body, 0, 0.015, 0.39));                    // handguard
+    g.add(mesh(new THREE.BoxGeometry(0.094, 0.02, 0.2), trim, 0, 0.065, 0.39));                    // top rail stripe
+    g.add(rx(mesh(GEO.cyl, trim, 0, 0.025, 0.56, 0.03, 0.26, 0.03)));                              // barrel
+    g.add(mesh(new THREE.TorusGeometry(0.045, 0.015, 6, 12), trim, 0, 0.025, 0.69));               // muzzle ring
+    g.add(rx(mesh(GEO.cyl, T, 0, 0.115, 0.08, 0.045, 0.2, 0.045)));                                 // ink chamber on top
+    const mag = mesh(new THREE.BoxGeometry(0.05, 0.15, 0.075), T, 0, -0.095, 0.2); mag.rotation.x = -0.22; g.add(mag);   // ink magazine
+    g.add(mesh(new THREE.BoxGeometry(0.06, 0.12, 0.06), body, 0, -0.07, 0.0));                     // grip
   }
   return g;
 }
@@ -507,8 +514,9 @@ class Character {
     } else if (W.charges) this.updateCharge(dt, I, T);
     else if (W.type === 'blaster') this.updateBlaster(dt, I, T);
     if (I.bomb && !this.swim && !this.sp && this.bombCd <= 0 && G.state === 'play') {
-      if (this.ink >= 70 / this.inkK) {
-        this.ink -= 70 / this.inkK; this.bombCd = 0.6; this.lastShot = T;
+      const bc = SUBS[this.weapon.sub].cost / this.inkK;
+      if (this.ink >= bc) {
+        this.ink -= bc; this.bombCd = 0.6; this.lastShot = T;
         const dir = I.aimDir ? I.aimDir.clone() : new THREE.Vector3(Math.sin(this.aimYaw) * Math.cos(this.aimPitch), Math.sin(this.aimPitch), Math.cos(this.aimYaw) * Math.cos(this.aimPitch));
         Proj.bomb(this, this.muzzle(), dir);
       } else if (this.isPlayer) HUD.lowInk();

@@ -323,7 +323,7 @@ function playerControl(dt) {
   Cam.landDist = Cam.blocked ? tb * Lr : Lr;
   const pr = W.type === 'charge' ? traceRay(c, mzl, I.aimDir, R, 0.3) : Proj.predict(c, mzl, I.aimDir);
   Cam.lock = !!pr.char;
-  if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[W.sub].cost); else if (Proj.pv) Proj.preview(null);
+  if (Cam.bombAim) Proj.preview(c, I.aimDir, c.ink >= SUBS[W.sub].cost / c.inkK); else if (Proj.pv) Proj.preview(null);
   Cam.showLand = !c.swim;
 }
 // teammate to watch while dead: your super-jump pick, else keep the current one, else the nearest
