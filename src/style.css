@@ -469,3 +469,8 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .pvBox.sub .pvReplay{opacity:1;pointer-events:auto;transform:none}
 .pvBox.sub .pvHint{opacity:0}
 .pvHint{transition:opacity .25s}
+.slist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.slist li{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;line-height:1.35}
+.slist i{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid #111;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;font-weight:900;color:#111;box-shadow:0 2px 0 #111}
+.slist i.ok{background:#5be38a}.slist i.no{background:#ff6b6b}.slist i.tm{background:#ffe45c;font-size:10px}
+.anim .slist li{animation:rise .4s cubic-bezier(.2,.9,.3,1) both}.anim .slist li:nth-child(2){animation-delay:.05s}.anim .slist li:nth-child(3){animation-delay:.1s}.anim .slist li:nth-child(4){animation-delay:.15s}.anim .slist li:nth-child(5){animation-delay:.2s}
