@@ -30,6 +30,7 @@ function buildSkyEnv() {
   pm.dispose();
 }
 function buildSea() {
+  if (MAP_ID === 'skate') return buildPlaza();
   const m = new THREE.ShaderMaterial({
     uniforms: {
       time: { value: 0 }, sunDir: { value: new THREE.Vector3(38, 70, 24).normalize() },
@@ -70,6 +71,7 @@ function buildSea() {
 
 /* ================================================================ DECOR */
 function buildDecor() {
+  if (MAP_ID === 'skate') return buildDecorSkate();
   const deco = new THREE.Group(); scene.add(deco);
   const stoneM = new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.9, color: 0xd8dde6 });
   // pier body
@@ -193,4 +195,104 @@ function updateWorld(t, dt) {
   WORLD.buoys.forEach(b => { b.position.y = -3.1 + Math.sin(t * 1.3 + b.userData.ph) * 0.3; b.rotation.z = Math.sin(t * 0.9 + b.userData.ph) * 0.12; b.updateMatrix(); });
   const pulse = 0.6 + Math.sin(t * 3) * 0.25;
   WORLD.spawnFx.forEach((m, i) => { m.material.opacity = (i % 2 ? 0.2 : 0.85) * pulse; });
+}
+
+/* ================================================= SKATEPARK SURROUNDINGS
+   City plaza around the park: paving and lawns, the yellow coping rail on
+   the park wall, palms in the planters, grandstands, floodlights, billboards
+   (our own brand: SPLASH RUSH), an elevated highway and the skyline.       */
+function buildPlaza() {
+  const pave = TEX.concrete.clone(); pave.repeat.set(90, 90); pave.needsUpdate = true;
+  const g = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.MeshStandardMaterial({ map: pave, color: 0xe6dccb, roughness: 0.95 }));
+  g.rotation.x = -Math.PI / 2; g.position.y = SL - 0.03; g.receiveShadow = true; scene.add(g);
+  const lawnT = TEX.grass.clone(); lawnT.repeat.set(20, 20); lawnT.needsUpdate = true; const lawnM = new THREE.MeshStandardMaterial({ map: lawnT, roughness: 1 });
+  [[-XH - 14, 0, 16, ZH * 2 + 30], [XH + 14, 0, 16, ZH * 2 + 30], [0, -ZH - 12, XH * 2 + 44, 12], [0, ZH + 12, XH * 2 + 44, 12]].forEach(([x, z, w, d]) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), lawnM); m.rotation.x = -Math.PI / 2; m.position.set(x, SL - 0.01, z); m.receiveShadow = true; scene.add(m); });
+}
+function buildDecorSkate() {
+  const deco = new THREE.Group(); scene.add(deco);
+  const dm = new THREE.Object3D();
+  const railM = new THREE.MeshStandardMaterial({ color: 0xffc629, roughness: 0.35, metalness: 0.4 });
+  const darkM = new THREE.MeshStandardMaterial({ color: 0x2b2f3a, roughness: 0.5, metalness: 0.5 });
+  const poleM = new THREE.MeshStandardMaterial({ color: 0x3a3f4d, metalness: 0.7, roughness: 0.35 });
+  // yellow coping rail running around the park wall
+  const wallTop = SL + 1.6, tube = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), m = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, L, 8), railM); m.position.set((x0 + x1) / 2, wallTop + 0.55, (z0 + z1) / 2); m.rotation.z = Math.PI / 2; m.rotation.y = -Math.atan2(z1 - z0, x1 - x0); deco.add(m); };
+  const o = 0.75; tube(-XH - o, -ZH - o, XH + o, -ZH - o); tube(-XH - o, ZH + o, XH + o, ZH + o); tube(-XH - o, -ZH - o, -XH - o, ZH + o); tube(XH + o, -ZH - o, XH + o, ZH + o);
+  const posts = []; for (let x = -XH; x <= XH; x += 3) posts.push([x, -ZH - o], [x, ZH + o]); for (let z = -ZH; z <= ZH; z += 3) posts.push([-XH - o, z], [XH + o, z]);
+  const pim = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.07, 0.07, 0.55, 6), railM, posts.length);
+  posts.forEach(([x, z], i) => { dm.position.set(x, wallTop + 0.27, z); dm.updateMatrix(); pim.setMatrixAt(i, dm.matrix); }); deco.add(pim);
+  // palms on the out-of-bounds planters and gardens
+  const palms = [];
+  SOLIDS.filter(s => s.oob).forEach(s => {
+    const n = Math.max(1, Math.round((s.x1 - s.x0) * (s.z1 - s.z0) / 38));
+    for (let i = 0; i < n; i++) palms.push([rand(s.x0 + 0.8, s.x1 - 0.8), s.h, rand(s.z0 + 0.8, s.z1 - 0.8), rand(0.8, 1.2)]);
+  });
+  const trunkM = new THREE.MeshStandardMaterial({ color: 0x8a6a45, roughness: 0.9 }), leafM = new THREE.MeshStandardMaterial({ color: 0x3e9a47, roughness: 0.8, side: THREE.DoubleSide });
+  const tim = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.18, 0.28, 1, 7), trunkM, palms.length);
+  const leafG = new THREE.ConeGeometry(0.55, 3.2, 4, 1, true); leafG.translate(0, 1.6, 0); leafG.rotateZ(Math.PI / 2.4);
+  const lim = new THREE.InstancedMesh(leafG, leafM, palms.length * 6);
+  palms.forEach(([x, y, z, k], i) => {
+    const hT = 4.2 * k; dm.position.set(x, y + hT / 2, z); dm.scale.set(k, hT, k); dm.rotation.set(rand(-0.08, 0.08), 0, rand(-0.08, 0.08)); dm.updateMatrix(); tim.setMatrixAt(i, dm.matrix);
+    for (let j = 0; j < 6; j++) { dm.position.set(x, y + hT, z); dm.scale.set(k, k, k); dm.rotation.set(0, j / 6 * Math.PI * 2 + i, 0); dm.updateMatrix(); lim.setMatrixAt(i * 6 + j, dm.matrix); }
+  });
+  tim.castShadow = lim.castShadow = true; deco.add(tim, lim);
+  // grandstands at the four corners, outside the park
+  const seatM = [0xff5a7a, 0x3fb6ff, 0xffd23a].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.6 }));
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz], k) => {
+    const g = new THREE.Group(); g.position.set(sx * (XH + 9), SL, sz * (ZH - 6)); g.rotation.y = sx > 0 ? -Math.PI / 2 : Math.PI / 2;
+    for (let r = 0; r < 6; r++) { const b = new THREE.Mesh(new THREE.BoxGeometry(14, 0.6 + r * 0.6, 1.4), darkM); b.position.set(0, (0.6 + r * 0.6) / 2, r * 1.4); g.add(b); const st = new THREE.Mesh(new THREE.BoxGeometry(13.6, 0.18, 0.5), seatM[(r + k) % 3]); st.position.set(0, 0.7 + r * 0.6, r * 1.4 - 0.3); g.add(st); }
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(15, 0.3, 9), darkM); roof.position.set(0, 6.4, 3.5); roof.rotation.x = -0.12; g.add(roof);
+    [-7, 7].forEach(x => { const p = new THREE.Mesh(new THREE.BoxGeometry(0.3, 6.4, 0.3), poleM); p.position.set(x, 3.2, 8); g.add(p); });
+    deco.add(g);
+  });
+  // floodlights at the corners
+  const lampM = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff6d8, emissiveIntensity: 1.6 });
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+    const g = new THREE.Group(); g.position.set(sx * (XH + 4), SL, sz * (ZH + 3));
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 18, 10), poleM); pole.position.y = 9; g.add(pole);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.2, 0.5), poleM); head.position.y = 18.4; head.rotation.x = 0.35; g.add(head);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.1), lampM); l.position.set(-1.05 + i * 1.05, 17.8 + j * 0.62, 0.3); g.add(l); }
+    g.lookAt(0, SL, 0); g.rotation.x = 0; g.rotation.z = 0; deco.add(g);
+  });
+  // billboards: SPLASH RUSH brand boards around the park
+  const board = (w, h, draw) => canvasTex(1024, Math.round(1024 * h / w), draw, false);
+  const blob = (g, x, y, r, c) => { g.fillStyle = c; g.beginPath(); for (let a = 0; a <= 6.3; a += 0.3) { const rr = r * (1 + 0.18 * Math.sin(a * 5) + 0.1 * Math.sin(a * 9)); g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.fill(); };
+  const title = (g, w, h, t1, t2, bg0, bg1, c2) => {
+    const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, bg0); gr.addColorStop(1, bg1); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    blob(g, w * 0.15, h * 0.3, h * 0.32, '#ff7a00'); blob(g, w * 0.85, h * 0.7, h * 0.38, '#3346ff'); blob(g, w * 0.62, h * 0.2, h * 0.12, '#ff2d95');
+    g.font = `900 ${Math.round(h * 0.34)}px Arial Black, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = h * 0.05; g.strokeStyle = '#111';
+    g.save(); g.translate(w / 2, h * 0.42); g.rotate(-0.05); g.strokeText(t1, 0, 0); g.fillStyle = '#fff'; g.fillText(t1, 0, 0);
+    g.font = `900 ${Math.round(h * 0.2)}px Arial Black, sans-serif`; g.strokeText(t2, 0, h * 0.32); g.fillStyle = c2; g.fillText(t2, 0, h * 0.32); g.restore();
+  };
+  const boards = [
+    [board(16, 8, (g, w, h) => title(g, w, h, 'SPLASH RUSH', 'SKATEPARK', '#1a1440', '#3b1b6e', '#ffe45c')), 16, 8, -XH - 6, 20, Math.PI / 2],
+    [board(16, 8, (g, w, h) => title(g, w, h, 'SPLASH RUSH', 'INK · SKATE · WIN', '#102c3a', '#1f5b6e', '#7cff5a')), 16, 8, XH + 6, -20, -Math.PI / 2],
+    [board(14, 7, (g, w, h) => title(g, w, h, 'RUSH!', 'SPLASH RUSH', '#3a0f2a', '#6e1b4a', '#3fd0ff')), 14, 7, 12, ZH + 7, Math.PI],
+    [board(14, 7, (g, w, h) => title(g, w, h, 'INK UP!', 'SPLASH RUSH', '#2a2a10', '#5e5a14', '#ff8fb1')), 14, 7, -12, -ZH - 7, 0],
+  ];
+  boards.forEach(([t, w, h, x, z, ry]) => {
+    const g = new THREE.Group(); g.position.set(x, SL, z); g.rotation.y = ry;
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0.35, roughness: 0.5 })); p.position.y = 5 + h / 2; g.add(p);
+    const fr = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, h + 0.6, 0.4), darkM); fr.position.set(0, 5 + h / 2, -0.25); g.add(fr);
+    [-w / 3, w / 3].forEach(px => { const l = new THREE.Mesh(new THREE.BoxGeometry(0.4, 5, 0.4), poleM); l.position.set(px, 2.5, -0.3); g.add(l); });
+    deco.add(g);
+  });
+  // elevated highway behind the park
+  const hwM = new THREE.MeshStandardMaterial({ color: 0xb9c0cc, roughness: 0.8 });
+  const hw = new THREE.Mesh(new THREE.BoxGeometry(14, 1.6, 700), hwM); hw.position.set(95, 22, 0); deco.add(hw);
+  for (let z = -330; z <= 330; z += 30) { const p = new THREE.Mesh(new THREE.BoxGeometry(3, 22, 3), hwM); p.position.set(95, 11, z); deco.add(p); }
+  const trussM = new THREE.MeshStandardMaterial({ color: 0x8e96a4, roughness: 0.6, metalness: 0.4 });
+  [-6.5, 6.5].forEach(dx => { const t = new THREE.Mesh(new THREE.BoxGeometry(0.5, 4, 700), trussM); t.position.set(95 + dx, 25, 0); deco.add(t); for (let z = -340; z <= 340; z += 8) { const d = new THREE.Mesh(new THREE.BoxGeometry(0.3, 5.5, 0.3), trussM); d.position.set(95 + dx, 25, z); d.rotation.x = 0.8; deco.add(d); } });
+  // city skyline + clouds
+  const bld = []; const bCols = ['#ffd9c2', '#c2e3ff', '#ffe9a8', '#d7c9ff', '#b9f0d8', '#ffc4d6', '#f4f4f4', '#9fd6ff'];
+  for (let i = 0; i < 110; i++) { const a = rand(0, Math.PI * 2), r = rand(140, 330); bld.push({ x: Math.cos(a) * r, z: Math.sin(a) * r * 1.2, w: rand(12, 28), d: rand(12, 28), h: rand(20, 110), c: pick(bCols) }); }
+  const bim = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ map: TEX.windows, roughness: 0.6, metalness: 0.1 }), bld.length);
+  bld.forEach((b, i) => { dm.position.set(b.x, b.h / 2 + SL, b.z); dm.rotation.set(0, 0, 0); dm.scale.set(b.w, b.h, b.d); dm.updateMatrix(); bim.setMatrixAt(i, dm.matrix); bim.setColorAt(i, new THREE.Color(b.c)); });
+  deco.add(bim);
+  const puffs = [];
+  for (let c = 0; c < 16; c++) { const a = rand(0, Math.PI * 2), r = rand(260, 520), cx = Math.cos(a) * r, cz = Math.sin(a) * r, cy = rand(80, 150), s = rand(10, 22); for (let k = 0; k < 7; k++) puffs.push([cx + rand(-2.2, 2.2) * s, cy + rand(-0.3, 0.5) * s, cz + rand(-1, 1) * s, s * rand(0.6, 1.15)]); }
+  const cim = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xdde9ff, emissiveIntensity: 0.45, roughness: 1, fog: false }), puffs.length);
+  puffs.forEach(([x, y, z, s], i) => { dm.position.set(x, y, z); dm.scale.set(s, s * 0.7, s); dm.rotation.set(0, 0, 0); dm.updateMatrix(); cim.setMatrixAt(i, dm.matrix); });
+  deco.add(cim);
+  deco.traverse(o => { if (o.isMesh) { o.matrixAutoUpdate = false; o.updateMatrix(); } });
+  deco.updateMatrixWorld(true);
 }

@@ -26,14 +26,14 @@
       <em>更换 ›</em>
     </div>
     <h3>场地</h3>
-    <div class="mapcard"><div class="thumb"></div><div><b>潮汐码头广场</b><small>涂地对战 · 4 V 4</small></div></div>
+    <div class="mapcard" id="titleMap"><div class="thumb" id="titleMapThumb"></div><div><b id="titleMapName"></b><small id="titleMapSub"></small></div><em>更换 ›</em></div>
   </div>
   <button class="verchip" id="btnLog"><b id="verTxt">v0.0.0</b><span>版本日志 ›</span></button>
   <div class="footer">进入对局后游戏会锁定鼠标 · 按 Esc 暂停</div>
 </div>
 
 <div id="lobby" class="screen">
-  <div class="lobbyHead"><h2>战前准备</h2><span>涂地对战 · 潮汐码头广场</span></div>
+  <div class="lobbyHead"><h2>战前准备</h2><span id="lobbySub">涂地对战</span></div>
   <div class="lobbyBody">
     <div class="lcol">
       <h3>选择角色 <small>每个角色有自己的武器</small></h3>
@@ -51,12 +51,15 @@
       <div class="opts">
         <div><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">地狱</button></div></div>
         <div><h3>对战时长</h3><div class="seg" id="dur"><button data-v="90">1:30</button><button data-v="180" class="sel">3:00</button><button data-v="300">5:00</button></div></div>
+        <div class="full"><h3>场地 <small>切换后会重新载入</small></h3><div class="mpick" id="mapPick"></div></div>
         <div class="full"><h3>队伍配色</h3><div class="swatches" id="swatches"></div></div>
       </div>
     </div>
   </div>
   <div class="lobbyFoot"><button class="btn" id="btnBack">‹ 返回</button><button class="btn big" id="btnGo">出发！</button></div>
 </div>
+
+<div id="mapVeil"><div class="mv"><i></i><b id="mapVeilName"></b><small id="mapVeilEn"></small><span>正在前往场地…</span></div></div>
 
 <div id="hud" class="screen">
   <div id="vignette"></div>

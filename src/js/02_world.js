@@ -1,12 +1,39 @@
-/* ================================================================ MAP */
-const XH = 28, ZH = 46, CELL = 0.14;
+/* ================================================================ MAP
+   Several maps: the one in use is picked before the world is built (the
+   lobby saves the choice and reloads the page), so every system below just
+   reads XH / ZH / SOLIDS / SPAWN / DECK as before.                        */
+const MAP_LIST = {
+  dock: { id: 'dock', name: '潮汐码头广场', en: 'TIDE DOCK PLAZA', XH: 28, ZH: 46, desc: '码头上的集装箱广场，中路开阔、两侧有高台' },
+  skate: { id: 'skate', name: '墨浪滑板场', en: 'RUSH SKATEPARK', XH: 22, ZH: 48, cull: true, desc: '城市滑板公园：下沉泳池、中央高塔、铁网桥和绕后小巷' }
+};
+const MAP_KEY = 'splashrush.map';
+const MAP_ID = (() => {
+  if (typeof SR_MAP !== 'undefined' && MAP_LIST[SR_MAP]) return SR_MAP;     // tests / tools
+  try { const q = new URLSearchParams(location.search).get('map'); if (q && MAP_LIST[q]) return q; } catch (e) { }
+  try { const v = localStorage.getItem(MAP_KEY); if (v && MAP_LIST[v]) return v; } catch (e) { }
+  return 'dock';
+})();
+const MAP = MAP_LIST[MAP_ID];
+const XH = MAP.XH, ZH = MAP.ZH, CELL = 0.14;
 const NX = Math.ceil(XH * 2 / CELL), NZ = Math.ceil(ZH * 2 / CELL);
 const PSX = NX * CELL, PSZ = NZ * CELL;
 const SOLIDS = [];
+// see-through grate pieces kept apart from SOLIDS: bridges (stand on them in human form, squids and ink fall through)
+// and fences (block people, squids and ink pass)
+const BRIDGES = [], FENCES = [];
 function box(x0, x1, z0, z1, h, style, top) { return { t: 'box', x0, x1, z0, z1, h, style, top: top || 'concrete' }; }
-function ramp(x0, x1, z0, z1, axis, h0, h1) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: 'grate' }; }
+function ramp(x0, x1, z0, z1, axis, h0, h1, top) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: top || 'grate' }; }
 function mirrorSolid(s) { const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0 }); if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; } return m; }
-function defineMap() {
+function defineMap() { if (MAP_ID === 'skate') defineSkate(); else defineDock(); buildSolidGrid(); }
+// coarse grid over the arena: which solids touch each 4 m cell (padded), so ground / collision lookups stay cheap
+const SG = { S: 4, W: 0, H: 0, cells: null };
+function buildSolidGrid() {
+  SG.W = Math.ceil(XH * 2 / SG.S); SG.H = Math.ceil(ZH * 2 / SG.S); SG.cells = Array.from({ length: SG.W * SG.H }, () => []);
+  const ci = (v, n, E) => clamp(Math.floor((v + E) / SG.S), 0, n - 1);
+  for (const s of SOLIDS) { const i0 = ci(s.x0 - 0.6, SG.W, XH), i1 = ci(s.x1 + 0.6, SG.W, XH), j0 = ci(s.z0 - 0.6, SG.H, ZH), j1 = ci(s.z1 + 0.6, SG.H, ZH); for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) SG.cells[j * SG.W + i].push(s); }
+}
+function solidsNear(x, z) { if (!SG.cells) return SOLIDS; return SG.cells[clamp(Math.floor((z + ZH) / SG.S), 0, SG.H - 1) * SG.W + clamp(Math.floor((x + XH) / SG.S), 0, SG.W - 1)]; }
+function defineDock() {
   const half = [
     box(-9, 9, 37, 46, 2.0, 'deck', 'deck'),
     ramp(-3, 3, 31, 37, 'z', 0, 2.0),
@@ -37,22 +64,90 @@ function defineMap() {
   SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }));
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
+/* ---- 墨浪滑板场 (skatepark): structure after the classic skatepark stage — rotationally symmetric,
+   raised street level with a sunken skate bowl on each side, a climb-only tower in the middle, a grate
+   bridge over a pit on each flank, a fenced pocket by the tower, spawn decks offset to one side. */
+const SL = 1.0;    // street level (the bowls and pits are sunk below it)
+function defineSkate() {
+  const oob = (x0, x1, z0, z1, h = 3.6) => Object.assign(box(x0, x1, z0, z1, h, 'hedge', 'grass'), { oob: true });
+  const holes = [[-5.5, 19, 17, 32], [-20, -12.5, 5.3, 9.7]];           // team-0 bowl and flank pit (rotated for team 1)
+  const half = [
+    // out of bounds: gardens, grandstands
+    oob(-22, -12, 34, 48), oob(-22, -19, 10, 34), oob(-22, -20, 0, 10), oob(10, 22, 40, 48), oob(14, 22, 35, 40), oob(19, 22, 0, 35), oob(-1, 10, 46.5, 48),
+    // spawn deck, the upper platform in front of it and the flank ledge along the wall
+    box(-12, -1, 35, 46.5, 2.4, 'deck', 'deck'),
+    box(-19, -5.5, 21, 35, 2.0, 'panel', 'concrete'),
+    box(-12, -5.5, 15, 21, 2.0, 'panel', 'concrete'),
+    box(-9, -7, 16.5, 19, 3.2, 'hedge', 'grass'),
+    box(-19, -14.5, 10, 21, 2.0, 'stone', 'concrete'),
+    // right of the spawn: the lower alley down to the bowl, with a high perch overlooking it
+    ramp(-1, 2.5, 40, 44, 'x', 2.4, SL, 'skate'),
+    box(-1, 2, 36, 38.5, 2.2, 'crate', 'crate'), box(3, 5, 44.5, 46.5, 1.9, 'crate', 'crate'),
+    box(5, 10, 33.5, 38.5, 2.9, 'contR', 'grate'),
+    ramp(5, 10, 38.5, 42, 'z', 2.9, SL, 'wood'),
+    // the bowl: quarter pipes on the spawn side and along the outer wall, two humps, ways out toward the middle
+    ramp(-5.5, 19, 29.3, 31, 'z', 0, 0.4, 'skate'), ramp(-5.5, 19, 31, 32, 'z', 0.4, SL, 'skate'),
+    ramp(16.3, 17.8, 17, 32, 'x', 0, 0.4, 'skate'), ramp(17.8, 19, 17, 32, 'x', 0.4, SL, 'skate'),
+    ramp(-3.5, 4.5, 17, 19.5, 'z', SL, 0, 'skate'), ramp(11.5, 16.3, 17, 18.5, 'z', SL, 0, 'skate'),
+    ramp(0, 6, 20.5, 22.5, 'z', 0, 0.55, 'skate'), box(0, 6, 22.5, 24.5, 0.55, 'stone', 'skate'), ramp(0, 6, 24.5, 26.5, 'z', 0.55, 0, 'skate'),
+    ramp(8.5, 10.5, 21.5, 28, 'x', 0, 0.55, 'skate'), box(10.5, 12.5, 21.5, 28, 0.55, 'stone', 'skate'), ramp(12.5, 14.5, 21.5, 28, 'x', 0.55, 0, 'skate'),
+    // palm planter (out of bounds) with a wooden walkway along its middle side
+    oob(4.5, 11.5, 9, 17, 4.2),
+    box(3, 11.5, 7.5, 9, 2.2, 'crate', 'wood'), ramp(11.5, 15, 7.5, 9, 'x', 2.2, SL, 'wood'),
+    // centre-side blocks
+    box(10, 18, -5, 1.6, 2.2, 'contB', 'grate'), ramp(12, 17, 1.6, 4.5, 'z', 2.2, SL, 'wood'),
+    ramp(-10, -6.5, 5, 10, 'z', SL, 2.0, 'wood'), box(-10, -6.5, 10, 15, 2.0, 'crate', 'wood'),
+    box(-5, -0.5, 2.8, 5, 1.9, 'panel', 'concrete'), box(-4, -2, 6.5, 10, 1.6, 'stone', 'concrete'),
+    // flank pit under the grate bridge: a ramp to climb back out
+    ramp(-12.5, -10.5, 5.3, 9.7, 'x', 0, SL, 'skate'),
+    // tower balcony (the tower itself is added once, below)
+    box(2.3, 3.6, -1.3, 1.3, 1.9, 'panel', 'concrete'),
+  ];
+  // raised street level: the whole floor minus the sunken bowls / pits, as a few big slabs
+  const H = holes.concat(holes.map(([x0, x1, z0, z1]) => [-x1, -x0, -z1, -z0]));
+  const xs = [...new Set([-XH, XH].concat(...H.map(h => [h[0], h[1]])))].sort((a, b) => a - b), zs = [...new Set([-ZH, ZH].concat(...H.map(h => [h[2], h[3]])))].sort((a, b) => a - b);
+  const inHole = (x, z) => H.some(h => x > h[0] && x < h[1] && z > h[2] && z < h[3]);
+  let prev = null;
+  for (let j = 0; j < zs.length - 1; j++) {
+    const cz = (zs[j] + zs[j + 1]) / 2, runs = [];
+    for (let i = 0; i < xs.length - 1; i++) { const cx = (xs[i] + xs[i + 1]) / 2; if (inHole(cx, cz)) continue; const r = runs[runs.length - 1]; if (r && r[1] === xs[i]) r[1] = xs[i + 1]; else runs.push([xs[i], xs[i + 1]]); }
+    const key = runs.map(r => r.join(',')).join('|');
+    if (prev && prev.key === key) prev.boxes.forEach(b => b.z1 = zs[j + 1]);
+    else { prev = { key, boxes: runs.map(([x0, x1]) => box(x0, x1, zs[j], zs[j + 1], SL, 'stone', 'concrete')) }; prev.boxes.forEach(b => SOLIDS.push(b)); }
+  }
+  half.forEach(s => { SOLIDS.push(s); SOLIDS.push(mirrorSolid(s)); });
+  SOLIDS.push(box(-2.3, 2.3, -2.3, 2.3, 4.0, 'panel', 'concrete'));                       // the tower: only by climbing its inked walls
+  // grate bridge over each flank pit; fenced pocket beside the tower
+  const br = { x0: -17.5, x1: -15.5, z0: 5, z1: 10, h: 2.1 }; BRIDGES.push(br, Object.assign({}, br, { x0: -br.x1, x1: -br.x0, z0: -br.z1, z1: -br.z0 }));
+  const fz = [[4.5, 8.5, 2.8, 2.92], [4.5, 8.5, 6.08, 6.2], [4.5, 4.62, 2.8, 6.2], [8.38, 8.5, 2.8, 6.2]];
+  fz.forEach(([x0, x1, z0, z1]) => { FENCES.push({ x0, x1, z0, z1, y0: SL, h: SL + 1.25 }, { x0: -x1, x1: -x0, z0: -z1, z1: -z0, y0: SL, h: SL + 1.25 }); });
+  const B = 1.6 + SL;
+  SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'panel'), { bound: '-x' }));
+  SOLIDS.push(Object.assign(box(-XH - 1.5, -XH, -ZH, ZH, B, 'panel'), { bound: '+x' }));
+  SOLIDS.push(Object.assign(box(-XH, XH, ZH, ZH + 1.5, B, 'panel'), { bound: '-z' }));
+  SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }));
+  SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
+}
 // yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
-const SPAWN = [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
-const DECK = [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
+const SPAWN = MAP_ID === 'skate' ? [{ x: -6.5, z: 42.5, y: 2.4, yaw: Math.PI }, { x: 6.5, z: -42.5, y: 2.4, yaw: 0 }] : [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
+const DECK = MAP_ID === 'skate' ? [{ x0: -12, x1: -1, z0: 35, z1: 46.5 }, { x0: 1, x1: 12, z0: -46.5, z1: -35 }] : [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
 function inRect(s, x, z) { return x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1; }
 function topAt(s, x, z) {
   if (s.t === 'box') return s.h;
   const t = s.axis === 'x' ? (x - s.x0) / (s.x1 - s.x0) : (z - s.z0) / (s.z1 - s.z0);
   return lerp(s.h0, s.h1, clamp(t, 0, 1));
 }
-function groundAt(x, z) { let h = 0; for (const s of SOLIDS) if (!s.bound && inRect(s, x, z)) { const t = topAt(s, x, z); if (t > h) h = t; } return h; }
+function groundAt(x, z) { let h = 0; for (const s of solidsNear(x, z)) if (!s.bound && inRect(s, x, z)) { const t = topAt(s, x, z); if (t > h) h = t; } return h; }
 // highest walkable ground under (x,z) that is not above y+step
-function groundBelow(x, z, y, step) { let h = 0; for (const s of SOLIDS) if (inRect(s, x, z)) { const t = topAt(s, x, z); if (t > h && t <= y + step) h = t; } return h; }
+function groundBelow(x, z, y, step, noBridge) {
+  let h = 0; for (const s of solidsNear(x, z)) if (inRect(s, x, z)) { const t = topAt(s, x, z); if (t > h && t <= y + step) h = t; }
+  if (!noBridge) for (const b of BRIDGES) if (b.h > h && b.h <= y + step && inRect(b, x, z)) h = b.h;
+  return h;
+}
 // is point inside solid geometry?
 function solidAt(x, y, z) {
   if (y < 0) return true;
-  for (const s of SOLIDS) if (inRect(s, x, z) && y < topAt(s, x, z)) return s;
+  for (const s of solidsNear(x, z)) if (inRect(s, x, z) && y < topAt(s, x, z)) return s;
   return null;
 }
 function segBlocked(ax, ay, az, bx, by, bz, stepLen = 0.4) {
@@ -71,6 +166,12 @@ function initPaint() {
   Paint.owner = new Int8Array(NX * NZ).fill(-1);
   Paint.hgt = new Float32Array(NX * NZ);
   for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) Paint.hgt[j * NX + i] = groundAt((i + 0.5) * CELL - XH, (j + 0.5) * CELL - ZH);
+  const OOB = SOLIDS.filter(s => s.oob);
+  if (OOB.length) {           // out of bounds: never takes ink, doesn't count toward the turf total
+    let n = 0;
+    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH; if (OOB.some(o => inRect(o, x, z))) Paint.hgt[j * NX + i] = 99; else n++; }
+    Paint.total = n;
+  }
   for (let k = 0; k < NX * NZ; k++) Paint.data[k * 4 + 3] = 255;
   Paint.tex = new THREE.DataTexture(Paint.data, NX, NZ, THREE.RGBAFormat);
   Paint.tex.magFilter = THREE.LinearFilter; Paint.tex.minFilter = THREE.LinearFilter; Paint.tex.generateMipmaps = false; Paint.tex.needsUpdate = true;
@@ -86,8 +187,10 @@ function buildWallAtlas() {
   for (const s of SOLIDS) {
     if (s.t === 'ramp') { rampFaces(s, faces); continue; }
     if (s.t !== 'box') continue; s.faces = {};
+    if (s.oob) continue;                                   // out-of-bounds blocks: not paintable, not climbable
     const dirs = s.bound ? [s.bound] : ['+x', '-x', '+z', '-z'];
     for (const d of dirs) {
+      if (MAP.cull && !s.bound && faceHidden(s, d)) continue;
       if (!s.bound) {
         if (d === '+x' && s.x1 >= XH - 0.01) continue; if (d === '-x' && s.x0 <= -XH + 0.01) continue;
         if (d === '+z' && s.z1 >= ZH - 0.01) continue; if (d === '-z' && s.z0 <= -ZH + 0.01) continue;
@@ -122,6 +225,26 @@ function buildWallAtlas() {
   Paint.wdata = new Uint8Array(W * H * 4); for (let k = 3; k < Paint.wdata.length; k += 4) Paint.wdata[k] = 255;
   Paint.wtex = new THREE.DataTexture(Paint.wdata, W, H, THREE.RGBAFormat);
   Paint.wtex.magFilter = THREE.LinearFilter; Paint.wtex.minFilter = THREE.LinearFilter; Paint.wtex.generateMipmaps = false; Paint.wtex.needsUpdate = true;
+}
+// a box face that can't be seen: every point just outside it is inside something at least as tall,
+// or a taller face in the same plane covers its whole length (avoids flicker where blocks sit on the street slab)
+function faceHidden(s, d) {
+  const ax = d[1] === 'x', sg = d[0] === '+' ? 1 : -1, plane = d === '+x' ? s.x1 : d === '-x' ? s.x0 : d === '+z' ? s.z1 : s.z0, a0 = ax ? s.z0 : s.x0, a1 = ax ? s.z1 : s.x1;
+  let all = true;
+  for (let k = 0; k <= 8 && all; k++) {
+    const a = lerp(a0 + 0.04, a1 - 0.04, k / 8), px = ax ? plane + sg * 0.05 : a, pz = ax ? a : plane + sg * 0.05;
+    if (!SOLIDS.some(o => o !== s && !o.bound && inRect(o, px, pz) && topAt(o, px, pz) >= s.h - 0.05)) all = false;
+  }
+  if (all) return true;
+  const iv = [];
+  for (const o of SOLIDS) {
+    if (o === s || o.t !== 'box' || o.bound || o.oob || o.h < s.h - 0.01) continue;
+    const op = d === '+x' ? o.x1 : d === '-x' ? o.x0 : d === '+z' ? o.z1 : o.z0; if (Math.abs(op - plane) > 0.02) continue;
+    iv.push([ax ? o.z0 : o.x0, ax ? o.z1 : o.x1]);
+  }
+  iv.sort((p, q) => p[0] - q[0]); let reach = a0;
+  for (const [b0, b1] of iv) { if (b0 > reach + 0.02) break; reach = Math.max(reach, b1); }
+  return reach >= a1 - 0.02;
 }
 // ramps: the two triangular sides and the tall end are paintable walls too (skipped where another block covers them)
 function rampFaces(s, faces) {
@@ -276,7 +399,33 @@ totalEmissiveRadiance += inkC * 0.07 * inkA;`);
 }
 
 /* ===================================================== LAYOUT TEXTURE */
-function makeLayoutTex() {
+function makeLayoutTex() { return MAP_ID === 'skate' ? makeLayoutSkate() : makeLayoutDock(); }
+// skatepark: the only bare floor is the sunken bowls and pits — pale pool concrete with painted S-curves
+function makeLayoutSkate() {
+  const W = 1024, H = Math.round(1024 * PSZ / PSX);
+  const t = canvasTex(W, H, (g) => {
+    const m2p = (x, z) => [(x + XH) / PSX * W, (z + ZH) / PSZ * H], s = W / PSX;
+    const bowls = [[-5.5, 19, 17, 32], [-19, 5.5, -32, -17]];
+    for (const [x0, x1, z0, z1] of bowls) {
+      const [a, b] = m2p(x0, z0), [c, d] = m2p(x1, z1);
+      g.fillStyle = 'rgba(214,232,240,.85)'; g.fillRect(a, b, c - a, d - b);
+      g.save(); g.beginPath(); g.rect(a, b, c - a, d - b); g.clip();
+      const cx = (a + c) / 2, cy = (b + d) / 2, sg = z0 > 0 ? 1 : -1;
+      g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = s * 1.6; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(cx - sg * s * 11, cy - sg * s * 6); g.bezierCurveTo(cx - sg * s * 2, cy - sg * s * 9, cx - sg * s * 4, cy + sg * s * 6, cx + sg * s * 5, cy + sg * s * 4); g.bezierCurveTo(cx + sg * s * 10, cy + sg * s * 3, cx + sg * s * 9, cy - sg * s * 5, cx + sg * s * 12, cy - sg * s * 6); g.stroke();
+      g.strokeStyle = 'rgba(120,160,185,.55)'; g.lineWidth = s * 0.35; g.stroke();
+      // drain + cracks
+      const [dx, dz] = m2p((x0 + x1) / 2 + sg * 4, (z0 + z1) / 2); g.fillStyle = 'rgba(50,60,70,.8)'; g.beginPath(); g.arc(dx, dz, s * 0.5, 0, 7); g.fill();
+      g.restore();
+      // soft shade under the coping
+      g.strokeStyle = 'rgba(40,50,70,.35)'; g.lineWidth = s * 0.8; g.strokeRect(a, b, c - a, d - b);
+    }
+    [[-20, -12.5, 5.3, 9.7], [12.5, 20, -9.7, -5.3]].forEach(([x0, x1, z0, z1]) => { const [a, b] = m2p(x0, z0), [c, d] = m2p(x1, z1); g.fillStyle = 'rgba(55,60,72,.8)'; g.fillRect(a, b, c - a, d - b); g.fillStyle = 'rgba(255,198,41,.8)'; for (let y = b; y < d; y += s * 1.2) g.fillRect(a, y, s * 0.4, s * 0.6); });
+  }, false);
+  t.flipY = false; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+function makeLayoutDock() {
   const W = 1024, H = Math.round(1024 * PSZ / PSX);
   const t = canvasTex(W, H, (g) => {
     const m2p = (x, z) => [(x + XH) / PSX * W, (z + ZH) / PSZ * H], s = W / PSX;
@@ -343,8 +492,9 @@ const WALL_STYLE = {
   contG: { tex: 'contG', su: 3, vFull: true, color: 0xffffff, rough: 0.55, metal: 0.25 },
   crate: { tex: 'crate', su: 0, vFull: true, color: 0xffffff, rough: 0.8 },
   stone: { tex: 'stone', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
+  hedge: { tex: 'hedge', su: 2, vFull: false, color: 0xffffff, rough: 0.95 },
 };
-const TOP_STYLE = { concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
+const TOP_STYLE = { skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
 let arenaGroup;
 function buildArena() {
   arenaGroup = new THREE.Group(); scene.add(arenaGroup);
@@ -354,7 +504,7 @@ function buildArena() {
   const floor = new THREE.Mesh(fg, paintMat({ map: TEX.concrete, roughness: 0.92, color: 0xffffff }, 'floor', true));
   floor.receiveShadow = true; arenaGroup.add(floor);
   // tops & ramps grouped by style
-  const tops = {}, walls = {}, sides = [];
+  const tops = {}, walls = {}, sides = [], hedge = [];
   const PX = Paint.PX, W = Paint.W, H = Paint.H;
   // one wall quad (corners as [along, height]) with its slot in the paint atlas
   const wallQuad = (style, f, corners) => {
@@ -387,12 +537,20 @@ function buildArena() {
         sides.push(quadGeo(pts, [[0, 0], [L[1] - L[0], 0], [L[1] - L[0], 1], [0, 1]], null, null, nn[1] === 'x' ? [nn[0] === '+' ? 1 : -1, 0, 0] : [0, 0, nn[0] === '+' ? 1 : -1]));
       }
       for (const d in s.faces) { const f = s.faces[d]; wallQuad(s.style, f, [[f.a0, 0], [f.a1, 0], [f.a1, f.h], [f.a0, f.h]]); }
+      if (s.oob) {                                         // hedge sides above the street, not in the paint atlas
+        const y0 = MAP_ID === 'skate' ? SL : 0;
+        [['+x', s.x1, 1, 0], ['-x', s.x0, -1, 0], ['+z', s.z1, 0, 1], ['-z', s.z0, 0, -1]].forEach(([d, pl, nx, nz]) => {
+          if ((d === '+x' && s.x1 >= XH - 0.01) || (d === '-x' && s.x0 <= -XH + 0.01) || (d === '+z' && s.z1 >= ZH - 0.01) || (d === '-z' && s.z0 <= -ZH + 0.01)) return;
+          const L = nx ? [s.z0, s.z1] : [s.x0, s.x1], pts = [[L[0], y0], [L[1], y0], [L[1], s.h], [L[0], s.h]].map(([a, y]) => nx ? [pl, y, a] : [a, y, pl]);
+          hedge.push(quadGeo(pts, [[L[0] / 2, y0 / 2], [L[1] / 2, y0 / 2], [L[1] / 2, s.h / 2], [L[0] / 2, s.h / 2]], null, null, [nx, 0, nz]));
+        });
+      }
     } else {
       const sc = 2; const c = [[s.x0, s.z0], [s.x1, s.z0], [s.x1, s.z1], [s.x0, s.z1]];
       const p = c.map(([x, z]) => [x, topAt(s, x, z), z]);
       const n = new THREE.Vector3(...p[1]).sub(new THREE.Vector3(...p[0])).cross(new THREE.Vector3(...p[3]).sub(new THREE.Vector3(...p[0]))).normalize();
       if (n.y < 0) n.negate();
-      (tops.grate = tops.grate || []).push(quadGeo(p, c.map(([x, z]) => [x / sc, z / sc]), null, null, [n.x, n.y, n.z]));
+      const tk = TOP_STYLE[s.top] ? s.top : 'grate'; (tops[tk] = tops[tk] || []).push(quadGeo(p, c.map(([x, z]) => [x / sc, z / sc]), null, null, [n.x, n.y, n.z]));
       // sides (triangles as degenerate quads) and the tall end: paintable walls
       const hi = Math.max(s.h0, s.h1), lowAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z0 : s.z1) : (s.h0 < s.h1 ? s.x0 : s.x1), highAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z1 : s.z0) : (s.h0 < s.h1 ? s.x1 : s.x0);
       for (const d in s.faces) {
@@ -412,6 +570,23 @@ function buildArena() {
   }
   const sm = new THREE.Mesh(mergeGeos(sides), new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.85, side: THREE.DoubleSide }));
   sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm);
+  if (hedge.length) { const hm = new THREE.Mesh(mergeGeos(hedge), new THREE.MeshStandardMaterial({ map: TEX.hedge, roughness: 0.95 })); hm.castShadow = hm.receiveShadow = true; arenaGroup.add(hm); }
+  // see-through grate bridges and fences (yellow frames, like the park's rails)
+  if (BRIDGES.length || FENCES.length) {
+    const gm = new THREE.MeshStandardMaterial({ map: TEX.grateA, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.45, metalness: 0.5 });
+    const fm = new THREE.MeshStandardMaterial({ color: 0xffc629, roughness: 0.45, metalness: 0.3 });
+    const add = (w, h, d, x, y, z, m, ru, rv) => { const g = new THREE.BoxGeometry(w, h, d); if (ru) { const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * ru, uv.getY(i) * rv); } const o = new THREE.Mesh(g, m); o.position.set(x, y, z); o.castShadow = true; arenaGroup.add(o); return o; };
+    for (const b of BRIDGES) {
+      const w = b.x1 - b.x0, d = b.z1 - b.z0, cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
+      add(w, 0.06, d, cx, b.h - 0.03, cz, gm, Math.max(w, d) / 1.2, Math.min(w, d) / 1.2);
+      const along = d > w; [-1, 1].forEach(sg => add(along ? 0.1 : w, 0.14, along ? d : 0.1, along ? cx + sg * (w / 2 - 0.05) : cx, b.h - 0.07, along ? cz : cz + sg * (d / 2 - 0.05), fm));
+    }
+    for (const f of FENCES) {
+      const w = f.x1 - f.x0, d = f.z1 - f.z0, cx = (f.x0 + f.x1) / 2, cz = (f.z0 + f.z1) / 2, hh = f.h - f.y0;
+      add(w, hh, d, cx, f.y0 + hh / 2, cz, gm, Math.max(w, d) / 1.2, hh / 1.2);
+      add(w + 0.06, 0.08, d + 0.06, cx, f.h, cz, fm);
+    }
+  }
   // spawn pads (glowing rings)
   SPAWN.forEach((sp, t) => {
     const ring = new THREE.Mesh(new THREE.RingGeometry(2.2, 2.7, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));

@@ -196,6 +196,8 @@ class Bot {
     this.stuckT += dt;
     if (this.stuckT > 1.4) { if (this.lastPos.distanceTo(c.pos) < 0.6 && (this.path.length || this.mode !== 'paint')) { I.jump = true; this.path = []; this.retarget = 0; } this.lastPos.copy(c.pos); this.stuckT = 0; }
     I.fire = false; I.swim = false; I.aimDir = null;
+    if (G.time - (c.fenceT ?? -9) < 0.25) this.fenceSwim = 0.6;                 // bumped a grate fence: squid through it
+    if (this.fenceSwim > 0) { this.fenceSwim -= dt; I.swim = true; }
     const e = this.enemy;
     const chg = !!c.weapon.charges;
     if (e && e.alive && (this.mode !== 'refill' || e.pos.distanceTo(c.pos) < 7 || (chg && c.ink > 22)) && c.ink > 3) {
