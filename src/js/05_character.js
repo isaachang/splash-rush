@@ -65,10 +65,12 @@ function buildWeaponModel(id, T, trimHex) {
 function aimVec(c) { return new THREE.Vector3(Math.sin(c.aimYaw) * Math.cos(c.aimPitch), Math.sin(c.aimPitch), Math.cos(c.aimYaw) * Math.cos(c.aimPitch)); }
 // march a straight ray (charger); returns end point, hit character or solid
 function traceRay(owner, o, dir, range, step = 0.2) {
+  if (Cover.list.length && owner.pos) { const cv = Cover.between(owner, o); if (cv) return { end: o.clone(), cover: cv, t: 0 }; }
   let prev = o.clone(), p = o.clone();
   for (let t = step; t <= range; t += step) {
     p.set(o.x + dir.x * t, o.y + dir.y * t, o.z + dir.z * t);
     if (inBarrier(1 - owner.team, p)) return { end: p.clone(), barrier: true, t };
+    if (Cover.list.length) { const cv = Cover.at(owner.team, p.x, p.y, p.z); if (cv) return { end: p.clone(), cover: cv, t }; }
     for (const e of CHARS) if (e.team !== owner.team && Proj.hitChar(e, p, 0.12)) return { end: p.clone(), char: e, t };
     const s = solidAt(p.x, p.y, p.z);
     if (s) return { end: p.clone(), solid: s, prev: prev.clone(), t };
@@ -88,6 +90,7 @@ class Character {
     this.weapon = WEAPONS[opts.weapon] || WEAPONS.rifle;
     // character: body + stats (hp, speed, ink tank); the look comes from the character
     this.cs = CHARACTERS[opts.char] || CHARACTERS.man; this.maxHp = this.cs.hp; this.inkK = this.cs.inkCap;
+    this.subId = this.cs.sub || this.weapon.sub;              // sub weapon (E) belongs to the character
     this.look = Object.assign({}, opts.look || randomLook(), this.cs.look);
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3();
     this.yaw = 0; this.aimYaw = 0; this.aimPitch = 0; this.bodyYaw = 0;
@@ -119,29 +122,32 @@ class Character {
     const T = TEAMMAT[this.team];
     const root = new THREE.Group(); this.root = root;
     const human = new THREE.Group(); root.add(human); this.human = human;
+    const F = L.fat || 0;                                     // chubby build (石墩): round belly, thick limbs, wide shoulders
     // legs
     this.legs = [-1, 1].map(s => {
-      const hip = new THREE.Group(); hip.position.set(s * 0.12, 0.5, 0); human.add(hip);
-      hip.add(mesh(GEO.cap(0.085, 0.26), pants, 0, -0.2, 0));
-      const shoe = mesh(GEO.cap(0.09, 0.14), white, 0, -0.44, 0.05, 1.1, 1, 1); shoe.rotation.x = Math.PI / 2; hip.add(shoe);
-      const sole = mesh(GEO.cap(0.092, 0.14), T, 0, -0.47, 0.05, 1.12, 0.45, 1.02); sole.rotation.x = Math.PI / 2; hip.add(sole);
+      const hip = new THREE.Group(); hip.position.set(s * (0.12 + 0.05 * F), 0.5, 0); human.add(hip);
+      hip.add(mesh(GEO.cap(0.085, 0.26), pants, 0, -0.2, 0, 1 + 0.55 * F, 1, 1 + 0.5 * F));
+      const shoe = mesh(GEO.cap(0.09, 0.14), white, 0, -0.44, 0.05, 1.1 + 0.4 * F, 1, 1 + 0.2 * F); shoe.rotation.x = Math.PI / 2; hip.add(shoe);
+      const sole = mesh(GEO.cap(0.092, 0.14), T, 0, -0.47, 0.05, 1.12 + 0.4 * F, 0.45, 1.02 + 0.2 * F); sole.rotation.x = Math.PI / 2; hip.add(sole);
       return hip;
     });
     // torso
     const torso = new THREE.Group(); torso.position.y = 0.5; human.add(torso); this.torso = torso;
-    torso.add(mesh(GEO.cap(0.215, 0.22), cloth, 0, 0.27, 0, 1.08, 1, 0.92));
-    const hood = mesh(new THREE.TorusGeometry(0.15, 0.06, 8, 16), cloth2, 0, 0.53, -0.02); hood.rotation.x = Math.PI / 2; torso.add(hood);
-    const emb = mesh(new THREE.CircleGeometry(0.06, 16), T, 0, 0.33, 0.205); torso.add(emb);
-    const belt = mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 20), dark, 0, 0.08, 0); belt.rotation.x = Math.PI / 2; torso.add(belt);
+    torso.add(mesh(GEO.cap(0.215, 0.22), cloth, 0, 0.27, 0, 1.08 + 0.42 * F, 1, 0.92 + 0.4 * F));
+    if (F) torso.add(mesh(GEO.sphere, cloth, 0, 0.17, 0.07 * F, 0.33 * F, 0.27 * F, 0.3 * F));          // round belly
+    const hood = mesh(new THREE.TorusGeometry(0.15, 0.06, 8, 16), cloth2, 0, 0.53, -0.02, 1 + 0.35 * F, 1 + 0.35 * F, 1 + 0.3 * F); hood.rotation.x = Math.PI / 2; torso.add(hood);
+    const emb = mesh(new THREE.CircleGeometry(0.06, 16), T, 0, 0.33, 0.205 + 0.1 * F); torso.add(emb);
+    const belt = mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 20), dark, 0, 0.08, 0.03 * F, 1 + 0.55 * F, 1 + 0.5 * F, 1); belt.rotation.x = Math.PI / 2; torso.add(belt);
     // backpack ink tank
-    const tank = new THREE.Group(); tank.position.set(0, 0.3, -0.26); torso.add(tank); if (L.tankK) { tank.scale.setScalar(L.tankK); tank.position.z = -0.26 - (L.tankK - 1) * 0.1; }
+    const tank = new THREE.Group(); tank.position.set(0, 0.3, -0.26 - 0.08 * F); torso.add(tank); if (L.tankK) { tank.scale.setScalar(L.tankK); tank.position.z = -0.26 - 0.08 * F - (L.tankK - 1) * 0.1; }
     tank.add(mesh(GEO.cyl, glass, 0, 0, 0, 0.12, 0.34, 0.12));
     this.tankInk = mesh(GEO.cyl, T, 0, 0, 0, 0.1, 0.32, 0.1); tank.add(this.tankInk);
     tank.add(mesh(GEO.cyl, metal, 0, 0.19, 0, 0.13, 0.05, 0.13)); tank.add(mesh(GEO.cyl, metal, 0, -0.19, 0, 0.13, 0.05, 0.13));
-    [-1, 1].forEach(s => { const st = mesh(new THREE.BoxGeometry(0.04, 0.42, 0.03), dark, s * 0.1, 0.28, -0.19); st.rotation.x = 0.2; torso.add(st); });
+    [-1, 1].forEach(s => { const st = mesh(new THREE.BoxGeometry(0.04, 0.42, 0.03), dark, s * (0.1 + 0.04 * F), 0.28, -0.19 - 0.08 * F); st.rotation.x = 0.2; torso.add(st); });
     // head
-    const head = new THREE.Group(); head.position.y = 0.62; torso.add(head); this.head = head;
+    const head = new THREE.Group(); head.position.y = 0.62 - 0.03 * F; torso.add(head); this.head = head;
     head.add(mesh(GEO.sphere, skin, 0, 0.2, 0, 0.27, 0.26, 0.26));
+    if (F) head.add(mesh(GEO.sphere, skin, 0, 0.1, 0.03, 0.25, 0.14, 0.22));                        // double chin / chubby cheeks
     const visor = mesh(new THREE.CylinderGeometry(0.276, 0.276, 0.13, 24, 1, true, -1.9, 3.8), dark, 0, 0.21, 0); visor.material = dark; head.add(visor);
     visor.material.side = THREE.DoubleSide;
     this.eyes = [-1, 1].map(s => { const e = mesh(GEO.sphere, eyeM, s * 0.095, 0.215, 0.262, 0.045, 0.05, 0.02); head.add(e); return e; });
@@ -163,9 +169,9 @@ class Character {
     else if (hat === 'cap') { const brim = mesh(GEO.cyl, hc, 0, 0.3, 0.2, 0.2, 0.02, 0.14); brim.rotation.x = 0.15; head.add(brim); }
     // arms
     this.arms = [-1, 1].map(s => {
-      const sh = new THREE.Group(); sh.position.set(s * 0.27, 0.43, 0); torso.add(sh);
-      sh.add(mesh(GEO.cap(0.07, 0.2), cloth, 0, -0.15, 0));
-      sh.add(mesh(GEO.sphere, white, 0, -0.3, 0, 0.075));
+      const sh = new THREE.Group(); sh.position.set(s * (0.27 + 0.1 * F), 0.43, 0); torso.add(sh);
+      sh.add(mesh(GEO.cap(0.07, 0.2), cloth, 0, -0.15, 0, 1 + 0.5 * F, 1, 1 + 0.5 * F));
+      sh.add(mesh(GEO.sphere, white, 0, -0.3, 0, 0.075 * (1 + 0.3 * F)));
       return sh;
     });
     // sockets: weapons attach here (keeps weapon models independent of the body model)
@@ -450,10 +456,10 @@ class Character {
     const tx = I.mx * maxSp, tz = I.mz * maxSp;
     const ax = tx - this.vel.x, az = tz - this.vel.z, al = Math.hypot(ax, az), maxA = acc * dt;
     if (al > maxA) { this.vel.x += ax / al * maxA; this.vel.z += az / al * maxA; } else { this.vel.x = tx; this.vel.z = tz; }
-    if (I.jump && this.grounded && !this.sp) { this.airSpeed = Math.hypot(this.vel.x, this.vel.z); this.vel.y = this.swim ? 9.8 : 8.3; this.grounded = false; if (this.isPlayer) Sfx.jump(); if (this.swim) Fx.burst(this.pos.x, this.pos.y + 0.1, this.pos.z, TEAM_HEX[this.team], 6, 3, 0.08); }
+    if (I.jump && this.grounded && !this.sp) { this.airSpeed = Math.hypot(this.vel.x, this.vel.z); this.vel.y = (this.swim ? 9.8 : 8.3) * Math.sqrt(this.cs.jumpK || 1); this.grounded = false; if (this.isPlayer) Sfx.jump(); if (this.swim) Fx.burst(this.pos.x, this.pos.y + 0.1, this.pos.z, TEAM_HEX[this.team], 6, 3, 0.08); }
     I.jump = false;
     // horizontal integrate + collide
-    const px = this.pos.x, pz = this.pos.z;
+    const px = this.pos.x, pz = this.pos.z; this._px = px; this._pz = pz;
     this.pos.x += this.vel.x * dt; this.pos.z += this.vel.z * dt;
     const hit = this.collide();
     // climbing
@@ -514,11 +520,11 @@ class Character {
     } else if (W.charges) this.updateCharge(dt, I, T);
     else if (W.type === 'blaster') this.updateBlaster(dt, I, T);
     if (I.bomb && !this.swim && !this.sp && this.bombCd <= 0 && G.state === 'play') {
-      const bc = SUBS[this.weapon.sub].cost / this.inkK;
+      const bc = SUBS[this.subId].cost / this.inkK;
       if (this.ink >= bc) {
         this.ink -= bc; this.bombCd = 0.6; this.lastShot = T;
         const dir = I.aimDir ? I.aimDir.clone() : new THREE.Vector3(Math.sin(this.aimYaw) * Math.cos(this.aimPitch), Math.sin(this.aimPitch), Math.cos(this.aimYaw) * Math.cos(this.aimPitch));
-        Proj.bomb(this, this.muzzle(), dir);
+        if (this.subId === 'curling') Proj.curling(this, dir); else if (this.subId === 'cover') Cover.place(this, dir); else Proj.bomb(this, this.muzzle(), dir);
       } else if (this.isPlayer) HUD.lowInk();
     }
     I.bomb = false;
@@ -599,6 +605,8 @@ class Character {
       else if (h.type === 'wall') { impactAt = h.pt.clone(); Proj.splash(this, h.pt, h.n, dir, ir * 0.85, 'wall', h.face); }
     } else if (tr.barrier) {
       Fx.burst(tr.end.x, tr.end.y, tr.end.z, col, 8, 3, 0.07); Barrier.flash(1 - this.team);
+    } else if (tr.cover) {
+      Cover.hit(tr.cover, full ? W.dmgFull : lerp(W.dmgMin, W.dmgMax, ct), tr.end, this.team, ir * 0.7);
     } else {
       // out of range: the ink slug loses energy and falls, splashing where it lands
       Proj.spray(this, tr.end, dir.clone().multiplyScalar(11), ir * 0.7, true);
@@ -663,6 +671,7 @@ class Character {
     }
     { const sp = SPAWN[1 - this.team], dx = this.pos.x - sp.x, dz = this.pos.z - sp.z, d = Math.hypot(dx, dz), R = BARRIER_R + 0.4;
       if (d < R && this.pos.y < BARRIER_H && d > 1e-4) { const nx = dx / d, nz = dz / d; this.pos.x = sp.x + nx * R; this.pos.z = sp.z + nz * R; const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; } Barrier.flash(1 - this.team); } }
+    if (Cover.list.length) Cover.push(this, this._px ?? this.pos.x, this._pz ?? this.pos.z);   // graffiti boards are solid
     const lim = 0.38;
     if (this.pos.x > XH - lim) { this.pos.x = XH - lim; this.vel.x = Math.min(0, this.vel.x); }
     if (this.pos.x < -XH + lim) { this.pos.x = -XH + lim; this.vel.x = Math.max(0, this.vel.x); }

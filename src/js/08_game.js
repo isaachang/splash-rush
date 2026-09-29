@@ -28,7 +28,7 @@ const HUD = {
     $('inkbar').classList.toggle('low', c.ink < 20);
     $('inkbar').style.opacity = c.ink > 99.5 && !c.swim ? 0.45 : 1;
     this.lowInkT = Math.max(0, this.lowInkT - dt); $('inkwarn').style.opacity = this.lowInkT > 0 ? 1 : 0;
-    $('subw').classList.toggle('no', c.ink < SUBS[c.weapon.sub].cost / c.inkK);
+    $('subw').classList.toggle('no', c.ink < SUBS[c.subId].cost / c.inkK);
     $('spRing').style.strokeDashoffset = 264 * (1 - c.special / 100);
     $('special').classList.toggle('ready', c.special >= 100);
     const hp = c.alive ? c.hp / c.maxHp * 100 : 100; this.hurtV = Math.max(0, this.hurtV - dt * 2);
@@ -343,6 +343,7 @@ function startMatch() {
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov();
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
+  $('subw').innerHTML = '<i></i>' + SUBS[PLAYER.subId].short;
   Cam.yaw = SPAWN[0].yaw; Cam.pitch = -0.08; Cam.pivotY = SPAWN[0].y + 1.5;
   show('title', false); show('lobby', false); show('results', false); show('pause', false); show('hud', true);
   $('death').classList.remove('show'); $('center').innerHTML = '';
@@ -492,7 +493,7 @@ function weapPageHTML(C) {
       <div class="wtop"><span class="wi">${weaponIcon(w, '#fff', 74)}</span><span class="wn"><b>${W.name}</b><small>${W.role}</small></span>${C.weapons.length > 1 ? `<span class="pick">${on ? '使用中' : '点击换上'}</span>` : '<span class="pick ex">专属</span>'}</div>
       <div class="wfacts">${weaponFacts(W, C).map(([l, v]) => `<span><small>${l}</small><b>${v}</b></span>`).join('')}</div>
       <div class="wstats">${STAT_LABELS.map(([k, l]) => `<span>${l}</span>${barsHTML(W.stats[k])}`).join('')}</div>
-      <div class="wkit"><span>副武器 <b>${SUBS[W.sub].name}</b></span><span>必杀技 <b>${SPECIALS[W.special].name}</b></span></div>
+      <div class="wkit"><span>副武器 <b>${SUBS[C.sub || W.sub].name}</b></span><span>必杀技 <b>${SPECIALS[W.special].name}</b></span></div>
       <p class="wd">${W.desc}</p></div>`;
   }).join('')}</div>`;
 }
@@ -532,7 +533,7 @@ function lobbyAnimate() {
 function renderLoadCard() {
   const w = WEAPONS[Profile.data.weapon], C = CHARACTERS[Profile.data.char];
   $('lcIcon').innerHTML = charIcon(C.id, 58) + `<span class="lcw">${weaponIcon(w.id, '#fff', 40)}</span>`; $('lcName').textContent = C.name + ' · ' + w.name; $('lcRole').textContent = C.role + ' / ' + w.role;
-  $('lcKit').textContent = SUBS[w.sub].name + ' · ' + SPECIALS[w.special].name;
+  $('lcKit').textContent = SUBS[C.sub || w.sub].name + ' · ' + SPECIALS[w.special].name;
 }
 /* ------------------------------------------------ lobby 3D preview
    Its own small renderer: the chosen character on a pedestal, slowly
@@ -708,7 +709,7 @@ function loop() {
       if (G.state !== 'intro') updateCamera(dt);
       HUD.update(dt);
     }
-    Proj.update(dt); Fx.update(dt); Barrier.update(dt, t);
+    Proj.update(dt); Cover.update(dt); Fx.update(dt); Barrier.update(dt, t);
     uploadPaint(); updateWorld(t, dt);
   }
   G.frameN = (G.frameN || 0) + 1;

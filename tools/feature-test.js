@@ -224,7 +224,7 @@ vm.runInContext(`(() => {
       const A = run('sa'), M = run('man'), D = run('dun');
       ok(Math.abs(A.walk - 6.4 * 1.25) < 0.2 && A.hp === 80 && A.root < 1 && A.shots >= 54 && A.shots <= 57 && Math.abs(A.bomb - 70) < 0.5, '阿飒: 80 HP, runs ' + A.walk.toFixed(2) + ' m/s (125%), slim build, 80% tank (' + A.shots + ' shots, a bomb takes ' + A.bomb.toFixed(0) + '%)');
       ok(M.hp === 85 && M.w === 'charger' && M.inkK === 1.2 && Math.floor(100 * M.inkK / WEAPONS.charger.costFull) === 6 && Math.abs(M.walk - 6.4 * 0.95) < 0.2, '满满: sniper only (' + M.w + ' ' + M.inkK + '), 85 HP, walks ' + M.walk.toFixed(2) + ' m/s (95%), 120% tank = 6 full charges');
-      ok(D.hp === 160 && D.hits === 5 && Math.abs(D.walk - 6.4 * 0.7) < 0.2 && D.push < A.push * 0.5 && D.root > 1, '石墩: 160 HP takes ' + D.hits + ' rifle hits, walks ' + D.walk.toFixed(2) + ' m/s (70%), barely pushed back');
+      ok(D.hp === 160 && D.hits === 5 && Math.abs(D.walk - 6.4 * 0.6) < 0.2 && D.push < A.push * 0.5 && D.root > 1, '石墩: 160 HP takes ' + D.hits + ' rifle hits, walks ' + D.walk.toFixed(2) + ' m/s (60%), barely pushed back');
       ok(CHARACTERS.sa.weapons.join() === 'rifle' && CHARACTERS.man.weapons.join() === 'charger' && CHARACTERS.dun.weapons.join() === 'splatling', 'each character has its own weapon: 阿飒 rifle, 满满 sniper, 石墩 gatling');
       ok(A.hits === 3 && M.hits === 3, 'a rifle still takes 3 hits on 阿飒 and 满满');
       Profile.data.char = 'std'; quitToTitle(); for (let i = 0; i < 3; i++) loop();
@@ -262,6 +262,52 @@ vm.runInContext(`(() => {
       Proj.blastAt(Q, new THREE.Vector3(wl.x0 - 0.3, 1, zc), WB.blastR, WB.blastCore, WB.blastDmg, 1.5, 'blaster');
       ok(b3.hp === 100, 'explosions do not go through walls');
       quitToTitle(); for (let i = 0; i < 3; i++) loop(); Profile.data.weapon = 'rifle';
+    }
+    // ================= v0.8.3 character sub weapons =================
+    {
+      const setupC = ch => { quitToTitle(); for (let i = 0; i < 3; i++) loop(); Profile.data.char = ch; Profile.data.weapon = CHARACTERS[ch].weapons[0]; openLobby('turf'); startMatch(); Input.locked = true; while (G.state !== 'play') loop();
+        G.bots.forEach(b => b.update = () => {}); CHARS.forEach(c => { if (c !== PLAYER) { c.pos.set(20 + c.id, 0, -30); c.intent.mx = c.intent.mz = 0; c.intent.fire = false; } });
+        const P4 = PLAYER; P4.pos.set(0, 0, 27); P4.vel.set(0, 0, 0); P4.ink = 100; P4.invulnT = 0; Cam.yaw = Math.PI; Cam.pitch = 0; for (let i = 0; i < 3; i++) loop(); return P4; };
+      const foe4 = k => { const e = CHARS.filter(c => c.team === 1)[k]; e.hp = e.maxHp; e.alive = true; e.state = 'play'; e.invulnT = 0; e.vel.set(0, 0, 0); return e; };
+      // --- 阿飒: curling bomb (E) slides out laying a path of ink
+      let S4 = setupC('sa'); resetPaint(); for (let i = 0; i < 5; i++) loop(); S4.pos.set(0, 0, 27); S4.ink = 100;
+      ok(S4.subId === 'curling' && String($('subw').innerHTML).indexOf('冰壶') >= 0, '阿飒 carries the curling bomb (HUD shows it)');
+      Input.bombHoldKey = true; loop(); loop(); loop(); const ghostOk = Proj.pvRing && Proj.pvRing.visible; Input.bombHoldKey = false; loop(); loop();
+      const cb = Proj.bombs.find(b => b.curl && b.owner === S4); const inkUsed = 100 - S4.ink; if (cb) cb.v0 = Math.hypot(cb.v.x, cb.v.z);
+      let z0 = cb ? cb.p.z : 0, fz = z0, fr = 0; while (cb && Proj.bombs.includes(cb) && fr < 120) { fz = cb.p.z; loop(); fr++; }
+      let path = 0; for (let z = z0 - 0.5; z > fz; z -= 1) if (ownerAt(0, 0, z) === 0) path++;
+      ok(cb && z0 - fz > 12 && z0 - fz < 18 && path >= (z0 - fz) * 0.7 && Math.abs(inkUsed - 70) < 3 && Math.abs(cb.v0 - 12.8 * 1.15) < 0.1, 'curling bomb: slides at 阿飒 swim speed (' + cb.v0.toFixed(1) + ' m/s) for ' + (z0 - fz).toFixed(1) + ' m laying ink (' + path + ' m inked), costs ' + inkUsed.toFixed(0) + '% of 阿飒 tank');
+      // --- 满满: graffiti cover (E)
+      let M4 = setupC('man'); M4.pos.set(0, 0, 20); M4.aimYaw = Math.PI; M4.aimPitch = 0; M4.ink = 100;
+      const cv = Cover.place(M4, new THREE.Vector3(0, 0, -1)); for (let i = 0; i < 15; i++) loop();
+      ok(M4.subId === 'cover' && cv && Math.abs(cv.z - 17) < 0.6 && Cover.list.length === 1 && ownerAt(0, 0, 18.2) === 0, 'cover: the board stands ~3 m ahead with a puddle of her ink behind it');
+      const f1 = foe4(0); f1.pos.set(0, 0, 11); f1.intent.swim = false; f1.swim = f1.submerged = false; const hp0 = M4.hp;
+      Proj.shot(f1, new THREE.Vector3(0, 1.0, 12), new THREE.Vector3(0, 0, 1), WEAPONS.rifle); for (let i = 0; i < 20; i++) loop();
+      ok(M4.hp === hp0 && cv.hp < SUBS.cover.hp && cv.hp > SUBS.cover.hp - 40, 'cover: an enemy rifle shot stops on the board (cover hp ' + Math.round(cv.hp) + ')');
+      f1.pos.set(0, 0, 11); f1.vel.set(0, 0, 0); const f1hp = f1.hp; Proj.shot(M4, new THREE.Vector3(0, 1.0, 19), new THREE.Vector3(0, 0, -1), WEAPONS.rifle); for (let i = 0; i < 25; i++) loop();
+      ok(f1.hp < f1hp, 'cover: her own team shoots straight through it');
+      const tr4 = traceRay(f1, new THREE.Vector3(0, 1.0, 12), new THREE.Vector3(0, 0, 1), 30);
+      ok(tr4.cover === cv, 'cover: a sniper beam stops on it too');
+      M4.pos.set(0, 0, 18.5); M4.vel.set(0, 0, 0); Input.keys.KeyW = true; for (let i = 0; i < 30; i++) loop(); Input.keys.KeyW = false; const stopped = M4.pos.z > 17.2;
+      ok(stopped, 'cover: solid — walking into it stops you (z ' + M4.pos.z.toFixed(2) + ')');
+      Proj.explode({ p: new THREE.Vector3(0, 0.3, 15.8), team: 1, owner: f1 }); for (let i = 0; i < 3; i++) loop();
+      ok(cv.hp < 180, 'cover: a bomb next to it chunks it (hp ' + Math.round(cv.hp) + ')');
+      Cover.hit(cv, 999, new THREE.Vector3(0, 1, 17), 1); loop();
+      ok(Cover.list.length === 0, 'cover: breaks when worn down');
+      Cover.place(M4, new THREE.Vector3(0, 0, -1)); for (let i = 0; i < 30 * 10 + 10; i++) loop();
+      ok(Cover.list.length === 0, 'cover: gone after 10 s');
+      Cover.place(M4, new THREE.Vector3(0, 0, -1)); Cover.place(M4, new THREE.Vector3(0, 0, -1));
+      ok(Cover.list.length === 1, 'cover: only one board at a time');
+      // --- 石墩: fat = bigger target, lower jump, 60% / 70% speed
+      let D4 = setupC('dun'); D4.pos.set(0, 0, 20); for (let i = 0; i < 3; i++) loop(); const f5 = { alive: true, state: 'play', swim: false, pos: D4.pos.clone(), cs: CHARACTERS.std, look: { bodyH: 1 } };
+      const nearHit = Proj.hitChar(D4, { x: D4.pos.x + 0.57, y: D4.pos.y + 0.9, z: D4.pos.z }, 0.05), stdMiss = !Proj.hitChar(f5, { x: f5.pos.x + 0.57, y: f5.pos.y + 0.9, z: f5.pos.z }, 0.05);
+      const sa4 = CHARS.find(c => c.team === 1 && c.cs.id === 'sa') || null;
+      Input.jumpQ = true; let peak = D4.pos.y, j = 0; loop(); while (j++ < 60) { loop(); peak = Math.max(peak, D4.pos.y); }
+      ok(nearHit && stdMiss && peak > 0.95 && peak < 1.25 && D4.cs.swimK === 0.7, '石墩: bigger hitbox (hit at 0.57 m from centre, others miss there), jumps ' + peak.toFixed(2) + ' m (normal 1.43), swims 70%');
+      const bx = SOLIDS.find(s => s.t === 'box' && !s.bound && Math.abs(s.h - 1.4) < 0.01);
+      if (bx) { D4.pos.set((bx.x0 + bx.x1) / 2, groundAt((bx.x0 + bx.x1) / 2, bx.z1 + 0.8), bx.z1 + 0.8); D4.vel.set(0, 0, 0); for (let i = 0; i < 5; i++) loop(); Cam.yaw = Math.PI; Input.keys.KeyW = true; Input.jumpQ = true; for (let i = 0; i < 40; i++) loop(); Input.keys.KeyW = false; Input.keys.KeyS = false;
+        ok(D4.pos.y > 1.3, '石墩 can still jump onto a 1.4 m box (y ' + D4.pos.y.toFixed(2) + ')'); }
+      Profile.data.char = 'std'; quitToTitle(); for (let i = 0; i < 3; i++) loop(); Profile.data.weapon = 'rifle';
     }
     // knocked out: killer cam first, then watch a teammate, back to yourself on respawn
     quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby('turf'); startMatch(); while (G.state !== 'play') loop();

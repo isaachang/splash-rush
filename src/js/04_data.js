@@ -3,7 +3,11 @@
    loadout from here; appearance is stored separately (LOOK) so that
    gameplay and visuals stay decoupled.                               */
 const SUBS = {
-  bomb: { id: 'bomb', name: '墨水炸弹', cost: 56, desc: '抛出后弹一下再爆炸，大范围涂色并造成伤害' }
+  bomb: { id: 'bomb', name: '墨水炸弹', short: '炸弹', cost: 56, desc: '抛出后弹一下再爆炸，大范围涂色并造成伤害' },
+  // like the original's curling bomb: slides along the ground laying a path of ink you can swim behind
+  curling: { id: 'curling', name: '冰壶炸弹', short: '冰壶', cost: 56, desc: '贴着地面快速滑出去，一路铺出一条墨路，撞墙会反弹，滑到头爆炸。潜进墨路跟在后面冲，就能快速贴近敌人' },
+  // graffiti cover: a spray-painted board that stops enemy ink; your own team shoots straight through it
+  cover: { id: 'cover', name: '涂鸦掩体', short: '掩体', cost: 56, hp: 300, life: 10, desc: '在前方立起一块涂鸦板，挡住敌人的子弹，自己人的子弹能穿过去。脚下会铺一片墨，可以躲在后面潜墨回墨。能被打坏，最多存在 10 秒' }
 };
 const SPECIALS = {
   surge: { id: 'surge', name: '墨浪冲击', desc: '跃向高空后砸地，大范围涂色并击倒周围敌人' }
@@ -61,28 +65,28 @@ const CHARACTERS = {
   sa: {
     id: 'sa', name: '阿飒', en: 'SWIFT', role: '疾风 · 游击', tag: '跑得最快的街头涂鸦手',
     desc: '全场最快：移速、潜行都快一大截，适合绕后偷袭、抢地盘。但身板最薄，墨罐也小，要省着打，挨两下就得撤。',
-    hp: 80, runK: 1.25, swimK: 1.15, inkCap: 0.8, inkRegen: 1, knockK: 1.2, weapons: ['rifle'],
+    hp: 80, runK: 1.25, swimK: 1.15, inkCap: 0.8, inkRegen: 1, knockK: 1.2, weapons: ['rifle'], sub: 'curling',
     look: { skin: '#f3c39b', cloth: '#f5f5f2', cloth2: '#40c0b0', pants: '#23242c', hat: 'band', hatColor: '#40c0b0', trim: '#5ad1ff', hair: 'tail', bodyW: 0.92, bodyH: 1.0, tankK: 0.9, crestK: 1.35 },
     bars: { hp: 1, speed: 5, ink: 1 }, weaponNote: '专属武器'
   },
   man: {
     id: 'man', name: '满满', en: 'TANKFUL', role: '墨罐 · 持久', tag: '背着超大墨罐的涂地狂',
     desc: '背着一个超大墨罐的狙击手，墨水多 20%，回墨也更快，重炮狙击一罐能多打一枪。身板偏薄，被近身就赶紧潜进墨里换位置。',
-    hp: 85, runK: 0.95, swimK: 1.1, inkCap: 1.2, inkRegen: 1.15, knockK: 1, weapons: ['charger'],
+    hp: 85, runK: 0.95, swimK: 1.1, inkCap: 1.2, inkRegen: 1.15, knockK: 1, weapons: ['charger'], sub: 'cover',
     look: { skin: '#dba577', cloth: '#ffcf3f', cloth2: '#2a2b35', pants: '#1f3050', hat: 'phones', hatColor: '#2a2b35', trim: '#f0f0f0', hair: 'twin', bodyW: 1.0, bodyH: 1.0, tankK: 1.45, crestK: 1.0 },
     bars: { hp: 2, speed: 3, ink: 4 }, weaponNote: '专属武器'
   },
   dun: {
     id: 'dun', name: '石墩', en: 'BULWARK', role: '重装 · 肉盾', tag: '挨打也不退一步的大块头',
-    desc: '体格最壮，生命值最高（步枪要 5 发才倒），被打中几乎不后仰、不被推开，端着加特林顶在最前面。代价是全场最慢，扫射时更慢。',
-    hp: 160, runK: 0.7, swimK: 0.8, inkCap: 1, inkRegen: 1, knockK: 0.4, weapons: ['splatling'],
-    look: { skin: '#7d4d31', cloth: '#3b3f52', cloth2: '#ff8a3d', pants: '#2a2b35', hat: 'goggles', hatColor: '#3b3f52', trim: '#ffd23a', hair: 'fin', bodyW: 1.14, bodyH: 1.05, tankK: 1.05, crestK: 0.8 },
+    desc: '又壮又胖，生命值最高（步枪要 5 发才倒），被打中几乎不后仰、不被推开，端着加特林顶在最前面。代价是全场最慢、跳得低，身板大也更容易被打中。',
+    hp: 160, runK: 0.6, swimK: 0.7, inkCap: 1, inkRegen: 1, knockK: 0.4, jumpK: 0.85, hitK: 1.3, weapons: ['splatling'], sub: 'bomb',
+    look: { skin: '#7d4d31', cloth: '#3b3f52', cloth2: '#ff8a3d', pants: '#2a2b35', hat: 'goggles', hatColor: '#3b3f52', trim: '#ffd23a', hair: 'fin', bodyW: 1.04, bodyH: 1.02, fat: 1, tankK: 1.05, crestK: 0.8 },
     bars: { hp: 5, speed: 1, ink: 3 }, weaponNote: '专属武器'
   }
 };
 const CHAR_ORDER = ['sa', 'man', 'dun'];
 // baseline body used by the automated mechanics tests (not selectable)
-CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'charger', 'splatling', 'blaster'] });
+CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', sub: null, hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'charger', 'splatling', 'blaster'] });
 // the character that carries a given weapon (first match)
 function charForWeapon(w) { return CHAR_ORDER.find(id => CHARACTERS[id].weapons.includes(w)) || 'sa'; }
 // portrait: head with tentacle hair in team colour + each character's accessory (SVG, used in cards and lists)
@@ -91,12 +95,13 @@ function charIcon(id, w = 64, accent = 'var(--c0)') {
   const hair = id === 'sa'
     ? `<path d="M14 30 Q12 8 32 6 Q52 8 50 30 Z" style="fill:${accent}" ${st}/><path d="M48 18 Q62 22 60 44 Q56 36 50 30 Z" style="fill:${accent}" ${st}/>`
     : id === 'dun'
-      ? `<path d="M12 32 Q12 10 32 9 Q52 10 52 32 Z" style="fill:${accent}" ${st}/><path d="M24 12 L32 -2 L40 12 Z" style="fill:${accent}" ${st}/>`
+      ? `<path d="M9 33 Q10 10 32 9 Q54 10 55 33 Z" style="fill:${accent}" ${st}/><path d="M24 12 L32 -2 L40 12 Z" style="fill:${accent}" ${st}/>`
       : `<path d="M12 32 Q10 8 32 6 Q54 8 52 32 Z" style="fill:${accent}" ${st}/><path d="M12 26 Q2 34 6 52 Q12 46 14 34 Z" style="fill:${accent}" ${st}/><path d="M52 26 Q62 34 58 52 Q52 46 50 34 Z" style="fill:${accent}" ${st}/>`;
   const acc = id === 'sa' ? `<rect x="12" y="20" width="40" height="6" rx="3" fill="${L.hatColor}" ${st}/>`
     : id === 'dun' ? `<circle cx="24" cy="15" r="6" fill="#9aa3b5" ${st}/><circle cx="40" cy="15" r="6" fill="#9aa3b5" ${st}/>`
       : `<path d="M11 30 Q32 -4 53 30" fill="none" stroke="#111" stroke-width="5"/><rect x="6" y="27" width="9" height="13" rx="4" fill="${L.hatColor}" ${st}/><rect x="49" y="27" width="9" height="13" rx="4" fill="${L.hatColor}" ${st}/>`;
-  return `<svg viewBox="0 0 64 64" width="${w}" height="${w}" style="vertical-align:middle;overflow:visible"><ellipse cx="32" cy="34" rx="19" ry="18" fill="${L.skin}" ${st}/><rect x="15" y="30" width="34" height="9" rx="4.5" fill="#111"/><circle cx="25" cy="34.5" r="3" fill="#fff"/><circle cx="39" cy="34.5" r="3" fill="#fff"/>${hair}${acc}<path d="M20 52 Q32 60 44 52 L44 62 L20 62 Z" fill="${L.cloth}" ${st}/></svg>`;
+  const fat = id === 'dun', rx = fat ? 23 : 19, chin = fat ? `<path d="M17 44 Q32 55 47 44" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>` : '';
+  return `<svg viewBox="0 0 64 64" width="${w}" height="${w}" style="vertical-align:middle;overflow:visible">${fat ? `<path d="M10 52 Q32 44 54 52 L58 64 L6 64 Z" fill="${L.cloth}" ${st}/>` : ''}<ellipse cx="32" cy="${fat ? 35 : 34}" rx="${rx}" ry="${fat ? 19 : 18}" fill="${L.skin}" ${st}/>${chin}<rect x="${fat ? 12 : 15}" y="30" width="${fat ? 40 : 34}" height="9" rx="4.5" fill="#111"/><circle cx="25" cy="34.5" r="3" fill="#fff"/><circle cx="39" cy="34.5" r="3" fill="#fff"/>${hair}${acc}${fat ? '' : `<path d="M20 52 Q32 60 44 52 L44 62 L20 62 Z" fill="${L.cloth}" ${st}/>`}</svg>`;
 }
 
 /* ---------------------------------------------------------- icons */
@@ -107,6 +112,8 @@ function weaponIcon(id, color = '#fff', w = 64, accent = 'var(--c0)') {
   else if (id === 'charger') body = `<rect x="4" y="14" width="22" height="9" rx="3" fill="${color}" ${st}/><rect x="24" y="15.5" width="36" height="5" rx="2" fill="${color}" ${st}/><rect x="14" y="7" width="16" height="5" rx="2.5" fill="${color}" ${st}/><rect x="10" y="21" width="6" height="8" rx="2" fill="${color}" ${st}/><circle cx="8" cy="12" r="4.5" style="fill:${accent}" ${st}/>`;
   else if (id === 'splatling') body = `<rect x="4" y="11" width="20" height="14" rx="4" fill="${color}" ${st}/><rect x="22" y="9" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="15" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="21" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="30" y="7" width="5" height="20" rx="2" style="fill:${accent}" ${st}/><circle cx="12" cy="8" r="5" style="fill:${accent}" ${st}/>`;
   else if (id === 'blaster') body = `<rect x="4" y="12" width="22" height="10" rx="3" fill="${color}" ${st}/><rect x="22" y="9" width="26" height="16" rx="5" fill="${color}" ${st}/><rect x="46" y="6" width="12" height="22" rx="4" style="fill:${accent}" ${st}/><rect x="10" y="20" width="6" height="9" rx="2" fill="${color}" ${st}/>`;
+  else if (id === 'curling') body = `<ellipse cx="32" cy="22" rx="16" ry="6" style="fill:${accent}" ${st}/><rect x="17" y="14" width="30" height="8" rx="3" style="fill:${accent}" ${st}/><path d="M28 14 V8 H38" fill="none" stroke="#111" stroke-width="5" stroke-linecap="round"/><path d="M28 14 V8 H38" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>`;
+  else if (id === 'cover') body = `<rect x="14" y="3" width="36" height="22" rx="3" fill="#2a2b35" ${st}/><path d="M20 18 Q24 6 32 12 T44 8 L44 20 L20 20Z" style="fill:${accent}"/><path d="M19 10 q4 -4 8 0 t8 0" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/><rect x="18" y="25" width="5" height="5" fill="#2a2b35" ${st}/><rect x="41" y="25" width="5" height="5" fill="#2a2b35" ${st}/>`;
   else if (id === 'bomb') body = `<circle cx="32" cy="17" r="11" style="fill:${accent}" ${st}/><rect x="21" y="15" width="22" height="4" fill="${color}" ${st}/><rect x="29" y="3" width="6" height="5" rx="1" fill="${color}" ${st}/>`;
   else if (id === 'surge') body = `<path d="M8 26 Q20 6 32 18 T56 10 L56 28 L8 28Z" style="fill:${accent}" ${st}/><path d="M32 2 L32 16 M26 10 L32 16 L38 10" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round"/>`;
   else body = `<circle cx="32" cy="16" r="10" fill="${color}" ${st}/>`;
@@ -147,6 +154,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.8.3', date: '2026-09-29', time: '20:16', title: '角色专属副武器', items: [
+    '阿飒的副武器换成冰壶炸弹：贴地滑出一条墨路，潜进去就能跟着冲',
+    '满满的副武器换成涂鸦掩体：挡住敌人的子弹，自己人的子弹能穿过去',
+    '石墩变胖了：更容易被打中、跳得更低，移速 60%、潜行 70%'
+  ] },
   { v: 'v0.8.2', date: '2026-09-29', time: '18:23', title: '角色属性调整', items: [
     '阿飒墨水 80%；满满改为专职狙击手（85 血、潜行更快、墨水 120%）；石墩移速 70%',
     '炸弹消耗降低，墨少的角色也能多扔',
