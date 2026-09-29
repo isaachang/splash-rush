@@ -36,7 +36,7 @@ const result = vm.runInContext(`(() => {
   const list = ${JSON.stringify(weapons)} || WEAPON_ORDER, out = [];
   for (const w of list) {
     if (!WEAPONS[w]) throw new Error('unknown weapon ' + w);
-    GAME.dur = 90; Profile.data.weapon = w; openLobby(); startMatch(); Input.locked = true;
+    GAME.dur = 90; Profile.data.weapon = w; Profile.data.char = charForWeapon(w); openLobby(); startMatch(); Input.locked = true;
     let f = 0;
     while (G.state !== 'results' && f < 30 * 140) {
       const k = Input.keys; k.KeyW = (f % 240) < 200; k.KeyA = (f % 500) < 60; k.ShiftLeft = (f % 180) > 150;

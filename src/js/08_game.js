@@ -312,12 +312,9 @@ function rollRoster() {
   const R = [[], []];
   for (let t = 0; t < 2; t++) {
     const slots = t === 0 ? [0, 2, 3] : [0, 1, 2, 3];
-    // each team: a couple of the special weapons (never two of the same), the rest carry rifles
-    const specials = ['charger', 'splatling'].sort(() => Math.random() - 0.5).slice(0, randi(1, 2)), freeSlots = slots.slice().sort(() => Math.random() - 0.5);
-    const give = {}; specials.forEach((w, k) => { if (k < freeSlots.length) give[freeSlots[k]] = w; });
     for (let i = 0; i < 4; i++) {
       const isP = t === 0 && i === 1;
-      R[t].push({ name: isP ? (GAME.name || '玩家') : names.pop(), isPlayer: isP, weapon: isP ? Profile.data.weapon : (give[i] || 'rifle'), char: isP || GAME.uniformChars ? Profile.data.char : pick(CHAR_ORDER), look: isP ? Profile.data.look : randomLook(), role: roles[(i + t) % 4] });
+      R[t].push({ name: isP ? (GAME.name || '玩家') : names.pop(), isPlayer: isP, ...(() => { if (isP) return { weapon: Profile.data.weapon, char: Profile.data.char }; const ch = GAME.uniformChars ? Profile.data.char : pick(CHAR_ORDER); return { char: ch, weapon: GAME.uniformChars ? pick(['rifle', 'rifle', 'charger', 'splatling']) : pick(CHARACTERS[ch].weapons) }; })(), look: isP ? Profile.data.look : randomLook(), role: roles[(i + t) % 4] });
     }
   }
   G.roster = R; enforceRoster();
@@ -325,7 +322,8 @@ function rollRoster() {
 function enforceRoster() {
   // at most one charger per team (the player's own pick takes priority)
   const me = G.roster[0][1]; me.weapon = Profile.data.weapon; me.char = Profile.data.char; me.name = GAME.name || '玩家';
-  for (const w of ['charger', 'splatling']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) m.weapon = 'rifle'; seen = true; } }); });
+  // at most one sniper and one gatling per team; extra ones swap to 阿飒 + rifle
+  for (const w of ['charger', 'splatling']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) { m.weapon = 'rifle'; if (!CHARACTERS[m.char].weapons.includes('rifle')) m.char = 'sa'; } seen = true; } }); });
 }
 function spawnTeams() {
   clearChars();
@@ -468,49 +466,36 @@ function gotoTitle() {
   resetToAttract(); show('lobby', false); show('title', true); renderLoadCard();
 }
 function openLobby() {
-  resetToAttract(); rollRoster(); G.lobbyStep = 'char'; renderLobby();
+  resetToAttract(); rollRoster(); renderLobby();
   show('title', false); show('results', false); show('lobby', true);
 }
 function statBars(v) { let s = '<div class="bar">'; for (let i = 1; i <= 5; i++) s += `<i class="${i <= v ? 'on' : ''}"></i>`; return s + '</div>'; }
-// character card: portrait, role, three stat bars with the actual numbers
+// character card: portrait, role, three stat bars; the picked character opens up to show its weapons (operator-style loadout)
 function charCard(id, sel) {
   const C = CHARACTERS[id], pc = (v, base) => { const p = Math.round(v * 100); return `<em class="${p > base ? 'up' : p < base ? 'dn' : ''}">${p}%</em>`; };
-  return `<div class="ccard${sel ? ' sel' : ''}" data-id="${id}"><div class="pt">${charIcon(id, 76)}<span class="tag">${sel ? '已选择' : '点击选择'}</span></div>
-    <div class="ci"><b>${C.name}</b><span class="en">${C.en}</span><span class="role">${C.role}</span><div class="tg">${C.tag}</div>
-      <div class="cst"><span>生命</span>${statBars(C.bars.hp)}<em class="${C.hp > 100 ? 'up' : C.hp < 100 ? 'dn' : ''}">${C.hp}</em><span>移速</span>${statBars(C.bars.speed)}${pc(C.runK, 100)}<span>墨水</span>${statBars(C.bars.ink)}${pc(C.inkCap, 100)}</div></div></div>`;
+  const weap = sel ? `<div class="loadout"><div class="lh">武器<small>${C.weapons.length > 1 ? '点击切换' : '专属武器'}</small></div><div class="lw">${C.weapons.map(w => { const W = WEAPONS[w], on = w === Profile.data.weapon; return `<button class="wopt${on ? ' sel' : ''}" data-w="${w}">${weaponIcon(w, '#fff', 58)}<span><b>${W.name}</b><small>${W.role}</small></span>${on ? '<i>✔</i>' : ''}</button>`; }).join('')}</div><div class="wdesc2">${WEAPONS[Profile.data.weapon].desc}</div></div>` : `<div class="wmini">${C.weapons.map(w => weaponIcon(w, '#fff', 34)).join('')}<span>${C.weapons.map(w => WEAPONS[w].name).join(' / ')}</span></div>`;
+  return `<div class="ccard${sel ? ' sel' : ''}" data-id="${id}"><div class="crow"><div class="pt">${charIcon(id, 72)}${sel ? '<span class="tag">出战</span>' : ''}</div>
+    <div class="ci"><div class="nm"><b>${C.name}</b><span class="en">${C.en}</span></div><span class="role">${C.role}</span>
+      <div class="cst"><span>生命</span>${statBars(C.bars.hp)}<em class="${C.hp > 100 ? 'up' : C.hp < 100 ? 'dn' : ''}">${C.hp}</em><span>移速</span>${statBars(C.bars.speed)}${pc(C.runK, 100)}<span>墨水</span>${statBars(C.bars.ink)}${pc(C.inkCap, 100)}</div></div></div>
+    ${sel ? `<div class="cdesc">${C.desc}</div>` : ''}${weap}</div>`;
 }
 function renderLobby() {
-  const cur = Profile.data.weapon, step = G.lobbyStep || 'char', CH = CHARACTERS[Profile.data.char];
-  $('lobbySteps').querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.step === step));
-  $('stepChar').textContent = CH.name; $('stepWeap').textContent = WEAPONS[cur].name;
-  $('charList').classList.toggle('show', step === 'char'); $('weapList').classList.toggle('show', step === 'weap');
-  $('btnNextStep').style.display = step === 'char' ? '' : 'none';
+  const CH = CHARACTERS[Profile.data.char];
+  if (!CH.weapons.includes(Profile.data.weapon)) Profile.data.weapon = CH.weapons[0];
+  const cur = Profile.data.weapon;
   $('charList').innerHTML = CHAR_ORDER.map(id => charCard(id, id === Profile.data.char)).join('');
-  $('charList').querySelectorAll('.ccard').forEach(el => el.onclick = () => {
-    Sfx.init(); Sfx.click(); if (Profile.data.char === el.dataset.id) return;
-    Profile.data.char = el.dataset.id; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard();
+  $('charList').querySelectorAll('.ccard').forEach(el => el.onclick = e => {
+    const wb = e.target.closest && e.target.closest('.wopt');
+    Sfx.init(); Sfx.click();
+    if (wb) { if (Profile.data.weapon !== wb.dataset.w) { Profile.data.weapon = wb.dataset.w; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard(); } return; }
+    if (Profile.data.char === el.dataset.id) return;
+    Profile.data.char = el.dataset.id; Profile.data.weapon = CHARACTERS[el.dataset.id].weapons[0]; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard();
   });
-  // preview: the chosen character holding the chosen weapon, plus the numbers that matter
+  // preview: the chosen character holding its chosen weapon
   Preview.show(Profile.data.char, cur);
   $('pvName').textContent = CH.name; $('pvRole').textContent = CH.role + ' · ' + WEAPONS[cur].name;
-  const W = WEAPONS[cur];
-  $('pvStats').innerHTML = `<div class="row2"><span>生命<b>${CH.hp}</b></span><span>走路<b>${Math.round(CH.runK * 100)}%</b></span><span>潜墨<b>${Math.round(CH.swimK * 100)}%</b></span><span>墨水<b>${Math.round(CH.inkCap * 100)}%</b></span>${CH.inkRegen > 1 ? `<span>回墨<b>+${Math.round((CH.inkRegen - 1) * 100)}%</b></span>` : ''}${CH.knockK < 1 ? '<span>抗击退<b>强</b></span>' : ''}</div>
-    <div class="wl">${weaponIcon(W.id, '#fff', 44)}<span>${W.name} · ${SUBS[W.sub].name} · ${SPECIALS[W.special].name}</span></div>`;
-  $('weapList').innerHTML = WEAPON_ORDER.map(id => {
-    const w = WEAPONS[id];
-    return `<div class="wcard${id === cur ? ' sel' : ''}" data-id="${id}">
-      <div class="wic">${weaponIcon(id, '#fff', 110)}<span class="tag">${id === cur ? '已装备' : '点击装备'}</span></div>
-      <div class="winfo"><b>${w.name}</b><span class="en">${w.en}</span><span class="role">${w.role}</span>
-        <div class="stats">${STAT_LABELS.map(([k, l]) => `<span>${l}</span>${statBars(w.stats[k])}`).join('')}</div>
-        <div class="kit">副武器：${SUBS[w.sub].name} · 必杀技：${SPECIALS[w.special].name}</div>
-        <div class="wdesc">${w.desc}</div></div></div>`;
-  }).join('');
-  $('weapList').querySelectorAll('.wcard').forEach(el => el.onclick = () => {
-    if (Profile.data.weapon === el.dataset.id) return;
-    Profile.data.weapon = el.dataset.id; Profile.save(); Sfx.init(); Sfx.click(); enforceRoster(); renderLobby(); renderLoadCard();
-  });
   ['rosterA', 'rosterB'].forEach((id, t) => {
-    $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}"><span class="cp">${charIcon(m.char, 30, TEAM_HEX[t])}</span>${weaponIcon(m.weapon, '#fff', 36, TEAM_HEX[t])}<span>${m.name}${m.isPlayer ? '（你）' : ''}<span class="cn">${CHARACTERS[m.char].name}</span></span><span class="wn">${WEAPONS[m.weapon].name}</span></div>`).join('');
+    $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}"><span class="cp">${charIcon(m.char, 34, TEAM_HEX[t])}</span><span class="rt"><b>${m.name}${m.isPlayer ? '（你）' : ''}</b><small>${CHARACTERS[m.char].name} · ${WEAPONS[m.weapon].name}</small></span><span class="rw">${weaponIcon(m.weapon, '#fff', 34, TEAM_HEX[t])}</span></div>`).join('');
   });
 }
 function renderLoadCard() {
@@ -668,8 +653,6 @@ function initUI() {
   $('btnStart').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
   $('loadCard').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
   $('btnBack').onclick = () => { Sfx.click(); show('lobby', false); show('title', true); renderLoadCard(); };
-  $('lobbySteps').querySelectorAll('button').forEach(b => b.onclick = () => { Sfx.init(); Sfx.click(); G.lobbyStep = b.dataset.step; renderLobby(); });
-  $('btnNextStep').onclick = () => { Sfx.init(); Sfx.click(); G.lobbyStep = 'weap'; renderLobby(); };
   $('btnGo').onclick = () => { Sfx.click(); Profile.save(); enforceRoster(); startMatch(); };
   $('btnChange').onclick = () => { Sfx.click(); openLobby(); };
   $('btnHow').onclick = () => { Sfx.init(); Sfx.click(); show('howto', true); };

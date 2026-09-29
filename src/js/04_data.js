@@ -60,29 +60,31 @@ const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'],
 const CHARACTERS = {
   sa: {
     id: 'sa', name: '阿飒', en: 'SWIFT', role: '疾风 · 游击', tag: '跑得最快的街头涂鸦手',
-    desc: '身轻腿快，走路和潜墨都比别人快，适合绕后偷袭、抢地盘。但身板薄，挨两下就得撤。',
-    hp: 85, runK: 1.12, swimK: 1.08, inkCap: 1, inkRegen: 1, knockK: 1.15,
+    desc: '全场最快：走路、潜墨都快一大截，适合绕后偷袭、抢地盘。但身板最薄，墨罐也小一点，挨两下就得撤。',
+    hp: 80, runK: 1.25, swimK: 1.15, inkCap: 0.9, inkRegen: 1, knockK: 1.2, weapons: ['rifle'],
     look: { skin: '#f3c39b', cloth: '#f5f5f2', cloth2: '#40c0b0', pants: '#23242c', hat: 'band', hatColor: '#40c0b0', trim: '#5ad1ff', hair: 'tail', bodyW: 0.92, bodyH: 1.0, tankK: 0.9, crestK: 1.35 },
-    bars: { hp: 1, speed: 5, ink: 2 }
+    bars: { hp: 1, speed: 5, ink: 2 }, weaponNote: '专属武器'
   },
   man: {
     id: 'man', name: '满满', en: 'TANKFUL', role: '墨罐 · 持久', tag: '背着超大墨罐的涂地狂',
-    desc: '背着一个超大墨罐，墨水多打三分之一，回墨也更快。能一直开火、一直涂地，很少为缺墨发愁。',
-    hp: 100, runK: 1, swimK: 1, inkCap: 1.35, inkRegen: 1.1, knockK: 1,
+    desc: '背着一个超大墨罐，墨水多 40%，回墨也更快。重炮狙击能多蓄好几发，步枪也能一直打、一直涂地。',
+    hp: 100, runK: 1, swimK: 1, inkCap: 1.4, inkRegen: 1.15, knockK: 1, weapons: ['charger', 'rifle'],
     look: { skin: '#dba577', cloth: '#ffcf3f', cloth2: '#2a2b35', pants: '#1f3050', hat: 'phones', hatColor: '#2a2b35', trim: '#f0f0f0', hair: 'twin', bodyW: 1.0, bodyH: 1.0, tankK: 1.45, crestK: 1.0 },
-    bars: { hp: 3, speed: 3, ink: 5 }
+    bars: { hp: 3, speed: 3, ink: 5 }, weaponNote: '2 把可选'
   },
   dun: {
     id: 'dun', name: '石墩', en: 'BULWARK', role: '重装 · 肉盾', tag: '挨打也不退一步的大块头',
-    desc: '体格最壮，生命值最高，被打中时几乎不会后仰或被推开，适合顶在前面抢点。代价是走路和潜墨都慢一些。',
-    hp: 135, runK: 0.9, swimK: 0.92, inkCap: 1, inkRegen: 1, knockK: 0.5,
+    desc: '体格最壮，生命值最高（步枪要 5 发才倒），被打中几乎不后仰、不被推开，端着加特林顶在最前面。代价是全场最慢，扫射时更慢。',
+    hp: 160, runK: 0.8, swimK: 0.85, inkCap: 1, inkRegen: 1, knockK: 0.4, weapons: ['splatling'],
     look: { skin: '#7d4d31', cloth: '#3b3f52', cloth2: '#ff8a3d', pants: '#2a2b35', hat: 'goggles', hatColor: '#3b3f52', trim: '#ffd23a', hair: 'fin', bodyW: 1.14, bodyH: 1.05, tankK: 1.05, crestK: 0.8 },
-    bars: { hp: 5, speed: 2, ink: 3 }
+    bars: { hp: 5, speed: 1, ink: 3 }, weaponNote: '专属武器'
   }
 };
 const CHAR_ORDER = ['sa', 'man', 'dun'];
 // baseline body used by the automated mechanics tests (not selectable)
-CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1 });
+CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'charger', 'splatling'] });
+// the character that carries a given weapon (first match)
+function charForWeapon(w) { return CHAR_ORDER.find(id => CHARACTERS[id].weapons.includes(w)) || 'sa'; }
 // portrait: head with tentacle hair in team colour + each character's accessory (SVG, used in cards and lists)
 function charIcon(id, w = 64, accent = 'var(--c0)') {
   const C = CHARACTERS[id] || CHARACTERS.man, L = C.look, st = 'stroke="#111" stroke-width="3" stroke-linejoin="round"';
@@ -126,12 +128,13 @@ const CLOTH_COLS = ['#f5f5f2', '#2a2b35', '#697386', '#eadcc2', '#5c7a3a', '#274
 /* --------------------------------------------------------- profile */
 const PROFILE_KEY = 'splashrush.profile';
 const Profile = {
-  data: { v: 1, name: '新人墨仔', weapon: 'rifle', char: 'man', pal: 0, diff: 1, dur: 180, look: null },
+  data: { v: 1, name: '新人墨仔', weapon: 'rifle', char: 'sa', pal: 0, diff: 1, dur: 180, look: null },
   load() {
     try { const s = localStorage.getItem(PROFILE_KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) Object.assign(this.data, d); } } catch (e) { }
     if (!this.data.look) this.data.look = randomLook();
     if (!WEAPON_ORDER.includes(this.data.weapon)) this.data.weapon = 'rifle';
-    if (!CHAR_ORDER.includes(this.data.char)) this.data.char = 'man';
+    if (!CHAR_ORDER.includes(this.data.char)) this.data.char = 'sa';
+    if (!CHARACTERS[this.data.char].weapons.includes(this.data.weapon)) this.data.weapon = CHARACTERS[this.data.char].weapons[0];
     const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
   },
   save() {

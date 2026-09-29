@@ -222,9 +222,10 @@ vm.runInContext(`(() => {
         return { walk, shots, hits, hp: P3.maxHp, push, root: P3.root.scale.x };
       };
       const A = run('sa'), M = run('man'), D = run('dun');
-      ok(Math.abs(A.walk - 6.4 * 1.12) < 0.2 && A.hp === 85 && A.root < 1, '阿飒: 85 HP, runs ' + A.walk.toFixed(2) + ' m/s (112%), slim build');
-      ok(M.hp === 100 && M.shots >= 90 && M.shots <= 97, '满满: bigger tank — ' + M.shots + ' rifle shots from a full tank (normal 70)');
-      ok(D.hp === 135 && D.hits === 4 && Math.abs(D.walk - 6.4 * 0.9) < 0.2 && D.push < A.push * 0.6 && D.root > 1, '石墩: 135 HP takes ' + D.hits + ' rifle hits, walks ' + D.walk.toFixed(2) + ' m/s, pushed back half as much');
+      ok(Math.abs(A.walk - 6.4 * 1.25) < 0.2 && A.hp === 80 && A.root < 1 && A.shots <= 64, '阿飒: 80 HP, runs ' + A.walk.toFixed(2) + ' m/s (125%), slim build, smaller tank (' + A.shots + ' shots)');
+      ok(M.hp === 100 && M.shots >= 95 && M.shots <= 100, '满满: bigger tank — ' + M.shots + ' rifle shots from a full tank (normal 70)');
+      ok(D.hp === 160 && D.hits === 5 && Math.abs(D.walk - 6.4 * 0.8) < 0.2 && D.push < A.push * 0.5 && D.root > 1, '石墩: 160 HP takes ' + D.hits + ' rifle hits, walks ' + D.walk.toFixed(2) + ' m/s (80%), barely pushed back');
+      ok(CHARACTERS.sa.weapons.join() === 'rifle' && CHARACTERS.man.weapons.join() === 'charger,rifle' && CHARACTERS.dun.weapons.join() === 'splatling', 'each character has its own weapons: 阿飒 rifle, 满满 sniper / rifle, 石墩 gatling');
       ok(A.hits === 3 && M.hits === 3, 'a rifle still takes 3 hits on 阿飒 and 满满');
       Profile.data.char = 'std'; quitToTitle(); for (let i = 0; i < 3; i++) loop();
     }
