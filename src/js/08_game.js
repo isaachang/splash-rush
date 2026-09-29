@@ -500,7 +500,7 @@ function updateIntro(dt) {
   G.introT += dt; const t = G.introT;
   const k = clamp(t / 3.0, 0, 1), e = k * k * (3 - 2 * k);
   // fly from enemy side high over arena down behind player
-  const p0 = new THREE.Vector3(18, 26, -52), p1 = new THREE.Vector3(-12, 18, 0), p2 = new THREE.Vector3(0, SPAWN[0].y + 2.7, SPAWN[0].z + 5.3);
+  const p0 = new THREE.Vector3(18, 26, -52), p1 = new THREE.Vector3(-12, 18, 0), p2 = new THREE.Vector3(0, SPAWN[0].y + 2.7, SPAWN[0].z + 4.6);
   const a = p0.clone().lerp(p1, e), b = p1.clone().lerp(p2, e), pos = a.lerp(b, e);
   camera.position.copy(pos); const look = new THREE.Vector3(0, 0, -10).lerp(new THREE.Vector3(0, SPAWN[0].y + 1.4, SPAWN[0].z - 20), e);
   camera.lookAt(look);

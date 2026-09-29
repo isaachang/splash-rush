@@ -75,6 +75,12 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.6.1', date: '2026-09-29', time: '03:40', title: '更粗的墨水', items: [
+    '子弹变粗变大，打中时溅起更大的墨花',
+    '落地墨迹稍微变大，涂地更快一点',
+    '默认视野改为 62°：角色更大，远处也看得更清楚（设置里可以调）',
+    '镜头稍微抬高，能看到更多地面'
+  ] },
   { v: 'v0.6.0', date: '2026-09-29', time: '02:20', title: '结算与战况', items: [
     '结算页按原版流程重做：俯视判定、比例条拉锯、胜方举旗、WIN! / LOSE…',
     '计分板显示涂地、击倒、助攻、阵亡、必杀次数，赢的队伍排在上面',
