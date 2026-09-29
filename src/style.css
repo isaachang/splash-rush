@@ -416,11 +416,11 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .itabs{position:relative;display:flex;background:rgba(10,8,26,.7);border:4px solid #111;border-radius:18px;padding:4px;box-shadow:0 5px 0 #111;margin-bottom:12px}
 .itabs button{flex:1;position:relative;z-index:1;cursor:pointer;font-family:inherit;font-weight:900;font-size:16px;letter-spacing:4px;color:#fff;opacity:.6;background:none;border:none;padding:8px 0;transition:opacity .2s,color .2s}
 .itabs button.sel{opacity:1;color:#111}
-.itabs .ul{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:12px;background:var(--c0);border:3px solid #111;transition:transform .38s cubic-bezier(.3,1.35,.4,1)}
-.itabs[data-tab="weap"] .ul{transform:translateX(100%)}
+.itabs .ul{position:absolute;top:4px;bottom:4px;left:4px;width:calc(33.333% - 2.67px);border-radius:12px;background:var(--c0);border:3px solid #111;transition:transform .38s cubic-bezier(.3,1.35,.4,1)}
+.itabs[data-tab="weap"] .ul{transform:translateX(100%)}.itabs[data-tab="sub"] .ul{transform:translateX(200%)}
 .ipanel{position:relative;flex:1;min-height:0}
 .ipage{position:absolute;inset:0;overflow:auto;padding:2px 4px 6px;opacity:0;pointer-events:none;transform:translateX(-26px);transition:opacity .28s ease,transform .38s cubic-bezier(.2,.9,.3,1)}
-#pgWeap.ipage{transform:translateX(26px)}
+#pgWeap.ipage,#pgSub.ipage{transform:translateX(26px)}
 .ipage.show{opacity:1;pointer-events:auto;transform:none!important}
 .phead{display:flex;align-items:baseline;gap:10px}
 .phead b{font-size:30px;font-weight:900;font-style:italic;-webkit-text-stroke:1.5px #111;paint-order:stroke fill;text-shadow:0 3px 0 var(--c0)}
@@ -459,3 +459,13 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 
 .pvName.tx{animation:pvTx .4s cubic-bezier(.2,.9,.3,1.25)}
 @keyframes pvTx{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+
+/* sub weapon page + demo replay */
+.wcard2.static{cursor:default}.wcard2.static:hover{transform:none}
+.stip{margin-top:10px;font-size:12px;font-weight:700;background:rgba(0,0,0,.3);border:2px solid #111;border-radius:12px;padding:6px 10px;line-height:1.5}
+.stip kbd{display:inline-block;font-family:inherit;font-weight:900;font-size:12px;background:#ffe45c;color:#111;border:2px solid #111;border-radius:7px;padding:0 7px;margin-right:6px;box-shadow:0 2px 0 #111}
+.pvReplay{position:absolute;left:14px;bottom:12px;font-family:inherit;font-weight:900;font-size:13px;letter-spacing:1px;color:#fff;background:rgba(10,8,26,.75);border:3px solid #111;border-radius:12px;padding:5px 12px;box-shadow:0 4px 0 #111;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .25s,transform .3s cubic-bezier(.3,1.4,.4,1),background .2s}
+.pvReplay:hover{background:var(--c0);color:#111}
+.pvBox.sub .pvReplay{opacity:1;pointer-events:auto;transform:none}
+.pvBox.sub .pvHint{opacity:0}
+.pvHint{transition:opacity .25s}

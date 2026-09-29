@@ -215,13 +215,23 @@ const Proj = {
     if (sndVol(o) > 0.05) Sfx.throwB(sndVol(o));
   },
   // ---- curling bomb: slides along the ground laying a path of ink, bounces off walls, explodes when the fuse runs out
-  curling(owner, dir) {
+  curlMesh(team) {
     const g = new THREE.Group();
     if (!this.curlGeo) { this.curlGeo = new THREE.CylinderGeometry(0.3, 0.36, 0.2, 20); this.curlHandle = new THREE.TorusGeometry(0.11, 0.035, 6, 12, Math.PI); this.curlDark = new THREE.MeshStandardMaterial({ color: 0x1d1f28, roughness: 0.3, metalness: 0.5 }); }
-    const body = new THREE.Mesh(this.curlGeo, TEAMMAT[owner.team]); body.position.y = 0.1; body.castShadow = true; g.add(body);
+    const body = new THREE.Mesh(this.curlGeo, TEAMMAT[team]); body.position.y = 0.1; body.castShadow = true; g.add(body);
     const light = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffffff, emissiveIntensity: 0 });
     const band = new THREE.Mesh(this.bandGeo, light); band.rotation.x = Math.PI / 2; band.scale.setScalar(1.6); band.position.y = 0.19; g.add(band);
     const handle = new THREE.Mesh(this.curlHandle, this.curlDark); handle.position.y = 0.2; g.add(handle);
+    return { g, light };
+  },
+  bombMesh(team) {
+    const g = new THREE.Group(); const body = new THREE.Mesh(this.bombGeo, TEAMMAT[team]); body.castShadow = true; g.add(body);
+    const light = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffffff, emissiveIntensity: 0 });
+    const band = new THREE.Mesh(this.bandGeo, light); band.rotation.x = Math.PI / 2; g.add(band);
+    return { g, light };
+  },
+  curling(owner, dir) {
+    const { g, light } = this.curlMesh(owner.team);
     const st = this.curlStart(owner, dir);
     g.position.copy(st.p); scene.add(g);
     this.bombs.push(Object.assign(st, { curl: true, owner, team: owner.team, g, light, fuse: CURL_FUSE, trail: 0 }));
@@ -511,16 +521,21 @@ const Cover = {
     }
     return { x: owner.pos.x + f.x * 0.9, y: owner.pos.y, z: owner.pos.z + f.z * 0.9 };
   },
+  // the board model (also used by the lobby demo)
+  build(team) {
+    if (!this.geo) { this.geo = new THREE.BoxGeometry(this.W, this.H, this.T); this.darkM = new THREE.MeshStandardMaterial({ color: 0x1b1c24, roughness: 0.5, metalness: 0.3 }); this.decalGeo = new THREE.CircleGeometry(1, 12); this.decalM = [0, 1].map(() => new THREE.MeshBasicMaterial({ color: 0xffffff })); }
+    const face = new THREE.MeshStandardMaterial({ map: this.texFor(team), roughness: 0.55, emissive: 0x000000 });
+    const g = new THREE.Group();
+    const board = new THREE.Mesh(this.geo, [this.darkM, this.darkM, this.darkM, this.darkM, face, face]); board.position.y = this.H / 2 + 0.1; board.castShadow = true; g.add(board);
+    const top = new THREE.Mesh(this.geo, TEAMMAT[team]); top.scale.set(1.03, 0.05, 1.5); top.position.y = this.H + 0.12; g.add(top);
+    [-1, 1].forEach(s => { const ft = new THREE.Mesh(this.geo, this.darkM); ft.scale.set(0.08, 0.1, 3.6); ft.position.set(s * (this.W / 2 - 0.25), 0.08, 0); g.add(ft); });
+    return { g, board, face };
+  },
   place(owner, dir) {
     const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
     for (const c of this.list.slice()) if (c.owner === owner) this.breakIt(c, true);          // one board each
     const sp = this.spot(owner, f), yaw = Math.atan2(f.x, f.z), team = owner.team;
-    if (!this.geo) { this.geo = new THREE.BoxGeometry(this.W, this.H, this.T); this.darkM = new THREE.MeshStandardMaterial({ color: 0x1b1c24, roughness: 0.5, metalness: 0.3 }); this.decalGeo = new THREE.CircleGeometry(1, 12); this.decalM = [0, 1].map(() => new THREE.MeshBasicMaterial({ color: 0xffffff })); }
-    const face = new THREE.MeshStandardMaterial({ map: this.texFor(team), roughness: 0.55, emissive: 0x000000 });
-    const g = new THREE.Group(); g.position.set(sp.x, sp.y, sp.z); g.rotation.y = yaw;
-    const board = new THREE.Mesh(this.geo, [this.darkM, this.darkM, this.darkM, this.darkM, face, face]); board.position.y = this.H / 2 + 0.1; board.castShadow = true; g.add(board);
-    const top = new THREE.Mesh(this.geo, TEAMMAT[team]); top.scale.set(1.03, 0.05, 1.5); top.position.y = this.H + 0.12; g.add(top);
-    [-1, 1].forEach(s => { const ft = new THREE.Mesh(this.geo, this.darkM); ft.scale.set(0.08, 0.1, 3.6); ft.position.set(s * (this.W / 2 - 0.25), 0.08, 0); g.add(ft); });
+    const { g, board, face } = this.build(team); g.position.set(sp.x, sp.y, sp.z); g.rotation.y = yaw;
     scene.add(g);
     const cv = { owner, team, x: sp.x, y: sp.y, z: sp.z, ax: Math.cos(yaw), az: -Math.sin(yaw), nx: f.x, nz: f.z, hp: SUBS.cover.hp, t: SUBS.cover.life, g, board, face, grow: 0, flash: 0, wob: 0, decals: [] };
     this.list.push(cv);

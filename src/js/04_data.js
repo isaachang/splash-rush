@@ -87,6 +87,8 @@ const CHARACTERS = {
 const CHAR_ORDER = ['sa', 'man', 'dun'];
 // baseline body used by the automated mechanics tests (not selectable)
 CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', sub: null, hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'charger', 'splatling', 'blaster'] });
+// a plain training dummy for the lobby sub-weapon demo (not selectable)
+CHARACTERS.dummy = Object.assign({}, CHARACTERS.std, { id: 'dummy', name: '假人', look: { skin: '#f3c39b', cloth: '#e9e4d8', cloth2: '#697386', pants: '#3b3f52', hat: 'cap', hatColor: '#697386', trim: '#f0f0f0', bodyW: 1, bodyH: 1, tankK: 1, crestK: 1 } });
 // the character that carries a given weapon (first match)
 function charForWeapon(w) { return CHAR_ORDER.find(id => CHARACTERS[id].weapons.includes(w)) || 'sa'; }
 // portrait: head with tentacle hair in team colour + each character's accessory (SVG, used in cards and lists)
