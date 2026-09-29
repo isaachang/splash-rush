@@ -83,7 +83,7 @@ class Bot {
     const c = this.c, e0 = c.eye(); let best = null, bd = 1e9;
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
-      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : Math.max(18, c.weapon.range + 4)) || d > bd) continue;
+      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : c.weapon.id === 'rifle' ? 18 : Math.max(18, c.weapon.range + 4)) || d > bd) continue;
       if (e.submerged && d > 3.5 && !(G.time - e.lastShot < 0.4)) continue;
       const ch = e.chest(); if (segBlocked(e0.x, e0.y, e0.z, ch.x, ch.y, ch.z, 0.5)) continue;
       best = e; bd = d;
