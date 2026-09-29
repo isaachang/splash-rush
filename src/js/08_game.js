@@ -516,7 +516,9 @@ function renderLobby() {
   });
   // preview: the character on its pedestal; on the weapon page it raises the gun and the camera moves in
   Preview.show(Profile.data.char, cur); Preview.mode = tab;
-  $('pvName').textContent = CH.name; $('pvRole').textContent = CH.role + ' · ' + WEAPONS[cur].name;
+  const W0 = WEAPONS[cur], nm = tab === 'weap' ? W0.name : CH.name, rl = tab === 'weap' ? W0.role + ' · ' + CH.name + (CH.weapons.length > 1 ? '可用' : '专属') : CH.role + ' · ' + W0.name;
+  if ($('pvName').textContent !== nm) { const pn = $('pvName').parentNode; if (pn && pn.classList) { pn.classList.remove('tx'); void pn.offsetWidth; pn.classList.add('tx'); } }
+  $('pvName').textContent = nm; $('pvRole').textContent = rl;
   ['rosterA', 'rosterB'].forEach((id, t) => {
     $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}"><span class="cp">${charIcon(m.char, 34, TEAM_HEX[t])}</span><span class="rt"><b>${m.name}${m.isPlayer ? '（你）' : ''}</b><small>${CHARACTERS[m.char].name} · ${WEAPONS[m.weapon].name}</small></span><span class="rw">${weaponIcon(m.weapon, '#fff', 34, TEAM_HEX[t])}</span></div>`).join('');
   });
@@ -537,7 +539,7 @@ function renderLoadCard() {
    Its own small renderer: the chosen character on a pedestal, slowly
    turning; drag to spin it.                                          */
 const Preview = {
-  key: '', yaw: 0.5, drag: null, idleT: 0, mode: 'char', raise: 0.2, zoom: 0,
+  key: '', yaw: 0.5, drag: null, idleT: 0, mode: 'char', raise: 0.2, ph: 0, wIn: 1, wSpin: 0.6,
   init() {
     const cv = $('pvCanvas'); this.cv = cv;
     try { this.r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); } catch (e) { this.r = null; return; }
@@ -554,11 +556,13 @@ const Preview = {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.97, 0.05, 8, 48), this.ringM); ring.rotation.x = Math.PI / 2; ped.add(ring);
     this.splatM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
     const sp = new THREE.Mesh(new THREE.CircleGeometry(0.7, 28), this.splatM); sp.rotation.x = -Math.PI / 2; sp.position.y = 0.005; ped.add(sp);
+    this.shadowM = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, depthWrite: false });
+    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.6, 24), this.shadowM); this.shadow.rotation.x = -Math.PI / 2; this.shadow.position.y = 0.012; ped.add(this.shadow);
     this.cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); this.cam.position.set(0, 1.35, 4.7); this.cam.lookAt(0, 0.82, 0); this.look = new THREE.Vector3(0, 0.82, 0);
     this.shots = [];
     const ev = (n, f) => cv.addEventListener && cv.addEventListener(n, f);
-    ev('pointerdown', e => { this.drag = { x: e.clientX, yaw: this.yaw }; if (cv.setPointerCapture) try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
-    ev('pointermove', e => { if (this.drag) { this.yaw = this.drag.yaw + (e.clientX - this.drag.x) * 0.012; this.idleT = 2.5; } });
+    ev('pointerdown', e => { const wm = this.mode === 'weap'; this.drag = { x: e.clientX, wm, yaw: wm ? (this.wYaw === undefined ? Math.PI / 2 : this.wYaw) : this.yaw }; if (cv.setPointerCapture) try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
+    ev('pointermove', e => { if (this.drag) { const y = this.drag.yaw + (e.clientX - this.drag.x) * 0.012; if (this.drag.wm) { this.wYaw = y; this.wSpin = 0.6; } else this.yaw = y; this.idleT = 2.5; } });
     const up = () => { this.drag = null; }; ev('pointerup', up); ev('pointercancel', up);
   },
   show(charId, weaponId) {
@@ -570,29 +574,72 @@ const Preview = {
     const sameChar = this.c && this.c.cs.id === charId;
     if (this.c) { this.ped.remove(this.c.root); }
     const c = new Character('pv', 0, true, { weapon: weaponId, char: charId });
-    this.raise = sameChar ? 0 : this.raise * 0.3;          // new weapon: it comes back up into the hands; new character: fresh pose
     scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot);
     c.pos.set(0, 0, 0); c.vel.set(0, 0, 0); c.grounded = true; c.state = 'play'; c.lastShot = -99; this.ped.add(c.root); this.c = c;
     this.pop = sameChar ? 0.4 : 1; this.enter = sameChar ? 1 : 0;
+    if (this.wId !== weaponId) this.swapWeapon(weaponId, c.look.trim);
+  },
+  // the floating showcase weapon (weapon page): same model as in the hands, centred on its own bounds
+  swapWeapon(id, trim) {
+    if (this.wOld) this.dropW(this.wOld.g);
+    this.wOld = this.wp && this.ph > 0.3 ? { g: this.wp.g, t: 1, s0: this.wp.g.scale.x } : null; if (this.wp && !this.wOld) this.dropW(this.wp.g);
+    const inner = buildWeaponModel(id, TEAMMAT[0], trim); inner.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(inner), size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
+    inner.position.sub(ctr); inner.traverse(o => { o.castShadow = false; });
+    const tilt = new THREE.Group(); tilt.add(inner); const g = new THREE.Group(); g.add(tilt); this.sc.add(g);
+    this.wp = { g, tilt, len: Math.max(size.x, size.y, size.z), spin: inner.userData.spin || null };
+    this.wId = id; this.wIn = this.ph > 0.3 ? -0.35 : 1; this.wSpin = 7;     // a new weapon on the weapon page: pops in with a flourish spin
+  },
+  dropW(g) {
+    this.sc.remove(g);
+    g.traverse(o => { if (!o.isMesh) return; if (o.material && !TEAMMAT.includes(o.material)) o.material.dispose(); if (!Object.values(GEO).includes(o.geometry)) o.geometry.dispose(); });
   },
   update(dt) {
     if (!this.r || !this.c || !$('lobby').classList.contains('show')) return;
     const cv = this.cv, w = cv.clientWidth || 400, h = cv.clientHeight || 400;
     if (w !== this.w || h !== this.h) { this.w = w; this.h = h; this.r.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix(); }
-    const wm = this.mode === 'weap', c = this.c;
-    // yaw: slow turntable on the character page; on the weapon page ease into a 3/4 pose that shows the gun
+    const wm = this.mode === 'weap', c = this.c, sm = k => k * k * (3 - 2 * k); this.t = (this.t || 0) + dt;
     this.idleT = Math.max(0, this.idleT - dt);
-    if (!this.drag && this.idleT <= 0) { if (wm) this.yaw += angDiff(this.yaw, 1.05) * Math.min(1, dt * 3.2); else this.yaw += dt * 0.55; }
-    // camera: full body <-> weapon close-up (smooth)
-    this.zoom = damp(this.zoom, wm ? 1 : 0, 5, dt); const z = this.zoom, e = z * z * (3 - 2 * z);
-    const xw = { splatling: 0.3, charger: 0.15 }[c.weapon.id] || 0, nar = clamp(1.1 - this.cam.aspect, 0, 0.5);   // long guns / narrow panels: step back a bit
-    this.cam.position.set(lerp(0, 0.4 + xw, e), lerp(1.35, 1.3, e), lerp(4.7, 4.0 + xw * 2 + nar * 2, e)); this.look.set(lerp(0, 0.5 + xw, e), lerp(0.82, 0.98, e), 0); this.cam.lookAt(this.look);
-    // arms: weapon held low on the character page, raised and aimed on the weapon page
-    this.raise = damp(this.raise, wm ? 1 : 0.15, 6, dt); this.enter = Math.min(1, (this.enter || 0) + dt * 3.5);
-    c.bodyYaw = c.aimYaw = this.yaw; c.aimPitch = lerp(-0.5, -0.03, this.raise); c.pos.set(0, 0, 0); c.lastShot = wm ? G.time : -99;
-    c.syncModel(dt); c.root.position.set(0, (1 - this.enter) * -0.25, 0);
-    const ek = 0.85 + 0.15 * (1 - Math.pow(1 - this.enter, 3)); c.root.scale.set((c.look.bodyW || 1) * ek, (c.look.bodyH || 1) * ek, (c.look.bodyW || 1) * ek);
-    if (this.raise < 0.98) { c.arms[1].rotation.x = lerp(0.1, c.arms[1].rotation.x, this.raise); c.torso.rotation.y *= this.raise; }
+    // phase 0 = character on the pedestal, 1 = weapon floating alone; the character dives into the ink, then the weapon rises out of it
+    const ph0 = this.ph || 0; this.ph = clamp(ph0 + (wm ? dt : -dt) / 0.8, 0, 1);
+    const a = clamp(this.ph / 0.42, 0, 1), b = clamp((this.ph - 0.34) / 0.66, 0, 1);
+    if ((ph0 < 0.2) !== (this.ph < 0.2)) this.pop = Math.max(this.pop || 0, 0.7);       // ink splash pulse as the character dives / resurfaces
+    // camera: full body <-> centred on the floating weapon
+    const e = sm(this.ph), dist = lerp(4.7, 4.25, e);
+    this.cam.position.set(0, lerp(1.35, 1.32, e), dist); this.look.set(0, lerp(0.82, 1.0, e), 0); this.cam.lookAt(this.look);
+    // character: slow turntable; on the way out it squashes and sinks into the pedestal ink
+    if (!this.drag && this.idleT <= 0) this.yaw += dt * 0.55;
+    const ck = 1 - sm(a); c.root.visible = ck > 0.01;
+    if (c.root.visible) {
+      this.raise = damp(this.raise, 0.15, 6, dt); this.enter = Math.min(1, (this.enter || 0) + dt * 3.5);
+      c.bodyYaw = c.aimYaw = this.yaw; c.aimPitch = lerp(-0.5, -0.03, this.raise); c.pos.set(0, 0, 0); c.lastShot = -99;
+      c.syncModel(dt); c.root.position.set(0, (1 - this.enter) * -0.25 - a * a * 0.5, 0);
+      const ek = (0.85 + 0.15 * (1 - Math.pow(1 - this.enter, 3))), sq = 1 + 0.3 * Math.sin(Math.PI * a), bw = c.look.bodyW || 1, bh = c.look.bodyH || 1;
+      c.root.scale.set(bw * ek * sq * Math.max(ck, 0.2), bh * ek * Math.max(ck, 0.001), bw * ek * sq * Math.max(ck, 0.2));
+      c.arms[1].rotation.x = lerp(0.1, c.arms[1].rotation.x, this.raise); c.torso.rotation.y *= this.raise;
+    }
+    // weapon: rises out of the ink with a little overshoot, then floats, bobs and turns; sized to fit the panel
+    const W = this.wp;
+    if (W) {
+      this.wIn = Math.min(1, this.wIn + dt / 0.5); const wi = clamp(this.wIn, 0, 1), k = Math.min(b, wi);
+      const ob = k <= 0 ? 0 : 1 + 2.2 * Math.pow(k - 1, 3) + 1.2 * Math.pow(k - 1, 2);       // ease-out-back
+      W.g.visible = k > 0;
+      if (W.g.visible) {
+        const visW = 2 * dist * Math.tan(this.cam.fov * Math.PI / 360) * this.cam.aspect, fit = Math.min(1.7, visW * 0.82) / W.len;
+        if (!this.drag && this.idleT <= 0) { this.wSpin = damp(this.wSpin, 0.6, 2.2, dt); this.wYaw = (this.wYaw === undefined ? Math.PI / 2 : this.wYaw) + this.wSpin * dt; }
+        W.g.rotation.y = this.wYaw === undefined ? Math.PI / 2 : this.wYaw;
+        W.g.position.set(0, lerp(0.15, 1.0, 1 - Math.pow(1 - k, 3)) + Math.sin(this.t * 1.7 + 1) * 0.035 * k, 0);
+        W.g.scale.setScalar(fit * Math.max(0.001, ob)); W.tilt.rotation.x = 0.16 + Math.sin(this.t * 1.1) * 0.05; W.tilt.rotation.z = Math.sin(this.t * 0.9) * 0.05;
+        if (W.spin) W.spin.rotation.z += dt * (2 + this.wSpin * 3);
+      }
+      this.shadowM.opacity = 0.32 * k; this.shadow.scale.setScalar(0.5 + 0.3 * k);
+    }
+    // the previous weapon (weapon swapped on the weapon page) spins off and shrinks away
+    if (this.wOld) {
+      this.wOld.t -= dt / 0.22; const o = this.wOld;
+      if (o.t <= 0) { this.dropW(o.g); this.wOld = null; }
+      else { o.g.rotation.y += dt * 14; o.g.scale.setScalar(Math.max(0.001, o.s0 * o.t * o.t)); o.g.position.y += dt * 0.6; }
+    }
     this.pop = Math.max(0, (this.pop || 0) - dt * 4); const s = 1 + this.pop * 0.12; this.ped.scale.set(s, s, s);
     this.r.render(this.sc, this.cam);
   }

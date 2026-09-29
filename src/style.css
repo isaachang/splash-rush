@@ -456,3 +456,6 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .wstats{display:grid;grid-template-columns:40px 1fr;gap:5px 10px;align-items:center;font-size:12px;font-weight:700}
 .wkit{display:flex;gap:14px;margin-top:9px;font-size:12px;opacity:.85}.wkit b{color:#ffe45c}
 .wd{margin-top:6px;font-size:12px;line-height:1.55;opacity:.7}
+
+.pvName.tx{animation:pvTx .4s cubic-bezier(.2,.9,.3,1.25)}
+@keyframes pvTx{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
