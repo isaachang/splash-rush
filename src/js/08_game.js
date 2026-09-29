@@ -28,14 +28,14 @@ const HUD = {
     $('inkbar').classList.toggle('low', c.ink < 20);
     $('inkbar').style.opacity = c.ink > 99.5 && !c.swim ? 0.45 : 1;
     this.lowInkT = Math.max(0, this.lowInkT - dt); $('inkwarn').style.opacity = this.lowInkT > 0 ? 1 : 0;
-    $('subw').classList.toggle('no', c.ink < 70);
+    $('subw').classList.toggle('no', c.ink < 70 / c.inkK);
     $('spRing').style.strokeDashoffset = 264 * (1 - c.special / 100);
     $('special').classList.toggle('ready', c.special >= 100);
-    const hp = c.alive ? c.hp : 100; this.hurtV = Math.max(0, this.hurtV - dt * 2);
+    const hp = c.alive ? c.hp / c.maxHp * 100 : 100; this.hurtV = Math.max(0, this.hurtV - dt * 2);
     const vig = clamp((100 - hp) / 100 * 0.9 + this.hurtV * 0.4, 0, 0.95);
     const ec = TEAM_HEX[1 - c.team];
     $('vignette').style.opacity = 0;
-    ScreenInk.update(dt, c.alive ? c.hp : Cam.spec ? 100 : 0, c.alive && c.inEnemy && !c.invuln());     // watching a teammate: clear the ink off the screen
+    ScreenInk.update(dt, c.alive ? c.hp / c.maxHp * 100 : Cam.spec ? 100 : 0, c.alive && c.inEnemy && !c.invuln());     // watching a teammate: clear the ink off the screen
     const st = $('specTag'), sn = !c.alive && Cam.spec ? '正在观看：' + Cam.spec.name : '';
     if (st.textContent !== sn) { st.textContent = sn; st.classList.toggle('on', !!sn); }
     $('crosshair').classList.toggle('enemy', Cam.lock);
@@ -73,7 +73,7 @@ const HUD = {
       const list = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint), K = list.reduce((a, c) => a + c.kills, 0);
       const row = c => {
         const ready = c.special >= 100, sp = ready ? '<b>就绪</b>' : t === mine ? Math.floor(c.special) + '%' : '—';     // enemies: only "ready", like the top icons
-        return `<div class="st-r${c.isPlayer ? ' me' : ''}${c.alive ? '' : ' dead'}"><span class="w">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}</span><span class="n">${c.name}${c.isPlayer ? '<i>你</i>' : ''}${c.alive ? '' : '<em>' + Math.max(1, Math.ceil(c.respawnT)) + '</em>'}</span><span>${c.kills}</span><span>${c.assists}</span><span>${c.deaths}</span><span>${Math.round(c.paint)}p</span><span class="sp${ready ? ' on' : ''}">${sp}</span></div>`;
+        return `<div class="st-r${c.isPlayer ? ' me' : ''}${c.alive ? '' : ' dead'}"><span class="w">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}</span><span class="n">${charIcon(c.cs.id, 24, TEAM_HEX[t])}${c.name}${c.isPlayer ? '<i>你</i>' : ''}${c.alive ? '' : '<em>' + Math.max(1, Math.ceil(c.respawnT)) + '</em>'}</span><span>${c.kills}</span><span>${c.assists}</span><span>${c.deaths}</span><span>${Math.round(c.paint)}p</span><span class="sp${ready ? ' on' : ''}">${sp}</span></div>`;
       };
       $(t ? 'stB' : 'stA').innerHTML = `<div class="st-th" style="--tc:${TEAM_HEX[t]}"><b>${t === mine ? '我方' : '对手'}</b><span>共击倒 ${K}</span></div>` + list.map(row).join('');
     });
@@ -312,27 +312,25 @@ function rollRoster() {
   const R = [[], []];
   for (let t = 0; t < 2; t++) {
     const slots = t === 0 ? [0, 2, 3] : [0, 1, 2, 3];
-    // each team: a couple of the special weapons (never two of the same), the rest carry rifles
-    const specials = ['charger', 'splatling'].sort(() => Math.random() - 0.5).slice(0, randi(1, 2)), freeSlots = slots.slice().sort(() => Math.random() - 0.5);
-    const give = {}; specials.forEach((w, k) => { if (k < freeSlots.length) give[freeSlots[k]] = w; });
     for (let i = 0; i < 4; i++) {
       const isP = t === 0 && i === 1;
-      R[t].push({ name: isP ? (GAME.name || '玩家') : names.pop(), isPlayer: isP, weapon: isP ? Profile.data.weapon : (give[i] || 'rifle'), look: isP ? Profile.data.look : randomLook(), role: roles[(i + t) % 4] });
+      R[t].push({ name: isP ? (GAME.name || '玩家') : names.pop(), isPlayer: isP, ...(() => { if (isP) return { weapon: Profile.data.weapon, char: Profile.data.char }; const ch = GAME.uniformChars ? Profile.data.char : pick(CHAR_ORDER); return { char: ch, weapon: GAME.uniformChars ? pick(['rifle', 'rifle', 'charger', 'splatling']) : pick(CHARACTERS[ch].weapons) }; })(), look: isP ? Profile.data.look : randomLook(), role: roles[(i + t) % 4] });
     }
   }
   G.roster = R; enforceRoster();
 }
 function enforceRoster() {
   // at most one charger per team (the player's own pick takes priority)
-  const me = G.roster[0][1]; me.weapon = Profile.data.weapon; me.name = GAME.name || '玩家';
-  for (const w of ['charger', 'splatling']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) m.weapon = 'rifle'; seen = true; } }); });
+  const me = G.roster[0][1]; me.weapon = Profile.data.weapon; me.char = Profile.data.char; me.name = GAME.name || '玩家';
+  // at most one sniper and one gatling per team; extra ones swap to 阿飒 + rifle
+  for (const w of ['charger', 'splatling']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) { m.weapon = 'rifle'; if (!CHARACTERS[m.char].weapons.includes('rifle')) m.char = 'sa'; } seen = true; } }); });
 }
 function spawnTeams() {
   clearChars();
   if (!G.roster) rollRoster();
   const offs = [-4.5, -1.5, 1.5, 4.5];
   for (let t = 0; t < 2; t++) G.roster[t].forEach((m, i) => {
-    const c = new Character(m.name, t, m.isPlayer, { weapon: m.weapon, look: m.look });
+    const c = new Character(m.name, t, m.isPlayer, { weapon: m.weapon, look: m.look, char: m.char });
     const sp = SPAWN[t]; c.pos.set(sp.x + offs[i] * (t ? -1 : 1), sp.y, sp.z + (t ? -1 : 1) * (i % 2 ? 0.8 : -0.4)); c.aimYaw = c.yaw = c.bodyYaw = sp.yaw;
     CHARS.push(c); if (m.isPlayer) PLAYER = c; else G.bots.push(new Bot(c, m.role));
   });
@@ -441,7 +439,7 @@ function showResults() {
     const team = t => {
       const won = (t === 0) === win, rows = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint).map((c, i) => {
         const md = medalsFor(c).map(m => `<b class="${m.gold ? 'g' : 's'}" title="${m.t}（${m.gold ? '全场第一' : '队内第一'}）"></b>`).join('') + roastsFor(c).map(r => `<b class="x" title="${r.t}"></b>`).join('');
-        return `<div class="r${c.isPlayer ? ' me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}${c.name}${c.isPlayer ? '<i>你</i>' : ''}</span><span>${Math.round(c.paint)}p</span><span>${c.kills}<small>${c.assists ? ' +' + c.assists : ''}</small></span><span>${c.deaths}</span><span>${c.specials}</span><span class="md">${md}</span></div>`;
+        return `<div class="r${c.isPlayer ? ' me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${charIcon(c.cs.id, 26, TEAM_HEX[t])}${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}${c.name}${c.isPlayer ? '<i>你</i>' : ''}</span><span>${Math.round(c.paint)}p</span><span>${c.kills}<small>${c.assists ? ' +' + c.assists : ''}</small></span><span>${c.deaths}</span><span>${c.specials}</span><span class="md">${md}</span></div>`;
       }).join('');
       return `<div class="tbl ${won ? 'won' : 'lost'}" style="--tc:${TEAM_HEX[t]}"><div class="th"><b>${won ? 'WIN!' : 'LOSE…'}</b><span>${t === 0 ? '我方' : '对手'}</span><em>${(t ? p1 : p0).toFixed(1)}%</em></div><div class="r h"><span></span><span>名字</span><span>涂地</span><span>击倒 +助攻</span><span>阵亡</span><span>必杀</span><span>奖牌</span></div>${rows}</div>`;
     };
@@ -472,30 +470,89 @@ function openLobby() {
   show('title', false); show('results', false); show('lobby', true);
 }
 function statBars(v) { let s = '<div class="bar">'; for (let i = 1; i <= 5; i++) s += `<i class="${i <= v ? 'on' : ''}"></i>`; return s + '</div>'; }
+// character card: portrait, role, three stat bars; the picked character opens up to show its weapons (operator-style loadout)
+function charCard(id, sel) {
+  const C = CHARACTERS[id], pc = (v, base) => { const p = Math.round(v * 100); return `<em class="${p > base ? 'up' : p < base ? 'dn' : ''}">${p}%</em>`; };
+  const weap = sel ? `<div class="loadout"><div class="lh">武器<small>${C.weapons.length > 1 ? '点击切换' : '专属武器'}</small></div><div class="lw">${C.weapons.map(w => { const W = WEAPONS[w], on = w === Profile.data.weapon; return `<button class="wopt${on ? ' sel' : ''}" data-w="${w}">${weaponIcon(w, '#fff', 58)}<span><b>${W.name}</b><small>${W.role}</small></span>${on ? '<i>✔</i>' : ''}</button>`; }).join('')}</div><div class="wdesc2">${WEAPONS[Profile.data.weapon].desc}</div></div>` : `<div class="wmini">${C.weapons.map(w => weaponIcon(w, '#fff', 34)).join('')}<span>${C.weapons.map(w => WEAPONS[w].name).join(' / ')}</span></div>`;
+  return `<div class="ccard${sel ? ' sel' : ''}" data-id="${id}"><div class="crow"><div class="pt">${charIcon(id, 72)}${sel ? '<span class="tag">出战</span>' : ''}</div>
+    <div class="ci"><div class="nm"><b>${C.name}</b><span class="en">${C.en}</span></div><span class="role">${C.role}</span>
+      <div class="cst"><span>生命</span>${statBars(C.bars.hp)}<em class="${C.hp > 100 ? 'up' : C.hp < 100 ? 'dn' : ''}">${C.hp}</em><span>移速</span>${statBars(C.bars.speed)}${pc(C.runK, 100)}<span>墨水</span>${statBars(C.bars.ink)}${pc(C.inkCap, 100)}</div></div></div>
+    ${sel ? `<div class="cdesc">${C.desc}</div>` : ''}${weap}</div>`;
+}
 function renderLobby() {
+  const CH = CHARACTERS[Profile.data.char];
+  if (!CH.weapons.includes(Profile.data.weapon)) Profile.data.weapon = CH.weapons[0];
   const cur = Profile.data.weapon;
-  $('weapList').innerHTML = WEAPON_ORDER.map(id => {
-    const w = WEAPONS[id];
-    return `<div class="wcard${id === cur ? ' sel' : ''}" data-id="${id}">
-      <div class="wic">${weaponIcon(id, '#fff', 110)}<span class="tag">${id === cur ? '已装备' : '点击装备'}</span></div>
-      <div class="winfo"><b>${w.name}</b><span class="en">${w.en}</span><span class="role">${w.role}</span>
-        <div class="stats">${STAT_LABELS.map(([k, l]) => `<span>${l}</span>${statBars(w.stats[k])}`).join('')}</div>
-        <div class="kit">副武器：${SUBS[w.sub].name} · 必杀技：${SPECIALS[w.special].name}</div>
-        <div class="wdesc">${w.desc}</div></div></div>`;
-  }).join('');
-  $('weapList').querySelectorAll('.wcard').forEach(el => el.onclick = () => {
-    if (Profile.data.weapon === el.dataset.id) return;
-    Profile.data.weapon = el.dataset.id; Profile.save(); Sfx.init(); Sfx.click(); enforceRoster(); renderLobby(); renderLoadCard();
+  $('charList').innerHTML = CHAR_ORDER.map(id => charCard(id, id === Profile.data.char)).join('');
+  $('charList').querySelectorAll('.ccard').forEach(el => el.onclick = e => {
+    const wb = e.target.closest && e.target.closest('.wopt');
+    Sfx.init(); Sfx.click();
+    if (wb) { if (Profile.data.weapon !== wb.dataset.w) { Profile.data.weapon = wb.dataset.w; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard(); } return; }
+    if (Profile.data.char === el.dataset.id) return;
+    Profile.data.char = el.dataset.id; Profile.data.weapon = CHARACTERS[el.dataset.id].weapons[0]; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard();
   });
+  // preview: the chosen character holding its chosen weapon
+  Preview.show(Profile.data.char, cur);
+  $('pvName').textContent = CH.name; $('pvRole').textContent = CH.role + ' · ' + WEAPONS[cur].name;
   ['rosterA', 'rosterB'].forEach((id, t) => {
-    $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}">${weaponIcon(m.weapon, '#fff', 40, TEAM_HEX[t])}<span>${m.name}${m.isPlayer ? '（你）' : ''}</span><span class="wn">${WEAPONS[m.weapon].name}</span></div>`).join('');
+    $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}"><span class="cp">${charIcon(m.char, 34, TEAM_HEX[t])}</span><span class="rt"><b>${m.name}${m.isPlayer ? '（你）' : ''}</b><small>${CHARACTERS[m.char].name} · ${WEAPONS[m.weapon].name}</small></span><span class="rw">${weaponIcon(m.weapon, '#fff', 34, TEAM_HEX[t])}</span></div>`).join('');
   });
 }
 function renderLoadCard() {
-  const w = WEAPONS[Profile.data.weapon];
-  $('lcIcon').innerHTML = weaponIcon(w.id, '#fff', 72); $('lcName').textContent = w.name; $('lcRole').textContent = w.role;
+  const w = WEAPONS[Profile.data.weapon], C = CHARACTERS[Profile.data.char];
+  $('lcIcon').innerHTML = charIcon(C.id, 58) + `<span class="lcw">${weaponIcon(w.id, '#fff', 40)}</span>`; $('lcName').textContent = C.name + ' · ' + w.name; $('lcRole').textContent = C.role + ' / ' + w.role;
   $('lcKit').textContent = SUBS[w.sub].name + ' · ' + SPECIALS[w.special].name;
 }
+/* ------------------------------------------------ lobby 3D preview
+   Its own small renderer: the chosen character on a pedestal, slowly
+   turning; drag to spin it.                                          */
+const Preview = {
+  key: '', yaw: 0.5, drag: null, idleT: 0,
+  init() {
+    const cv = $('pvCanvas'); this.cv = cv;
+    try { this.r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); } catch (e) { this.r = null; return; }
+    if (this.r.setPixelRatio) this.r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    if (this.r.outputColorSpace !== undefined) this.r.outputColorSpace = THREE.SRGBColorSpace;
+    this.r.toneMapping = THREE.ACESFilmicToneMapping;
+    const sc = this.sc = new THREE.Scene();
+    sc.add(new THREE.HemisphereLight(0xe8f2ff, 0x3a3150, 1.1));
+    const key = new THREE.DirectionalLight(0xfff2de, 2.4); key.position.set(2.5, 5, 4); sc.add(key);
+    const rim = new THREE.DirectionalLight(0x9fb8ff, 1.2); rim.position.set(-3, 3, -4); sc.add(rim);
+    const ped = new THREE.Group(); sc.add(ped); this.ped = ped;
+    ped.add(mesh(new THREE.CylinderGeometry(0.95, 1.05, 0.16, 40), new THREE.MeshStandardMaterial({ color: 0x24223f, roughness: 0.5, metalness: 0.3 }), 0, -0.08, 0));
+    this.ringM = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.97, 0.05, 8, 48), this.ringM); ring.rotation.x = Math.PI / 2; ped.add(ring);
+    this.splatM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+    const sp = new THREE.Mesh(new THREE.CircleGeometry(0.7, 28), this.splatM); sp.rotation.x = -Math.PI / 2; sp.position.y = 0.005; ped.add(sp);
+    this.cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); this.cam.position.set(0, 1.35, 4.7); this.cam.lookAt(0, 0.82, 0);
+    const ev = (n, f) => cv.addEventListener && cv.addEventListener(n, f);
+    ev('pointerdown', e => { this.drag = { x: e.clientX, yaw: this.yaw }; if (cv.setPointerCapture) try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
+    ev('pointermove', e => { if (this.drag) { this.yaw = this.drag.yaw + (e.clientX - this.drag.x) * 0.012; this.idleT = 2.5; } });
+    const up = () => { this.drag = null; }; ev('pointerup', up); ev('pointercancel', up);
+  },
+  show(charId, weaponId) {
+    if (!this.r) return;
+    const key = charId + '/' + weaponId + '/' + TEAM_HEX[0];
+    this.ringM.color.set(TEAM_HEX[0]); this.splatM.color.set(TEAM_HEX[0]);
+    if (key === this.key && this.c) return;
+    this.key = key;
+    if (this.c) { this.ped.remove(this.c.root); }
+    const c = new Character('pv', 0, true, { weapon: weaponId, char: charId });
+    scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot);
+    c.pos.set(0, 0, 0); c.vel.set(0, 0, 0); c.grounded = true; c.state = 'play'; c.lastShot = -99; this.ped.add(c.root); this.c = c;
+    this.pop = 1;
+  },
+  update(dt) {
+    if (!this.r || !this.c || !$('lobby').classList.contains('show')) return;
+    const cv = this.cv, w = cv.clientWidth || 400, h = cv.clientHeight || 400;
+    if (w !== this.w || h !== this.h) { this.w = w; this.h = h; this.r.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix(); }
+    this.idleT = Math.max(0, this.idleT - dt); if (!this.drag && this.idleT <= 0) this.yaw += dt * 0.55;
+    const c = this.c; c.bodyYaw = c.aimYaw = this.yaw; c.aimPitch = -0.04; c.pos.set(0, 0, 0);
+    c.syncModel(dt); c.root.position.set(0, 0, 0);
+    this.pop = Math.max(0, (this.pop || 0) - dt * 4); const s = 1 + this.pop * 0.12; this.ped.scale.set(s, s, s);
+    this.r.render(this.sc, this.cam);
+  }
+};
 
 /* ------------------------------------------------------------- update */
 function updateIntro(dt) {
@@ -536,6 +593,7 @@ function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(clock.getDelta(), 1 / 30), t = clock.elapsedTime;
   if (!G.paused) {
+    Preview.update(dt);
     if (G.state === 'title') updateTitle(dt);
     else if (G.state === 'intro') updateIntro(dt);
     else if (G.state === 'play') updatePlay(dt);
@@ -626,7 +684,7 @@ function boot() {
   initPaint();
   initGeo();
   buildSkyEnv(); buildSea(); buildArena(); buildDecor();
-  Fx.init(); Proj.init(); Barrier.init(); ScreenInk.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI();
+  Fx.init(); Proj.init(); Barrier.init(); ScreenInk.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI(); Preview.init();
   applyPalette();
   renderer.compile(scene, camera);
   G.state = 'title';

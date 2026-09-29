@@ -53,6 +53,52 @@ WEAPONS.charger.charges = true;
 const WEAPON_ORDER = ['rifle', 'charger', 'splatling'];
 const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'], ['paint', '涂地'], ['mobility', '机动']];
 
+/* ------------------------------------------------------ characters
+   Squid-kid characters in the spirit of the original (tentacle "hair" in
+   team colour, visor, backpack ink tank) — original designs.  Each has a
+   different body and different stats; any character can use any weapon. */
+const CHARACTERS = {
+  sa: {
+    id: 'sa', name: '阿飒', en: 'SWIFT', role: '疾风 · 游击', tag: '跑得最快的街头涂鸦手',
+    desc: '全场最快：走路、潜墨都快一大截，适合绕后偷袭、抢地盘。但身板最薄，墨罐也小一点，挨两下就得撤。',
+    hp: 80, runK: 1.25, swimK: 1.15, inkCap: 0.9, inkRegen: 1, knockK: 1.2, weapons: ['rifle'],
+    look: { skin: '#f3c39b', cloth: '#f5f5f2', cloth2: '#40c0b0', pants: '#23242c', hat: 'band', hatColor: '#40c0b0', trim: '#5ad1ff', hair: 'tail', bodyW: 0.92, bodyH: 1.0, tankK: 0.9, crestK: 1.35 },
+    bars: { hp: 1, speed: 5, ink: 2 }, weaponNote: '专属武器'
+  },
+  man: {
+    id: 'man', name: '满满', en: 'TANKFUL', role: '墨罐 · 持久', tag: '背着超大墨罐的涂地狂',
+    desc: '背着一个超大墨罐，墨水多 40%，回墨也更快。重炮狙击能多蓄好几发，步枪也能一直打、一直涂地。',
+    hp: 100, runK: 1, swimK: 1, inkCap: 1.4, inkRegen: 1.15, knockK: 1, weapons: ['charger', 'rifle'],
+    look: { skin: '#dba577', cloth: '#ffcf3f', cloth2: '#2a2b35', pants: '#1f3050', hat: 'phones', hatColor: '#2a2b35', trim: '#f0f0f0', hair: 'twin', bodyW: 1.0, bodyH: 1.0, tankK: 1.45, crestK: 1.0 },
+    bars: { hp: 3, speed: 3, ink: 5 }, weaponNote: '2 把可选'
+  },
+  dun: {
+    id: 'dun', name: '石墩', en: 'BULWARK', role: '重装 · 肉盾', tag: '挨打也不退一步的大块头',
+    desc: '体格最壮，生命值最高（步枪要 5 发才倒），被打中几乎不后仰、不被推开，端着加特林顶在最前面。代价是全场最慢，扫射时更慢。',
+    hp: 160, runK: 0.8, swimK: 0.85, inkCap: 1, inkRegen: 1, knockK: 0.4, weapons: ['splatling'],
+    look: { skin: '#7d4d31', cloth: '#3b3f52', cloth2: '#ff8a3d', pants: '#2a2b35', hat: 'goggles', hatColor: '#3b3f52', trim: '#ffd23a', hair: 'fin', bodyW: 1.14, bodyH: 1.05, tankK: 1.05, crestK: 0.8 },
+    bars: { hp: 5, speed: 1, ink: 3 }, weaponNote: '专属武器'
+  }
+};
+const CHAR_ORDER = ['sa', 'man', 'dun'];
+// baseline body used by the automated mechanics tests (not selectable)
+CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'charger', 'splatling'] });
+// the character that carries a given weapon (first match)
+function charForWeapon(w) { return CHAR_ORDER.find(id => CHARACTERS[id].weapons.includes(w)) || 'sa'; }
+// portrait: head with tentacle hair in team colour + each character's accessory (SVG, used in cards and lists)
+function charIcon(id, w = 64, accent = 'var(--c0)') {
+  const C = CHARACTERS[id] || CHARACTERS.man, L = C.look, st = 'stroke="#111" stroke-width="3" stroke-linejoin="round"';
+  const hair = id === 'sa'
+    ? `<path d="M14 30 Q12 8 32 6 Q52 8 50 30 Z" style="fill:${accent}" ${st}/><path d="M48 18 Q62 22 60 44 Q56 36 50 30 Z" style="fill:${accent}" ${st}/>`
+    : id === 'dun'
+      ? `<path d="M12 32 Q12 10 32 9 Q52 10 52 32 Z" style="fill:${accent}" ${st}/><path d="M24 12 L32 -2 L40 12 Z" style="fill:${accent}" ${st}/>`
+      : `<path d="M12 32 Q10 8 32 6 Q54 8 52 32 Z" style="fill:${accent}" ${st}/><path d="M12 26 Q2 34 6 52 Q12 46 14 34 Z" style="fill:${accent}" ${st}/><path d="M52 26 Q62 34 58 52 Q52 46 50 34 Z" style="fill:${accent}" ${st}/>`;
+  const acc = id === 'sa' ? `<rect x="12" y="20" width="40" height="6" rx="3" fill="${L.hatColor}" ${st}/>`
+    : id === 'dun' ? `<circle cx="24" cy="15" r="6" fill="#9aa3b5" ${st}/><circle cx="40" cy="15" r="6" fill="#9aa3b5" ${st}/>`
+      : `<path d="M11 30 Q32 -4 53 30" fill="none" stroke="#111" stroke-width="5"/><rect x="6" y="27" width="9" height="13" rx="4" fill="${L.hatColor}" ${st}/><rect x="49" y="27" width="9" height="13" rx="4" fill="${L.hatColor}" ${st}/>`;
+  return `<svg viewBox="0 0 64 64" width="${w}" height="${w}" style="vertical-align:middle;overflow:visible"><ellipse cx="32" cy="34" rx="19" ry="18" fill="${L.skin}" ${st}/><rect x="15" y="30" width="34" height="9" rx="4.5" fill="#111"/><circle cx="25" cy="34.5" r="3" fill="#fff"/><circle cx="39" cy="34.5" r="3" fill="#fff"/>${hair}${acc}<path d="M20 52 Q32 60 44 52 L44 62 L20 62 Z" fill="${L.cloth}" ${st}/></svg>`;
+}
+
 /* ---------------------------------------------------------- icons */
 function weaponIcon(id, color = '#fff', w = 64, accent = 'var(--c0)') {
   const h = w / 2, st = 'stroke="#111" stroke-width="2.5" stroke-linejoin="round"';
@@ -82,11 +128,13 @@ const CLOTH_COLS = ['#f5f5f2', '#2a2b35', '#697386', '#eadcc2', '#5c7a3a', '#274
 /* --------------------------------------------------------- profile */
 const PROFILE_KEY = 'splashrush.profile';
 const Profile = {
-  data: { v: 1, name: '新人墨仔', weapon: 'rifle', pal: 0, diff: 1, dur: 180, look: null },
+  data: { v: 1, name: '新人墨仔', weapon: 'rifle', char: 'sa', pal: 0, diff: 1, dur: 180, look: null },
   load() {
     try { const s = localStorage.getItem(PROFILE_KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) Object.assign(this.data, d); } } catch (e) { }
     if (!this.data.look) this.data.look = randomLook();
     if (!WEAPON_ORDER.includes(this.data.weapon)) this.data.weapon = 'rifle';
+    if (!CHAR_ORDER.includes(this.data.char)) this.data.char = 'sa';
+    if (!CHARACTERS[this.data.char].weapons.includes(this.data.weapon)) this.data.weapon = CHARACTERS[this.data.char].weapons[0];
     const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
   },
   save() {
@@ -99,6 +147,12 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.8.0', date: '2026-09-29', time: '16:09', title: '角色', items: [
+    '新增 3 个角色：阿飒（跑得最快）、满满（墨水最多）、石墩（最耐打），每个角色有自己的武器',
+    '战前准备改成选角色：选中的角色会展开，可以看到和切换它的武器',
+    '中间的 3D 预览会自动旋转，也可以按住拖动',
+    '对阵阵容、Tab 战况和结算页都会显示每个人的角色'
+  ] },
   { v: 'v0.7.0', date: '2026-09-29', time: '15:16', title: '重型加特林', items: [
     '新武器「重型加特林」：按住就扫射，射速极快、射程远，但一罐墨只够打约 40 发',
     '加特林有自己专属的射击音效',

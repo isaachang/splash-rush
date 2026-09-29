@@ -17,7 +17,7 @@ const PALETTES = [
   ['#ff7a00', '#3346ff'], ['#ff2d95', '#22d64a'], ['#8c3cff', '#f2e600'],
   ['#00cfff', '#ff3b30'], ['#b7f500', '#b43cff'], ['#ffc400', '#1b6bff']
 ];
-const GAME = { pal: 0, diff: 1, dur: 180, name: '新人墨仔' };
+const GAME = { pal: 0, diff: 1, dur: 180, name: '新人墨仔', uniformChars: false };   // uniformChars: tests give everyone the same character
 const DIFF = [
   { err: 0.13, react: 0.75, fireHold: 0.55, turn: 5, dodge: 0.2 },
   { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45 },
