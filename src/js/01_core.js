@@ -157,6 +157,10 @@ const Sfx = (() => {
       noise(0.25, 0.25 * v, 'bandpass', 900, 1.5, 300, d, t + 0.05); tone('triangle', 70, 40, 1.2, 0.12 * v, d, t + 0.1);
     },
     cannon(v, c) { noise(0.35 + c * 0.3, (0.25 + c * 0.35) * v, 'lowpass', 2400, 0.9, 120); tone('square', 520, 60, 0.25, 0.12 * v); tone('sine', 150, 40, 0.4 + c * 0.2, (0.3 + c * 0.3) * v); noise(0.06, 0.25 * v, 'highpass', 3000, 1); },
+    // tri-stringer twang (brighter when fully drawn), blaster thump and its explosion (bigger radius = deeper)
+    bow(v, c = 1, pan = 0) { const d = panNode(pan); tone('triangle', 420 + c * 260, 180, 0.12, 0.09 * v, d); noise(0.08, 0.1 * v, 'bandpass', 2200 + c * 1200, 1.4, 900, d); tone('sine', 900 + c * 500, 300, 0.06, 0.05 * v, d); },
+    blastShot(v, pan = 0) { const d = panNode(pan); noise(0.16, 0.22 * v, 'lowpass', 1500, 1, 250, d); tone('sine', 170, 55, 0.18, 0.22 * v, d); tone('square', 320, 90, 0.06, 0.04 * v, d); },
+    blastBoom(v, pan = 0, R = 2) { const d = panNode(pan), k = clamp(R / 2.4, 0.6, 1.2); noise(0.45 * k, 0.34 * v, 'lowpass', 1500, 0.8, 90, d); tone('sine', 130 / k, 40, 0.35 * k, 0.3 * v, d); noise(0.08, 0.12 * v, 'highpass', 2500, 1, null, d); },
     get ctx() { return ctx; }
   };
 })();
