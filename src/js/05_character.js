@@ -247,6 +247,8 @@ class Character {
     }
   }
   get fwd() { return new THREE.Vector3(Math.sin(this.aimYaw), 0, Math.cos(this.aimYaw)); }
+  // hidden from the AI: submerged in own ink (a tiny gap in the ink, < 0.3 s, doesn't give you away)
+  hiddenInInk() { return this.swim && (this.submerged || G.time - (this.lastSub ?? -99) < 0.3); }
   eye() { return new THREE.Vector3(this.pos.x, this.pos.y + (this.swim ? 0.5 : 1.3), this.pos.z); }
   chest() { return new THREE.Vector3(this.pos.x, this.pos.y + (this.swim ? 0.3 : 0.95), this.pos.z); }
   muzzle() {
@@ -430,6 +432,7 @@ class Character {
     this.setSwim(wantSwim);
     const fo = this.grounded ? ownerAt(this.pos.x, this.pos.y, this.pos.z) : -3;
     this.submerged = this.swim && ((this.grounded && fo === this.team) || this.climbing);
+    if (this.submerged) this.lastSub = G.time;
     this.inEnemy = this.grounded && fo === 1 - this.team && !this.climbing;
     if (this.inEnemy && !this.inOwnBarrier()) {
       const hs0 = Math.hypot(this.vel.x, this.vel.z), ec = TEAM_HEX[1 - this.team];
