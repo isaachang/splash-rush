@@ -360,9 +360,9 @@ function updateCamera(dt) {
   const pivot = new THREE.Vector3(px, Cam.pivotY, pz);
   // pull the camera back/up smoothly while super-jumping so you can see the map below
   Cam.fly = damp(Cam.fly || 0, c.state === 'sjfly' ? 1 : 0, 4, dt);
-  const dist = (c.swim ? 5.0 : 4.6) + Cam.fly * 5.5;
+  const dist = (c.swim ? 5.7 : 5.3) + Cam.fly * 5.5;      // a bit further back and higher, like the original: more ground in view
   const shoulder = right.clone().multiplyScalar(0);
-  const want = pivot.clone().addScaledVector(dir, -dist).add(shoulder); want.y += 0.85 + Cam.fly * 4.5;
+  const want = pivot.clone().addScaledVector(dir, -dist).add(shoulder); want.y += 1.2 + Cam.fly * 4.5;
   const pv = pivot.clone().add(shoulder.clone().multiplyScalar(0.5));
   const t = segBlocked(pv.x, pv.y, pv.z, want.x, want.y, want.z, 0.15);
   if (t) want.lerpVectors(pv, want, Math.max(0.1, t - 0.08));

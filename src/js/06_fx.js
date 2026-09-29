@@ -156,7 +156,7 @@ const Proj = {
     }
     const dn = dir.x * n.x + dir.y * n.y + dir.z * n.z;
     const rx = dir.x - 2 * dn * n.x, ry = dir.y - 2 * dn * n.y, rz = dir.z - 2 * dn * n.z;
-    const N = Math.round(4 + r * 4.5), o = new THREE.Vector3(p.x + n.x * 0.15, p.y + n.y * 0.15 + 0.05, p.z + n.z * 0.15), v = new THREE.Vector3();
+    const N = Math.round(5 + r * 6), o = new THREE.Vector3(p.x + n.x * 0.15, p.y + n.y * 0.15 + 0.05, p.z + n.z * 0.15), v = new THREE.Vector3();
     for (let i = 0; i < N; i++) {
       const sp = rand(2.2, 5.5) * (0.7 + r * 0.15), up = rand(1.8, 4.2);
       v.set(rx * sp + n.x * up + rand(-2, 2), ry * sp * 0.4 + n.y * up + rand(0, 1.2), rz * sp + n.z * up + rand(-2, 2));
@@ -241,8 +241,8 @@ const Proj = {
   fx(x, y, z, team, r, nx = 0, ny = 1, nz = 0) {
     if (r <= 0.6) return;
     const col = TEAM_HEX[team];
-    Fx.burstDir(x + nx * 0.05, y + ny * 0.05, z + nz * 0.05, col, 9, 3.4, 0.075, nx, ny, nz, 0.9);
-    Fx.burstDir(x, y, z, col, 3, 1.4, 0.14, nx, ny, nz, 0.5);
+    Fx.burstDir(x + nx * 0.05, y + ny * 0.05, z + nz * 0.05, col, 14, 4.3, 0.09, nx, ny, nz, 0.95);
+    Fx.burstDir(x, y, z, col, 5, 1.8, 0.17, nx, ny, nz, 0.55);
     const p = _v3a.set(x, y, z), v = sndVol(p); if (v > 0.05) Sfx.impact(v * 0.8, sndPan(p));
   },
   update(dt) {
@@ -264,7 +264,7 @@ const Proj = {
           for (const c of CHARS) { if (c.team !== b.team && this.hitChar(c, b.p, 0.14)) {
             const dmg = this.shotDamage(b), vn = b.v.clone().normalize();
             if (c.damage(dmg, b.owner)) c.onHit(vn, dmg);
-            Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 12, 4, 0.085, -vn.x + rand(-0.3, 0.3), 0.4, -vn.z + rand(-0.3, 0.3), 0.9);
+            Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 17, 4.8, 0.1, -vn.x + rand(-0.3, 0.3), 0.4, -vn.z + rand(-0.3, 0.3), 0.9);
             Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 4, 2, 0.15, vn.x, 0.2, vn.z, 0.6);
             dead = true; break; } }
           if (dead) break;
@@ -311,7 +311,7 @@ const Proj = {
       _col.set(TEAM_HEX[b.team]);
       if (b.kind === 'shot') {
         // head blob + 2 trailing blobs between last frame's and this frame's position -> a continuous stream
-        const sp = b.v.length(), s = 0.19 * (1 + Math.sin(G.time * 40 + b.wob) * 0.06), len = s * (1.3 + Math.min(sp * 0.012, 1.7));
+        const sp = b.v.length(), s = 0.26 * (1 + Math.sin(G.time * 40 + b.wob) * 0.06), len = s * (1.25 + Math.min(sp * 0.011, 1.6));   // chunky ink blobs (about head-sized)
         const from = b.rq || b.p;
         for (let k = 0; k < 3; k++) {
           const u = 1 - k / 3, sk = s * (1 - k * 0.18);
@@ -321,7 +321,7 @@ const Proj = {
         }
         b.rp.copy(b.p);
       } else {
-        const s = b.sz || 0.07; _dm.position.copy(b.p); _dm.scale.set(s, s, s * 1.4);
+        const s = (b.sz || 0.07) * 1.3; _dm.position.copy(b.p); _dm.scale.set(s, s, s * 1.4);
         _dm.lookAt(b.p.x + b.v.x, b.p.y + b.v.y, b.p.z + b.v.z); _dm.updateMatrix();
         this.mesh.setMatrixAt(n, _dm.matrix); this.mesh.setColorAt(n, _col); n++;
       }

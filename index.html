@@ -1424,7 +1424,7 @@ const WEAPONS = {
     desc: '射速、射程、涂地都很均衡，3 发击倒。适合任何场合，新手首选。',
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
     dmg: 36, dmgFar: 18, falloff: [0.18, 0.42], interval: 0.105, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
-    spread: 0.045, airSpread: 0.1, cost: 1.42, splat: [0.95, 1.2],
+    spread: 0.045, airSpread: 0.1, cost: 1.42, splat: [1.07, 1.35],
     moveFire: 4.8, muzzleF: 0.55, range: 16, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,
     stats: { range: 4, dmg: 3, rate: 4, paint: 3, mobility: 4 }
@@ -1433,7 +1433,7 @@ const WEAPONS = {
     id: 'charger', name: '重炮狙击', en: 'HEAVY CANNON', role: '远程 · 狙击', type: 'charge', cls: 'charger',
     desc: '按住蓄力、松开发射，蓄得越久射程越远、伤害越高，蓄满一发击倒。弹道沿途涂出墨线，落点大范围溅射。蓄力时会暴露激光瞄准线，近身很吃亏。',
     chargeTime: 0.95, minCharge: 0, minRange: 11, maxRange: 30, dmgMin: 40, dmgMax: 100, dmgFull: 160,
-    costMin: 3, costFull: 18, lineR: 0.5, lineRFull: 0.8, impactR: [1.0, 2.0], impactFull: 3.6, moveCharge: 1.35, moveFire: 1.35, muzzleF: 1.05, range: 30, storeTime: 1.25, spLoss: 0.5,
+    costMin: 3, costFull: 18, lineR: 0.56, lineRFull: 0.9, impactR: [1.12, 2.24], impactFull: 4.0, moveCharge: 1.35, moveFire: 1.35, muzzleF: 1.05, range: 30, storeTime: 1.25, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 36,
     stats: { range: 5, dmg: 5, rate: 1, paint: 2, mobility: 2 }
   }
@@ -2111,7 +2111,7 @@ class Character {
       for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 + rand(-0.2, 0.2), sp = rand(4, 7); Proj.spray(this, new THREE.Vector3(impactAt.x, gy + 0.4, impactAt.z), new THREE.Vector3(Math.cos(a) * sp, rand(4, 7), Math.sin(a) * sp), rand(0.45, 0.7)); }
       if (PLAYER && PLAYER.alive) { const dd = PLAYER.pos.distanceTo(impactAt); if (dd < 12 && !this.isPlayer) G.shake(0.6 * (1 - dd / 12)); }
     }
-    Fx.beam(m, tr.end, col, full ? 0.16 : 0.035 + 0.025 * c, full);
+    Fx.beam(m, tr.end, col, full ? 0.2 : 0.045 + 0.033 * c, full);
     Fx.burst(m.x, m.y, m.z, col, full ? 14 : 6, full ? 5 : 3, full ? 0.1 : 0.07);
     const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.7); if (v > 0.03) Sfx.cannon(v, c);
     if (full && impactAt) { const vi = sndVol(impactAt); if (vi > 0.03) Sfx.cannonImpact(vi, sndPan(impactAt)); }
@@ -2391,7 +2391,7 @@ const Proj = {
     }
     const dn = dir.x * n.x + dir.y * n.y + dir.z * n.z;
     const rx = dir.x - 2 * dn * n.x, ry = dir.y - 2 * dn * n.y, rz = dir.z - 2 * dn * n.z;
-    const N = Math.round(4 + r * 4.5), o = new THREE.Vector3(p.x + n.x * 0.15, p.y + n.y * 0.15 + 0.05, p.z + n.z * 0.15), v = new THREE.Vector3();
+    const N = Math.round(5 + r * 6), o = new THREE.Vector3(p.x + n.x * 0.15, p.y + n.y * 0.15 + 0.05, p.z + n.z * 0.15), v = new THREE.Vector3();
     for (let i = 0; i < N; i++) {
       const sp = rand(2.2, 5.5) * (0.7 + r * 0.15), up = rand(1.8, 4.2);
       v.set(rx * sp + n.x * up + rand(-2, 2), ry * sp * 0.4 + n.y * up + rand(0, 1.2), rz * sp + n.z * up + rand(-2, 2));
@@ -2476,8 +2476,8 @@ const Proj = {
   fx(x, y, z, team, r, nx = 0, ny = 1, nz = 0) {
     if (r <= 0.6) return;
     const col = TEAM_HEX[team];
-    Fx.burstDir(x + nx * 0.05, y + ny * 0.05, z + nz * 0.05, col, 9, 3.4, 0.075, nx, ny, nz, 0.9);
-    Fx.burstDir(x, y, z, col, 3, 1.4, 0.14, nx, ny, nz, 0.5);
+    Fx.burstDir(x + nx * 0.05, y + ny * 0.05, z + nz * 0.05, col, 14, 4.3, 0.09, nx, ny, nz, 0.95);
+    Fx.burstDir(x, y, z, col, 5, 1.8, 0.17, nx, ny, nz, 0.55);
     const p = _v3a.set(x, y, z), v = sndVol(p); if (v > 0.05) Sfx.impact(v * 0.8, sndPan(p));
   },
   update(dt) {
@@ -2499,7 +2499,7 @@ const Proj = {
           for (const c of CHARS) { if (c.team !== b.team && this.hitChar(c, b.p, 0.14)) {
             const dmg = this.shotDamage(b), vn = b.v.clone().normalize();
             if (c.damage(dmg, b.owner)) c.onHit(vn, dmg);
-            Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 12, 4, 0.085, -vn.x + rand(-0.3, 0.3), 0.4, -vn.z + rand(-0.3, 0.3), 0.9);
+            Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 17, 4.8, 0.1, -vn.x + rand(-0.3, 0.3), 0.4, -vn.z + rand(-0.3, 0.3), 0.9);
             Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 4, 2, 0.15, vn.x, 0.2, vn.z, 0.6);
             dead = true; break; } }
           if (dead) break;
@@ -2546,7 +2546,7 @@ const Proj = {
       _col.set(TEAM_HEX[b.team]);
       if (b.kind === 'shot') {
         // head blob + 2 trailing blobs between last frame's and this frame's position -> a continuous stream
-        const sp = b.v.length(), s = 0.19 * (1 + Math.sin(G.time * 40 + b.wob) * 0.06), len = s * (1.3 + Math.min(sp * 0.012, 1.7));
+        const sp = b.v.length(), s = 0.26 * (1 + Math.sin(G.time * 40 + b.wob) * 0.06), len = s * (1.25 + Math.min(sp * 0.011, 1.6));   // chunky ink blobs (about head-sized)
         const from = b.rq || b.p;
         for (let k = 0; k < 3; k++) {
           const u = 1 - k / 3, sk = s * (1 - k * 0.18);
@@ -2556,7 +2556,7 @@ const Proj = {
         }
         b.rp.copy(b.p);
       } else {
-        const s = b.sz || 0.07; _dm.position.copy(b.p); _dm.scale.set(s, s, s * 1.4);
+        const s = (b.sz || 0.07) * 1.3; _dm.position.copy(b.p); _dm.scale.set(s, s, s * 1.4);
         _dm.lookAt(b.p.x + b.v.x, b.p.y + b.v.y, b.p.z + b.v.z); _dm.updateMatrix();
         this.mesh.setMatrixAt(n, _dm.matrix); this.mesh.setColorAt(n, _col); n++;
       }
@@ -2963,9 +2963,9 @@ function updateCamera(dt) {
   const pivot = new THREE.Vector3(px, Cam.pivotY, pz);
   // pull the camera back/up smoothly while super-jumping so you can see the map below
   Cam.fly = damp(Cam.fly || 0, c.state === 'sjfly' ? 1 : 0, 4, dt);
-  const dist = (c.swim ? 5.0 : 4.6) + Cam.fly * 5.5;
+  const dist = (c.swim ? 5.7 : 5.3) + Cam.fly * 5.5;      // a bit further back and higher, like the original: more ground in view
   const shoulder = right.clone().multiplyScalar(0);
-  const want = pivot.clone().addScaledVector(dir, -dist).add(shoulder); want.y += 0.85 + Cam.fly * 4.5;
+  const want = pivot.clone().addScaledVector(dir, -dist).add(shoulder); want.y += 1.2 + Cam.fly * 4.5;
   const pv = pivot.clone().add(shoulder.clone().multiplyScalar(0.5));
   const t = segBlocked(pv.x, pv.y, pv.z, want.x, want.y, want.z, 0.15);
   if (t) want.lerpVectors(pv, want, Math.max(0.1, t - 0.08));
@@ -3478,7 +3478,7 @@ function updateIntro(dt) {
   G.introT += dt; const t = G.introT;
   const k = clamp(t / 3.0, 0, 1), e = k * k * (3 - 2 * k);
   // fly from enemy side high over arena down behind player
-  const p0 = new THREE.Vector3(18, 26, -52), p1 = new THREE.Vector3(-12, 18, 0), p2 = new THREE.Vector3(0, SPAWN[0].y + 2.2, SPAWN[0].z + 5);
+  const p0 = new THREE.Vector3(18, 26, -52), p1 = new THREE.Vector3(-12, 18, 0), p2 = new THREE.Vector3(0, SPAWN[0].y + 2.7, SPAWN[0].z + 5.3);
   const a = p0.clone().lerp(p1, e), b = p1.clone().lerp(p2, e), pos = a.lerp(b, e);
   camera.position.copy(pos); const look = new THREE.Vector3(0, 0, -10).lerp(new THREE.Vector3(0, SPAWN[0].y + 1.4, SPAWN[0].z - 20), e);
   camera.lookAt(look);
