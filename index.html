@@ -644,10 +644,23 @@ const Sfx = (() => {
       noise(0.25, 0.25 * v, 'bandpass', 900, 1.5, 300, d, t + 0.05); tone('triangle', 70, 40, 1.2, 0.12 * v, d, t + 0.1);
     },
     cannon(v, c) { noise(0.35 + c * 0.3, (0.25 + c * 0.35) * v, 'lowpass', 2400, 0.9, 120); tone('square', 520, 60, 0.25, 0.12 * v); tone('sine', 150, 40, 0.4 + c * 0.2, (0.3 + c * 0.3) * v); noise(0.06, 0.25 * v, 'highpass', 3000, 1); },
-    // tri-stringer twang (brighter when fully drawn), blaster thump and its explosion (bigger radius = deeper)
-    bow(v, c = 1, pan = 0) { const d = panNode(pan); tone('triangle', 420 + c * 260, 180, 0.12, 0.09 * v, d); noise(0.08, 0.1 * v, 'bandpass', 2200 + c * 1200, 1.4, 900, d); tone('sine', 900 + c * 500, 300, 0.06, 0.05 * v, d); },
-    blastShot(v, pan = 0) { const d = panNode(pan); noise(0.16, 0.22 * v, 'lowpass', 1500, 1, 250, d); tone('sine', 170, 55, 0.18, 0.22 * v, d); tone('square', 320, 90, 0.06, 0.04 * v, d); },
-    blastBoom(v, pan = 0, R = 2) { const d = panNode(pan), k = clamp(R / 2.4, 0.6, 1.2); noise(0.45 * k, 0.34 * v, 'lowpass', 1500, 0.8, 90, d); tone('sine', 130 / k, 40, 0.35 * k, 0.3 * v, d); noise(0.08, 0.12 * v, 'highpass', 2500, 1, null, d); },
+    // heavy gatling: short dry mechanical rattle per round (nothing like the rifle's wet "pshh")
+    gatling(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), k = rand(0.94, 1.06);
+      tone('square', 190 * k, 85, 0.035, 0.07 * v, d); noise(0.03, 0.1 * v, 'bandpass', 3600 * k, 2.6, 2200, d); tone('sawtooth', 72, 48, 0.045, 0.06 * v, d);
+    },
+    // range blaster: hollow "poomp" out of a tube + a hard click
+    blastShot(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), t = ctx.currentTime;
+      tone('sine', 110, 52, 0.24, 0.32 * v, d); noise(0.14, 0.16 * v, 'bandpass', 500, 2.2, 2200, d); tone('square', 950, 400, 0.025, 0.05 * v, d);
+      noise(0.06, 0.08 * v, 'highpass', 4000, 1, null, d, t + 0.02);
+    },
+    // its explosion: sharp crack, a punchy body and a fizzing ink tail (bigger radius = deeper)
+    blastBoom(v, pan = 0, R = 2) {
+      if (!ctx) return; const d = panNode(pan), k = clamp(R / 2.4, 0.6, 1.2), t = ctx.currentTime;
+      noise(0.05, 0.28 * v, 'highpass', 5200, 0.9, null, d); noise(0.5 * k, 0.4 * v, 'lowpass', 2400, 0.8, 110, d);
+      tone('sine', 170 / k, 44, 0.4 * k, 0.32 * v, d); noise(0.6, 0.07 * v, 'bandpass', 900, 1.6, 2600, d, t + 0.08);
+    },
     get ctx() { return ctx; }
   };
 })();
@@ -1442,40 +1455,28 @@ const WEAPONS = {
     stats: { range: 5, dmg: 5, rate: 1, paint: 2, mobility: 2 }
   }
 };
-// ---- three long-range weapons modelled on the original's weapon classes (splatling / stringer / blaster)
+// ---- two long-range weapons modelled on the original's weapon classes (splatling / blaster)
 // they reuse the same bullets, splashes, hit feedback and sounds as the rifle and the cannon
 WEAPONS.splatling = {
-  id: 'splatling', name: '重型加特林', en: 'HEAVY GATLING', role: '远程 · 压制', type: 'splatling', cls: 'splatling', charges: true,
-  desc: '按住转动枪管蓄力（约 1 秒转满），松开后连续喷出一长串远程墨弹，蓄得越满喷得越久（最长约 2 秒）。射程远、压制力强、涂地快，但蓄力时走得很慢，被贴近就危险。',
-  chargeTime: 1.0, minCharge: 0, costMin: 3, costFull: 32, burstMax: 2.0, burstMin: 0.3, interval: 0.07,
-  // bullets: shooter-style ballistics with a longer straight flight
-  speed: 150, straight: 0.11, dragH: 14, dragV: 7, grav: 72, dmg: 30, dmgFar: 15, falloff: [0.17, 0.36], spread: 0.03, airSpread: 0.08, cost: 1.1, splat: [0.9, 1.15],
-  moveCharge: 3.0, moveFire: 3.6, muzzleF: 0.85, range: 21, spLoss: 0.5,
+  id: 'splatling', name: '重型加特林', en: 'HEAVY GATLING', role: '远程 · 扫射', type: 'auto', cls: 'splatling',
+  desc: '按住就一直扫射，射速极快、射程远，但一罐墨只够打约 40 发（约 2 秒）。打完要赶紧潜墨回墨。扫射时走得慢。',
+  // shooter-style bullets with a longer straight flight; very fast fire, small magazine
+  dmg: 22, dmgFar: 12, falloff: [0.17, 0.36], interval: 0.05, speed: 150, straight: 0.11, dragH: 14, dragV: 7, grav: 72,
+  spread: 0.055, airSpread: 0.1, cost: 2.5, splat: [0.9, 1.1], moveFire: 3.8, muzzleF: 0.85, range: 21, spLoss: 0.5,
   sub: 'bomb', special: 'surge', spArea: 44,
-  stats: { range: 5, dmg: 3, rate: 5, paint: 4, mobility: 2 }
-};
-WEAPONS.stringer = {
-  id: 'stringer', name: '三发猎鱼弓', en: 'TRI-STRINGER', role: '中远 · 爆破', type: 'stringer', cls: 'stringer', charges: true,
-  desc: '按住拉弓，松开一次射出 3 支墨箭：站着射横向散开，跳起来射竖着排成一列。拉得越满飞得越远越快；拉满时墨箭插在地上或墙上，过一会儿会爆炸。',
-  chargeTime: 0.85, minCharge: 0, costMin: 3, costFull: 11, minRange: 10, maxRange: 25,
-  dmgMin: 14, dmgMax: 40, blastDmg: [35, 20], blastR: 1.7, blastDelay: 0.55, fanH: 0.12, fanV: 0.05,
-  speedMin: 48, speedMax: 95, straightMin: 0.05, straightMax: 0.24, dragH: 2.5, dragV: 0.8, grav: 28, splat: [0.7, 0.85],
-  speed: 95, straight: 0.24, dmg: 40, dmgFar: 40, falloff: [9, 9],           // (full-charge values, used by the aim predictor)
-  moveCharge: 2.6, moveFire: 2.6, muzzleF: 0.75, range: 25, spLoss: 0.5,
-  sub: 'bomb', special: 'surge', spArea: 40,
-  stats: { range: 4, dmg: 4, rate: 2, paint: 3, mobility: 3 }
+  stats: { range: 4, dmg: 2, rate: 5, paint: 4, mobility: 2 }
 };
 WEAPONS.blaster = {
   id: 'blaster', name: '远程爆破枪', en: 'RANGE BLASTER', role: '中远 · 爆破', type: 'blaster', cls: 'blaster',
-  desc: '一次打出一颗墨弹：直接命中一枪击倒；打在地上、墙上或飞到最远处会爆炸，溅射周围的人。会在半空炸开，专打躲在掩体后面的人。射速很慢，打空了要等很久。',
-  interval: 1.0, blastR: 2.4, blastCore: 1.1, blastDmg: [70, 50], fuse: 0.34, cost: 11,
-  speed: 50, straight: 0.34, dragH: 3, dragV: 1, grav: 30, splat: [0.8, 0.9], dmg: 125, dmgFar: 125, falloff: [9, 9], spread: 0.008, airSpread: 0.03, retR: 1.1,
-  moveFire: 4.2, muzzleF: 0.75, range: 17, spLoss: 0.5,
+  desc: '一次打出一颗墨弹：直接命中一枪击倒；打在地上、墙上或飞到最远处（约 23 米）会爆炸，溅射周围的人。在半空炸开可以打到躲在掩体后面的人。射速很慢，打空了要等很久。',
+  interval: 1.0, blastR: 2.4, blastCore: 1.1, blastDmg: [70, 50], fuse: 0.37, cost: 11,
+  speed: 62, straight: 0.37, dragH: 3, dragV: 1, grav: 30, splat: [0.8, 0.9], dmg: 125, dmgFar: 125, falloff: [9, 9], spread: 0.008, airSpread: 0.03, retR: 1.1,
+  moveFire: 4.2, muzzleF: 0.75, range: 23, spLoss: 0.5,
   sub: 'bomb', special: 'surge', spArea: 34,
   stats: { range: 4, dmg: 5, rate: 1, paint: 1, mobility: 3 }
 };
 WEAPONS.charger.charges = true;
-const WEAPON_ORDER = ['rifle', 'charger', 'splatling', 'stringer', 'blaster'];
+const WEAPON_ORDER = ['rifle', 'charger', 'splatling', 'blaster'];
 const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'], ['paint', '涂地'], ['mobility', '机动']];
 
 /* ---------------------------------------------------------- icons */
@@ -1485,7 +1486,6 @@ function weaponIcon(id, color = '#fff', w = 64, accent = 'var(--c0)') {
   if (id === 'rifle') body = `<rect x="10" y="12" width="30" height="10" rx="3" fill="${color}" ${st}/><rect x="38" y="14" width="16" height="5" rx="2" fill="${color}" ${st}/><rect x="16" y="20" width="7" height="9" rx="2" fill="${color}" ${st}/><circle cx="24" cy="10" r="5" style="fill:${accent}" ${st}/>`;
   else if (id === 'charger') body = `<rect x="4" y="14" width="22" height="9" rx="3" fill="${color}" ${st}/><rect x="24" y="15.5" width="36" height="5" rx="2" fill="${color}" ${st}/><rect x="14" y="7" width="16" height="5" rx="2.5" fill="${color}" ${st}/><rect x="10" y="21" width="6" height="8" rx="2" fill="${color}" ${st}/><circle cx="8" cy="12" r="4.5" style="fill:${accent}" ${st}/>`;
   else if (id === 'splatling') body = `<rect x="4" y="11" width="20" height="14" rx="4" fill="${color}" ${st}/><rect x="22" y="9" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="15" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="21" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="30" y="7" width="5" height="20" rx="2" style="fill:${accent}" ${st}/><circle cx="12" cy="8" r="5" style="fill:${accent}" ${st}/>`;
-  else if (id === 'stringer') body = `<path d="M22 2 Q44 16 22 30" fill="none" stroke="#111" stroke-width="6" stroke-linecap="round"/><path d="M22 2 Q44 16 22 30" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round"/><path d="M22 2 L16 16 L22 30" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M16 16 H60 M50 11 L60 16 L50 21" fill="none" stroke="#111" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 16 H60 M50 11 L60 16 L50 21" fill="none" style="stroke:${accent}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
   else if (id === 'blaster') body = `<rect x="4" y="12" width="22" height="10" rx="3" fill="${color}" ${st}/><rect x="22" y="9" width="26" height="16" rx="5" fill="${color}" ${st}/><rect x="46" y="6" width="12" height="22" rx="4" style="fill:${accent}" ${st}/><rect x="10" y="20" width="6" height="9" rx="2" fill="${color}" ${st}/>`;
   else if (id === 'bomb') body = `<circle cx="32" cy="17" r="11" style="fill:${accent}" ${st}/><rect x="21" y="15" width="22" height="4" fill="${color}" ${st}/><rect x="29" y="3" width="6" height="5" rx="1" fill="${color}" ${st}/>`;
   else if (id === 'surge') body = `<path d="M8 26 Q20 6 32 18 T56 10 L56 28 L8 28Z" style="fill:${accent}" ${st}/><path d="M32 2 L32 16 M26 10 L32 16 L38 10" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round"/>`;
@@ -1622,13 +1622,6 @@ function buildWeaponModel(id, T, trimHex) {
     const drum = mesh(GEO.cyl, T, 0, -0.14, 0.12, 0.1, 0.24, 0.1); drum.rotation.z = Math.PI / 2; g.add(drum);
     g.add(mesh(new THREE.BoxGeometry(0.06, 0.13, 0.06), body, 0, -0.085, -0.05));
     g.scale.setScalar(1.2);                                   // heavy weapon: a size up
-  } else if (id === 'stringer') {
-    // bow held upright: curved limbs, a string, three nocked ink arrows
-    const limb = mesh(new THREE.TorusGeometry(0.4, 0.022, 6, 24, Math.PI * 0.95), body, 0, 0, 0.12); limb.rotation.set(0, -Math.PI / 2, -Math.PI * 0.475); g.add(limb);
-    for (const y of [-0.39, 0.39]) g.add(mesh(GEO.sphere, trim, 0, y, 0.12, 0.035));
-    const str = mesh(GEO.cyl, trim, 0, 0, 0.12, 0.006, 0.78, 0.006); g.add(str);
-    g.add(mesh(new THREE.BoxGeometry(0.05, 0.14, 0.07), body, 0, 0, 0.5));
-    for (const x of [-0.05, 0, 0.05]) { const ar = mesh(GEO.cyl, T, x, 0, 0.42, 0.012, 0.62, 0.012); ar.rotation.x = Math.PI / 2; g.add(ar); const tip = mesh(new THREE.ConeGeometry(0.025, 0.07, 6), T, x, 0, 0.76); tip.rotation.x = Math.PI / 2; g.add(tip); }
   } else if (id === 'blaster') {
     // stubby cannon with a wide muzzle and an ink tank on top
     g.add(mesh(new THREE.BoxGeometry(0.13, 0.15, 0.36), body, 0, 0.02, 0.08));
@@ -1896,7 +1889,7 @@ class Character {
     return true;
   }
   die(killer, via) {
-    this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0; this.burst = null;
+    this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0;
     this.setSwim(false); this.sp = null; this.climbing = false; this.stopCharge(); this.stored = 0;
     this.sj = null; this.fly = null; this.dropY = null; this.dropSJ = false; this.hideSJMarker();
     this.special = Math.floor(this.special * (1 - this.weapon.spLoss));
@@ -2024,7 +2017,7 @@ class Character {
       }
     }
     const W = this.weapon;
-    const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging || !!this.burst;
+    const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging;
     // ----- movement
     let maxSp;
     if (this.swim) maxSp = this.submerged ? 12.8 : this.inEnemy ? 2.0 : 3.4;
@@ -2093,13 +2086,12 @@ class Character {
           // muzzle: small ink flash + droplets spraying forward
           Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.11, 0.06, TEAM_HEX[this.team], 0);
           Fx.burstDir(m.x, m.y, m.z, TEAM_HEX[this.team], 3, 5, 0.045, dir.x, dir.y, dir.z, 0.35);
-          if (this.isPlayer) { Cam.kick = Math.min(0.014, (Cam.kick || 0) + 0.0045); }
-          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) Sfx.shoot(v, this.isPlayer ? 0 : sndPan(this.pos));
+          if (this.isPlayer) { Cam.kick = Math.min(0.014, (Cam.kick || 0) + (W.id === 'splatling' ? 0.003 : 0.0045)); }
+          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) (W.id === 'splatling' ? Sfx.gatling : Sfx.shoot)(v, this.isPlayer ? 0 : sndPan(this.pos));
         } else if (this.isPlayer) HUD.lowInk();
       }
     } else if (W.charges) this.updateCharge(dt, I, T);
     else if (W.type === 'blaster') this.updateBlaster(dt, I, T);
-    if (this.burst) this.updateBurst(dt, T);
     if (I.bomb && !this.swim && !this.sp && this.bombCd <= 0 && G.state === 'play') {
       if (this.ink >= 70) {
         this.ink -= 70; this.bombCd = 0.6; this.lastShot = T;
@@ -2119,7 +2111,7 @@ class Character {
       else if (this.swim) { this.stored -= dt; if (this.stored <= 0) { this.stored = 0; this.charge = 0; } return; }
       else { this.stored = 0; this.charging = true; this.charge = 1; this.lastShot = T; if (this.isPlayer) { Sfx.chargeStart(); Sfx.chargeSet(1); } return; }
     }
-    const can = I.fire && !this.swim && !this.sp && G.state === 'play' && !this.burst;
+    const can = I.fire && !this.swim && !this.sp && G.state === 'play';
     if (can && (this.charging || this.fireCd <= 0)) {
       if (!this.charging) {
         if (this.ink < W.costMin) { if (this.isPlayer) HUD.lowInk(); return; }
@@ -2134,48 +2126,8 @@ class Character {
     } else if (this.charging) {
       const c = this.charge, live = !this.swim && !this.sp && G.state === 'play';
       this.stopCharge();
-      if (live) {
-        if (W.type === 'charge') { this.fireCharger(c, I); this.fireCd = 0.18; }
-        else if (W.type === 'stringer') { this.fireStringer(c, I); this.fireCd = 0.22; }
-        else if (W.type === 'splatling') this.startBurst(c);
-      }
+      if (live) { this.fireCharger(c, I); this.fireCd = 0.18; }
     }
-  }
-  // ---------------------------------------------------------------- heavy gatling: charged burst
-  startBurst(c) { const W = this.weapon; this.burst = { t: 0, dur: lerp(W.burstMin, W.burstMax, clamp(c, 0, 1)), next: 0 }; }
-  updateBurst(dt, T) {
-    const b = this.burst, W = this.weapon, I = this.intent;
-    if (this.swim || this.sp || !this.alive || G.state !== 'play') { this.burst = null; this.fireCd = 0.15; return; }
-    b.t += dt; b.next -= dt; this.lastShot = T;
-    while (b.next <= 0 && b.t <= b.dur) {
-      b.next += W.interval;
-      if (this.ink < W.cost) { if (this.isPlayer) HUD.lowInk(); this.burst = null; this.fireCd = 0.2; return; }
-      this.ink -= W.cost; this.recoil = 0.8;
-      const m = this.muzzle(), dir = I.aimDir ? I.aimDir.clone() : aimVec(this), spread = this.grounded ? W.spread : W.airSpread;
-      dir.x += rand(-spread, spread); dir.y += rand(-spread, spread) * 0.6; dir.z += rand(-spread, spread); dir.normalize();
-      Proj.shot(this, m, dir);
-      Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.11, 0.06, TEAM_HEX[this.team], 0);
-      Fx.burstDir(m.x, m.y, m.z, TEAM_HEX[this.team], 3, 5, 0.045, dir.x, dir.y, dir.z, 0.35);
-      if (this.isPlayer) Cam.kick = Math.min(0.012, (Cam.kick || 0) + 0.0035);
-      const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) Sfx.shoot(v * 0.95, this.isPlayer ? 0 : sndPan(this.pos));
-    }
-    if (b.t > b.dur) { this.burst = null; this.fireCd = 0.2; }
-  }
-  // ---------------------------------------------------------------- tri-stringer: three arrows
-  fireStringer(c, I) {
-    const W = this.weapon, ct = clamp(c, 0, 1), full = c >= 0.999, air = !this.grounded;
-    this.ink = Math.max(0, this.ink - lerp(W.costMin, W.costFull, ct)); this.lastShot = G.time; this.recoil = 1.3;
-    const m = this.muzzle(), base = I.aimDir ? I.aimDir.clone() : aimVec(this), yaw = Math.atan2(base.x, base.z), pitch = Math.asin(clamp(base.y, -1, 1));
-    const dm = lerp(W.dmgMin, W.dmgMax, ct);
-    const AW = { id: 'stringer', speed: lerp(W.speedMin, W.speedMax, ct), straight: lerp(W.straightMin, W.straightMax, ct), dragH: W.dragH, dragV: W.dragV, grav: W.grav, splat: W.splat, dmg: dm, dmgFar: dm, falloff: [9, 9] };
-    for (const k of [-1, 0, 1]) {
-      const a = yaw + (air ? rand(-0.01, 0.01) : k * W.fanH), p = pitch + (air ? k * W.fanV : 0);
-      Proj.shot(this, m, new THREE.Vector3(Math.sin(a) * Math.cos(p), Math.sin(p), Math.cos(a) * Math.cos(p)), AW, null, { style: 'arrow', arrowFull: full, hitR: 0.12 });
-    }
-    const col = TEAM_HEX[this.team];
-    Fx.burstDir(m.x, m.y, m.z, col, full ? 10 : 5, 4, 0.06, base.x, base.y, base.z, 0.4);
-    const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.7); if (v > 0.03) Sfx.bow(v, c, this.isPlayer ? 0 : sndPan(this.pos));
-    if (this.isPlayer) { G.shake(0.12 + 0.12 * ct); Cam.kick = Math.min(0.02, (Cam.kick || 0) + 0.01); }
   }
   // ---------------------------------------------------------------- range blaster: one exploding shell
   updateBlaster(dt, I, T) {
@@ -2193,7 +2145,7 @@ class Character {
     if (this.isPlayer) { G.shake(0.22); Cam.kick = Math.min(0.03, (Cam.kick || 0) + 0.02); }
   }
   chargeT(c) { const W = this.weapon; return clamp((Math.max(c, W.minCharge) - W.minCharge) / (1 - W.minCharge), 0, 1); }
-  rangeNow() { const W = this.weapon; return W.type === 'charge' || W.type === 'stringer' ? lerp(W.minRange, W.maxRange, this.chargeT(this.charge)) : W.range; }
+  rangeNow() { const W = this.weapon; return W.type === 'charge' ? lerp(W.minRange, W.maxRange, this.chargeT(this.charge)) : W.range; }
   fireCharger(c, I) {
     const W = this.weapon, T = G.time, ct = this.chargeT(c);
     this.ink = Math.max(0, this.ink - lerp(W.costMin, W.costFull, ct)); this.lastShot = T; this.recoil = 1.6;
@@ -2325,8 +2277,8 @@ class Character {
       this.arms[0].rotation.set(-Math.PI / 2 - pitch + this.recoil * 0.12, 0, 0);
       this.gun.position.y = -0.33 + this.recoil * 0.06;
       const firing = G.time - this.lastShot < 0.3;
-      if (this.gunSpin) { this.spinV = damp(this.spinV || 0, this.burst ? 42 : this.charging ? 8 + 26 * this.charge : 0, 6, dt); this.gunSpin.rotation.z += this.spinV * dt; }
-      if (['charger', 'splatling', 'stringer', 'blaster'].includes(this.weapon.cls)) {
+      if (this.gunSpin) { this.spinV = damp(this.spinV || 0, G.time - this.lastShot < 0.15 ? 45 : 0, 8, dt); this.gunSpin.rotation.z += this.spinV * dt; }
+      if (['charger', 'splatling', 'blaster'].includes(this.weapon.cls)) {
         // two-handed long gun: left hand supports the barrel; crouch while charging
         this.arms[1].rotation.set(-Math.PI / 2 * 0.97 - pitch, 0, -0.62);
         const cr = this.charging ? 0.05 + this.charge * 0.04 : 0;
@@ -2414,6 +2366,13 @@ const Fx = {
     this.beamPart(a, b, '#ffffff', w * 0.4, life * 0.8, 1);
     if (big) this.beamPart(a, b, col, w * 2.2, life * 1.1, 0.35);
   },
+  // quick expanding translucent ball (explosions)
+  ball(x, y, z, col, r) {
+    if (!this.balls) this.balls = [];
+    let m = this.balls.find(m => !m.visible);
+    if (!m) { m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false })); scene.add(m); this.balls.push(m); }
+    m.visible = true; m.position.set(x, y, z); m.material.color.set(col); m.userData = { t: 0, r };
+  },
   ring(x, y, z, col, r) {
     const m = this.ringPool.find(m => !m.visible) || this.ringPool[0];
     m.visible = true; m.position.set(x, y, z); m.material.color.set(col); m.userData = { t: 0, r }; this.rings.includes(m) || this.rings.push(m);
@@ -2447,13 +2406,18 @@ const Fx = {
       if (k >= 1) { m.visible = false; continue; }
       const w = u.w * (1 - k * 0.7); m.scale.set(w, w, u.len); m.material.opacity = (u.op ?? 1) * (1 - k * k);
     }
+    if (this.balls) for (const m of this.balls) {
+      if (!m.visible) continue; const u = m.userData; u.t += dt; const k = u.t / 0.22;
+      if (k >= 1) { m.visible = false; continue; }
+      m.scale.setScalar(u.r * (0.35 + 0.65 * (1 - Math.pow(1 - k, 2)))); m.material.opacity = 0.75 * (1 - k);
+    }
     for (const m of this.rings) {
       if (!m.visible) continue; const u = m.userData; u.t += dt; const k = u.t / 0.45;
       if (k >= 1) { m.visible = false; continue; }
       const s = u.r * (0.3 + 0.7 * (1 - Math.pow(1 - k, 3))); m.scale.set(s, s, s); m.material.opacity = (1 - k) * 0.9;
     }
   },
-  clear() { this.parts.length = 0; this.rings.forEach(r => r.visible = false); this.beams.forEach(b => b.visible = false); }
+  clear() { this.parts.length = 0; this.rings.forEach(r => r.visible = false); this.beams.forEach(b => b.visible = false); if (this.balls) this.balls.forEach(b => b.visible = false); }
 };
 
 /* ======================================================== PROJECTILES */
@@ -2467,7 +2431,7 @@ const Proj = {
     scene.add(this.mesh);
     this.bombGeo = new THREE.SphereGeometry(0.2, 16, 12); this.bandGeo = new THREE.TorusGeometry(0.2, 0.035, 6, 20);
   },
-  // Wo: ballistics override (stringer arrows); extra: { style: 'arrow'|'shell', blast, arrowFull, hitR }
+  // Wo: ballistics override; extra: { style: 'shell', blast, hitR }
   shot(owner, o, dir, Wo, cap, extra) {
     if (this.shots.length > this.N - 10) this.shots.shift();
     const W = Wo || owner.weapon;
@@ -2475,13 +2439,16 @@ const Proj = {
     if (extra) Object.assign(b, extra);
     this.shots.push(b);
   },
-  // blaster shell / stringer arrow explosion: paint + fx + falloff damage (walls block it); 'direct' already took its hit
+  // blaster shell explosion: paint + fx + falloff damage (walls block it); 'direct' already took its hit
   blastAt(owner, p, R, core, dmg, paintR, via, direct = null) {
     const team = owner.team, col = TEAM_HEX[team], g = groundBelow(p.x, p.z, p.y + 0.2, 0.2), low = p.y - g < R;
     if (low && Math.abs(p.x) < XH && Math.abs(p.z) < ZH) owner.addPaint(splatFloor(p.x, g, p.z, paintR * (1 - (p.y - g) / (R * 1.6)), team, 1.2, false));
     splatFloor(p.x, p.y, p.z, paintR * 0.85, team, 0.35, true);                 // walls right next to the blast
-    Fx.burst(p.x, p.y, p.z, col, 26 + R * 8, 6 + R * 1.5, 0.15); Fx.burstDir(p.x, p.y, p.z, '#ffffff', 6, 5, 0.08, 0, 1, 0, 1);
-    Fx.ring(p.x, (low ? g : p.y) + 0.06, p.z, col, R * 1.9);
+    // a clear explosion wherever it happens: expanding ink ball + white flash, a spray of drops that rain down and paint
+    Fx.burst(p.x, p.y, p.z, col, 34 + R * 10, 7 + R * 2, 0.17); Fx.burstDir(p.x, p.y, p.z, '#ffffff', 10, 6, 0.09, 0, 1, 0, 1);
+    Fx.ball(p.x, p.y, p.z, col, R * 0.95); Fx.ball(p.x, p.y, p.z, '#ffffff', R * 0.55);
+    if (low) Fx.ring(p.x, g + 0.06, p.z, col, R * 1.9);
+    else for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; this.spray(owner, p, new THREE.Vector3(Math.cos(a) * rand(2, 4), rand(-1, 2), Math.sin(a) * rand(2, 4)), rand(0.5, 0.75)); }
     const v = sndVol(p); if (v > 0.03) Sfx.blastBoom(v, sndPan(p), R);
     if (PLAYER && PLAYER.alive) { const d = PLAYER.pos.distanceTo(p); if (d < R + 5) G.shake(0.35 * (1 - d / (R + 5))); }
     for (const c of CHARS) {
@@ -2491,12 +2458,6 @@ const Proj = {
       const dm = d < core ? dmg[0] : lerp(dmg[0], dmg[1], (d - core) / (R - core)), dir = ch.clone().sub(p).setY(0).normalize();
       if (c.damage(dm, owner, via)) c.onHit(dir, dm);
     }
-  },
-  // full-charge stringer arrow sticks where it lands and pops a moment later
-  arrowStick(b, p) {
-    const W = b.owner.weapon, q = p.clone(), col = TEAM_HEX[b.team], life = W.blastDelay || 0.55;
-    for (let k = 0; k < 3; k++) Fx.add(q.x, q.y, q.z, 0, 0, 0, 0.13 - k * 0.03, life, k ? '#ffffff' : col, 0);
-    this.splatLater(life, () => this.blastAt(b.owner, q, W.blastR || 1.7, 0.6, W.blastDmg || [35, 20], 1.25, 'stringer'));
   },
   // paint that lands in two beats: a smaller core now, the full splat a moment later (reads as "splashing open")
   splatLater(delay, fn) { this.pending.push({ t: delay, fn }); },
@@ -2654,7 +2615,6 @@ const Proj = {
             const dmg = this.shotDamage(b), vn = b.v.clone().normalize();
             if (c.damage(dmg, b.owner)) c.onHit(vn, dmg);
             if (b.blast) { const W = b.W; this.blastAt(b.owner, b.p.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id, c); }
-            if (b.arrowFull) this.arrowStick(b, b.p);
             Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 17, 4.8, 0.1, -vn.x + rand(-0.3, 0.3), 0.4, -vn.z + rand(-0.3, 0.3), 0.9);
             Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 4, 2, 0.15, vn.x, 0.2, vn.z, 0.6);
             dead = true; break; } }
@@ -2667,7 +2627,7 @@ const Proj = {
         if (s) {
           if (b.big) { const h = this.classify(s, prev, b.p); if (h.type !== 'none') this.splash(b.owner, h.type === 'wall' ? h.pt : new THREE.Vector3(b.p.x, h.y, b.p.z), h.n, b.v.clone().normalize(), b.r, h.type, h.face); if (sndVol(b.p) > 0.1) Sfx.splat(sndVol(b.p)); }
           else if (b.blast) { const W = b.W; this.impact(s, prev, b.p, b.team, b.owner, b.r); this.blastAt(b.owner, prev.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id); }
-          else { this.impact(s, prev, b.p, b.team, b.owner, b.r); if (b.arrowFull) this.arrowStick(b, prev); }
+          else this.impact(s, prev, b.p, b.team, b.owner, b.r);
           dead = true;
         }
         if (b.p.y < -4 || b.t > 3) dead = true;
@@ -2706,10 +2666,10 @@ const Proj = {
       if (b.kind === 'shot') {
         // head blob + 2 trailing blobs between last frame's and this frame's position -> a continuous stream
         const sp = b.v.length(), s = 0.26 * (1 + Math.sin(G.time * 40 + b.wob) * 0.06), len = s * (1.25 + Math.min(sp * 0.011, 1.6));   // chunky ink blobs (about head-sized)
-        const from = b.rq || b.p, ar = b.style === 'arrow', sh = b.style === 'shell';
+        const from = b.rq || b.p, sh = b.style === 'shell';
         for (let k = 0; k < (sh ? 1 : 3); k++) {
-          const u = 1 - k / 3, sk = s * (1 - k * 0.18) * (ar ? 0.38 : sh ? 1.25 : 1);
-          _dm.position.lerpVectors(from, b.p, u); _dm.scale.set(sk, sk, len * (1 - k * 0.15) * (ar ? 1.9 : sh ? 0.75 : 1));
+          const u = 1 - k / 3, sk = s * (1 - k * 0.18) * (sh ? 1.25 : 1);
+          _dm.position.lerpVectors(from, b.p, u); _dm.scale.set(sk, sk, len * (1 - k * 0.15) * (sh ? 0.75 : 1));
           _dm.lookAt(_dm.position.x + b.v.x, _dm.position.y + b.v.y, _dm.position.z + b.v.z); _dm.updateMatrix();
           this.mesh.setMatrixAt(n, _dm.matrix); this.mesh.setColorAt(n, _col); n++;
         }
@@ -2896,7 +2856,7 @@ class Bot {
     this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.3, 0.6); const m = D.err * d * 0.75; this.err.set(rand(-m, m), rand(-m, m) * 0.5, rand(-m, m)); }
     const tp = e.chest().addScaledVector(e.vel, 0.08).add(this.err);
     const m = c.muzzle(); const dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
-    const wid = c.weapon.type, wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd) + (wid === 'splatling' ? dropComp(hd, 'splatling') : wid === 'stringer' ? Math.min(0.1, hd * 0.003) : 0);
+    const wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd);
     const yawErr = angDiff(c.aimYaw, wantYaw);
     c.aimYaw += clamp(yawErr, -D.turn * 0.8 * dt, D.turn * 0.8 * dt); c.aimPitch = damp(c.aimPitch, wantPitch, 9, dt);
     const close = d < 7;
@@ -2907,7 +2867,7 @@ class Bot {
     this.reactT -= dt;
     const tol = 0.4 / Math.max(d, 1) + 0.02;
     if (this.reactT <= 0 && Math.abs(yawErr) < 0.5) {
-      if (!c.charging) { I.fire = true; this.goal = c.weapon.type === 'stringer' ? (close ? 0.65 : 1) : close ? 0.3 : d > 20 ? 1 : 0.8 + Math.random() * 0.2; this.holdT = 0; }
+      if (!c.charging) { I.fire = true; this.goal = close ? 0.3 : d > 20 ? 1 : 0.8 + Math.random() * 0.2; this.holdT = 0; }
       else { this.holdT += dt; I.fire = (c.charge < Math.min(this.goal, 0.999) || Math.abs(yawErr) > tol) && this.holdT < 2.6; }
     } else if (c.charging) I.fire = true;
     if (close && c.ink > 75 && Math.random() < dt * 0.5) { I.bomb = true; I.fire = false; }
@@ -3124,7 +3084,7 @@ function updateCamera(dt) {
     return;
   }
   Cam.spec = null; Cam.specYaw = undefined;
-  const zt = c.charging ? 1 - (c.weapon.type === 'charge' ? 0.24 : c.weapon.type === 'stringer' ? 0.1 : 0) * c.charge : 1;
+  const zt = c.charging ? 1 - 0.24 * c.charge : 1;
   Cam.zoom = damp(Cam.zoom, zt, 10, dt);
   const fv = SETTINGS.fov * Cam.zoom; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }
   const targetY = py + (c.swim ? 1.0 : 1.5);
@@ -3195,15 +3155,15 @@ const HUD = {
       if (v.z < 1) {
         const x = (v.x + 1) / 2 * innerWidth, y = (1 - v.y) / 2 * innerHeight;
         const camD = camera.position.distanceTo(Cam.land), fpx = innerHeight / 2 / Math.tan(camera.fov * Math.PI / 360);
-        const Wc = c.weapon, wr = Wc.retR ? Wc.retR : Wc.type === 'charge' ? 0.12 : Wc.fanH ? Wc.fanH * Cam.landDist + 0.12 : Wc.spread * Cam.landDist + 0.12;
+        const Wc = c.weapon, wr = Wc.retR ? Wc.retR : Wc.type === 'charge' ? 0.12 : Wc.spread * Cam.landDist + 0.12;
         const px = clamp(wr * fpx / Math.max(camD, 0.5), 7, 60);
         r2.style.display = 'block'; r2.style.transform = `translate(${x}px, ${y}px)`; r2.style.setProperty('--rs', px * 2 + 'px');
         r2.classList.toggle('lock', Cam.lock);
       } else r2.style.display = 'none';
     } else r2.style.display = 'none';
-    const cr = $('chargeRing'), isC = !!c.weapon.charges, bu = c.burst;
-    cr.classList.toggle('on', isC && c.alive); cr.classList.toggle('full', isC && (c.charge >= 1 || !!bu));
-    if (isC) $('chargeArc').style.strokeDashoffset = 251.3 * (1 - (bu ? 1 - bu.t / bu.dur : c.charge));     // gatling: ring drains while it fires
+    const cr = $('chargeRing'), isC = !!c.weapon.charges;
+    cr.classList.toggle('on', isC && c.alive); cr.classList.toggle('full', isC && c.charge >= 1);
+    if (isC) $('chargeArc').style.strokeDashoffset = 251.3 * (1 - c.charge);
     cr.classList.toggle('stored', isC && c.stored > 0);
     $('crosshair').style.display = c.alive && c.state === 'play' ? 'block' : 'none';
     for (const ch of CHARS) if (ch.icon) {
@@ -3463,7 +3423,7 @@ function rollRoster() {
   for (let t = 0; t < 2; t++) {
     const slots = t === 0 ? [0, 2, 3] : [0, 1, 2, 3];
     // each team: a couple of the special weapons (never two of the same), the rest carry rifles
-    const specials = ['charger', 'splatling', 'stringer', 'blaster'].sort(() => Math.random() - 0.5).slice(0, randi(1, 2)), freeSlots = slots.slice().sort(() => Math.random() - 0.5);
+    const specials = ['charger', 'splatling', 'blaster'].sort(() => Math.random() - 0.5).slice(0, randi(1, 2)), freeSlots = slots.slice().sort(() => Math.random() - 0.5);
     const give = {}; specials.forEach((w, k) => { if (k < freeSlots.length) give[freeSlots[k]] = w; });
     for (let i = 0; i < 4; i++) {
       const isP = t === 0 && i === 1;
@@ -3475,7 +3435,7 @@ function rollRoster() {
 function enforceRoster() {
   // at most one charger per team (the player's own pick takes priority)
   const me = G.roster[0][1]; me.weapon = Profile.data.weapon; me.name = GAME.name || '玩家';
-  for (const w of ['charger', 'splatling', 'stringer', 'blaster']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) m.weapon = 'rifle'; seen = true; } }); });
+  for (const w of ['charger', 'splatling', 'blaster']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) m.weapon = 'rifle'; seen = true; } }); });
 }
 function spawnTeams() {
   clearChars();

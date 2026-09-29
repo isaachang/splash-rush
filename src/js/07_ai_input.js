@@ -134,7 +134,7 @@ class Bot {
     this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.3, 0.6); const m = D.err * d * 0.75; this.err.set(rand(-m, m), rand(-m, m) * 0.5, rand(-m, m)); }
     const tp = e.chest().addScaledVector(e.vel, 0.08).add(this.err);
     const m = c.muzzle(); const dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
-    const wid = c.weapon.type, wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd) + (wid === 'splatling' ? dropComp(hd, 'splatling') : wid === 'stringer' ? Math.min(0.1, hd * 0.003) : 0);
+    const wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd);
     const yawErr = angDiff(c.aimYaw, wantYaw);
     c.aimYaw += clamp(yawErr, -D.turn * 0.8 * dt, D.turn * 0.8 * dt); c.aimPitch = damp(c.aimPitch, wantPitch, 9, dt);
     const close = d < 7;
@@ -145,7 +145,7 @@ class Bot {
     this.reactT -= dt;
     const tol = 0.4 / Math.max(d, 1) + 0.02;
     if (this.reactT <= 0 && Math.abs(yawErr) < 0.5) {
-      if (!c.charging) { I.fire = true; this.goal = c.weapon.type === 'stringer' ? (close ? 0.65 : 1) : close ? 0.3 : d > 20 ? 1 : 0.8 + Math.random() * 0.2; this.holdT = 0; }
+      if (!c.charging) { I.fire = true; this.goal = close ? 0.3 : d > 20 ? 1 : 0.8 + Math.random() * 0.2; this.holdT = 0; }
       else { this.holdT += dt; I.fire = (c.charge < Math.min(this.goal, 0.999) || Math.abs(yawErr) > tol) && this.holdT < 2.6; }
     } else if (c.charging) I.fire = true;
     if (close && c.ink > 75 && Math.random() < dt * 0.5) { I.bomb = true; I.fire = false; }
@@ -362,7 +362,7 @@ function updateCamera(dt) {
     return;
   }
   Cam.spec = null; Cam.specYaw = undefined;
-  const zt = c.charging ? 1 - (c.weapon.type === 'charge' ? 0.24 : c.weapon.type === 'stringer' ? 0.1 : 0) * c.charge : 1;
+  const zt = c.charging ? 1 - 0.24 * c.charge : 1;
   Cam.zoom = damp(Cam.zoom, zt, 10, dt);
   const fv = SETTINGS.fov * Cam.zoom; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }
   const targetY = py + (c.swim ? 1.0 : 1.5);

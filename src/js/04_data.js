@@ -28,40 +28,28 @@ const WEAPONS = {
     stats: { range: 5, dmg: 5, rate: 1, paint: 2, mobility: 2 }
   }
 };
-// ---- three long-range weapons modelled on the original's weapon classes (splatling / stringer / blaster)
+// ---- two long-range weapons modelled on the original's weapon classes (splatling / blaster)
 // they reuse the same bullets, splashes, hit feedback and sounds as the rifle and the cannon
 WEAPONS.splatling = {
-  id: 'splatling', name: '重型加特林', en: 'HEAVY GATLING', role: '远程 · 压制', type: 'splatling', cls: 'splatling', charges: true,
-  desc: '按住转动枪管蓄力（约 1 秒转满），松开后连续喷出一长串远程墨弹，蓄得越满喷得越久（最长约 2 秒）。射程远、压制力强、涂地快，但蓄力时走得很慢，被贴近就危险。',
-  chargeTime: 1.0, minCharge: 0, costMin: 3, costFull: 32, burstMax: 2.0, burstMin: 0.3, interval: 0.07,
-  // bullets: shooter-style ballistics with a longer straight flight
-  speed: 150, straight: 0.11, dragH: 14, dragV: 7, grav: 72, dmg: 30, dmgFar: 15, falloff: [0.17, 0.36], spread: 0.03, airSpread: 0.08, cost: 1.1, splat: [0.9, 1.15],
-  moveCharge: 3.0, moveFire: 3.6, muzzleF: 0.85, range: 21, spLoss: 0.5,
+  id: 'splatling', name: '重型加特林', en: 'HEAVY GATLING', role: '远程 · 扫射', type: 'auto', cls: 'splatling',
+  desc: '按住就一直扫射，射速极快、射程远，但一罐墨只够打约 40 发（约 2 秒）。打完要赶紧潜墨回墨。扫射时走得慢。',
+  // shooter-style bullets with a longer straight flight; very fast fire, small magazine
+  dmg: 22, dmgFar: 12, falloff: [0.17, 0.36], interval: 0.05, speed: 150, straight: 0.11, dragH: 14, dragV: 7, grav: 72,
+  spread: 0.055, airSpread: 0.1, cost: 2.5, splat: [0.9, 1.1], moveFire: 3.8, muzzleF: 0.85, range: 21, spLoss: 0.5,
   sub: 'bomb', special: 'surge', spArea: 44,
-  stats: { range: 5, dmg: 3, rate: 5, paint: 4, mobility: 2 }
-};
-WEAPONS.stringer = {
-  id: 'stringer', name: '三发猎鱼弓', en: 'TRI-STRINGER', role: '中远 · 爆破', type: 'stringer', cls: 'stringer', charges: true,
-  desc: '按住拉弓，松开一次射出 3 支墨箭：站着射横向散开，跳起来射竖着排成一列。拉得越满飞得越远越快；拉满时墨箭插在地上或墙上，过一会儿会爆炸。',
-  chargeTime: 0.85, minCharge: 0, costMin: 3, costFull: 11, minRange: 10, maxRange: 25,
-  dmgMin: 14, dmgMax: 40, blastDmg: [35, 20], blastR: 1.7, blastDelay: 0.55, fanH: 0.12, fanV: 0.05,
-  speedMin: 48, speedMax: 95, straightMin: 0.05, straightMax: 0.24, dragH: 2.5, dragV: 0.8, grav: 28, splat: [0.7, 0.85],
-  speed: 95, straight: 0.24, dmg: 40, dmgFar: 40, falloff: [9, 9],           // (full-charge values, used by the aim predictor)
-  moveCharge: 2.6, moveFire: 2.6, muzzleF: 0.75, range: 25, spLoss: 0.5,
-  sub: 'bomb', special: 'surge', spArea: 40,
-  stats: { range: 4, dmg: 4, rate: 2, paint: 3, mobility: 3 }
+  stats: { range: 4, dmg: 2, rate: 5, paint: 4, mobility: 2 }
 };
 WEAPONS.blaster = {
   id: 'blaster', name: '远程爆破枪', en: 'RANGE BLASTER', role: '中远 · 爆破', type: 'blaster', cls: 'blaster',
-  desc: '一次打出一颗墨弹：直接命中一枪击倒；打在地上、墙上或飞到最远处会爆炸，溅射周围的人。会在半空炸开，专打躲在掩体后面的人。射速很慢，打空了要等很久。',
-  interval: 1.0, blastR: 2.4, blastCore: 1.1, blastDmg: [70, 50], fuse: 0.34, cost: 11,
-  speed: 50, straight: 0.34, dragH: 3, dragV: 1, grav: 30, splat: [0.8, 0.9], dmg: 125, dmgFar: 125, falloff: [9, 9], spread: 0.008, airSpread: 0.03, retR: 1.1,
-  moveFire: 4.2, muzzleF: 0.75, range: 17, spLoss: 0.5,
+  desc: '一次打出一颗墨弹：直接命中一枪击倒；打在地上、墙上或飞到最远处（约 23 米）会爆炸，溅射周围的人。在半空炸开可以打到躲在掩体后面的人。射速很慢，打空了要等很久。',
+  interval: 1.0, blastR: 2.4, blastCore: 1.1, blastDmg: [70, 50], fuse: 0.37, cost: 11,
+  speed: 62, straight: 0.37, dragH: 3, dragV: 1, grav: 30, splat: [0.8, 0.9], dmg: 125, dmgFar: 125, falloff: [9, 9], spread: 0.008, airSpread: 0.03, retR: 1.1,
+  moveFire: 4.2, muzzleF: 0.75, range: 23, spLoss: 0.5,
   sub: 'bomb', special: 'surge', spArea: 34,
   stats: { range: 4, dmg: 5, rate: 1, paint: 1, mobility: 3 }
 };
 WEAPONS.charger.charges = true;
-const WEAPON_ORDER = ['rifle', 'charger', 'splatling', 'stringer', 'blaster'];
+const WEAPON_ORDER = ['rifle', 'charger', 'splatling', 'blaster'];
 const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'], ['paint', '涂地'], ['mobility', '机动']];
 
 /* ---------------------------------------------------------- icons */
@@ -71,7 +59,6 @@ function weaponIcon(id, color = '#fff', w = 64, accent = 'var(--c0)') {
   if (id === 'rifle') body = `<rect x="10" y="12" width="30" height="10" rx="3" fill="${color}" ${st}/><rect x="38" y="14" width="16" height="5" rx="2" fill="${color}" ${st}/><rect x="16" y="20" width="7" height="9" rx="2" fill="${color}" ${st}/><circle cx="24" cy="10" r="5" style="fill:${accent}" ${st}/>`;
   else if (id === 'charger') body = `<rect x="4" y="14" width="22" height="9" rx="3" fill="${color}" ${st}/><rect x="24" y="15.5" width="36" height="5" rx="2" fill="${color}" ${st}/><rect x="14" y="7" width="16" height="5" rx="2.5" fill="${color}" ${st}/><rect x="10" y="21" width="6" height="8" rx="2" fill="${color}" ${st}/><circle cx="8" cy="12" r="4.5" style="fill:${accent}" ${st}/>`;
   else if (id === 'splatling') body = `<rect x="4" y="11" width="20" height="14" rx="4" fill="${color}" ${st}/><rect x="22" y="9" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="15" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="21" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="30" y="7" width="5" height="20" rx="2" style="fill:${accent}" ${st}/><circle cx="12" cy="8" r="5" style="fill:${accent}" ${st}/>`;
-  else if (id === 'stringer') body = `<path d="M22 2 Q44 16 22 30" fill="none" stroke="#111" stroke-width="6" stroke-linecap="round"/><path d="M22 2 Q44 16 22 30" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round"/><path d="M22 2 L16 16 L22 30" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M16 16 H60 M50 11 L60 16 L50 21" fill="none" stroke="#111" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 16 H60 M50 11 L60 16 L50 21" fill="none" style="stroke:${accent}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
   else if (id === 'blaster') body = `<rect x="4" y="12" width="22" height="10" rx="3" fill="${color}" ${st}/><rect x="22" y="9" width="26" height="16" rx="5" fill="${color}" ${st}/><rect x="46" y="6" width="12" height="22" rx="4" style="fill:${accent}" ${st}/><rect x="10" y="20" width="6" height="9" rx="2" fill="${color}" ${st}/>`;
   else if (id === 'bomb') body = `<circle cx="32" cy="17" r="11" style="fill:${accent}" ${st}/><rect x="21" y="15" width="22" height="4" fill="${color}" ${st}/><rect x="29" y="3" width="6" height="5" rx="1" fill="${color}" ${st}/>`;
   else if (id === 'surge') body = `<path d="M8 26 Q20 6 32 18 T56 10 L56 28 L8 28Z" style="fill:${accent}" ${st}/><path d="M32 2 L32 16 M26 10 L32 16 L38 10" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round"/>`;

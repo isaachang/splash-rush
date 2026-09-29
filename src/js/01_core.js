@@ -157,10 +157,23 @@ const Sfx = (() => {
       noise(0.25, 0.25 * v, 'bandpass', 900, 1.5, 300, d, t + 0.05); tone('triangle', 70, 40, 1.2, 0.12 * v, d, t + 0.1);
     },
     cannon(v, c) { noise(0.35 + c * 0.3, (0.25 + c * 0.35) * v, 'lowpass', 2400, 0.9, 120); tone('square', 520, 60, 0.25, 0.12 * v); tone('sine', 150, 40, 0.4 + c * 0.2, (0.3 + c * 0.3) * v); noise(0.06, 0.25 * v, 'highpass', 3000, 1); },
-    // tri-stringer twang (brighter when fully drawn), blaster thump and its explosion (bigger radius = deeper)
-    bow(v, c = 1, pan = 0) { const d = panNode(pan); tone('triangle', 420 + c * 260, 180, 0.12, 0.09 * v, d); noise(0.08, 0.1 * v, 'bandpass', 2200 + c * 1200, 1.4, 900, d); tone('sine', 900 + c * 500, 300, 0.06, 0.05 * v, d); },
-    blastShot(v, pan = 0) { const d = panNode(pan); noise(0.16, 0.22 * v, 'lowpass', 1500, 1, 250, d); tone('sine', 170, 55, 0.18, 0.22 * v, d); tone('square', 320, 90, 0.06, 0.04 * v, d); },
-    blastBoom(v, pan = 0, R = 2) { const d = panNode(pan), k = clamp(R / 2.4, 0.6, 1.2); noise(0.45 * k, 0.34 * v, 'lowpass', 1500, 0.8, 90, d); tone('sine', 130 / k, 40, 0.35 * k, 0.3 * v, d); noise(0.08, 0.12 * v, 'highpass', 2500, 1, null, d); },
+    // heavy gatling: short dry mechanical rattle per round (nothing like the rifle's wet "pshh")
+    gatling(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), k = rand(0.94, 1.06);
+      tone('square', 190 * k, 85, 0.035, 0.07 * v, d); noise(0.03, 0.1 * v, 'bandpass', 3600 * k, 2.6, 2200, d); tone('sawtooth', 72, 48, 0.045, 0.06 * v, d);
+    },
+    // range blaster: hollow "poomp" out of a tube + a hard click
+    blastShot(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), t = ctx.currentTime;
+      tone('sine', 110, 52, 0.24, 0.32 * v, d); noise(0.14, 0.16 * v, 'bandpass', 500, 2.2, 2200, d); tone('square', 950, 400, 0.025, 0.05 * v, d);
+      noise(0.06, 0.08 * v, 'highpass', 4000, 1, null, d, t + 0.02);
+    },
+    // its explosion: sharp crack, a punchy body and a fizzing ink tail (bigger radius = deeper)
+    blastBoom(v, pan = 0, R = 2) {
+      if (!ctx) return; const d = panNode(pan), k = clamp(R / 2.4, 0.6, 1.2), t = ctx.currentTime;
+      noise(0.05, 0.28 * v, 'highpass', 5200, 0.9, null, d); noise(0.5 * k, 0.4 * v, 'lowpass', 2400, 0.8, 110, d);
+      tone('sine', 170 / k, 44, 0.4 * k, 0.32 * v, d); noise(0.6, 0.07 * v, 'bandpass', 900, 1.6, 2600, d, t + 0.08);
+    },
     get ctx() { return ctx; }
   };
 })();
