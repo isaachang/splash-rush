@@ -277,6 +277,20 @@ vm.runInContext(`(() => {
       let z0 = cb ? cb.p.z : 0, fz = z0, fr = 0; while (cb && Proj.bombs.includes(cb) && fr < 120) { fz = cb.p.z; loop(); fr++; }
       let path = 0; for (let z = z0 - 0.5; z > fz; z -= 1) if (ownerAt(0, 0, z) === 0) path++;
       ok(cb && z0 - fz > 12 && z0 - fz < 18 && path >= (z0 - fz) * 0.7 && Math.abs(inkUsed - 70) < 3 && Math.abs(cb.v0 - 12.8 * 1.15) < 0.1, 'curling bomb: slides at 阿飒 swim speed (' + cb.v0.toFixed(1) + ' m/s) for ' + (z0 - fz).toFixed(1) + ' m laying ink (' + path + ' m inked), costs ' + inkUsed.toFixed(0) + '% of 阿飒 tank');
+      // mid-air curling: drops out of the hand, then slides
+      resetPaint(); S4.pos.set(0, 1.5, 27); S4.vel.set(0, 0, 0); S4.grounded = false;
+      Proj.curling(S4, new THREE.Vector3(0, 0, -1)); const ca = Proj.bombs[Proj.bombs.length - 1], cy0 = ca.p.y; for (let i = 0; i < 20; i++) Proj.update(1 / 30);
+      ok(cy0 > 1.5 && ca.p.y < 0.05 && ca.p.z < 24, 'curling thrown mid-air drops from the hand (' + cy0.toFixed(1) + ' m) and slides on (z ' + ca.p.z.toFixed(1) + ')');
+      Proj.bombs.forEach(b => scene.remove(b.g)); Proj.bombs.length = 0; S4.grounded = true;
+      // AI vs someone hiding in their own ink
+      { const bt = G.bots.find(b => b.c.team === 1); const bc = bt.c; bc.pos.set(0, 0, 10); bc.alive = true; bc.state = 'play';
+        resetPaint(); splatFloor(0, 0, 15, 3, 0, 2, true); S4.pos.set(0, 0, 15); S4.vel.set(0, 0, 0); S4.intent.swim = true; S4.lastShot = -99; Input.keys = {};
+        for (let i = 0; i < 6; i++) loop(); S4.intent.swim = true; S4.swim = true; S4.submerged = true; S4.lastSub = G.time; S4.vel.set(0, 0, 0);
+        const slowSeen = bt.findEnemy() === S4; S4.vel.set(9, 0, 0); const fastSeen = bt.findEnemy() === S4, fz = bt.fuzzy;
+        S4.pos.set(0, 0, 11.5); S4.vel.set(0, 0, 0); const closeSeen = bt.findEnemy() === S4;
+        S4.submerged = false; S4.lastSub = G.time - 0.1; S4.pos.set(0, 0, 15); const gapHidden = bt.findEnemy() !== S4;
+        ok(!slowSeen && fastSeen && fz && closeSeen && gapHidden, 'AI vs a swimmer in own ink: hidden at 5 m when slow, spotted but aims loosely when fast, seen at 1.5 m, a tiny gap in the ink does not give you away');
+        S4.swim = S4.submerged = false; S4.intent.swim = false; }
       // --- 满满: graffiti cover (E)
       let M4 = setupC('man'); M4.pos.set(0, 0, 20); M4.aimYaw = Math.PI; M4.aimPitch = 0; M4.ink = 100;
       const cv = Cover.place(M4, new THREE.Vector3(0, 0, -1)); for (let i = 0; i < 15; i++) loop();
@@ -298,6 +312,11 @@ vm.runInContext(`(() => {
       ok(Cover.list.length === 0, 'cover: gone after 10 s');
       Cover.place(M4, new THREE.Vector3(0, 0, -1)); Cover.place(M4, new THREE.Vector3(0, 0, -1));
       ok(Cover.list.length === 1, 'cover: only one board at a time');
+      // mid-air E: the board is flung out and lands on the ground ahead
+      Cover.clear(); M4.pos.set(0, 1.6, 22); M4.vel.set(0, 0, 0); M4.grounded = false;
+      const cf = Cover.place(M4, new THREE.Vector3(0, 0, -1)); const flew = !!cf.fly; let fl = 0; while (cf.fly && fl < 90) { Cover.update(1 / 30); fl++; }
+      ok(flew && !cf.fly && Math.abs(cf.g.position.y - groundAt(cf.x, cf.z)) < 0.05 && 22 - cf.z > 3 && 22 - cf.z < 8, 'cover in mid-air: flung out, lands on the ground ' + (22 - cf.z).toFixed(1) + ' m ahead after ' + (fl / 30).toFixed(2) + ' s');
+      Cover.clear(); M4.grounded = true;
       // --- 石墩: fat = bigger target, lower jump, 60% / 70% speed
       let D4 = setupC('dun'); D4.pos.set(0, 0, 20); for (let i = 0; i < 3; i++) loop(); const f5 = { alive: true, state: 'play', swim: false, pos: D4.pos.clone(), cs: CHARACTERS.std, look: { bodyH: 1 } };
       const nearHit = Proj.hitChar(D4, { x: D4.pos.x + 0.57, y: D4.pos.y + 0.9, z: D4.pos.z }, 0.05), stdMiss = !Proj.hitChar(f5, { x: f5.pos.x + 0.57, y: f5.pos.y + 0.9, z: f5.pos.z }, 0.05);

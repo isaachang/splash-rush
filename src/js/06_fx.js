@@ -239,8 +239,9 @@ const Proj = {
   },
   curlStart(owner, dir) {
     const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
-    const p = new THREE.Vector3(owner.pos.x + f.x * 0.8, 0, owner.pos.z + f.z * 0.8); p.y = groundBelow(p.x, p.z, owner.pos.y + 0.1, 0.5);   // start at our feet, not on top of a wall in front
-    if (solidAt(p.x, p.y + 0.15, p.z)) p.copy(owner.pos);
+    const p = new THREE.Vector3(owner.pos.x + f.x * 0.8, 0, owner.pos.z + f.z * 0.8);
+    if (owner.grounded === false) { p.y = owner.pos.y + 0.8; if (solidAt(p.x, p.y + 0.15, p.z)) p.set(owner.pos.x, owner.pos.y + 0.8, owner.pos.z); }   // mid-air: it drops out of the hand, then slides
+    else { p.y = groundBelow(p.x, p.z, owner.pos.y + 0.1, 0.5); if (solidAt(p.x, p.y + 0.15, p.z)) p.copy(owner.pos); }   // start at our feet, not on top of a wall in front
     const sp = 12.8 * ((owner.cs && owner.cs.swimK) || 1);              // as fast as its thrower swims: you can keep up right behind it
     return { p, v: f.multiplyScalar(sp), vy: 0, t: 0 };
   },
@@ -519,8 +520,24 @@ const Cover = {
       if (solidAt(x, y + 0.8, z) || Math.abs(y - owner.pos.y) > 1.2) continue;
       return { x, y, z };
     }
-    return { x: owner.pos.x + f.x * 0.9, y: owner.pos.y, z: owner.pos.z + f.z * 0.9 };
+    return null;
   },
+  // mid-air (or no room ahead): the board is flung out of the hand and falls to the ground ahead
+  flight(owner, f) {
+    const p = new THREE.Vector3(owner.pos.x + f.x * 0.5, owner.pos.y + 1.1, owner.pos.z + f.z * 0.5), h = 1 / 60;
+    const v = new THREE.Vector3(f.x * 7 + owner.vel.x * 0.3, 3, f.z * 7 + owner.vel.z * 0.3), p0 = p.clone();
+    if (solidAt(p.x, p.y, p.z)) { p.set(owner.pos.x, owner.pos.y + 1.1, owner.pos.z); p0.copy(p); v.x = v.z = 0; }
+    let T = 0;
+    for (let i = 0; i < 180; i++) {
+      v.y -= 22 * h; let nx = clamp(p.x + v.x * h, -XH + 1.3, XH - 1.3), nz = clamp(p.z + v.z * h, -ZH + 1.3, ZH - 1.3), ny = p.y + v.y * h; T += h;
+      const g = groundBelow(nx, nz, p.y + 0.1, 0);
+      if (ny <= g) { p.set(nx, g, nz); break; }
+      if (solidAt(nx, ny, nz)) { v.x = v.z = 0; nx = p.x; nz = p.z; }       // hit a wall: drop straight down
+      p.set(nx, ny, nz);
+    }
+    return { x: p.x, y: groundBelow(p.x, p.z, p.y + 0.1, 0), z: p.z, fly: { p0, v0: new THREE.Vector3(f.x * 7 + owner.vel.x * 0.3, 3, f.z * 7 + owner.vel.z * 0.3), T } };
+  },
+  target(owner, f) { return (owner.grounded !== false && this.spot(owner, f)) || this.flight(owner, f); },
   // the board model (also used by the lobby demo)
   build(team) {
     if (!this.geo) { this.geo = new THREE.BoxGeometry(this.W, this.H, this.T); this.darkM = new THREE.MeshStandardMaterial({ color: 0x1b1c24, roughness: 0.5, metalness: 0.3 }); this.decalGeo = new THREE.CircleGeometry(1, 12); this.decalM = [0, 1].map(() => new THREE.MeshBasicMaterial({ color: 0xffffff })); }
@@ -534,17 +551,24 @@ const Cover = {
   place(owner, dir) {
     const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
     for (const c of this.list.slice()) if (c.owner === owner) this.breakIt(c, true);          // one board each
-    const sp = this.spot(owner, f), yaw = Math.atan2(f.x, f.z), team = owner.team;
+    const sp = this.target(owner, f), yaw = Math.atan2(f.x, f.z), team = owner.team;
     const { g, board, face } = this.build(team); g.position.set(sp.x, sp.y, sp.z); g.rotation.y = yaw;
     scene.add(g);
     const cv = { owner, team, x: sp.x, y: sp.y, z: sp.z, ax: Math.cos(yaw), az: -Math.sin(yaw), nx: f.x, nz: f.z, hp: SUBS.cover.hp, t: SUBS.cover.life, g, board, face, grow: 0, flash: 0, wob: 0, decals: [] };
     this.list.push(cv);
+    if (sp.fly) { cv.fly = Object.assign({ t: 0 }, sp.fly); g.position.copy(sp.fly.p0); g.scale.setScalar(0.5); if (sndVol(g.position) > 0.05) Sfx.throwB(sndVol(g.position)); return cv; }
+    this.land(cv);
+    return cv;
+  },
+  // it hits the ground: spray-paint pop-up, puddle of our ink behind it
+  land(cv) {
+    const owner = cv.owner, team = cv.team, sp = cv, f = { x: cv.nx, z: cv.nz }, g = cv.g;
+    cv.fly = null; g.position.set(cv.x, cv.y, cv.z); g.rotation.x = 0; cv.grow = 0;
     // a puddle of our ink behind it: swim there to refill in cover
     owner.addPaint(splatFloor(sp.x - f.x * 0.9, sp.y, sp.z - f.z * 0.9, 1.8, team, 1.0, true));
     const colr = TEAM_HEX[team];
     for (let k = 0; k < 7; k++) { const u = (k / 6 - 0.5) * this.W; Fx.burstDir(sp.x + cv.ax * u, sp.y + 0.1, sp.z + cv.az * u, colr, 3, 4, 0.08, 0, 1, 0, 0.5); }
     const v = sndVol(g.position); if (v > 0.03) Sfx.spray(v, sndPan(g.position));
-    return cv;
   },
   // enemy board (of someone not on `team`) at this point?
   at(team, x, y, z) {
@@ -609,6 +633,13 @@ const Cover = {
   },
   update(dt) {
     for (const c of this.list.slice()) {
+      if (c.fly) {                                   // flying: tumbles along its arc, then lands
+        const F = c.fly; F.t += dt; const k = Math.min(1, F.t / F.T);
+        c.g.position.set(F.p0.x + F.v0.x * F.t, F.p0.y + F.v0.y * F.t - 11 * F.t * F.t, F.p0.z + F.v0.z * F.t);
+        c.g.position.x = lerp(c.g.position.x, c.x, k * k); c.g.position.z = lerp(c.g.position.z, c.z, k * k); c.g.position.y = Math.max(c.g.position.y, lerp(c.g.position.y, c.y, k * k));
+        c.g.rotation.x = -(1 - k) * Math.PI * 2; if (F.t >= F.T) { Fx.burst(c.x, c.y + 0.1, c.z, TEAM_HEX[c.team], 12, 4, 0.1); this.land(c); }
+        continue;
+      }
       c.t -= dt; if (c.t <= 0) { this.breakIt(c); continue; }
       c.grow = Math.min(1, c.grow + dt / 0.32); const k = c.grow, ob = 1 + 2.4 * Math.pow(k - 1, 3) + 1.4 * Math.pow(k - 1, 2);
       c.g.scale.set(1 + 0.12 * Math.sin(Math.PI * k) * (1 - k), Math.max(0.02, ob), 1);
@@ -623,7 +654,7 @@ const Cover = {
     if (!owner) { if (this.gh) this.gh.visible = false; return; }
     if (!this.gh) { this.ghM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false, fog: false }); this.gh = new THREE.Mesh(new THREE.BoxGeometry(this.W, this.H, this.T), this.ghM); scene.add(this.gh); }
     const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
-    const sp = this.spot(owner, f); this.gh.visible = true; this.gh.position.set(sp.x, sp.y + this.H / 2 + 0.1, sp.z); this.gh.rotation.y = Math.atan2(f.x, f.z);
+    const sp = this.target(owner, f); this.gh.visible = true; this.gh.position.set(sp.x, sp.y + this.H / 2 + 0.1, sp.z); this.gh.rotation.y = Math.atan2(f.x, f.z);
     this.ghM.color.set(ok ? TEAM_HEX[owner.team] : '#9aa0aa'); this.ghM.opacity = 0.22 + Math.sin(G.time * 8) * 0.06;
   },
   clear() { this.list.slice().forEach(c => this.breakIt(c, true)); if (this.gh) this.gh.visible = false; }

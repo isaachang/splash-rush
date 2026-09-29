@@ -84,10 +84,13 @@ class Bot {
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
       const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : c.weapon.id === 'rifle' ? 18 : Math.max(18, c.weapon.range + 4)) || d > bd) continue;
-      if (e.submerged && d > 3.5 && !(G.time - e.lastShot < 0.4)) continue;
+      // hidden in ink: only seen up close (2.5 m), or roughly up to 7 m if swimming fast (ripples); shooting gives you away
+      let fuzzy = false;
+      if (e.hiddenInInk() && !(G.time - e.lastShot < 0.4)) { const fast = Math.hypot(e.vel.x, e.vel.z) > 6; if (d > (fast ? 7 : 2.5)) continue; fuzzy = fast && d > 2.5; }
       const ch = e.chest(); if (segBlocked(e0.x, e0.y, e0.z, ch.x, ch.y, ch.z, 0.5)) continue;
-      best = e; bd = d;
+      best = e; bd = d; this.fuzzyNext = fuzzy;
     }
+    this.fuzzy = best ? this.fuzzyNext : false;
     return best;
   }
   chooseTarget() {
@@ -131,7 +134,7 @@ class Bot {
   }
   chargerFight(dt, e, d, D) {
     const c = this.c, I = c.intent;
-    this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.3, 0.6); const m = D.err * d * 0.75; this.err.set(rand(-m, m), rand(-m, m) * 0.5, rand(-m, m)); }
+    this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.3, 0.6); const m = D.err * d * 0.75 * (this.fuzzy ? 2.5 : 1); this.err.set(rand(-m, m), rand(-m, m) * 0.5, rand(-m, m)); }
     const tp = e.chest().addScaledVector(e.vel, 0.08).add(this.err);
     const m = c.muzzle(); const dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
     const wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd);
@@ -180,7 +183,10 @@ class Bot {
     if (!c.alive || c.state !== 'play') { I.fire = I.swim = false; I.mx = I.mz = 0; this.path = []; this.enemy = null; return; }
     this.scanT -= dt;
     if (this.scanT <= 0) {
-      this.scanT = 0.2; const e = this.findEnemy();
+      this.scanT = 0.2; const prev = this.enemy, e = this.findEnemy();
+      // lost them in the ink: keep spraying where they were last seen for ~0.5 s
+      if (!e && prev && prev.alive && prev.state === 'play' && prev.hiddenInInk()) this.lastSeen = { p: prev.pos.clone(), t: T };
+      if (e) this.lastSeen = null;
       if (e && e !== this.enemy) { this.reactT = D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0); this.coverWant = c.subId === 'cover' && Math.random() < 0.7; }
       this.enemy = e;
     }
@@ -197,7 +203,7 @@ class Bot {
       const d = e.pos.distanceTo(c.pos);
       if (c.weapon.charges) { this.chargerFight(dt, e, d, D); this.path = []; return; }
       if (c.subId === 'curling' && this.curlFollow(dt, e, d)) { this.path = []; return; }
-      this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.25, 0.5); const m = D.err * d; this.err.set(rand(-m, m), rand(-m, m) * 0.6, rand(-m, m)); }
+      this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.25, 0.5); const m = D.err * d * (this.fuzzy ? 2.5 : 1); this.err.set(rand(-m, m), rand(-m, m) * 0.6, rand(-m, m)); }
       const wid = c.weapon.id, tt = shotTime(d, wid); const tp = e.chest().addScaledVector(e.vel, tt * 0.9).add(this.err);
       const m = c.muzzle(); const dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
       const wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd) + dropComp(hd, wid);
@@ -218,6 +224,12 @@ class Bot {
       if (c.special >= 100 && d < 7 && Math.random() < dt * 2) I.special = true; else I.special = false;
       this.path = [];
       return;
+    }
+    // just lost them in the ink: spray where they were last seen, drifting off as the trail goes cold
+    if (!e && this.lastSeen && T - this.lastSeen.t < 0.5 && c.ink > 5 && !c.weapon.charges) {
+      const L = this.lastSeen, m = c.muzzle(), k = (T - L.t) / 0.5, dx = L.p.x - m.x + Math.sin(T * 7) * k * 1.4, dz = L.p.z - m.z + Math.cos(T * 5) * k * 1.4, dy = L.p.y + 0.3 - m.y, hd = Math.hypot(dx, dz);
+      c.aimYaw += clamp(angDiff(c.aimYaw, Math.atan2(dx, dz)), -D.turn * dt, D.turn * dt); c.aimPitch = damp(c.aimPitch, Math.atan2(dy, hd) + dropComp(hd, c.weapon.id), 10, dt);
+      I.fire = true; I.mx = I.mz = 0; I.special = false; this.path = []; return;
     }
     I.special = false;
     if (this.mode === 'refill') {
