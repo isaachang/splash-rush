@@ -157,6 +157,23 @@ const Sfx = (() => {
       noise(0.25, 0.25 * v, 'bandpass', 900, 1.5, 300, d, t + 0.05); tone('triangle', 70, 40, 1.2, 0.12 * v, d, t + 0.1);
     },
     cannon(v, c) { noise(0.35 + c * 0.3, (0.25 + c * 0.35) * v, 'lowpass', 2400, 0.9, 120); tone('square', 520, 60, 0.25, 0.12 * v); tone('sine', 150, 40, 0.4 + c * 0.2, (0.3 + c * 0.3) * v); noise(0.06, 0.25 * v, 'highpass', 3000, 1); },
+    // heavy gatling: short dry mechanical rattle per round (nothing like the rifle's wet "pshh")
+    gatling(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), k = rand(0.94, 1.06);
+      tone('square', 190 * k, 85, 0.035, 0.07 * v, d); noise(0.03, 0.1 * v, 'bandpass', 3600 * k, 2.6, 2200, d); tone('sawtooth', 72, 48, 0.045, 0.06 * v, d);
+    },
+    // range blaster: hollow "poomp" out of a tube + a hard click
+    blastShot(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), t = ctx.currentTime;
+      tone('sine', 110, 52, 0.24, 0.32 * v, d); noise(0.14, 0.16 * v, 'bandpass', 500, 2.2, 2200, d); tone('square', 950, 400, 0.025, 0.05 * v, d);
+      noise(0.06, 0.08 * v, 'highpass', 4000, 1, null, d, t + 0.02);
+    },
+    // its explosion: sharp crack, a punchy body and a fizzing ink tail (bigger radius = deeper)
+    blastBoom(v, pan = 0, R = 2) {
+      if (!ctx) return; const d = panNode(pan), k = clamp(R / 2.4, 0.6, 1.2), t = ctx.currentTime;
+      noise(0.05, 0.28 * v, 'highpass', 5200, 0.9, null, d); noise(0.5 * k, 0.4 * v, 'lowpass', 2400, 0.8, 110, d);
+      tone('sine', 170 / k, 44, 0.4 * k, 0.32 * v, d); noise(0.6, 0.07 * v, 'bandpass', 900, 1.6, 2600, d, t + 0.08);
+    },
     get ctx() { return ctx; }
   };
 })();

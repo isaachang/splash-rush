@@ -212,6 +212,37 @@ vm.runInContext(`(() => {
     // pause ducks the sound, resume brings it back
     Sfx.duck(true); const d1 = Sfx.ducked; Sfx.duck(false);
     ok(d1 && !Sfx.ducked, 'pausing ducks and muffles the sound, resuming restores it');
+    // ================= v0.7 long-range trio =================
+    {
+      const setup = w => { quitToTitle(); for (let i = 0; i < 3; i++) loop(); Profile.data.weapon = w; openLobby('turf'); startMatch(); Input.locked = true; while (G.state !== 'play') loop();
+        G.bots.forEach(b => b.update = () => {}); CHARS.forEach(c => { if (c !== PLAYER) { c.pos.set(20 + c.id, 0, -30); c.intent.mx = c.intent.mz = 0; c.intent.fire = false; } });
+        const P2 = PLAYER; P2.pos.set(-9, 0, 20); P2.vel.set(0, 0, 0); P2.ink = 100; Cam.yaw = Math.PI; Cam.pitch = 0; for (let i = 0; i < 3; i++) loop(); return P2; };
+      const foe = k => { const e = CHARS.filter(c => c.team === 1)[k]; e.hp = 100; e.alive = true; e.state = 'play'; e.invulnT = 0; e.vel.set(0, 0, 0); return e; };
+      // --- heavy gatling: hold = fires straight away, very fast, but the tank only lasts ~40 rounds
+      let Q = setup('splatling'); const WS = WEAPONS.splatling; let shots = 0; const os = Proj.shot.bind(Proj); Proj.shot = (o, ...a) => { if (o === Q) shots++; return os(o, ...a); };
+      Input.fire = true; loop(); loop(); const first = shots; Input.keys.KeyW = true; for (let i = 0; i < 20; i++) loop(); const spd = Math.hypot(Q.vel.x, Q.vel.z); Input.keys.KeyW = false;
+      for (let i = 0; i < 70; i++) loop(); Input.fire = false; Proj.shot = os;
+      const pr = Proj.predict(Q, Q.muzzle(), new THREE.Vector3(0, 0, -1)), reach = Q.muzzle().distanceTo(pr.end);
+      ok(first >= 1 && shots >= 36 && shots <= 42 && Q.ink < WS.cost && Math.abs(spd - WS.moveFire) < 0.3 && reach > 19, 'gatling: fires the moment you press, ' + shots + ' rounds empty the tank, walks ' + spd.toFixed(1) + ' m/s while firing, reaches ' + reach.toFixed(1) + ' m');
+      const g1 = foe(0); g1.pos.set(-9, 0, 4); Q.ink = 100; Q.pos.set(-9, 0, 20); Input.fire = true; let fr = 0; while (g1.alive && fr < 60) { loop(); fr++; } Input.fire = false;
+      ok(!g1.alive && g1.lastVia === 'splatling' && fr < 30, 'gatling shreds someone at 16 m in ' + (fr / 30).toFixed(2) + ' s');
+      // --- range blaster: direct hit = knockout, splash near a miss, airburst at max range
+      Q = setup('blaster'); const WB = WEAPONS.blaster; const b1 = foe(0); b1.pos.set(-9, 0, 12);
+      Cam.pitch = 0.0; for (let i = 0; i < 2; i++) loop(); Input.fire = true; loop(); Input.fire = false; for (let i = 0; i < 20; i++) loop();
+      ok(!b1.alive && b1.lastVia === 'blaster', 'blaster: a direct hit knocks out in one shot');
+      for (let i = 0; i < 40; i++) loop(); Q.ink = 100; Q.fireCd = 0; Cam.pitch = -0.32; for (let i = 0; i < 2; i++) loop();
+      const land = Proj.predict(Q, Q.muzzle(), Q.intent.aimDir.clone()).end; const b2 = foe(1); b2.pos.set(land.x + 1.5, 0, land.z);
+      Input.fire = true; loop(); Input.fire = false; for (let i = 0; i < 20; i++) loop();
+      ok(b2.alive && b2.hp < 60, 'blaster: missing still splashes whoever is next to the blast (hp ' + Math.round(b2.hp) + ')');
+      let boomAt = null; const ob = Proj.blastAt.bind(Proj); Proj.blastAt = (o, p, ...a) => { if (o === Q) boomAt = p.clone(); return ob(o, p, ...a); };
+      Q.ink = 100; Q.fireCd = 0; Cam.pitch = 0.25; for (let i = 0; i < 2; i++) loop(); Input.fire = true; loop(); Input.fire = false; for (let i = 0; i < 20; i++) loop(); Proj.blastAt = ob;
+      ok(boomAt && boomAt.y > 2.5 && Math.hypot(boomAt.x - Q.pos.x, boomAt.z - Q.pos.z) > 20, 'blaster: the shell airbursts at the end of its range (' + (boomAt ? Math.hypot(boomAt.x - Q.pos.x, boomAt.z - Q.pos.z).toFixed(1) + ' m out, ' + boomAt.y.toFixed(1) + ' m up' : 'none') + ')');
+      const wl = SOLIDS.find(s => s.t === 'box' && !s.bound && s.h > 1.5 && s.x1 - s.x0 < 4 && s.z1 - s.z0 > 6);
+      const b3 = foe(2), side = (wl.x0 + wl.x1) / 2, zc = (wl.z0 + wl.z1) / 2; b3.pos.set(wl.x1 + 0.6, 0, zc);
+      Proj.blastAt(Q, new THREE.Vector3(wl.x0 - 0.3, 1, zc), WB.blastR, WB.blastCore, WB.blastDmg, 1.5, 'blaster');
+      ok(b3.hp === 100, 'explosions do not go through walls');
+      quitToTitle(); for (let i = 0; i < 3; i++) loop(); Profile.data.weapon = 'rifle';
+    }
     // knocked out: killer cam first, then watch a teammate, back to yourself on respawn
     quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby('turf'); startMatch(); while (G.state !== 'play') loop();
     const Q = PLAYER, foe = CHARS.find(c => c.team === 1); G.bots.forEach(b => b.update = () => {});

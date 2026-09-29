@@ -52,6 +52,13 @@ const Fx = {
     this.beamPart(a, b, '#ffffff', w * 0.4, life * 0.8, 1);
     if (big) this.beamPart(a, b, col, w * 2.2, life * 1.1, 0.35);
   },
+  // quick expanding translucent ball (explosions)
+  ball(x, y, z, col, r) {
+    if (!this.balls) this.balls = [];
+    let m = this.balls.find(m => !m.visible);
+    if (!m) { m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false })); scene.add(m); this.balls.push(m); }
+    m.visible = true; m.position.set(x, y, z); m.material.color.set(col); m.userData = { t: 0, r };
+  },
   ring(x, y, z, col, r) {
     const m = this.ringPool.find(m => !m.visible) || this.ringPool[0];
     m.visible = true; m.position.set(x, y, z); m.material.color.set(col); m.userData = { t: 0, r }; this.rings.includes(m) || this.rings.push(m);
@@ -85,13 +92,18 @@ const Fx = {
       if (k >= 1) { m.visible = false; continue; }
       const w = u.w * (1 - k * 0.7); m.scale.set(w, w, u.len); m.material.opacity = (u.op ?? 1) * (1 - k * k);
     }
+    if (this.balls) for (const m of this.balls) {
+      if (!m.visible) continue; const u = m.userData; u.t += dt; const k = u.t / 0.22;
+      if (k >= 1) { m.visible = false; continue; }
+      m.scale.setScalar(u.r * (0.35 + 0.65 * (1 - Math.pow(1 - k, 2)))); m.material.opacity = 0.75 * (1 - k);
+    }
     for (const m of this.rings) {
       if (!m.visible) continue; const u = m.userData; u.t += dt; const k = u.t / 0.45;
       if (k >= 1) { m.visible = false; continue; }
       const s = u.r * (0.3 + 0.7 * (1 - Math.pow(1 - k, 3))); m.scale.set(s, s, s); m.material.opacity = (1 - k) * 0.9;
     }
   },
-  clear() { this.parts.length = 0; this.rings.forEach(r => r.visible = false); this.beams.forEach(b => b.visible = false); }
+  clear() { this.parts.length = 0; this.rings.forEach(r => r.visible = false); this.beams.forEach(b => b.visible = false); if (this.balls) this.balls.forEach(b => b.visible = false); }
 };
 
 /* ======================================================== PROJECTILES */
@@ -105,10 +117,33 @@ const Proj = {
     scene.add(this.mesh);
     this.bombGeo = new THREE.SphereGeometry(0.2, 16, 12); this.bandGeo = new THREE.TorusGeometry(0.2, 0.035, 6, 20);
   },
-  shot(owner, o, dir) {
+  // Wo: ballistics override; extra: { style: 'shell', blast, hitR }
+  shot(owner, o, dir, Wo, cap, extra) {
     if (this.shots.length > this.N - 10) this.shots.shift();
-    const W = owner.weapon;
-    this.shots.push({ owner, team: owner.team, W, p: o.clone(), rp: o.clone(), v: dir.multiplyScalar(W.speed), t: 0, dist: 0, nextDrop: rand(0.7, 1.1), kind: 'shot', r: rand(W.splat[0], W.splat[1]), wob: rand(0, 6.28) });
+    const W = Wo || owner.weapon;
+    const b = { owner, team: owner.team, W, p: o.clone(), rp: o.clone(), v: dir.multiplyScalar(W.speed), t: 0, dist: 0, nextDrop: rand(0.7, 1.1), kind: 'shot', r: rand(W.splat[0], W.splat[1]), wob: rand(0, 6.28) };
+    if (extra) Object.assign(b, extra);
+    this.shots.push(b);
+  },
+  // blaster shell explosion: paint + fx + falloff damage (walls block it); 'direct' already took its hit
+  blastAt(owner, p, R, core, dmg, paintR, via, direct = null) {
+    const team = owner.team, col = TEAM_HEX[team], g = groundBelow(p.x, p.z, p.y + 0.2, 0.2), low = p.y - g < R;
+    if (low && Math.abs(p.x) < XH && Math.abs(p.z) < ZH) owner.addPaint(splatFloor(p.x, g, p.z, paintR * (1 - (p.y - g) / (R * 1.6)), team, 1.2, false));
+    splatFloor(p.x, p.y, p.z, paintR * 0.85, team, 0.35, true);                 // walls right next to the blast
+    // a clear explosion wherever it happens: expanding ink ball + white flash, a spray of drops that rain down and paint
+    Fx.burst(p.x, p.y, p.z, col, 34 + R * 10, 7 + R * 2, 0.17); Fx.burstDir(p.x, p.y, p.z, '#ffffff', 10, 6, 0.09, 0, 1, 0, 1);
+    Fx.ball(p.x, p.y, p.z, col, R * 0.95); Fx.ball(p.x, p.y, p.z, '#ffffff', R * 0.55);
+    if (low) Fx.ring(p.x, g + 0.06, p.z, col, R * 1.9);
+    else for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; this.spray(owner, p, new THREE.Vector3(Math.cos(a) * rand(2, 4), rand(-1, 2), Math.sin(a) * rand(2, 4)), rand(0.5, 0.75)); }
+    const v = sndVol(p); if (v > 0.03) Sfx.blastBoom(v, sndPan(p), R);
+    if (PLAYER && PLAYER.alive) { const d = PLAYER.pos.distanceTo(p); if (d < R + 5) G.shake(0.35 * (1 - d / (R + 5))); }
+    for (const c of CHARS) {
+      if (c.team === team || !c.alive || c === direct) continue;
+      const ch = c.chest(), d = ch.distanceTo(p); if (d >= R) continue;
+      if (segBlocked(p.x, p.y + 0.05, p.z, ch.x, ch.y, ch.z, 0.25)) continue;
+      const dm = d < core ? dmg[0] : lerp(dmg[0], dmg[1], (d - core) / (R - core)), dir = ch.clone().sub(p).setY(0).normalize();
+      if (c.damage(dm, owner, via)) c.onHit(dir, dm);
+    }
   },
   // paint that lands in two beats: a smaller core now, the full splat a moment later (reads as "splashing open")
   splatLater(delay, fn) { this.pending.push({ t: delay, fn }); },
@@ -124,6 +159,7 @@ const Proj = {
     const b = { W: owner.weapon, p: o.clone(), v: dir.clone().multiplyScalar(owner.weapon.speed), t: 0 }, h = 1 / 240;
     while (b.t < 1.2) {
       this.stepShot(b, h);
+      if (b.W.fuse && b.t >= b.W.fuse) return { end: b.p.clone(), t: b.t };                 // blaster shell airbursts here
       for (const e of CHARS) if (e.team !== owner.team && !e.submerged && this.hitChar(e, b.p, 0.14)) return { end: b.p.clone(), char: e, t: b.t };
       if (solidAt(b.p.x, b.p.y, b.p.z) || b.p.y < -3) return { end: b.p.clone(), t: b.t };
     }
@@ -261,18 +297,22 @@ const Proj = {
           if (Math.random() < 0.06) Fx.add(b.p.x, b.p.y, b.p.z, b.v.x * 0.02 + rand(-0.4, 0.4), rand(-0.5, 0.4), b.v.z * 0.02 + rand(-0.4, 0.4), rand(0.04, 0.07), 0.35, TEAM_HEX[b.team], 18);
         } else { b.v.y -= 25 * h; b.p.addScaledVector(b.v, h); }
         if (b.kind === 'shot') {
-          for (const c of CHARS) { if (c.team !== b.team && this.hitChar(c, b.p, 0.14)) {
+          for (const c of CHARS) { if (c.team !== b.team && this.hitChar(c, b.p, b.hitR || 0.14)) {
             const dmg = this.shotDamage(b), vn = b.v.clone().normalize();
             if (c.damage(dmg, b.owner)) c.onHit(vn, dmg);
+            if (b.blast) { const W = b.W; this.blastAt(b.owner, b.p.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id, c); }
             Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 17, 4.8, 0.1, -vn.x + rand(-0.3, 0.3), 0.4, -vn.z + rand(-0.3, 0.3), 0.9);
             Fx.burstDir(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 4, 2, 0.15, vn.x, 0.2, vn.z, 0.6);
             dead = true; break; } }
           if (dead) break;
+          // blaster shell: explodes in mid-air at the end of its flight
+          if (b.blast && b.t >= b.W.fuse) { const W = b.W; this.blastAt(b.owner, b.p.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id); dead = true; break; }
         }
         if (inBarrier(1 - b.team, b.p)) { Fx.burst(b.p.x, b.p.y, b.p.z, TEAM_HEX[b.team], 3, 1.5, 0.05); Barrier.flash(1 - b.team); dead = true; break; }
         const s = solidAt(b.p.x, b.p.y, b.p.z);
         if (s) {
           if (b.big) { const h = this.classify(s, prev, b.p); if (h.type !== 'none') this.splash(b.owner, h.type === 'wall' ? h.pt : new THREE.Vector3(b.p.x, h.y, b.p.z), h.n, b.v.clone().normalize(), b.r, h.type, h.face); if (sndVol(b.p) > 0.1) Sfx.splat(sndVol(b.p)); }
+          else if (b.blast) { const W = b.W; this.impact(s, prev, b.p, b.team, b.owner, b.r); this.blastAt(b.owner, prev.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id); }
           else this.impact(s, prev, b.p, b.team, b.owner, b.r);
           dead = true;
         }
@@ -312,10 +352,10 @@ const Proj = {
       if (b.kind === 'shot') {
         // head blob + 2 trailing blobs between last frame's and this frame's position -> a continuous stream
         const sp = b.v.length(), s = 0.26 * (1 + Math.sin(G.time * 40 + b.wob) * 0.06), len = s * (1.25 + Math.min(sp * 0.011, 1.6));   // chunky ink blobs (about head-sized)
-        const from = b.rq || b.p;
-        for (let k = 0; k < 3; k++) {
-          const u = 1 - k / 3, sk = s * (1 - k * 0.18);
-          _dm.position.lerpVectors(from, b.p, u); _dm.scale.set(sk, sk, len * (1 - k * 0.15));
+        const from = b.rq || b.p, sh = b.style === 'shell';
+        for (let k = 0; k < (sh ? 1 : 3); k++) {
+          const u = 1 - k / 3, sk = s * (1 - k * 0.18) * (sh ? 1.25 : 1);
+          _dm.position.lerpVectors(from, b.p, u); _dm.scale.set(sk, sk, len * (1 - k * 0.15) * (sh ? 0.75 : 1));
           _dm.lookAt(_dm.position.x + b.v.x, _dm.position.y + b.v.y, _dm.position.z + b.v.z); _dm.updateMatrix();
           this.mesh.setMatrixAt(n, _dm.matrix); this.mesh.setColorAt(n, _col); n++;
         }

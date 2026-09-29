@@ -45,13 +45,13 @@ const HUD = {
       if (v.z < 1) {
         const x = (v.x + 1) / 2 * innerWidth, y = (1 - v.y) / 2 * innerHeight;
         const camD = camera.position.distanceTo(Cam.land), fpx = innerHeight / 2 / Math.tan(camera.fov * Math.PI / 360);
-        const wr = c.weapon.type === 'charge' ? 0.12 : c.weapon.spread * Cam.landDist + 0.12;
+        const Wc = c.weapon, wr = Wc.retR ? Wc.retR : Wc.type === 'charge' ? 0.12 : Wc.spread * Cam.landDist + 0.12;
         const px = clamp(wr * fpx / Math.max(camD, 0.5), 7, 60);
         r2.style.display = 'block'; r2.style.transform = `translate(${x}px, ${y}px)`; r2.style.setProperty('--rs', px * 2 + 'px');
         r2.classList.toggle('lock', Cam.lock);
       } else r2.style.display = 'none';
     } else r2.style.display = 'none';
-    const cr = $('chargeRing'), isC = c.weapon.type === 'charge';
+    const cr = $('chargeRing'), isC = !!c.weapon.charges;
     cr.classList.toggle('on', isC && c.alive); cr.classList.toggle('full', isC && c.charge >= 1);
     if (isC) $('chargeArc').style.strokeDashoffset = 251.3 * (1 - c.charge);
     cr.classList.toggle('stored', isC && c.stored > 0);
@@ -312,10 +312,12 @@ function rollRoster() {
   const R = [[], []];
   for (let t = 0; t < 2; t++) {
     const slots = t === 0 ? [0, 2, 3] : [0, 1, 2, 3];
-    const chargerSlot = Math.random() < 0.65 ? pick(slots) : -1;
+    // each team: a couple of the special weapons (never two of the same), the rest carry rifles
+    const specials = ['charger', 'splatling'].sort(() => Math.random() - 0.5).slice(0, randi(1, 2)), freeSlots = slots.slice().sort(() => Math.random() - 0.5);
+    const give = {}; specials.forEach((w, k) => { if (k < freeSlots.length) give[freeSlots[k]] = w; });
     for (let i = 0; i < 4; i++) {
       const isP = t === 0 && i === 1;
-      R[t].push({ name: isP ? (GAME.name || '玩家') : names.pop(), isPlayer: isP, weapon: isP ? Profile.data.weapon : (i === chargerSlot ? 'charger' : 'rifle'), look: isP ? Profile.data.look : randomLook(), role: roles[(i + t) % 4] });
+      R[t].push({ name: isP ? (GAME.name || '玩家') : names.pop(), isPlayer: isP, weapon: isP ? Profile.data.weapon : (give[i] || 'rifle'), look: isP ? Profile.data.look : randomLook(), role: roles[(i + t) % 4] });
     }
   }
   G.roster = R; enforceRoster();
@@ -323,7 +325,7 @@ function rollRoster() {
 function enforceRoster() {
   // at most one charger per team (the player's own pick takes priority)
   const me = G.roster[0][1]; me.weapon = Profile.data.weapon; me.name = GAME.name || '玩家';
-  G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === 'charger'); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === 'charger') { if (seen) m.weapon = 'rifle'; seen = true; } }); });
+  for (const w of ['charger', 'splatling']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) m.weapon = 'rifle'; seen = true; } }); });
 }
 function spawnTeams() {
   clearChars();

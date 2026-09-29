@@ -40,7 +40,20 @@ function astar(s, goal) {
 
 /* ---- shooter ballistics helpers for bots (tabulated from the real bullet physics) */
 const BALL = { comp: [], time: [] };
+// drop-compensation tables for every bullet weapon (rifle and gatling); dropComp(hd, id) looks them up
+function buildBallistics(W, maxD) {
+  const out = { comp: [], time: [] }, h = 1 / 240;
+  const sim = (pitch, hd) => { const b = { W, p: new THREE.Vector3(), v: new THREE.Vector3(0, Math.sin(pitch), Math.cos(pitch)).multiplyScalar(W.speed), t: 0 }; while (b.t < 1.5) { Proj.stepShot(b, h); if (b.p.z >= hd) return [b.p.y, b.t]; if (b.p.y < -3) return null; } return null; };
+  for (let i = 0; i <= maxD * 2; i++) {
+    const hd = i * 0.5; let lo = -0.2, hi = 0.6, best = 0.6, t = 0.5, found = false;
+    for (let k = 0; k < 24; k++) { const mid = (lo + hi) / 2, r = sim(mid, hd); if (r && r[0] >= 0) { best = mid; hi = mid; t = r[1]; found = true; } else lo = mid; }
+    const pc = out.comp.length ? out.comp[out.comp.length - 1] : 0, pt = out.time.length ? out.time[out.time.length - 1] : 0;
+    out.comp.push(found ? Math.max(0, best) : pc); out.time.push(found ? t : pt);
+  }
+  return out;
+}
 function initBallistics() {
+  BALL.splatling = buildBallistics(WEAPONS.splatling, 26);
   const W = WEAPONS.rifle, h = 1 / 240;
   const sim = (pitch, hd) => { // returns height at horizontal distance hd (or null if it never gets there) and time
     const b = { W, p: new THREE.Vector3(), v: new THREE.Vector3(0, Math.sin(pitch), Math.cos(pitch)).multiplyScalar(W.speed), t: 0 };
@@ -56,8 +69,8 @@ function initBallistics() {
   }
 }
 const tabLook = (arr, hd) => { const f = clamp(hd * 2, 0, arr.length - 1), i = Math.floor(f), j = Math.min(arr.length - 1, i + 1); return lerp(arr[i], arr[j], f - i); };
-const dropComp = hd => tabLook(BALL.comp, hd);
-const shotTime = d => tabLook(BALL.time, d);
+const dropComp = (hd, id) => id === 'splatling' ? tabLook(BALL.splatling.comp, hd) : id === 'blaster' ? 0 : tabLook(BALL.comp, hd);
+const shotTime = (d, id) => id === 'splatling' ? tabLook(BALL.splatling.time, d) : id === 'blaster' ? d / WEAPONS.blaster.speed : tabLook(BALL.time, d);
 
 /* ================================================================= BOT */
 class Bot {
@@ -70,7 +83,7 @@ class Bot {
     const c = this.c, e0 = c.eye(); let best = null, bd = 1e9;
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
-      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : 18) || d > bd) continue;
+      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : c.weapon.id === 'rifle' ? 18 : Math.max(18, c.weapon.range + 4)) || d > bd) continue;
       if (e.submerged && d > 3.5 && !(G.time - e.lastShot < 0.4)) continue;
       const ch = e.chest(); if (segBlocked(e0.x, e0.y, e0.z, ch.x, ch.y, ch.z, 0.5)) continue;
       best = e; bd = d;
@@ -111,7 +124,7 @@ class Bot {
   // hold/release trigger: auto weapons just hold; chargers hold until the goal charge then release
   pull(I, goal = 1) {
     const c = this.c;
-    if (c.weapon.type !== 'charge') { I.fire = true; return; }
+    if (!c.weapon.charges) { I.fire = true; return; }
     if (!c.charging) { I.fire = true; this.goal = goal; this.holdT = 0; return; }
     this.holdT += 1 / 60;
     I.fire = c.charge < Math.min(this.goal, 0.999) && this.holdT < 3;
@@ -158,22 +171,22 @@ class Bot {
       if (e && e !== this.enemy) this.reactT = D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0);
       this.enemy = e;
     }
-    if (c.ink < (c.weapon.type === 'charge' ? 20 : 10) && this.mode !== 'refill') { this.mode = 'refill'; this.path = []; if (!this.findRefill()) this.path = []; }
+    if (c.ink < (c.weapon.charges ? 20 : 10) && this.mode !== 'refill') { this.mode = 'refill'; this.path = []; if (!this.findRefill()) this.path = []; }
     if (this.mode === 'refill' && c.ink > 88) { this.mode = 'paint'; this.path = []; }
     // stuck detection
     this.stuckT += dt;
     if (this.stuckT > 1.4) { if (this.lastPos.distanceTo(c.pos) < 0.6 && (this.path.length || this.mode !== 'paint')) { I.jump = true; this.path = []; this.retarget = 0; } this.lastPos.copy(c.pos); this.stuckT = 0; }
     I.fire = false; I.swim = false; I.aimDir = null;
     const e = this.enemy;
-    const chg = c.weapon.type === 'charge';
+    const chg = !!c.weapon.charges;
     if (e && e.alive && (this.mode !== 'refill' || e.pos.distanceTo(c.pos) < 7 || (chg && c.ink > 22)) && c.ink > 3) {
       // -------- fight
       const d = e.pos.distanceTo(c.pos);
-      if (c.weapon.type === 'charge') { this.chargerFight(dt, e, d, D); this.path = []; return; }
+      if (c.weapon.charges) { this.chargerFight(dt, e, d, D); this.path = []; return; }
       this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.25, 0.5); const m = D.err * d; this.err.set(rand(-m, m), rand(-m, m) * 0.6, rand(-m, m)); }
-      const tt = shotTime(d); const tp = e.chest().addScaledVector(e.vel, tt * 0.9).add(this.err);
+      const wid = c.weapon.id, tt = shotTime(d, wid); const tp = e.chest().addScaledVector(e.vel, tt * 0.9).add(this.err);
       const m = c.muzzle(); const dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
-      const wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd) + dropComp(hd);
+      const wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd) + dropComp(hd, wid);
       const dy_ = angDiff(c.aimYaw, wantYaw);
       c.aimYaw += clamp(dy_, -D.turn * dt, D.turn * dt); c.aimPitch = damp(c.aimPitch, wantPitch, 10, dt);
       this.reactT -= dt;

@@ -18,7 +18,23 @@ function buildWeaponModel(id, T, trimHex) {
   const body = new THREE.MeshStandardMaterial({ color: 0x2c2f3b, roughness: 0.35, metalness: 0.5 });
   const trim = new THREE.MeshStandardMaterial({ color: trimHex, roughness: 0.4 });
   const rx = (m, a = Math.PI / 2) => { m.rotation.x = a; return m; };
-  if (id === 'charger') {
+  if (id === 'splatling') {
+    // gatling: boxy body, rotating cluster of six barrels, ink drum underneath
+    g.add(mesh(new THREE.BoxGeometry(0.15, 0.17, 0.5), body, 0, 0.02, 0.1));
+    const spin = new THREE.Group(); spin.position.set(0, 0.03, 0.62); g.add(spin); g.userData.spin = spin;
+    for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2, b = mesh(GEO.cyl, k % 2 ? body : trim, Math.cos(a) * 0.055, Math.sin(a) * 0.055, 0, 0.022, 0.62, 0.022); b.rotation.x = Math.PI / 2; spin.add(b); }
+    const ring = mesh(new THREE.TorusGeometry(0.075, 0.018, 6, 16), trim, 0, 0, 0.3); spin.add(ring);
+    const drum = mesh(GEO.cyl, T, 0, -0.14, 0.12, 0.1, 0.24, 0.1); drum.rotation.z = Math.PI / 2; g.add(drum);
+    g.add(mesh(new THREE.BoxGeometry(0.06, 0.13, 0.06), body, 0, -0.085, -0.05));
+    g.scale.setScalar(1.2);                                   // heavy weapon: a size up
+  } else if (id === 'blaster') {
+    // stubby cannon with a wide muzzle and an ink tank on top
+    g.add(mesh(new THREE.BoxGeometry(0.13, 0.15, 0.36), body, 0, 0.02, 0.08));
+    const bar = mesh(GEO.cyl, body, 0, 0.03, 0.42, 0.085, 0.42, 0.085); bar.rotation.x = Math.PI / 2; g.add(bar);
+    const mz = mesh(GEO.cyl, trim, 0, 0.03, 0.66, 0.125, 0.1, 0.125); mz.rotation.x = Math.PI / 2; g.add(mz);
+    g.add(mesh(GEO.sphere, T, 0, 0.16, 0.12, 0.085));
+    g.add(mesh(new THREE.BoxGeometry(0.06, 0.13, 0.06), body, 0, -0.085, 0.02));
+  } else if (id === 'charger') {
     g.add(mesh(new THREE.BoxGeometry(0.11, 0.14, 0.44), body, 0, 0.02, 0.06));
     g.add(rx(mesh(GEO.cyl, trim, 0, 0.04, 0.64, 0.034, 0.76, 0.034)));
     g.add(rx(mesh(GEO.cyl, body, 0, 0.04, 1.0, 0.052, 0.09, 0.052)));
@@ -143,7 +159,7 @@ class Character {
     const handL = new THREE.Group(); handL.position.set(0, -0.33, 0); this.arms[1].add(handL);
     this.sockets = { handR, handL, back: tank };
     this.gun = handR;
-    handR.add(buildWeaponModel(this.weapon.id, T, L.trim));
+    const wm = buildWeaponModel(this.weapon.id, T, L.trim); handR.add(wm); this.gunSpin = wm.userData.spin || null;
     // charger laser sight (visible to everyone)
     if (this.weapon.type === 'charge') {
       this.laserMat = new THREE.MeshBasicMaterial({ color: TEAM_HEX[this.team], transparent: true, opacity: 0.5, depthWrite: false, fog: false });
@@ -475,11 +491,12 @@ class Character {
           // muzzle: small ink flash + droplets spraying forward
           Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.11, 0.06, TEAM_HEX[this.team], 0);
           Fx.burstDir(m.x, m.y, m.z, TEAM_HEX[this.team], 3, 5, 0.045, dir.x, dir.y, dir.z, 0.35);
-          if (this.isPlayer) { Cam.kick = Math.min(0.014, (Cam.kick || 0) + 0.0045); }
-          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) Sfx.shoot(v, this.isPlayer ? 0 : sndPan(this.pos));
+          if (this.isPlayer) { Cam.kick = Math.min(0.014, (Cam.kick || 0) + (W.id === 'splatling' ? 0.003 : 0.0045)); }
+          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) (W.id === 'splatling' ? Sfx.gatling : Sfx.shoot)(v, this.isPlayer ? 0 : sndPan(this.pos));
         } else if (this.isPlayer) HUD.lowInk();
       }
-    } else if (W.type === 'charge') this.updateCharge(dt, I, T);
+    } else if (W.charges) this.updateCharge(dt, I, T);
+    else if (W.type === 'blaster') this.updateBlaster(dt, I, T);
     if (I.bomb && !this.swim && !this.sp && this.bombCd <= 0 && G.state === 'play') {
       if (this.ink >= 70) {
         this.ink -= 70; this.bombCd = 0.6; this.lastShot = T;
@@ -493,7 +510,7 @@ class Character {
   updateCharge(dt, I, T) {
     const W = this.weapon;
     // storing a full charge while submerged
-    if (this.swim && this.charging && this.charge >= 1 && I.fire) { this.charging = false; this.stored = W.storeTime; if (this.laser) { this.laser.visible = this.laserDot.visible = false; } if (this.isPlayer) Sfx.chargeStop(); }
+    if (W.storeTime && this.swim && this.charging && this.charge >= 1 && I.fire) { this.charging = false; this.stored = W.storeTime; if (this.laser) { this.laser.visible = this.laserDot.visible = false; } if (this.isPlayer) Sfx.chargeStop(); }
     if (this.stored > 0) {
       if (!I.fire || this.sp || !this.alive) { this.stored = 0; this.charge = 0; }
       else if (this.swim) { this.stored -= dt; if (this.stored <= 0) { this.stored = 0; this.charge = 0; } return; }
@@ -516,6 +533,21 @@ class Character {
       this.stopCharge();
       if (live) { this.fireCharger(c, I); this.fireCd = 0.18; }
     }
+  }
+  // ---------------------------------------------------------------- range blaster: one exploding shell
+  updateBlaster(dt, I, T) {
+    const W = this.weapon;
+    if (!(I.fire && !this.swim && !this.sp && this.fireCd <= 0 && G.state === 'play')) return;
+    if (this.ink < W.cost) { if (this.isPlayer) HUD.lowInk(); return; }
+    this.fireCd = W.interval; this.ink -= W.cost; this.lastShot = T; this.recoil = 2;
+    const m = this.muzzle(), dir = I.aimDir ? I.aimDir.clone() : aimVec(this), sp = this.grounded ? W.spread : W.airSpread;
+    dir.x += rand(-sp, sp); dir.y += rand(-sp, sp) * 0.6; dir.z += rand(-sp, sp); dir.normalize();
+    Proj.shot(this, m, dir, null, null, { style: 'shell', blast: true, hitR: 0.2 });
+    const col = TEAM_HEX[this.team];
+    Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.2, 0.08, col, 0);
+    Fx.burstDir(m.x, m.y, m.z, col, 8, 6, 0.07, dir.x, dir.y, dir.z, 0.45);
+    const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.7); if (v > 0.03) Sfx.blastShot(v, this.isPlayer ? 0 : sndPan(this.pos));
+    if (this.isPlayer) { G.shake(0.22); Cam.kick = Math.min(0.03, (Cam.kick || 0) + 0.02); }
   }
   chargeT(c) { const W = this.weapon; return clamp((Math.max(c, W.minCharge) - W.minCharge) / (1 - W.minCharge), 0, 1); }
   rangeNow() { const W = this.weapon; return W.type === 'charge' ? lerp(W.minRange, W.maxRange, this.chargeT(this.charge)) : W.range; }
@@ -650,7 +682,8 @@ class Character {
       this.arms[0].rotation.set(-Math.PI / 2 - pitch + this.recoil * 0.12, 0, 0);
       this.gun.position.y = -0.33 + this.recoil * 0.06;
       const firing = G.time - this.lastShot < 0.3;
-      if (this.weapon.cls === 'charger') {
+      if (this.gunSpin) { this.spinV = damp(this.spinV || 0, G.time - this.lastShot < 0.15 ? 45 : 0, 8, dt); this.gunSpin.rotation.z += this.spinV * dt; }
+      if (['charger', 'splatling', 'blaster'].includes(this.weapon.cls)) {
         // two-handed long gun: left hand supports the barrel; crouch while charging
         this.arms[1].rotation.set(-Math.PI / 2 * 0.97 - pitch, 0, -0.62);
         const cr = this.charging ? 0.05 + this.charge * 0.04 : 0;

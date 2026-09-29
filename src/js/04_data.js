@@ -28,7 +28,29 @@ const WEAPONS = {
     stats: { range: 5, dmg: 5, rate: 1, paint: 2, mobility: 2 }
   }
 };
-const WEAPON_ORDER = ['rifle', 'charger'];
+// ---- two long-range weapons modelled on the original's weapon classes (splatling / blaster)
+// they reuse the same bullets, splashes, hit feedback and sounds as the rifle and the cannon
+WEAPONS.splatling = {
+  id: 'splatling', name: '重型加特林', en: 'HEAVY GATLING', role: '远程 · 扫射', type: 'auto', cls: 'splatling',
+  desc: '按住就一直扫射，射速极快、射程远，但一罐墨只够打约 40 发（约 2 秒）。打完要赶紧潜墨回墨。扫射时走得慢。',
+  // shooter-style bullets with a longer straight flight; very fast fire, small magazine
+  dmg: 22, dmgFar: 12, falloff: [0.17, 0.36], interval: 0.05, speed: 150, straight: 0.11, dragH: 14, dragV: 7, grav: 72,
+  spread: 0.055, airSpread: 0.1, cost: 2.5, splat: [0.9, 1.1], moveFire: 3.8, muzzleF: 0.85, range: 21, spLoss: 0.5,
+  sub: 'bomb', special: 'surge', spArea: 44,
+  stats: { range: 4, dmg: 2, rate: 5, paint: 4, mobility: 2 }
+};
+WEAPONS.blaster = {
+  id: 'blaster', name: '远程爆破枪', en: 'RANGE BLASTER', role: '中远 · 爆破', type: 'blaster', cls: 'blaster',
+  desc: '一次打出一颗墨弹：直接命中一枪击倒；打在地上、墙上或飞到最远处（约 23 米）会爆炸，溅射周围的人。在半空炸开可以打到躲在掩体后面的人。射速很慢，打空了要等很久。',
+  interval: 1.0, blastR: 2.4, blastCore: 1.1, blastDmg: [70, 50], fuse: 0.37, cost: 11,
+  speed: 62, straight: 0.37, dragH: 3, dragV: 1, grav: 30, splat: [0.8, 0.9], dmg: 125, dmgFar: 125, falloff: [9, 9], spread: 0.008, airSpread: 0.03, retR: 1.1,
+  moveFire: 4.2, muzzleF: 0.75, range: 23, spLoss: 0.5,
+  sub: 'bomb', special: 'surge', spArea: 34,
+  stats: { range: 4, dmg: 5, rate: 1, paint: 1, mobility: 3 }
+};
+WEAPONS.charger.charges = true;
+// (the range blaster is kept in the code but not offered for now)
+const WEAPON_ORDER = ['rifle', 'charger', 'splatling'];
 const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'], ['paint', '涂地'], ['mobility', '机动']];
 
 /* ---------------------------------------------------------- icons */
@@ -37,6 +59,8 @@ function weaponIcon(id, color = '#fff', w = 64, accent = 'var(--c0)') {
   let body = '';
   if (id === 'rifle') body = `<rect x="10" y="12" width="30" height="10" rx="3" fill="${color}" ${st}/><rect x="38" y="14" width="16" height="5" rx="2" fill="${color}" ${st}/><rect x="16" y="20" width="7" height="9" rx="2" fill="${color}" ${st}/><circle cx="24" cy="10" r="5" style="fill:${accent}" ${st}/>`;
   else if (id === 'charger') body = `<rect x="4" y="14" width="22" height="9" rx="3" fill="${color}" ${st}/><rect x="24" y="15.5" width="36" height="5" rx="2" fill="${color}" ${st}/><rect x="14" y="7" width="16" height="5" rx="2.5" fill="${color}" ${st}/><rect x="10" y="21" width="6" height="8" rx="2" fill="${color}" ${st}/><circle cx="8" cy="12" r="4.5" style="fill:${accent}" ${st}/>`;
+  else if (id === 'splatling') body = `<rect x="4" y="11" width="20" height="14" rx="4" fill="${color}" ${st}/><rect x="22" y="9" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="15" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="21" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="30" y="7" width="5" height="20" rx="2" style="fill:${accent}" ${st}/><circle cx="12" cy="8" r="5" style="fill:${accent}" ${st}/>`;
+  else if (id === 'blaster') body = `<rect x="4" y="12" width="22" height="10" rx="3" fill="${color}" ${st}/><rect x="22" y="9" width="26" height="16" rx="5" fill="${color}" ${st}/><rect x="46" y="6" width="12" height="22" rx="4" style="fill:${accent}" ${st}/><rect x="10" y="20" width="6" height="9" rx="2" fill="${color}" ${st}/>`;
   else if (id === 'bomb') body = `<circle cx="32" cy="17" r="11" style="fill:${accent}" ${st}/><rect x="21" y="15" width="22" height="4" fill="${color}" ${st}/><rect x="29" y="3" width="6" height="5" rx="1" fill="${color}" ${st}/>`;
   else if (id === 'surge') body = `<path d="M8 26 Q20 6 32 18 T56 10 L56 28 L8 28Z" style="fill:${accent}" ${st}/><path d="M32 2 L32 16 M26 10 L32 16 L38 10" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round"/>`;
   else body = `<circle cx="32" cy="16" r="10" fill="${color}" ${st}/>`;
@@ -62,7 +86,7 @@ const Profile = {
   load() {
     try { const s = localStorage.getItem(PROFILE_KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) Object.assign(this.data, d); } } catch (e) { }
     if (!this.data.look) this.data.look = randomLook();
-    if (!WEAPONS[this.data.weapon]) this.data.weapon = 'rifle';
+    if (!WEAPON_ORDER.includes(this.data.weapon)) this.data.weapon = 'rifle';
     const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
   },
   save() {
@@ -75,6 +99,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.7.0', date: '2026-09-29', time: '15:16', title: '重型加特林', items: [
+    '新武器「重型加特林」：按住就扫射，射速极快、射程远，但一罐墨只够打约 40 发',
+    '加特林有自己专属的射击音效',
+    '对局里的 AI 会随机带上重炮狙击或重型加特林'
+  ] },
   { v: 'v0.6.1', date: '2026-09-29', time: '14:04', title: '更粗的墨水', items: [
     '子弹变粗变大，打中时溅起更大的墨花',
     '落地墨迹稍微变大，涂地更快一点',
