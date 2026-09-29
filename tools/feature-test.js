@@ -29,7 +29,7 @@ function makeSandbox() {
 
 const g = makeSandbox();
 vm.runInContext(`(() => {
-  clock.getDelta = () => 1 / 30; for (let i = 0; i < 10; i++) loop();
+  clock.getDelta = () => 1 / 30; for (let i = 0; i < 10; i++) loop(); GAME.uniformChars = true; Profile.data.char = 'std';   // mechanics tests: everyone uses the baseline body
   const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) globalThis.__fails = (globalThis.__fails || 0) + 1; };
   // ---------- charger: store charge while swimming
   Profile.data.weapon = 'charger'; openLobby(); startMatch(); Input.locked = true;
@@ -209,6 +209,25 @@ vm.runInContext(`(() => {
     const rb = roastsFor(bad).map(r => r.t), lb = verdictLine(bad);
     P.paint = 999; const lp = verdictLine(P);
     ok(rb.length >= 2 && !lb.good && lp.good && PRAISE['涂地最多'].includes(lp.text), 'awards: praise for the best, roast badges + a cheeky line for a bad game (' + rb.join('/') + ': ' + lb.text + ')');
+    // ================= characters =================
+    {
+      const run = ch => { quitToTitle(); for (let i = 0; i < 3; i++) loop(); Profile.data.char = ch; Profile.data.weapon = 'rifle'; openLobby('turf'); startMatch(); Input.locked = true; while (G.state !== 'play') loop();
+        G.bots.forEach(b => b.update = () => {}); CHARS.forEach(c => { if (c !== PLAYER) { c.pos.set(20 + c.id, 0, -30); c.intent.mx = c.intent.mz = 0; c.intent.fire = false; } });
+        const P3 = PLAYER; P3.pos.set(-9, 0, 20); P3.vel.set(0, 0, 0); P3.ink = 100; Cam.yaw = Math.PI; Cam.pitch = 0; for (let i = 0; i < 3; i++) loop();
+        Input.keys.KeyW = true; for (let i = 0; i < 25; i++) loop(); const walk = Math.hypot(P3.vel.x, P3.vel.z); Input.keys.KeyW = false; for (let i = 0; i < 10; i++) loop();
+        P3.pos.set(-9, 0, 20); P3.vel.set(0, 0, 0); P3.ink = 100; let shots = 0; const os = Proj.shot.bind(Proj); Proj.shot = (o, ...a) => { if (o === P3) shots++; return os(o, ...a); };
+        Input.fire = true; for (let i = 0; i < 400 && P3.ink >= WEAPONS.rifle.cost / P3.inkK; i++) loop(); Input.fire = false; Proj.shot = os;
+        const foeC = CHARS.find(c => c.team === 1); foeC.state = 'play'; foeC.alive = true; foeC.invulnT = 0; foeC.hp = foeC.maxHp; let hits = 0; while (foeC.alive && hits < 8) { foeC.damage(36, P3, 'rifle'); hits++; }
+        const v0 = P3.vel.x; P3.onHit(new THREE.Vector3(1, 0, 0), 36); const push = P3.vel.x - v0;
+        return { walk, shots, hits, hp: P3.maxHp, push, root: P3.root.scale.x };
+      };
+      const A = run('sa'), M = run('man'), D = run('dun');
+      ok(Math.abs(A.walk - 6.4 * 1.12) < 0.2 && A.hp === 85 && A.root < 1, '阿飒: 85 HP, runs ' + A.walk.toFixed(2) + ' m/s (112%), slim build');
+      ok(M.hp === 100 && M.shots >= 90 && M.shots <= 97, '满满: bigger tank — ' + M.shots + ' rifle shots from a full tank (normal 70)');
+      ok(D.hp === 135 && D.hits === 4 && Math.abs(D.walk - 6.4 * 0.9) < 0.2 && D.push < A.push * 0.6 && D.root > 1, '石墩: 135 HP takes ' + D.hits + ' rifle hits, walks ' + D.walk.toFixed(2) + ' m/s, pushed back half as much');
+      ok(A.hits === 3 && M.hits === 3, 'a rifle still takes 3 hits on 阿飒 and 满满');
+      Profile.data.char = 'std'; quitToTitle(); for (let i = 0; i < 3; i++) loop();
+    }
     // pause ducks the sound, resume brings it back
     Sfx.duck(true); const d1 = Sfx.ducked; Sfx.duck(false);
     ok(d1 && !Sfx.ducked, 'pausing ducks and muffles the sound, resuming restores it');

@@ -331,6 +331,52 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #rsFoot .rs-main{grid-column:1 / 3;font-size:24px;padding:12px;background:var(--c0);color:#fff;-webkit-text-stroke:1.5px #111;paint-order:stroke fill;text-shadow:0 3px 0 #111}
 #rsFoot .rs-sub{background:#2d2a52;color:#fff}
 #rsFoot .rs-ghost{background:transparent;color:#fff;border-color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.6)}
+
+/* ---------- lobby: pick a character, then a weapon; 3D preview in the middle ---------- */
+.lobbyBody .ccol{flex:.95;display:flex;flex-direction:column;gap:12px;min-width:0}
+.lcol{flex:1.05!important}
+.rcol{flex:.9!important}
+.steps{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.steps button{flex:1;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:inherit;color:#fff;background:rgba(20,18,40,.85);border:4px solid #111;border-radius:18px;padding:8px 12px;box-shadow:0 5px 0 #111;text-align:left;transition:transform .12s,background .2s}
+.steps button b{width:30px;height:30px;flex:none;border-radius:50%;border:3px solid #111;background:#3a3760;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900}
+.steps button span{font-size:18px;font-weight:900;letter-spacing:2px}
+.steps button small{margin-left:auto;font-size:12px;font-weight:700;opacity:.7;white-space:nowrap}
+.steps button.sel{background:rgba(40,34,80,.98);outline:4px solid var(--c0);outline-offset:-2px}
+.steps button.sel b{background:var(--c0);color:#111}
+.steps button:hover{transform:translateY(-2px)}
+.steps i{width:18px;height:4px;border-radius:2px;background:#111;flex:none}
+.plist{display:none;flex-direction:column;gap:12px;overflow:auto;padding:4px;min-height:0;flex:1}
+.plist.show{display:flex}
+.nextStep{align-self:flex-end;margin-top:10px;font-size:17px;padding:10px 22px;background:var(--c0);color:#fff;-webkit-text-stroke:1px #111;paint-order:stroke fill;text-shadow:0 2px 0 #111}
+.ccard{cursor:pointer;display:flex;gap:14px;align-items:center;background:rgba(20,18,40,.88);border:4px solid #111;border-radius:22px;padding:12px 16px;box-shadow:0 6px 0 #111;transition:transform .12s,background .2s}
+.ccard:hover{transform:translateY(-2px)}
+.ccard.sel{background:rgba(40,34,80,.95);outline:4px solid var(--c0);outline-offset:-2px}
+.ccard .pt{width:92px;height:92px;flex:none;border-radius:18px;border:3px solid #111;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 35%,rgba(255,255,255,.18),rgba(0,0,0,.25)),#2d2a52;position:relative}
+.ccard.sel .pt{background:radial-gradient(circle at 50% 35%,rgba(255,255,255,.25),rgba(0,0,0,.2)),var(--c1)}
+.ccard .pt .tag{position:absolute;bottom:-9px;font-size:11px;font-weight:900;background:var(--c0);color:#111;border-radius:10px;padding:1px 8px;border:2px solid #111;white-space:nowrap}
+.ccard .ci{flex:1;min-width:0}
+.ccard .ci b{font-size:22px}.ccard .ci .en{font-size:11px;letter-spacing:2px;opacity:.55;margin-left:8px}
+.ccard .ci .role{display:block;color:#ffe45c;font-weight:700;font-size:13px;margin:2px 0 6px}
+.ccard .ci .tg{font-size:12px;opacity:.75;margin-bottom:6px}
+.cst{display:grid;grid-template-columns:40px 1fr 46px;gap:4px 8px;align-items:center;font-size:12px;font-weight:700}
+.cst em{font-style:normal;text-align:right;font-weight:900}
+.cst em.up{color:#7dff9a}.cst em.dn{color:#ff9aa8}
+.pvBox{position:relative;flex:1;min-height:260px;border:4px solid #111;border-radius:26px;overflow:hidden;box-shadow:0 8px 0 #111;background:radial-gradient(ellipse at 50% 80%,rgba(255,255,255,.14),transparent 60%),linear-gradient(180deg,#3a3570,#1b1838)}
+.pvBox:before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.07) 2px,transparent 2px);background-size:22px 22px;pointer-events:none}
+#pvCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
+#pvCanvas:active{cursor:grabbing}
+.pvName{position:absolute;left:16px;top:12px;pointer-events:none}
+.pvName b{display:block;font-size:34px;font-weight:900;font-style:italic;-webkit-text-stroke:2px #111;paint-order:stroke fill;text-shadow:0 4px 0 var(--c0)}
+.pvName small{font-weight:900;color:#ffe45c;font-size:13px;letter-spacing:2px;text-shadow:0 2px 0 #000}
+.pvHint{position:absolute;right:14px;bottom:10px;font-size:11px;font-weight:700;opacity:.55;pointer-events:none}
+.pvStats{background:rgba(20,18,40,.88);border:4px solid #111;border-radius:20px;padding:10px 16px;box-shadow:0 6px 0 #111;font-size:13px;font-weight:700;line-height:1.7}
+.pvStats .row2{display:flex;gap:14px;flex-wrap:wrap}.pvStats .row2 span b{font-size:16px;margin-left:4px}
+.pvStats .wl{display:flex;align-items:center;gap:8px;margin-top:2px;opacity:.9}
+.rrow .cp{flex:none;line-height:0}
+.rrow .cn{font-size:11px;opacity:.65;margin-left:4px}
+.loadcard .lc-icon{position:relative}
+.loadcard .lc-icon .lcw{position:absolute;right:-8px;bottom:-8px;background:rgba(0,0,0,.65);border-radius:10px;padding:2px 4px;line-height:0}
+#weapList:not(.show){display:none}
 </style></head><body>
 <canvas id="gl"></canvas>
 
@@ -353,7 +399,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   <div class="panel">
     <h3>你的名字</h3>
     <input type="text" id="pname" maxlength="8" value="新人墨仔">
-    <h3>当前装备</h3>
+    <h3>当前出战</h3>
     <div class="loadcard" id="loadCard">
       <div class="lc-icon" id="lcIcon"></div>
       <div class="lc-info"><b id="lcName"></b><small id="lcRole"></small><span id="lcKit"></span></div>
@@ -370,8 +416,15 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   <div class="lobbyHead"><h2>战前准备</h2><span>涂地对战 · 潮汐码头广场</span></div>
   <div class="lobbyBody">
     <div class="lcol">
-      <h3>选择武器</h3>
-      <div id="weapList"></div>
+      <div class="steps" id="lobbySteps"><button data-step="char" class="sel"><b>1</b><span>选角色</span><small id="stepChar"></small></button><i></i><button data-step="weap"><b>2</b><span>配武器</span><small id="stepWeap"></small></button></div>
+      <div class="plist" id="charList"></div>
+      <div class="plist" id="weapList"></div>
+      <button class="btn nextStep" id="btnNextStep">下一步：配武器 ›</button>
+    </div>
+    <div class="ccol">
+      <div class="pvBox"><canvas id="pvCanvas"></canvas>
+        <div class="pvName"><b id="pvName"></b><small id="pvRole"></small></div><div class="pvHint">按住拖动可以旋转</div></div>
+      <div class="pvStats" id="pvStats"></div>
     </div>
     <div class="rcol">
       <h3>对阵阵容</h3>
@@ -454,7 +507,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
     <b>双准星：</b>小准星会贴在射程内你瞄准的物体上；目标太远时它停在射程尽头、贴不上目标。小准星出现叉号，表示这一枪能打中敌人。<br>
     <b>狙击存蓄力：</b>蓄满后按住左键潜入墨水，可以保留蓄力约 1 秒，浮出来直接开枪。<br>
     <b>出生点防护罩：</b>敌人和敌方墨水都进不来，站在里面不会受伤。阵亡会损失一半必杀充能。<br>
-    <b>换武器：</b>点「开始对战」进入战前准备，在左侧选择武器。重炮狙击蓄力时镜头会拉近，但激光线会暴露你的位置。
+    <b>角色和武器：</b>点「开始对战」进入战前准备，先选角色（生命、速度、墨水量各不相同），再配武器，任何角色都能用任何武器。重炮狙击蓄力时镜头会拉近，但激光线会暴露你的位置。
   </div>
 </div></div>
 
@@ -504,7 +557,7 @@ const PALETTES = [
   ['#ff7a00', '#3346ff'], ['#ff2d95', '#22d64a'], ['#8c3cff', '#f2e600'],
   ['#00cfff', '#ff3b30'], ['#b7f500', '#b43cff'], ['#ffc400', '#1b6bff']
 ];
-const GAME = { pal: 0, diff: 1, dur: 180, name: '新人墨仔' };
+const GAME = { pal: 0, diff: 1, dur: 180, name: '新人墨仔', uniformChars: false };   // uniformChars: tests give everyone the same character
 const DIFF = [
   { err: 0.13, react: 0.75, fireHold: 0.55, turn: 5, dodge: 0.2 },
   { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45 },
@@ -1480,6 +1533,50 @@ WEAPONS.charger.charges = true;
 const WEAPON_ORDER = ['rifle', 'charger', 'splatling'];
 const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'], ['paint', '涂地'], ['mobility', '机动']];
 
+/* ------------------------------------------------------ characters
+   Squid-kid characters in the spirit of the original (tentacle "hair" in
+   team colour, visor, backpack ink tank) — original designs.  Each has a
+   different body and different stats; any character can use any weapon. */
+const CHARACTERS = {
+  sa: {
+    id: 'sa', name: '阿飒', en: 'SWIFT', role: '疾风 · 游击', tag: '跑得最快的街头涂鸦手',
+    desc: '身轻腿快，走路和潜墨都比别人快，适合绕后偷袭、抢地盘。但身板薄，挨两下就得撤。',
+    hp: 85, runK: 1.12, swimK: 1.08, inkCap: 1, inkRegen: 1, knockK: 1.15,
+    look: { skin: '#f3c39b', cloth: '#f5f5f2', cloth2: '#40c0b0', pants: '#23242c', hat: 'band', hatColor: '#40c0b0', trim: '#5ad1ff', hair: 'tail', bodyW: 0.92, bodyH: 1.0, tankK: 0.9, crestK: 1.35 },
+    bars: { hp: 1, speed: 5, ink: 2 }
+  },
+  man: {
+    id: 'man', name: '满满', en: 'TANKFUL', role: '墨罐 · 持久', tag: '背着超大墨罐的涂地狂',
+    desc: '背着一个超大墨罐，墨水多打三分之一，回墨也更快。能一直开火、一直涂地，很少为缺墨发愁。',
+    hp: 100, runK: 1, swimK: 1, inkCap: 1.35, inkRegen: 1.1, knockK: 1,
+    look: { skin: '#dba577', cloth: '#ffcf3f', cloth2: '#2a2b35', pants: '#1f3050', hat: 'phones', hatColor: '#2a2b35', trim: '#f0f0f0', hair: 'twin', bodyW: 1.0, bodyH: 1.0, tankK: 1.45, crestK: 1.0 },
+    bars: { hp: 3, speed: 3, ink: 5 }
+  },
+  dun: {
+    id: 'dun', name: '石墩', en: 'BULWARK', role: '重装 · 肉盾', tag: '挨打也不退一步的大块头',
+    desc: '体格最壮，生命值最高，被打中时几乎不会后仰或被推开，适合顶在前面抢点。代价是走路和潜墨都慢一些。',
+    hp: 135, runK: 0.9, swimK: 0.92, inkCap: 1, inkRegen: 1, knockK: 0.5,
+    look: { skin: '#7d4d31', cloth: '#3b3f52', cloth2: '#ff8a3d', pants: '#2a2b35', hat: 'goggles', hatColor: '#3b3f52', trim: '#ffd23a', hair: 'fin', bodyW: 1.14, bodyH: 1.05, tankK: 1.05, crestK: 0.8 },
+    bars: { hp: 5, speed: 2, ink: 3 }
+  }
+};
+const CHAR_ORDER = ['sa', 'man', 'dun'];
+// baseline body used by the automated mechanics tests (not selectable)
+CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1 });
+// portrait: head with tentacle hair in team colour + each character's accessory (SVG, used in cards and lists)
+function charIcon(id, w = 64, accent = 'var(--c0)') {
+  const C = CHARACTERS[id] || CHARACTERS.man, L = C.look, st = 'stroke="#111" stroke-width="3" stroke-linejoin="round"';
+  const hair = id === 'sa'
+    ? `<path d="M14 30 Q12 8 32 6 Q52 8 50 30 Z" style="fill:${accent}" ${st}/><path d="M48 18 Q62 22 60 44 Q56 36 50 30 Z" style="fill:${accent}" ${st}/>`
+    : id === 'dun'
+      ? `<path d="M12 32 Q12 10 32 9 Q52 10 52 32 Z" style="fill:${accent}" ${st}/><path d="M24 12 L32 -2 L40 12 Z" style="fill:${accent}" ${st}/>`
+      : `<path d="M12 32 Q10 8 32 6 Q54 8 52 32 Z" style="fill:${accent}" ${st}/><path d="M12 26 Q2 34 6 52 Q12 46 14 34 Z" style="fill:${accent}" ${st}/><path d="M52 26 Q62 34 58 52 Q52 46 50 34 Z" style="fill:${accent}" ${st}/>`;
+  const acc = id === 'sa' ? `<rect x="12" y="20" width="40" height="6" rx="3" fill="${L.hatColor}" ${st}/>`
+    : id === 'dun' ? `<circle cx="24" cy="15" r="6" fill="#9aa3b5" ${st}/><circle cx="40" cy="15" r="6" fill="#9aa3b5" ${st}/>`
+      : `<path d="M11 30 Q32 -4 53 30" fill="none" stroke="#111" stroke-width="5"/><rect x="6" y="27" width="9" height="13" rx="4" fill="${L.hatColor}" ${st}/><rect x="49" y="27" width="9" height="13" rx="4" fill="${L.hatColor}" ${st}/>`;
+  return `<svg viewBox="0 0 64 64" width="${w}" height="${w}" style="vertical-align:middle;overflow:visible"><ellipse cx="32" cy="34" rx="19" ry="18" fill="${L.skin}" ${st}/><rect x="15" y="30" width="34" height="9" rx="4.5" fill="#111"/><circle cx="25" cy="34.5" r="3" fill="#fff"/><circle cx="39" cy="34.5" r="3" fill="#fff"/>${hair}${acc}<path d="M20 52 Q32 60 44 52 L44 62 L20 62 Z" fill="${L.cloth}" ${st}/></svg>`;
+}
+
 /* ---------------------------------------------------------- icons */
 function weaponIcon(id, color = '#fff', w = 64, accent = 'var(--c0)') {
   const h = w / 2, st = 'stroke="#111" stroke-width="2.5" stroke-linejoin="round"';
@@ -1509,11 +1606,12 @@ const CLOTH_COLS = ['#f5f5f2', '#2a2b35', '#697386', '#eadcc2', '#5c7a3a', '#274
 /* --------------------------------------------------------- profile */
 const PROFILE_KEY = 'splashrush.profile';
 const Profile = {
-  data: { v: 1, name: '新人墨仔', weapon: 'rifle', pal: 0, diff: 1, dur: 180, look: null },
+  data: { v: 1, name: '新人墨仔', weapon: 'rifle', char: 'man', pal: 0, diff: 1, dur: 180, look: null },
   load() {
     try { const s = localStorage.getItem(PROFILE_KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) Object.assign(this.data, d); } } catch (e) { }
     if (!this.data.look) this.data.look = randomLook();
     if (!WEAPON_ORDER.includes(this.data.weapon)) this.data.weapon = 'rifle';
+    if (!CHAR_ORDER.includes(this.data.char)) this.data.char = 'man';
     const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
   },
   save() {
@@ -1679,7 +1777,10 @@ function mesh(geo, mat, x = 0, y = 0, z = 0, sx = 1, sy = sx, sz = sx) {
 class Character {
   constructor(name, team, isPlayer, opts = {}) {
     this.name = name; this.team = team; this.isPlayer = !!isPlayer;
-    this.weapon = WEAPONS[opts.weapon] || WEAPONS.rifle; this.look = opts.look || randomLook();
+    this.weapon = WEAPONS[opts.weapon] || WEAPONS.rifle;
+    // character: body + stats (hp, speed, ink tank); the look comes from the character
+    this.cs = CHARACTERS[opts.char] || CHARACTERS.man; this.maxHp = this.cs.hp; this.inkK = this.cs.inkCap;
+    this.look = Object.assign({}, opts.look || randomLook(), this.cs.look);
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3();
     this.yaw = 0; this.aimYaw = 0; this.aimPitch = 0; this.bodyYaw = 0;
     this.intent = { mx: 0, mz: 0, fire: false, swim: false, jump: false, bomb: false, special: false, aimDir: null };
@@ -1687,7 +1788,7 @@ class Character {
     this.buildModel(); this.reset();
   }
   reset() {
-    this.hp = 100; this.ink = 100; this.special = 0; this.alive = true; this.state = 'play';
+    this.hp = this.maxHp; this.ink = 100; this.special = 0; this.alive = true; this.state = 'play';
     this.swim = false; this.submerged = false; this.climbing = false; this.grounded = true;
     this.fireCd = 0; this.bombCd = 0; this.lastHurt = -99; this.lastShot = -99; this.invulnT = 0; this.respawnT = 0;
     this.sp = null; this.hurtFlash = 0; this.phase = 0; this.recoil = 0; this.swimPop = 0; this.inEnemy = false; this.lastAttacker = null;
@@ -1725,7 +1826,7 @@ class Character {
     const emb = mesh(new THREE.CircleGeometry(0.06, 16), T, 0, 0.33, 0.205); torso.add(emb);
     const belt = mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 20), dark, 0, 0.08, 0); belt.rotation.x = Math.PI / 2; torso.add(belt);
     // backpack ink tank
-    const tank = new THREE.Group(); tank.position.set(0, 0.3, -0.26); torso.add(tank);
+    const tank = new THREE.Group(); tank.position.set(0, 0.3, -0.26); torso.add(tank); if (L.tankK) { tank.scale.setScalar(L.tankK); tank.position.z = -0.26 - (L.tankK - 1) * 0.1; }
     tank.add(mesh(GEO.cyl, glass, 0, 0, 0, 0.12, 0.34, 0.12));
     this.tankInk = mesh(GEO.cyl, T, 0, 0, 0, 0.1, 0.32, 0.1); tank.add(this.tankInk);
     tank.add(mesh(GEO.cyl, metal, 0, 0.19, 0, 0.13, 0.05, 0.13)); tank.add(mesh(GEO.cyl, metal, 0, -0.19, 0, 0.13, 0.05, 0.13));
@@ -1742,6 +1843,10 @@ class Character {
     crest.add(mesh(GEO.sphere, T, 0, 0, 0, 0.25, 0.14, 0.28));
     crest.add(mesh(GEO.sphere, T, 0, 0.02, 0.17, 0.14, 0.1, 0.12));
     this.drips = [[0, -0.12, -0.24, 0.1, 0.16], [0.14, -0.1, -0.19, 0.08, 0.13], [-0.14, -0.1, -0.19, 0.08, 0.13], [0.2, -0.05, -0.05, 0.07, 0.1], [-0.2, -0.05, -0.05, 0.07, 0.1]].map(([x, y, z, r, h]) => { const d = mesh(GEO.sphere, T, x, y, z, r, h, r); crest.add(d); return d; });
+    // character hairstyles (tentacles in team colour): long ponytail / twin tails / fin crest
+    if (L.hair === 'tail') { for (let k = 0; k < 4; k++) crest.add(mesh(GEO.sphere, T, 0, -0.1 - k * 0.1, -0.26 - k * 0.07, 0.1 - k * 0.015, 0.12, 0.1 - k * 0.015)); }
+    else if (L.hair === 'twin') { for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) crest.add(mesh(GEO.sphere, T, sx * (0.25 + k * 0.02), -0.12 - k * 0.11, -0.06, 0.085 - k * 0.012, 0.11, 0.085 - k * 0.012)); }
+    else if (L.hair === 'fin') { for (let k = 0; k < 3; k++) { const f = mesh(new THREE.ConeGeometry(0.07, 0.2, 8), T, 0, 0.1 - k * 0.02, 0.12 - k * 0.14); f.rotation.x = -0.35; crest.add(f); } }
     // headgear
     const hat = L.hat, hc = new THREE.MeshStandardMaterial({ color: L.hatColor, roughness: 0.6 });
     if (hat === 'phones') { const b = mesh(new THREE.TorusGeometry(0.29, 0.025, 6, 24, Math.PI), dark, 0, 0.22, 0); b.rotation.z = 0; head.add(b); [-1, 1].forEach(s => head.add(mesh(GEO.cyl, hc, s * 0.285, 0.2, 0, 0.09, 0.06, 0.09)).rotation && 0); head.children.slice(-2).forEach(c => c.rotation.z = Math.PI / 2); }
@@ -1793,6 +1898,7 @@ class Character {
     }
     this.buildInkSpots();
     root.traverse(o => { if (o.isMesh && o.material && o.material.transparent) o.castShadow = false; });
+    root.scale.set(L.bodyW || 1, L.bodyH || 1, L.bodyW || 1);              // slim / stocky builds
     scene.add(root);
   }
   // blobs of the attacker's ink that appear on the body as HP drops (like the original's "inked" look)
@@ -1819,7 +1925,7 @@ class Character {
   }
   updateInkSpots() {
     if (!this.inkSpots) return;
-    const lvl = this.alive ? clamp((100 - this.hp) / 100, 0, 1) : 0;
+    const lvl = this.alive ? clamp((this.maxHp - this.hp) / this.maxHp, 0, 1) : 0;
     for (const m of this.inkSpots) {
       const u = m.userData, k = clamp((lvl - u.thr) * 5 + 0.35, 0, 1);
       m.visible = lvl > u.thr;
@@ -1840,9 +1946,10 @@ class Character {
   invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.state === 'sjfly' || this.inOwnBarrier(); }
   // got hit by a bullet: flinch back a little and flash
   onHit(dir, dmg) {
-    this.flinch = Math.min(1, (this.flinch || 0) + 0.6 + dmg / 120);
+    const kk = this.cs.knockK;                       // heavy characters barely flinch or get pushed
+    this.flinch = Math.min(1, (this.flinch || 0) + (0.6 + dmg / 120) * kk);
     this.flinchDir = dir.clone();
-    this.vel.x += dir.x * 0.9; this.vel.z += dir.z * 0.9;
+    this.vel.x += dir.x * 0.9 * kk; this.vel.z += dir.z * 0.9 * kk;
   }
   canJumpTo(t) { return t && t !== this && t.team === this.team && t.alive && t.state === 'play' && !t.sj; }
   // super jump to a teammate: short crouch (vulnerable), launch, then land on them
@@ -1917,7 +2024,7 @@ class Character {
     if (this.isPlayer) HUD.died(killer, via);
   }
   respawn() {
-    const sp = SPAWN[this.team]; this.state = 'drop'; this.alive = true; this.hp = 100; this.ink = 100;
+    const sp = SPAWN[this.team]; this.state = 'drop'; this.alive = true; this.hp = this.maxHp; this.ink = 100;
     // super jump straight to a chosen teammate (player picks on the map; bots sometimes jump to the front)
     let tgt = this.canJumpTo(this.jumpTarget) ? this.jumpTarget : null; this.jumpTarget = null;
     if (!tgt && !this.isPlayer && Math.random() < 0.4) { const opts = CHARS.filter(c => this.canJumpTo(c) && !c.inOwnBarrier()); if (opts.length) tgt = pick(opts); }
@@ -2026,8 +2133,8 @@ class Character {
     const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging;
     // ----- movement
     let maxSp;
-    if (this.swim) maxSp = this.submerged ? 12.8 : this.inEnemy ? 2.0 : 3.4;
-    else maxSp = this.inEnemy ? 2.3 : this.charging ? W.moveCharge : firing ? W.moveFire : 6.4;
+    if (this.swim) maxSp = this.submerged ? 12.8 * this.cs.swimK : this.inEnemy ? 2.0 : 3.4;
+    else maxSp = (this.inEnemy ? 2.3 : this.charging ? W.moveCharge : firing ? W.moveFire : 6.4) * this.cs.runK;
     if (this.sp) maxSp = 3;
     if (!this.grounded && this.airSpeed > maxSp) maxSp = this.airSpeed;   // airborne: keep take-off speed, only steer
     const acc = this.grounded ? (this.submerged ? 75 : 48) : 16;
@@ -2069,12 +2176,12 @@ class Character {
     else { if (wasG) this.airSpeed = Math.max(this.airSpeed, Math.hypot(this.vel.x, this.vel.z)); this.grounded = false; }
     if (this.pos.y < -10) { this.die(this.lastAttacker); return; }
     // ----- ink / hp
-    if (this.submerged) { this.ink = Math.min(100, this.ink + 40 * dt); }
-    else if (T - this.lastShot > 0.6) this.ink = Math.min(100, this.ink + (this.swim ? 12 : 6.5) * dt);
+    if (this.submerged) { this.ink = Math.min(100, this.ink + 40 * dt * this.cs.inkRegen); }
+    else if (T - this.lastShot > 0.6) this.ink = Math.min(100, this.ink + (this.swim ? 12 : 6.5) * dt * this.cs.inkRegen);
     // regen like the original: starts after 1 s without damage; 12.5/s standing, 100/s submerged in own ink
-    if (T - this.lastHurt > 1.0 && !(this.inEnemy && !this.invuln())) this.hp = Math.min(100, this.hp + (this.submerged ? 100 : 12.5) * dt);
+    if (T - this.lastHurt > 1.0 && !(this.inEnemy && !this.invuln())) this.hp = Math.min(this.maxHp, this.hp + (this.submerged ? 100 : 12.5) * (this.maxHp / 100) * dt);
     // enemy ink: ~30 HP/s but never below 50
-    if (this.inEnemy && !this.invuln()) { if (this.hp > 50) { this.hp = Math.max(50, this.hp - 30 * dt); this.lastHurt = T - 0.4; } }
+    if (this.inEnemy && !this.invuln()) { const fl = this.maxHp * 0.5; if (this.hp > fl) { this.hp = Math.max(fl, this.hp - 30 * dt); this.lastHurt = T - 0.4; } }
     // ----- aiming / facing
     const turnK = this.swim ? 14 : 20;
     if (this.swim && mlen > 0.1) this.bodyYaw += angDiff(this.bodyYaw, Math.atan2(I.mx, I.mz)) * Math.min(1, dt * turnK);
@@ -2082,8 +2189,8 @@ class Character {
     // ----- weapons
     if (W.type === 'auto') {
       if (I.fire && !this.swim && !this.sp && this.fireCd <= 0 && G.state === 'play') {
-        if (this.ink >= W.cost) {
-          this.fireCd = W.interval; this.ink -= W.cost; this.lastShot = T; this.recoil = 1;
+        if (this.ink >= W.cost / this.inkK) {
+          this.fireCd = W.interval; this.ink -= W.cost / this.inkK; this.lastShot = T; this.recoil = 1;
           const m = this.muzzle();
           const dir = I.aimDir ? I.aimDir.clone() : aimVec(this);
           const spread = this.grounded ? W.spread : W.airSpread;
@@ -2099,8 +2206,8 @@ class Character {
     } else if (W.charges) this.updateCharge(dt, I, T);
     else if (W.type === 'blaster') this.updateBlaster(dt, I, T);
     if (I.bomb && !this.swim && !this.sp && this.bombCd <= 0 && G.state === 'play') {
-      if (this.ink >= 70) {
-        this.ink -= 70; this.bombCd = 0.6; this.lastShot = T;
+      if (this.ink >= 70 / this.inkK) {
+        this.ink -= 70 / this.inkK; this.bombCd = 0.6; this.lastShot = T;
         const dir = I.aimDir ? I.aimDir.clone() : new THREE.Vector3(Math.sin(this.aimYaw) * Math.cos(this.aimPitch), Math.sin(this.aimPitch), Math.cos(this.aimYaw) * Math.cos(this.aimPitch));
         Proj.bomb(this, this.muzzle(), dir);
       } else if (this.isPlayer) HUD.lowInk();
@@ -2120,10 +2227,10 @@ class Character {
     const can = I.fire && !this.swim && !this.sp && G.state === 'play';
     if (can && (this.charging || this.fireCd <= 0)) {
       if (!this.charging) {
-        if (this.ink < W.costMin) { if (this.isPlayer) HUD.lowInk(); return; }
+        if (this.ink < W.costMin / this.inkK) { if (this.isPlayer) HUD.lowInk(); return; }
         this.charging = true; this.charge = 0; if (this.isPlayer) Sfx.chargeStart();
       }
-      const mc = W.minCharge, maxC = mc + (1 - mc) * clamp((this.ink - W.costMin) / (W.costFull - W.costMin), 0, 1);
+      const mc = W.minCharge, maxC = mc + (1 - mc) * clamp((this.ink * this.inkK - W.costMin) / (W.costFull - W.costMin), 0, 1);
       const before = this.charge;
       this.charge = Math.min(maxC, this.charge + dt / W.chargeTime);
       if (before < 1 && this.charge >= 1 && this.isPlayer) Sfx.chargeFull();
@@ -2139,8 +2246,8 @@ class Character {
   updateBlaster(dt, I, T) {
     const W = this.weapon;
     if (!(I.fire && !this.swim && !this.sp && this.fireCd <= 0 && G.state === 'play')) return;
-    if (this.ink < W.cost) { if (this.isPlayer) HUD.lowInk(); return; }
-    this.fireCd = W.interval; this.ink -= W.cost; this.lastShot = T; this.recoil = 2;
+    if (this.ink < W.cost / this.inkK) { if (this.isPlayer) HUD.lowInk(); return; }
+    this.fireCd = W.interval; this.ink -= W.cost / this.inkK; this.lastShot = T; this.recoil = 2;
     const m = this.muzzle(), dir = I.aimDir ? I.aimDir.clone() : aimVec(this), sp = this.grounded ? W.spread : W.airSpread;
     dir.x += rand(-sp, sp); dir.y += rand(-sp, sp) * 0.6; dir.z += rand(-sp, sp); dir.normalize();
     Proj.shot(this, m, dir, null, null, { style: 'shell', blast: true, hitR: 0.2 });
@@ -2154,7 +2261,7 @@ class Character {
   rangeNow() { const W = this.weapon; return W.type === 'charge' ? lerp(W.minRange, W.maxRange, this.chargeT(this.charge)) : W.range; }
   fireCharger(c, I) {
     const W = this.weapon, T = G.time, ct = this.chargeT(c);
-    this.ink = Math.max(0, this.ink - lerp(W.costMin, W.costFull, ct)); this.lastShot = T; this.recoil = 1.6;
+    this.ink = Math.max(0, this.ink - lerp(W.costMin, W.costFull, ct) / this.inkK); this.lastShot = T; this.recoil = 1.6;
     const m = this.muzzle(), dir = I.aimDir ? I.aimDir.clone() : aimVec(this);
     if (c < 1) { const s = 0.01 * (1 - c); dir.x += rand(-s, s); dir.y += rand(-s, s); dir.z += rand(-s, s); dir.normalize(); }
     const range = lerp(W.minRange, W.maxRange, ct);
@@ -2293,7 +2400,7 @@ class Character {
       } else if (firing) this.arms[1].rotation.set(-Math.PI / 2 * 0.85 - pitch, 0, -0.55);
       else this.arms[1].rotation.set(-sw * 0.8 * run + (air ? -1.2 : 0), 0, air ? 0.5 : 0.08);
       this.head.rotation.x = -pitch * 0.4;
-      this.crest.scale.set(1, 1 + Math.sin(T * 9 + this.id) * 0.04 - this.vel.y * 0.012, 1);
+      this.crest.scale.set(1, 1 + Math.sin(T * 9 + this.id) * 0.04 - this.vel.y * 0.012, this.look.crestK || 1);
       this.drips.forEach((d, i) => d.position.y = -0.1 - (i === 0 ? 0.02 : 0) + Math.sin(T * 7 + i) * 0.012 - Math.max(0, this.vel.y) * 0.004);
       this.landSquash = Math.max(0, (this.landSquash || 0) - dt * 5);
       let k = 1 + this.swimPop * 0.25 + this.landSquash * 0.3; if (this.sj) k = 1 + Math.min(this.sj.t, 0.6) * 0.35;
@@ -3144,14 +3251,14 @@ const HUD = {
     $('inkbar').classList.toggle('low', c.ink < 20);
     $('inkbar').style.opacity = c.ink > 99.5 && !c.swim ? 0.45 : 1;
     this.lowInkT = Math.max(0, this.lowInkT - dt); $('inkwarn').style.opacity = this.lowInkT > 0 ? 1 : 0;
-    $('subw').classList.toggle('no', c.ink < 70);
+    $('subw').classList.toggle('no', c.ink < 70 / c.inkK);
     $('spRing').style.strokeDashoffset = 264 * (1 - c.special / 100);
     $('special').classList.toggle('ready', c.special >= 100);
-    const hp = c.alive ? c.hp : 100; this.hurtV = Math.max(0, this.hurtV - dt * 2);
+    const hp = c.alive ? c.hp / c.maxHp * 100 : 100; this.hurtV = Math.max(0, this.hurtV - dt * 2);
     const vig = clamp((100 - hp) / 100 * 0.9 + this.hurtV * 0.4, 0, 0.95);
     const ec = TEAM_HEX[1 - c.team];
     $('vignette').style.opacity = 0;
-    ScreenInk.update(dt, c.alive ? c.hp : Cam.spec ? 100 : 0, c.alive && c.inEnemy && !c.invuln());     // watching a teammate: clear the ink off the screen
+    ScreenInk.update(dt, c.alive ? c.hp / c.maxHp * 100 : Cam.spec ? 100 : 0, c.alive && c.inEnemy && !c.invuln());     // watching a teammate: clear the ink off the screen
     const st = $('specTag'), sn = !c.alive && Cam.spec ? '正在观看：' + Cam.spec.name : '';
     if (st.textContent !== sn) { st.textContent = sn; st.classList.toggle('on', !!sn); }
     $('crosshair').classList.toggle('enemy', Cam.lock);
@@ -3189,7 +3296,7 @@ const HUD = {
       const list = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint), K = list.reduce((a, c) => a + c.kills, 0);
       const row = c => {
         const ready = c.special >= 100, sp = ready ? '<b>就绪</b>' : t === mine ? Math.floor(c.special) + '%' : '—';     // enemies: only "ready", like the top icons
-        return `<div class="st-r${c.isPlayer ? ' me' : ''}${c.alive ? '' : ' dead'}"><span class="w">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}</span><span class="n">${c.name}${c.isPlayer ? '<i>你</i>' : ''}${c.alive ? '' : '<em>' + Math.max(1, Math.ceil(c.respawnT)) + '</em>'}</span><span>${c.kills}</span><span>${c.assists}</span><span>${c.deaths}</span><span>${Math.round(c.paint)}p</span><span class="sp${ready ? ' on' : ''}">${sp}</span></div>`;
+        return `<div class="st-r${c.isPlayer ? ' me' : ''}${c.alive ? '' : ' dead'}"><span class="w">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}</span><span class="n">${charIcon(c.cs.id, 24, TEAM_HEX[t])}${c.name}${c.isPlayer ? '<i>你</i>' : ''}${c.alive ? '' : '<em>' + Math.max(1, Math.ceil(c.respawnT)) + '</em>'}</span><span>${c.kills}</span><span>${c.assists}</span><span>${c.deaths}</span><span>${Math.round(c.paint)}p</span><span class="sp${ready ? ' on' : ''}">${sp}</span></div>`;
       };
       $(t ? 'stB' : 'stA').innerHTML = `<div class="st-th" style="--tc:${TEAM_HEX[t]}"><b>${t === mine ? '我方' : '对手'}</b><span>共击倒 ${K}</span></div>` + list.map(row).join('');
     });
@@ -3433,14 +3540,14 @@ function rollRoster() {
     const give = {}; specials.forEach((w, k) => { if (k < freeSlots.length) give[freeSlots[k]] = w; });
     for (let i = 0; i < 4; i++) {
       const isP = t === 0 && i === 1;
-      R[t].push({ name: isP ? (GAME.name || '玩家') : names.pop(), isPlayer: isP, weapon: isP ? Profile.data.weapon : (give[i] || 'rifle'), look: isP ? Profile.data.look : randomLook(), role: roles[(i + t) % 4] });
+      R[t].push({ name: isP ? (GAME.name || '玩家') : names.pop(), isPlayer: isP, weapon: isP ? Profile.data.weapon : (give[i] || 'rifle'), char: isP || GAME.uniformChars ? Profile.data.char : pick(CHAR_ORDER), look: isP ? Profile.data.look : randomLook(), role: roles[(i + t) % 4] });
     }
   }
   G.roster = R; enforceRoster();
 }
 function enforceRoster() {
   // at most one charger per team (the player's own pick takes priority)
-  const me = G.roster[0][1]; me.weapon = Profile.data.weapon; me.name = GAME.name || '玩家';
+  const me = G.roster[0][1]; me.weapon = Profile.data.weapon; me.char = Profile.data.char; me.name = GAME.name || '玩家';
   for (const w of ['charger', 'splatling']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) m.weapon = 'rifle'; seen = true; } }); });
 }
 function spawnTeams() {
@@ -3448,7 +3555,7 @@ function spawnTeams() {
   if (!G.roster) rollRoster();
   const offs = [-4.5, -1.5, 1.5, 4.5];
   for (let t = 0; t < 2; t++) G.roster[t].forEach((m, i) => {
-    const c = new Character(m.name, t, m.isPlayer, { weapon: m.weapon, look: m.look });
+    const c = new Character(m.name, t, m.isPlayer, { weapon: m.weapon, look: m.look, char: m.char });
     const sp = SPAWN[t]; c.pos.set(sp.x + offs[i] * (t ? -1 : 1), sp.y, sp.z + (t ? -1 : 1) * (i % 2 ? 0.8 : -0.4)); c.aimYaw = c.yaw = c.bodyYaw = sp.yaw;
     CHARS.push(c); if (m.isPlayer) PLAYER = c; else G.bots.push(new Bot(c, m.role));
   });
@@ -3557,7 +3664,7 @@ function showResults() {
     const team = t => {
       const won = (t === 0) === win, rows = CHARS.filter(c => c.team === t).sort((a, b) => b.paint - a.paint).map((c, i) => {
         const md = medalsFor(c).map(m => `<b class="${m.gold ? 'g' : 's'}" title="${m.t}（${m.gold ? '全场第一' : '队内第一'}）"></b>`).join('') + roastsFor(c).map(r => `<b class="x" title="${r.t}"></b>`).join('');
-        return `<div class="r${c.isPlayer ? ' me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}${c.name}${c.isPlayer ? '<i>你</i>' : ''}</span><span>${Math.round(c.paint)}p</span><span>${c.kills}<small>${c.assists ? ' +' + c.assists : ''}</small></span><span>${c.deaths}</span><span>${c.specials}</span><span class="md">${md}</span></div>`;
+        return `<div class="r${c.isPlayer ? ' me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${charIcon(c.cs.id, 26, TEAM_HEX[t])}${weaponIcon(c.weapon.id, '#fff', 34, TEAM_HEX[t])}${c.name}${c.isPlayer ? '<i>你</i>' : ''}</span><span>${Math.round(c.paint)}p</span><span>${c.kills}<small>${c.assists ? ' +' + c.assists : ''}</small></span><span>${c.deaths}</span><span>${c.specials}</span><span class="md">${md}</span></div>`;
       }).join('');
       return `<div class="tbl ${won ? 'won' : 'lost'}" style="--tc:${TEAM_HEX[t]}"><div class="th"><b>${won ? 'WIN!' : 'LOSE…'}</b><span>${t === 0 ? '我方' : '对手'}</span><em>${(t ? p1 : p0).toFixed(1)}%</em></div><div class="r h"><span></span><span>名字</span><span>涂地</span><span>击倒 +助攻</span><span>阵亡</span><span>必杀</span><span>奖牌</span></div>${rows}</div>`;
     };
@@ -3584,12 +3691,34 @@ function gotoTitle() {
   resetToAttract(); show('lobby', false); show('title', true); renderLoadCard();
 }
 function openLobby() {
-  resetToAttract(); rollRoster(); renderLobby();
+  resetToAttract(); rollRoster(); G.lobbyStep = 'char'; renderLobby();
   show('title', false); show('results', false); show('lobby', true);
 }
 function statBars(v) { let s = '<div class="bar">'; for (let i = 1; i <= 5; i++) s += `<i class="${i <= v ? 'on' : ''}"></i>`; return s + '</div>'; }
+// character card: portrait, role, three stat bars with the actual numbers
+function charCard(id, sel) {
+  const C = CHARACTERS[id], pc = (v, base) => { const p = Math.round(v * 100); return `<em class="${p > base ? 'up' : p < base ? 'dn' : ''}">${p}%</em>`; };
+  return `<div class="ccard${sel ? ' sel' : ''}" data-id="${id}"><div class="pt">${charIcon(id, 76)}<span class="tag">${sel ? '已选择' : '点击选择'}</span></div>
+    <div class="ci"><b>${C.name}</b><span class="en">${C.en}</span><span class="role">${C.role}</span><div class="tg">${C.tag}</div>
+      <div class="cst"><span>生命</span>${statBars(C.bars.hp)}<em class="${C.hp > 100 ? 'up' : C.hp < 100 ? 'dn' : ''}">${C.hp}</em><span>移速</span>${statBars(C.bars.speed)}${pc(C.runK, 100)}<span>墨水</span>${statBars(C.bars.ink)}${pc(C.inkCap, 100)}</div></div></div>`;
+}
 function renderLobby() {
-  const cur = Profile.data.weapon;
+  const cur = Profile.data.weapon, step = G.lobbyStep || 'char', CH = CHARACTERS[Profile.data.char];
+  $('lobbySteps').querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.step === step));
+  $('stepChar').textContent = CH.name; $('stepWeap').textContent = WEAPONS[cur].name;
+  $('charList').classList.toggle('show', step === 'char'); $('weapList').classList.toggle('show', step === 'weap');
+  $('btnNextStep').style.display = step === 'char' ? '' : 'none';
+  $('charList').innerHTML = CHAR_ORDER.map(id => charCard(id, id === Profile.data.char)).join('');
+  $('charList').querySelectorAll('.ccard').forEach(el => el.onclick = () => {
+    Sfx.init(); Sfx.click(); if (Profile.data.char === el.dataset.id) return;
+    Profile.data.char = el.dataset.id; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard();
+  });
+  // preview: the chosen character holding the chosen weapon, plus the numbers that matter
+  Preview.show(Profile.data.char, cur);
+  $('pvName').textContent = CH.name; $('pvRole').textContent = CH.role + ' · ' + WEAPONS[cur].name;
+  const W = WEAPONS[cur];
+  $('pvStats').innerHTML = `<div class="row2"><span>生命<b>${CH.hp}</b></span><span>走路<b>${Math.round(CH.runK * 100)}%</b></span><span>潜墨<b>${Math.round(CH.swimK * 100)}%</b></span><span>墨水<b>${Math.round(CH.inkCap * 100)}%</b></span>${CH.inkRegen > 1 ? `<span>回墨<b>+${Math.round((CH.inkRegen - 1) * 100)}%</b></span>` : ''}${CH.knockK < 1 ? '<span>抗击退<b>强</b></span>' : ''}</div>
+    <div class="wl">${weaponIcon(W.id, '#fff', 44)}<span>${W.name} · ${SUBS[W.sub].name} · ${SPECIALS[W.special].name}</span></div>`;
   $('weapList').innerHTML = WEAPON_ORDER.map(id => {
     const w = WEAPONS[id];
     return `<div class="wcard${id === cur ? ' sel' : ''}" data-id="${id}">
@@ -3604,14 +3733,64 @@ function renderLobby() {
     Profile.data.weapon = el.dataset.id; Profile.save(); Sfx.init(); Sfx.click(); enforceRoster(); renderLobby(); renderLoadCard();
   });
   ['rosterA', 'rosterB'].forEach((id, t) => {
-    $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}">${weaponIcon(m.weapon, '#fff', 40, TEAM_HEX[t])}<span>${m.name}${m.isPlayer ? '（你）' : ''}</span><span class="wn">${WEAPONS[m.weapon].name}</span></div>`).join('');
+    $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}"><span class="cp">${charIcon(m.char, 30, TEAM_HEX[t])}</span>${weaponIcon(m.weapon, '#fff', 36, TEAM_HEX[t])}<span>${m.name}${m.isPlayer ? '（你）' : ''}<span class="cn">${CHARACTERS[m.char].name}</span></span><span class="wn">${WEAPONS[m.weapon].name}</span></div>`).join('');
   });
 }
 function renderLoadCard() {
-  const w = WEAPONS[Profile.data.weapon];
-  $('lcIcon').innerHTML = weaponIcon(w.id, '#fff', 72); $('lcName').textContent = w.name; $('lcRole').textContent = w.role;
+  const w = WEAPONS[Profile.data.weapon], C = CHARACTERS[Profile.data.char];
+  $('lcIcon').innerHTML = charIcon(C.id, 58) + `<span class="lcw">${weaponIcon(w.id, '#fff', 40)}</span>`; $('lcName').textContent = C.name + ' · ' + w.name; $('lcRole').textContent = C.role + ' / ' + w.role;
   $('lcKit').textContent = SUBS[w.sub].name + ' · ' + SPECIALS[w.special].name;
 }
+/* ------------------------------------------------ lobby 3D preview
+   Its own small renderer: the chosen character on a pedestal, slowly
+   turning; drag to spin it.                                          */
+const Preview = {
+  key: '', yaw: 0.5, drag: null, idleT: 0,
+  init() {
+    const cv = $('pvCanvas'); this.cv = cv;
+    try { this.r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); } catch (e) { this.r = null; return; }
+    if (this.r.setPixelRatio) this.r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    if (this.r.outputColorSpace !== undefined) this.r.outputColorSpace = THREE.SRGBColorSpace;
+    this.r.toneMapping = THREE.ACESFilmicToneMapping;
+    const sc = this.sc = new THREE.Scene();
+    sc.add(new THREE.HemisphereLight(0xe8f2ff, 0x3a3150, 1.1));
+    const key = new THREE.DirectionalLight(0xfff2de, 2.4); key.position.set(2.5, 5, 4); sc.add(key);
+    const rim = new THREE.DirectionalLight(0x9fb8ff, 1.2); rim.position.set(-3, 3, -4); sc.add(rim);
+    const ped = new THREE.Group(); sc.add(ped); this.ped = ped;
+    ped.add(mesh(new THREE.CylinderGeometry(0.95, 1.05, 0.16, 40), new THREE.MeshStandardMaterial({ color: 0x24223f, roughness: 0.5, metalness: 0.3 }), 0, -0.08, 0));
+    this.ringM = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.97, 0.05, 8, 48), this.ringM); ring.rotation.x = Math.PI / 2; ped.add(ring);
+    this.splatM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+    const sp = new THREE.Mesh(new THREE.CircleGeometry(0.7, 28), this.splatM); sp.rotation.x = -Math.PI / 2; sp.position.y = 0.005; ped.add(sp);
+    this.cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); this.cam.position.set(0, 1.35, 4.7); this.cam.lookAt(0, 0.82, 0);
+    const ev = (n, f) => cv.addEventListener && cv.addEventListener(n, f);
+    ev('pointerdown', e => { this.drag = { x: e.clientX, yaw: this.yaw }; if (cv.setPointerCapture) try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
+    ev('pointermove', e => { if (this.drag) { this.yaw = this.drag.yaw + (e.clientX - this.drag.x) * 0.012; this.idleT = 2.5; } });
+    const up = () => { this.drag = null; }; ev('pointerup', up); ev('pointercancel', up);
+  },
+  show(charId, weaponId) {
+    if (!this.r) return;
+    const key = charId + '/' + weaponId + '/' + TEAM_HEX[0];
+    this.ringM.color.set(TEAM_HEX[0]); this.splatM.color.set(TEAM_HEX[0]);
+    if (key === this.key && this.c) return;
+    this.key = key;
+    if (this.c) { this.ped.remove(this.c.root); }
+    const c = new Character('pv', 0, true, { weapon: weaponId, char: charId });
+    scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot);
+    c.pos.set(0, 0, 0); c.vel.set(0, 0, 0); c.grounded = true; c.state = 'play'; c.lastShot = -99; this.ped.add(c.root); this.c = c;
+    this.pop = 1;
+  },
+  update(dt) {
+    if (!this.r || !this.c || !$('lobby').classList.contains('show')) return;
+    const cv = this.cv, w = cv.clientWidth || 400, h = cv.clientHeight || 400;
+    if (w !== this.w || h !== this.h) { this.w = w; this.h = h; this.r.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix(); }
+    this.idleT = Math.max(0, this.idleT - dt); if (!this.drag && this.idleT <= 0) this.yaw += dt * 0.55;
+    const c = this.c; c.bodyYaw = c.aimYaw = this.yaw; c.aimPitch = -0.04; c.pos.set(0, 0, 0);
+    c.syncModel(dt); c.root.position.set(0, 0, 0);
+    this.pop = Math.max(0, (this.pop || 0) - dt * 4); const s = 1 + this.pop * 0.12; this.ped.scale.set(s, s, s);
+    this.r.render(this.sc, this.cam);
+  }
+};
 
 /* ------------------------------------------------------------- update */
 function updateIntro(dt) {
@@ -3652,6 +3831,7 @@ function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(clock.getDelta(), 1 / 30), t = clock.elapsedTime;
   if (!G.paused) {
+    Preview.update(dt);
     if (G.state === 'title') updateTitle(dt);
     else if (G.state === 'intro') updateIntro(dt);
     else if (G.state === 'play') updatePlay(dt);
@@ -3711,6 +3891,8 @@ function initUI() {
   $('btnStart').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
   $('loadCard').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
   $('btnBack').onclick = () => { Sfx.click(); show('lobby', false); show('title', true); renderLoadCard(); };
+  $('lobbySteps').querySelectorAll('button').forEach(b => b.onclick = () => { Sfx.init(); Sfx.click(); G.lobbyStep = b.dataset.step; renderLobby(); });
+  $('btnNextStep').onclick = () => { Sfx.init(); Sfx.click(); G.lobbyStep = 'weap'; renderLobby(); };
   $('btnGo').onclick = () => { Sfx.click(); Profile.save(); enforceRoster(); startMatch(); };
   $('btnChange').onclick = () => { Sfx.click(); openLobby(); };
   $('btnHow').onclick = () => { Sfx.init(); Sfx.click(); show('howto', true); };
@@ -3742,7 +3924,7 @@ function boot() {
   initPaint();
   initGeo();
   buildSkyEnv(); buildSea(); buildArena(); buildDecor();
-  Fx.init(); Proj.init(); Barrier.init(); ScreenInk.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI();
+  Fx.init(); Proj.init(); Barrier.init(); ScreenInk.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI(); Preview.init();
   applyPalette();
   renderer.compile(scene, camera);
   G.state = 'title';

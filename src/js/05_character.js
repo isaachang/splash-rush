@@ -78,7 +78,10 @@ function mesh(geo, mat, x = 0, y = 0, z = 0, sx = 1, sy = sx, sz = sx) {
 class Character {
   constructor(name, team, isPlayer, opts = {}) {
     this.name = name; this.team = team; this.isPlayer = !!isPlayer;
-    this.weapon = WEAPONS[opts.weapon] || WEAPONS.rifle; this.look = opts.look || randomLook();
+    this.weapon = WEAPONS[opts.weapon] || WEAPONS.rifle;
+    // character: body + stats (hp, speed, ink tank); the look comes from the character
+    this.cs = CHARACTERS[opts.char] || CHARACTERS.man; this.maxHp = this.cs.hp; this.inkK = this.cs.inkCap;
+    this.look = Object.assign({}, opts.look || randomLook(), this.cs.look);
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3();
     this.yaw = 0; this.aimYaw = 0; this.aimPitch = 0; this.bodyYaw = 0;
     this.intent = { mx: 0, mz: 0, fire: false, swim: false, jump: false, bomb: false, special: false, aimDir: null };
@@ -86,7 +89,7 @@ class Character {
     this.buildModel(); this.reset();
   }
   reset() {
-    this.hp = 100; this.ink = 100; this.special = 0; this.alive = true; this.state = 'play';
+    this.hp = this.maxHp; this.ink = 100; this.special = 0; this.alive = true; this.state = 'play';
     this.swim = false; this.submerged = false; this.climbing = false; this.grounded = true;
     this.fireCd = 0; this.bombCd = 0; this.lastHurt = -99; this.lastShot = -99; this.invulnT = 0; this.respawnT = 0;
     this.sp = null; this.hurtFlash = 0; this.phase = 0; this.recoil = 0; this.swimPop = 0; this.inEnemy = false; this.lastAttacker = null;
@@ -124,7 +127,7 @@ class Character {
     const emb = mesh(new THREE.CircleGeometry(0.06, 16), T, 0, 0.33, 0.205); torso.add(emb);
     const belt = mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 20), dark, 0, 0.08, 0); belt.rotation.x = Math.PI / 2; torso.add(belt);
     // backpack ink tank
-    const tank = new THREE.Group(); tank.position.set(0, 0.3, -0.26); torso.add(tank);
+    const tank = new THREE.Group(); tank.position.set(0, 0.3, -0.26); torso.add(tank); if (L.tankK) { tank.scale.setScalar(L.tankK); tank.position.z = -0.26 - (L.tankK - 1) * 0.1; }
     tank.add(mesh(GEO.cyl, glass, 0, 0, 0, 0.12, 0.34, 0.12));
     this.tankInk = mesh(GEO.cyl, T, 0, 0, 0, 0.1, 0.32, 0.1); tank.add(this.tankInk);
     tank.add(mesh(GEO.cyl, metal, 0, 0.19, 0, 0.13, 0.05, 0.13)); tank.add(mesh(GEO.cyl, metal, 0, -0.19, 0, 0.13, 0.05, 0.13));
@@ -141,6 +144,10 @@ class Character {
     crest.add(mesh(GEO.sphere, T, 0, 0, 0, 0.25, 0.14, 0.28));
     crest.add(mesh(GEO.sphere, T, 0, 0.02, 0.17, 0.14, 0.1, 0.12));
     this.drips = [[0, -0.12, -0.24, 0.1, 0.16], [0.14, -0.1, -0.19, 0.08, 0.13], [-0.14, -0.1, -0.19, 0.08, 0.13], [0.2, -0.05, -0.05, 0.07, 0.1], [-0.2, -0.05, -0.05, 0.07, 0.1]].map(([x, y, z, r, h]) => { const d = mesh(GEO.sphere, T, x, y, z, r, h, r); crest.add(d); return d; });
+    // character hairstyles (tentacles in team colour): long ponytail / twin tails / fin crest
+    if (L.hair === 'tail') { for (let k = 0; k < 4; k++) crest.add(mesh(GEO.sphere, T, 0, -0.1 - k * 0.1, -0.26 - k * 0.07, 0.1 - k * 0.015, 0.12, 0.1 - k * 0.015)); }
+    else if (L.hair === 'twin') { for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) crest.add(mesh(GEO.sphere, T, sx * (0.25 + k * 0.02), -0.12 - k * 0.11, -0.06, 0.085 - k * 0.012, 0.11, 0.085 - k * 0.012)); }
+    else if (L.hair === 'fin') { for (let k = 0; k < 3; k++) { const f = mesh(new THREE.ConeGeometry(0.07, 0.2, 8), T, 0, 0.1 - k * 0.02, 0.12 - k * 0.14); f.rotation.x = -0.35; crest.add(f); } }
     // headgear
     const hat = L.hat, hc = new THREE.MeshStandardMaterial({ color: L.hatColor, roughness: 0.6 });
     if (hat === 'phones') { const b = mesh(new THREE.TorusGeometry(0.29, 0.025, 6, 24, Math.PI), dark, 0, 0.22, 0); b.rotation.z = 0; head.add(b); [-1, 1].forEach(s => head.add(mesh(GEO.cyl, hc, s * 0.285, 0.2, 0, 0.09, 0.06, 0.09)).rotation && 0); head.children.slice(-2).forEach(c => c.rotation.z = Math.PI / 2); }
@@ -192,6 +199,7 @@ class Character {
     }
     this.buildInkSpots();
     root.traverse(o => { if (o.isMesh && o.material && o.material.transparent) o.castShadow = false; });
+    root.scale.set(L.bodyW || 1, L.bodyH || 1, L.bodyW || 1);              // slim / stocky builds
     scene.add(root);
   }
   // blobs of the attacker's ink that appear on the body as HP drops (like the original's "inked" look)
@@ -218,7 +226,7 @@ class Character {
   }
   updateInkSpots() {
     if (!this.inkSpots) return;
-    const lvl = this.alive ? clamp((100 - this.hp) / 100, 0, 1) : 0;
+    const lvl = this.alive ? clamp((this.maxHp - this.hp) / this.maxHp, 0, 1) : 0;
     for (const m of this.inkSpots) {
       const u = m.userData, k = clamp((lvl - u.thr) * 5 + 0.35, 0, 1);
       m.visible = lvl > u.thr;
@@ -239,9 +247,10 @@ class Character {
   invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.state === 'sjfly' || this.inOwnBarrier(); }
   // got hit by a bullet: flinch back a little and flash
   onHit(dir, dmg) {
-    this.flinch = Math.min(1, (this.flinch || 0) + 0.6 + dmg / 120);
+    const kk = this.cs.knockK;                       // heavy characters barely flinch or get pushed
+    this.flinch = Math.min(1, (this.flinch || 0) + (0.6 + dmg / 120) * kk);
     this.flinchDir = dir.clone();
-    this.vel.x += dir.x * 0.9; this.vel.z += dir.z * 0.9;
+    this.vel.x += dir.x * 0.9 * kk; this.vel.z += dir.z * 0.9 * kk;
   }
   canJumpTo(t) { return t && t !== this && t.team === this.team && t.alive && t.state === 'play' && !t.sj; }
   // super jump to a teammate: short crouch (vulnerable), launch, then land on them
@@ -316,7 +325,7 @@ class Character {
     if (this.isPlayer) HUD.died(killer, via);
   }
   respawn() {
-    const sp = SPAWN[this.team]; this.state = 'drop'; this.alive = true; this.hp = 100; this.ink = 100;
+    const sp = SPAWN[this.team]; this.state = 'drop'; this.alive = true; this.hp = this.maxHp; this.ink = 100;
     // super jump straight to a chosen teammate (player picks on the map; bots sometimes jump to the front)
     let tgt = this.canJumpTo(this.jumpTarget) ? this.jumpTarget : null; this.jumpTarget = null;
     if (!tgt && !this.isPlayer && Math.random() < 0.4) { const opts = CHARS.filter(c => this.canJumpTo(c) && !c.inOwnBarrier()); if (opts.length) tgt = pick(opts); }
@@ -425,8 +434,8 @@ class Character {
     const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging;
     // ----- movement
     let maxSp;
-    if (this.swim) maxSp = this.submerged ? 12.8 : this.inEnemy ? 2.0 : 3.4;
-    else maxSp = this.inEnemy ? 2.3 : this.charging ? W.moveCharge : firing ? W.moveFire : 6.4;
+    if (this.swim) maxSp = this.submerged ? 12.8 * this.cs.swimK : this.inEnemy ? 2.0 : 3.4;
+    else maxSp = (this.inEnemy ? 2.3 : this.charging ? W.moveCharge : firing ? W.moveFire : 6.4) * this.cs.runK;
     if (this.sp) maxSp = 3;
     if (!this.grounded && this.airSpeed > maxSp) maxSp = this.airSpeed;   // airborne: keep take-off speed, only steer
     const acc = this.grounded ? (this.submerged ? 75 : 48) : 16;
@@ -468,12 +477,12 @@ class Character {
     else { if (wasG) this.airSpeed = Math.max(this.airSpeed, Math.hypot(this.vel.x, this.vel.z)); this.grounded = false; }
     if (this.pos.y < -10) { this.die(this.lastAttacker); return; }
     // ----- ink / hp
-    if (this.submerged) { this.ink = Math.min(100, this.ink + 40 * dt); }
-    else if (T - this.lastShot > 0.6) this.ink = Math.min(100, this.ink + (this.swim ? 12 : 6.5) * dt);
+    if (this.submerged) { this.ink = Math.min(100, this.ink + 40 * dt * this.cs.inkRegen); }
+    else if (T - this.lastShot > 0.6) this.ink = Math.min(100, this.ink + (this.swim ? 12 : 6.5) * dt * this.cs.inkRegen);
     // regen like the original: starts after 1 s without damage; 12.5/s standing, 100/s submerged in own ink
-    if (T - this.lastHurt > 1.0 && !(this.inEnemy && !this.invuln())) this.hp = Math.min(100, this.hp + (this.submerged ? 100 : 12.5) * dt);
+    if (T - this.lastHurt > 1.0 && !(this.inEnemy && !this.invuln())) this.hp = Math.min(this.maxHp, this.hp + (this.submerged ? 100 : 12.5) * (this.maxHp / 100) * dt);
     // enemy ink: ~30 HP/s but never below 50
-    if (this.inEnemy && !this.invuln()) { if (this.hp > 50) { this.hp = Math.max(50, this.hp - 30 * dt); this.lastHurt = T - 0.4; } }
+    if (this.inEnemy && !this.invuln()) { const fl = this.maxHp * 0.5; if (this.hp > fl) { this.hp = Math.max(fl, this.hp - 30 * dt); this.lastHurt = T - 0.4; } }
     // ----- aiming / facing
     const turnK = this.swim ? 14 : 20;
     if (this.swim && mlen > 0.1) this.bodyYaw += angDiff(this.bodyYaw, Math.atan2(I.mx, I.mz)) * Math.min(1, dt * turnK);
@@ -481,8 +490,8 @@ class Character {
     // ----- weapons
     if (W.type === 'auto') {
       if (I.fire && !this.swim && !this.sp && this.fireCd <= 0 && G.state === 'play') {
-        if (this.ink >= W.cost) {
-          this.fireCd = W.interval; this.ink -= W.cost; this.lastShot = T; this.recoil = 1;
+        if (this.ink >= W.cost / this.inkK) {
+          this.fireCd = W.interval; this.ink -= W.cost / this.inkK; this.lastShot = T; this.recoil = 1;
           const m = this.muzzle();
           const dir = I.aimDir ? I.aimDir.clone() : aimVec(this);
           const spread = this.grounded ? W.spread : W.airSpread;
@@ -498,8 +507,8 @@ class Character {
     } else if (W.charges) this.updateCharge(dt, I, T);
     else if (W.type === 'blaster') this.updateBlaster(dt, I, T);
     if (I.bomb && !this.swim && !this.sp && this.bombCd <= 0 && G.state === 'play') {
-      if (this.ink >= 70) {
-        this.ink -= 70; this.bombCd = 0.6; this.lastShot = T;
+      if (this.ink >= 70 / this.inkK) {
+        this.ink -= 70 / this.inkK; this.bombCd = 0.6; this.lastShot = T;
         const dir = I.aimDir ? I.aimDir.clone() : new THREE.Vector3(Math.sin(this.aimYaw) * Math.cos(this.aimPitch), Math.sin(this.aimPitch), Math.cos(this.aimYaw) * Math.cos(this.aimPitch));
         Proj.bomb(this, this.muzzle(), dir);
       } else if (this.isPlayer) HUD.lowInk();
@@ -519,10 +528,10 @@ class Character {
     const can = I.fire && !this.swim && !this.sp && G.state === 'play';
     if (can && (this.charging || this.fireCd <= 0)) {
       if (!this.charging) {
-        if (this.ink < W.costMin) { if (this.isPlayer) HUD.lowInk(); return; }
+        if (this.ink < W.costMin / this.inkK) { if (this.isPlayer) HUD.lowInk(); return; }
         this.charging = true; this.charge = 0; if (this.isPlayer) Sfx.chargeStart();
       }
-      const mc = W.minCharge, maxC = mc + (1 - mc) * clamp((this.ink - W.costMin) / (W.costFull - W.costMin), 0, 1);
+      const mc = W.minCharge, maxC = mc + (1 - mc) * clamp((this.ink * this.inkK - W.costMin) / (W.costFull - W.costMin), 0, 1);
       const before = this.charge;
       this.charge = Math.min(maxC, this.charge + dt / W.chargeTime);
       if (before < 1 && this.charge >= 1 && this.isPlayer) Sfx.chargeFull();
@@ -538,8 +547,8 @@ class Character {
   updateBlaster(dt, I, T) {
     const W = this.weapon;
     if (!(I.fire && !this.swim && !this.sp && this.fireCd <= 0 && G.state === 'play')) return;
-    if (this.ink < W.cost) { if (this.isPlayer) HUD.lowInk(); return; }
-    this.fireCd = W.interval; this.ink -= W.cost; this.lastShot = T; this.recoil = 2;
+    if (this.ink < W.cost / this.inkK) { if (this.isPlayer) HUD.lowInk(); return; }
+    this.fireCd = W.interval; this.ink -= W.cost / this.inkK; this.lastShot = T; this.recoil = 2;
     const m = this.muzzle(), dir = I.aimDir ? I.aimDir.clone() : aimVec(this), sp = this.grounded ? W.spread : W.airSpread;
     dir.x += rand(-sp, sp); dir.y += rand(-sp, sp) * 0.6; dir.z += rand(-sp, sp); dir.normalize();
     Proj.shot(this, m, dir, null, null, { style: 'shell', blast: true, hitR: 0.2 });
@@ -553,7 +562,7 @@ class Character {
   rangeNow() { const W = this.weapon; return W.type === 'charge' ? lerp(W.minRange, W.maxRange, this.chargeT(this.charge)) : W.range; }
   fireCharger(c, I) {
     const W = this.weapon, T = G.time, ct = this.chargeT(c);
-    this.ink = Math.max(0, this.ink - lerp(W.costMin, W.costFull, ct)); this.lastShot = T; this.recoil = 1.6;
+    this.ink = Math.max(0, this.ink - lerp(W.costMin, W.costFull, ct) / this.inkK); this.lastShot = T; this.recoil = 1.6;
     const m = this.muzzle(), dir = I.aimDir ? I.aimDir.clone() : aimVec(this);
     if (c < 1) { const s = 0.01 * (1 - c); dir.x += rand(-s, s); dir.y += rand(-s, s); dir.z += rand(-s, s); dir.normalize(); }
     const range = lerp(W.minRange, W.maxRange, ct);
@@ -692,7 +701,7 @@ class Character {
       } else if (firing) this.arms[1].rotation.set(-Math.PI / 2 * 0.85 - pitch, 0, -0.55);
       else this.arms[1].rotation.set(-sw * 0.8 * run + (air ? -1.2 : 0), 0, air ? 0.5 : 0.08);
       this.head.rotation.x = -pitch * 0.4;
-      this.crest.scale.set(1, 1 + Math.sin(T * 9 + this.id) * 0.04 - this.vel.y * 0.012, 1);
+      this.crest.scale.set(1, 1 + Math.sin(T * 9 + this.id) * 0.04 - this.vel.y * 0.012, this.look.crestK || 1);
       this.drips.forEach((d, i) => d.position.y = -0.1 - (i === 0 ? 0.02 : 0) + Math.sin(T * 7 + i) * 0.012 - Math.max(0, this.vel.y) * 0.004);
       this.landSquash = Math.max(0, (this.landSquash || 0) - dt * 5);
       let k = 1 + this.swimPop * 0.25 + this.landSquash * 0.3; if (this.sj) k = 1 + Math.min(this.sj.t, 0.6) * 0.35;
