@@ -156,6 +156,10 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.8.4', date: '2026-09-29', time: '22:48', title: '副武器演示', items: [
+    '战前准备新增「副武器」页：用法、优缺点和关键数字一目了然',
+    '切到副武器页时，中间会循环播放实机演示，左下角可以重播'
+  ] },
   { v: 'v0.8.3', date: '2026-09-29', time: '20:16', title: '角色专属副武器', items: [
     '阿飒的副武器换成冰壶炸弹：贴地滑出一条墨路，潜进去就能跟着冲',
     '满满的副武器换成涂鸦掩体：挡住敌人的子弹，自己人的子弹能穿过去',
