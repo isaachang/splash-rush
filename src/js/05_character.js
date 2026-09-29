@@ -562,7 +562,7 @@ class Character {
       for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 + rand(-0.2, 0.2), sp = rand(4, 7); Proj.spray(this, new THREE.Vector3(impactAt.x, gy + 0.4, impactAt.z), new THREE.Vector3(Math.cos(a) * sp, rand(4, 7), Math.sin(a) * sp), rand(0.45, 0.7)); }
       if (PLAYER && PLAYER.alive) { const dd = PLAYER.pos.distanceTo(impactAt); if (dd < 12 && !this.isPlayer) G.shake(0.6 * (1 - dd / 12)); }
     }
-    Fx.beam(m, tr.end, col, full ? 0.16 : 0.035 + 0.025 * c, full);
+    Fx.beam(m, tr.end, col, full ? 0.2 : 0.045 + 0.033 * c, full);
     Fx.burst(m.x, m.y, m.z, col, full ? 14 : 6, full ? 5 : 3, full ? 0.1 : 0.07);
     const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.7); if (v > 0.03) Sfx.cannon(v, c);
     if (full && impactAt) { const vi = sndVol(impactAt); if (vi > 0.03) Sfx.cannonImpact(vi, sndPan(impactAt)); }

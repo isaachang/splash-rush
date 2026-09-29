@@ -12,7 +12,7 @@ const damp = (a, b, k, dt) => lerp(a, b, 1 - Math.exp(-k * dt));
 function angDiff(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; }
 function hash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
 
-const SETTINGS = { sens: 1, fov: 72, vol: 0.7, mus: 0.5, qual: 1, inv: 0 };
+const SETTINGS = { sens: 1, fov: 62, vol: 0.7, mus: 0.5, qual: 1, inv: 0 };
 const PALETTES = [
   ['#ff7a00', '#3346ff'], ['#ff2d95', '#22d64a'], ['#8c3cff', '#f2e600'],
   ['#00cfff', '#ff3b30'], ['#b7f500', '#b43cff'], ['#ffc400', '#1b6bff']
