@@ -107,6 +107,7 @@ const Fx = {
 };
 
 /* ======================================================== PROJECTILES */
+const CURL_FUSE = 1.2, CURL_CRUISE = 0.65;       // curling bomb: fuse, and how long it slides at full speed before braking
 const Proj = {
   shots: [], bombs: [], mesh: null, N: 700,
   init() {
@@ -121,6 +122,7 @@ const Proj = {
   shot(owner, o, dir, Wo, cap, extra) {
     if (this.shots.length > this.N - 10) this.shots.shift();
     const W = Wo || owner.weapon;
+    if (Cover.list.length && owner.pos) { const cv = Cover.between(owner, o); if (cv) { Cover.hit(cv, W.dmg || 0, o, owner.team, rand(W.splat ? W.splat[0] : 1, W.splat ? W.splat[1] : 1)); return; } }   // muzzle poked past an enemy board: it still stops there
     const b = { owner, team: owner.team, W, p: o.clone(), rp: o.clone(), v: dir.multiplyScalar(W.speed), t: 0, dist: 0, nextDrop: rand(0.7, 1.1), kind: 'shot', r: rand(W.splat[0], W.splat[1]), wob: rand(0, 6.28) };
     if (extra) Object.assign(b, extra);
     this.shots.push(b);
@@ -222,19 +224,20 @@ const Proj = {
     const handle = new THREE.Mesh(this.curlHandle, this.curlDark); handle.position.y = 0.2; g.add(handle);
     const st = this.curlStart(owner, dir);
     g.position.copy(st.p); scene.add(g);
-    this.bombs.push(Object.assign(st, { curl: true, owner, team: owner.team, g, light, fuse: 2.2, trail: 0 }));
+    this.bombs.push(Object.assign(st, { curl: true, owner, team: owner.team, g, light, fuse: CURL_FUSE, trail: 0 }));
     if (sndVol(st.p) > 0.05) Sfx.throwB(sndVol(st.p));
   },
   curlStart(owner, dir) {
     const f = new THREE.Vector3(dir.x, 0, dir.z); if (f.lengthSq() < 1e-4) f.set(Math.sin(owner.aimYaw), 0, Math.cos(owner.aimYaw)); f.normalize();
     const p = new THREE.Vector3(owner.pos.x + f.x * 0.8, 0, owner.pos.z + f.z * 0.8); p.y = groundBelow(p.x, p.z, owner.pos.y + 0.1, 0.5);   // start at our feet, not on top of a wall in front
     if (solidAt(p.x, p.y + 0.15, p.z)) p.copy(owner.pos);
-    const sp = 11 + Math.max(0, owner.vel.x * f.x + owner.vel.z * f.z) * 0.3;
-    return { p, v: f.multiplyScalar(sp), vy: 0 };
+    const sp = 12.8 * ((owner.cs && owner.cs.swimK) || 1);              // as fast as its thrower swims: you can keep up right behind it
+    return { p, v: f.multiplyScalar(sp), vy: 0, t: 0 };
   },
   // one physics step (shared by the real bomb and the aim preview); returns true if it bounced
   curlStep(b, dt) {
-    const sp = Math.hypot(b.v.x, b.v.z); if (sp > 1e-3) { const k = Math.max(0, sp - 4.6 * dt) / sp; b.v.x *= k; b.v.z *= k; }
+    b.t = (b.t || 0) + dt;
+    const sp = Math.hypot(b.v.x, b.v.z); if (sp > 1e-3 && b.t > CURL_CRUISE) { const k = Math.max(0, sp - 16 * dt) / sp; b.v.x *= k; b.v.z *= k; }   // full speed, then brakes near the end
     let bounced = false;
     const blocked = (x, z) => Math.abs(x) > XH - 0.35 || Math.abs(z) > ZH - 0.35 || !!solidAt(x, b.p.y + 0.18, z) || inBarrier(1 - b.team, new THREE.Vector3(x, b.p.y, z)) || !!Cover.at(b.team, x, b.p.y + 0.18, z);
     const nx = b.p.x + b.v.x * dt; if (blocked(nx, b.p.z)) { b.v.x *= -0.8; bounced = true; } else b.p.x = nx;
@@ -274,7 +277,7 @@ const Proj = {
     if (owner.subId === 'curling') {
       // straight slide along the ground (with bounces), ring where it will blow up
       const b = this.curlStart(owner, dir); b.team = owner.team; let n = 0;
-      for (let i = 0; i < 132; i++) {
+      for (let i = 0; i < CURL_FUSE * 60; i++) {
         this.curlStep(b, 1 / 60);
         if (i % 4 === 1 && n < 40) { _dm.position.set(b.p.x, b.p.y + 0.08, b.p.z); _dm.scale.setScalar(0.07); _dm.rotation.set(0, 0, 0); _dm.updateMatrix(); this.pvDots.setMatrixAt(n++, _dm.matrix); }
       }
@@ -551,6 +554,25 @@ const Cover = {
     }
     const v = sndVol(p); if (v > 0.05) Sfx.impact(v * 0.7, sndPan(p));
     if (c.hp <= 0) this.breakIt(c);
+  },
+  // solid for everyone: push a character back out to the side it came from (bots slide along it to get round)
+  push(ch, px, pz) {
+    const R = 0.38 * ((ch.cs && ch.cs.hitK) ? 1.15 : 1);
+    for (const c of this.list) {
+      if (c.grow < 0.25 || ch.pos.y > c.y + 0.12 + this.H || ch.pos.y < c.y - 1) continue;
+      const dx = ch.pos.x - c.x, dz = ch.pos.z - c.z, lu = dx * c.ax + dz * c.az, ln = dx * c.nx + dz * c.nz;
+      if (Math.abs(lu) > this.W / 2 + R * 0.7 || Math.abs(ln) > this.T / 2 + R) continue;
+      const ln0 = (px - c.x) * c.nx + (pz - c.z) * c.nz, side = Math.sign(ln0) || Math.sign(ln) || -1, lnN = side * (this.T / 2 + R);
+      const slide = ch.isPlayer ? 0 : Math.sign(lu || 1) * 0.07;
+      ch.pos.x = c.x + c.ax * (lu + slide) + c.nx * lnN; ch.pos.z = c.z + c.az * (lu + slide) + c.nz * lnN;
+      const vn = (ch.vel.x * c.nx + ch.vel.z * c.nz) * side; if (vn < 0) { ch.vel.x -= c.nx * side * vn; ch.vel.z -= c.nz * side * vn; }
+    }
+  },
+  // enemy board between a shooter's body and their muzzle?
+  between(owner, o) {
+    const sx = owner.pos.x, sy = owner.pos.y + 0.93, sz = owner.pos.z;
+    for (let k = 0; k <= 4; k++) { const u = k / 4, c = this.at(owner.team, sx + (o.x - sx) * u, sy + (o.y - sy) * u, sz + (o.z - sz) * u); if (c) return c; }
+    return null;
   },
   // explosions nearby hurt it (bombs are the counter)
   blast(team, p, R, dmg) {

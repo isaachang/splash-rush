@@ -213,7 +213,7 @@ class Bot {
       if (Math.random() < dt * 0.7 * D.dodge && c.grounded) I.jump = true;
       if (c.hp < 45 && ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team && Math.random() < D.dodge) { this.swimT = 0.5; }
       if (this.swimT > 0) { this.swimT -= dt; I.swim = true; I.fire = false; }
-      if (c.subId === 'curling') { if (d > 6 && d < 15 && c.ink >= SUBS.curling.cost / c.inkK + 8 && c.grounded && Math.abs(dy_) < 0.2 && Math.random() < dt * 0.7) { I.bomb = true; I.fire = false; this.curlT = 1.6; } }
+      if (c.subId === 'curling') { if (d > 6 && d < 15 && c.ink >= SUBS.curling.cost / c.inkK + 8 && c.grounded && Math.abs(dy_) < 0.2 && Math.random() < dt * 0.7) { I.bomb = true; I.fire = false; this.curlT = 1.3; } }
       else if (d > 5 && d < 12 && c.ink > 75 && Math.random() < dt * 0.35) { I.bomb = true; c.aimPitch += 0.28; }
       if (c.special >= 100 && d < 7 && Math.random() < dt * 2) I.special = true; else I.special = false;
       this.path = [];

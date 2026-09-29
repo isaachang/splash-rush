@@ -154,6 +154,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.8.3', date: '2026-09-29', time: '20:16', title: '角色专属副武器', items: [
+    '阿飒的副武器换成冰壶炸弹：贴地滑出一条墨路，潜进去就能跟着冲',
+    '满满的副武器换成涂鸦掩体：挡住敌人的子弹，自己人的子弹能穿过去',
+    '石墩变胖了：更容易被打中、跳得更低，移速 60%、潜行 70%'
+  ] },
   { v: 'v0.8.2', date: '2026-09-29', time: '18:23', title: '角色属性调整', items: [
     '阿飒墨水 80%；满满改为专职狙击手（85 血、潜行更快、墨水 120%）；石墩移速 70%',
     '炸弹消耗降低，墨少的角色也能多扔',

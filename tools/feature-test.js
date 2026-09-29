@@ -273,10 +273,10 @@ vm.runInContext(`(() => {
       let S4 = setupC('sa'); resetPaint(); for (let i = 0; i < 5; i++) loop(); S4.pos.set(0, 0, 27); S4.ink = 100;
       ok(S4.subId === 'curling' && String($('subw').innerHTML).indexOf('冰壶') >= 0, '阿飒 carries the curling bomb (HUD shows it)');
       Input.bombHoldKey = true; loop(); loop(); loop(); const ghostOk = Proj.pvRing && Proj.pvRing.visible; Input.bombHoldKey = false; loop(); loop();
-      const cb = Proj.bombs.find(b => b.curl && b.owner === S4); const inkUsed = 100 - S4.ink;
+      const cb = Proj.bombs.find(b => b.curl && b.owner === S4); const inkUsed = 100 - S4.ink; if (cb) cb.v0 = Math.hypot(cb.v.x, cb.v.z);
       let z0 = cb ? cb.p.z : 0, fz = z0, fr = 0; while (cb && Proj.bombs.includes(cb) && fr < 120) { fz = cb.p.z; loop(); fr++; }
       let path = 0; for (let z = z0 - 0.5; z > fz; z -= 1) if (ownerAt(0, 0, z) === 0) path++;
-      ok(cb && z0 - fz > 9 && path >= (z0 - fz) * 0.7 && Math.abs(inkUsed - 70) < 3, 'curling bomb: slides ' + (z0 - fz).toFixed(1) + ' m laying ink (' + path + ' m inked), costs ' + inkUsed.toFixed(0) + '% of 阿飒 tank');
+      ok(cb && z0 - fz > 12 && z0 - fz < 18 && path >= (z0 - fz) * 0.7 && Math.abs(inkUsed - 70) < 3 && Math.abs(cb.v0 - 12.8 * 1.15) < 0.1, 'curling bomb: slides at 阿飒 swim speed (' + cb.v0.toFixed(1) + ' m/s) for ' + (z0 - fz).toFixed(1) + ' m laying ink (' + path + ' m inked), costs ' + inkUsed.toFixed(0) + '% of 阿飒 tank');
       // --- 满满: graffiti cover (E)
       let M4 = setupC('man'); M4.pos.set(0, 0, 20); M4.aimYaw = Math.PI; M4.aimPitch = 0; M4.ink = 100;
       const cv = Cover.place(M4, new THREE.Vector3(0, 0, -1)); for (let i = 0; i < 15; i++) loop();
@@ -288,8 +288,8 @@ vm.runInContext(`(() => {
       ok(f1.hp < f1hp, 'cover: her own team shoots straight through it');
       const tr4 = traceRay(f1, new THREE.Vector3(0, 1.0, 12), new THREE.Vector3(0, 0, 1), 30);
       ok(tr4.cover === cv, 'cover: a sniper beam stops on it too');
-      M4.pos.set(0, 0, 15); for (let i = 0; i < 8; i++) loop(); const through = M4.pos.z < 15.5;
-      ok(through, 'cover: players walk through it (no collision)');
+      M4.pos.set(0, 0, 18.5); M4.vel.set(0, 0, 0); Input.keys.KeyW = true; for (let i = 0; i < 30; i++) loop(); Input.keys.KeyW = false; const stopped = M4.pos.z > 17.2;
+      ok(stopped, 'cover: solid — walking into it stops you (z ' + M4.pos.z.toFixed(2) + ')');
       Proj.explode({ p: new THREE.Vector3(0, 0.3, 15.8), team: 1, owner: f1 }); for (let i = 0; i < 3; i++) loop();
       ok(cv.hp < 180, 'cover: a bomb next to it chunks it (hp ' + Math.round(cv.hp) + ')');
       Cover.hit(cv, 999, new THREE.Vector3(0, 1, 17), 1); loop();

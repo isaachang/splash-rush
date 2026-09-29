@@ -65,6 +65,7 @@ function buildWeaponModel(id, T, trimHex) {
 function aimVec(c) { return new THREE.Vector3(Math.sin(c.aimYaw) * Math.cos(c.aimPitch), Math.sin(c.aimPitch), Math.cos(c.aimYaw) * Math.cos(c.aimPitch)); }
 // march a straight ray (charger); returns end point, hit character or solid
 function traceRay(owner, o, dir, range, step = 0.2) {
+  if (Cover.list.length && owner.pos) { const cv = Cover.between(owner, o); if (cv) return { end: o.clone(), cover: cv, t: 0 }; }
   let prev = o.clone(), p = o.clone();
   for (let t = step; t <= range; t += step) {
     p.set(o.x + dir.x * t, o.y + dir.y * t, o.z + dir.z * t);
@@ -458,7 +459,7 @@ class Character {
     if (I.jump && this.grounded && !this.sp) { this.airSpeed = Math.hypot(this.vel.x, this.vel.z); this.vel.y = (this.swim ? 9.8 : 8.3) * Math.sqrt(this.cs.jumpK || 1); this.grounded = false; if (this.isPlayer) Sfx.jump(); if (this.swim) Fx.burst(this.pos.x, this.pos.y + 0.1, this.pos.z, TEAM_HEX[this.team], 6, 3, 0.08); }
     I.jump = false;
     // horizontal integrate + collide
-    const px = this.pos.x, pz = this.pos.z;
+    const px = this.pos.x, pz = this.pos.z; this._px = px; this._pz = pz;
     this.pos.x += this.vel.x * dt; this.pos.z += this.vel.z * dt;
     const hit = this.collide();
     // climbing
@@ -670,6 +671,7 @@ class Character {
     }
     { const sp = SPAWN[1 - this.team], dx = this.pos.x - sp.x, dz = this.pos.z - sp.z, d = Math.hypot(dx, dz), R = BARRIER_R + 0.4;
       if (d < R && this.pos.y < BARRIER_H && d > 1e-4) { const nx = dx / d, nz = dz / d; this.pos.x = sp.x + nx * R; this.pos.z = sp.z + nz * R; const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; } Barrier.flash(1 - this.team); } }
+    if (Cover.list.length) Cover.push(this, this._px ?? this.pos.x, this._pz ?? this.pos.z);   // graffiti boards are solid
     const lim = 0.38;
     if (this.pos.x > XH - lim) { this.pos.x = XH - lim; this.vel.x = Math.min(0, this.vel.x); }
     if (this.pos.x < -XH + lim) { this.pos.x = -XH + lim; this.vel.x = Math.max(0, this.vel.x); }
