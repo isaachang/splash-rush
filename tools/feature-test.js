@@ -328,6 +328,26 @@ vm.runInContext(`(() => {
         ok(D4.pos.y > 1.3, '石墩 can still jump onto a 1.4 m box (y ' + D4.pos.y.toFixed(2) + ')'); }
       Profile.data.char = 'std'; quitToTitle(); for (let i = 0; i < 3; i++) loop(); Profile.data.weapon = 'rifle';
     }
+    // ================= v0.8.6 wall climbing =================
+    {
+      quitToTitle(); for (let i = 0; i < 3; i++) loop(); Profile.data.char = 'std'; Profile.data.weapon = 'rifle'; openLobby('turf'); startMatch(); Input.locked = true; while (G.state !== 'play') loop();
+      G.bots.forEach(b => b.update = () => {}); CHARS.forEach(c => { if (c !== PLAYER) { c.pos.set(20 + c.id, 0, -30); c.intent.mx = c.intent.mz = 0; } });
+      const Pw = PLAYER, bx = SOLIDS.find(s => s.t === 'box' && !s.bound && s.h >= 2.5 && s.faces && s.faces['+z'] && s.x1 - s.x0 >= 2 && groundAt((s.x0 + s.x1) / 2, s.z1 + 0.6) < 0.05), f = bx.faces['+z'], cx = (bx.x0 + bx.x1) / 2;
+      for (let v = 0.1; v < f.h; v += 0.35) for (let u = -0.8; u <= 0.8; u += 0.4) splatWall(f, cx + u - f.a0, v, 0.6, 0);
+      Pw.pos.set(cx, 0, bx.z1 + 0.6); Pw.vel.set(0, 0, 0); Cam.yaw = Math.PI; Cam.pitch = 0; Input.keys = {}; Input.keys.ShiftLeft = true; for (let i = 0; i < 4; i++) loop();
+      Input.keys.KeyW = true; for (let i = 0; i < 10; i++) loop(); const onWall = !!Pw.wall, y1 = Pw.pos.y;
+      Input.keys.KeyW = false; for (let i = 0; i < 20; i++) loop(); const y2 = Pw.pos.y, held = !!Pw.wall;
+      for (let i = 0; i < 4; i++) loop(); const rotOk = Math.abs(Pw.blob.rotation.x + Math.PI / 2) < 0.15;
+      ok(onWall && y1 > 0.4 && held && Math.abs(y2 - y1) < 0.05 && rotOk, 'wall climb: squid sticks to the inked wall, flattened head-up (rot ' + Pw.blob.rotation.x.toFixed(2) + '), stays put with no input (y ' + y1.toFixed(2) + ' -> ' + y2.toFixed(2) + ')');
+      Input.keys.KeyS = true; for (let i = 0; i < 3; i++) loop(); Input.keys.KeyS = false; loop(); const y3 = Pw.pos.y;
+      const x0 = Pw.pos.x; Input.keys.KeyD = true; for (let i = 0; i < 5; i++) loop(); Input.keys.KeyD = false; const side = Math.abs(Pw.pos.x - x0);
+      ok(y3 < y2 - 0.3 && side > 0.5 && !!Pw.wall, 'wall climb: back = down (' + (y2 - y3).toFixed(2) + ' m), sideways along the wall (' + side.toFixed(2) + ' m)');
+      Input.jumpQ = true; loop(); for (let i = 0; i < 6; i++) loop(); const off = !Pw.wall && Pw.pos.z > bx.z1 + 0.9;
+      ok(off, 'wall climb: jump hops off the wall');
+      for (let i = 0; i < 30; i++) loop(); Pw.pos.set(cx, 0, bx.z1 + 0.6); Pw.vel.set(0, 0, 0); for (let i = 0; i < 3; i++) loop(); Input.keys.KeyW = true; let fr = 0; while (fr++ < 90 && Pw.pos.y < bx.h - 0.05) loop(); for (let i = 0; i < 20; i++) loop(); Input.keys.KeyW = false;
+      ok(Pw.pos.y > bx.h - 0.1 && !Pw.wall, 'wall climb: at the top the squid pops out onto it (y ' + Pw.pos.y.toFixed(2) + ' / ' + bx.h + ')');
+      Input.keys = {}; quitToTitle(); for (let i = 0; i < 3; i++) loop();
+    }
     // knocked out: killer cam first, then watch a teammate, back to yourself on respawn
     quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby('turf'); startMatch(); while (G.state !== 'play') loop();
     const Q = PLAYER, foe = CHARS.find(c => c.team === 1); G.bots.forEach(b => b.update = () => {});

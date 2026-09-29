@@ -156,6 +156,12 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.8.6', date: '2026-09-30', time: '03:01', title: '爬墙', items: [
+    '爬墙时鱿鱼会贴着墙面、头朝上',
+    '在墙上可以停住，也能往上下左右游',
+    '在墙上按跳会跳离墙面，爬到顶会自动跳上去',
+    '有人在墙上移动时，墙面会冒出水花'
+  ] },
   { v: 'v0.8.5', date: '2026-09-30', time: '02:33', title: '空中副武器', items: [
     '跳起来放涂鸦掩体，会把板子甩出去落到前方地面',
     '跳起来扔冰壶，会先落地再滑出去',

@@ -247,6 +247,37 @@ class Character {
     }
   }
   get fwd() { return new THREE.Vector3(Math.sin(this.aimYaw), 0, Math.cos(this.aimYaw)); }
+  // ---- on a wall (squid in wall ink): forward = up, back = down, sideways along the wall; no input = stay put
+  wallMove(I) {
+    const w = this.wall, tx = -w.nz, tz = w.nx, sp = 7.2 * this.cs.swimK;
+    if (I.jump) {                                     // hop off, away from the wall
+      this.wall = null; this.climbing = false; this.grounded = false; this.swimPop = 1;
+      this.vel.set(w.nx * 5.5, 7.5, w.nz * 5.5); this.airSpeed = 5.5;
+      Fx.burstDir(this.pos.x - w.nx * 0.35, this.pos.y + 0.4, this.pos.z - w.nz * 0.35, TEAM_HEX[this.team], 10, 3.5, 0.09, w.nx, 0.4, w.nz, 0.6);
+      if (this.isPlayer) Sfx.jump(); return;
+    }
+    const into = -(I.mx * w.nx + I.mz * w.nz), side = I.mx * tx + I.mz * tz;
+    this.vel.y = into * sp; this.vel.x = tx * side * sp * 0.8 - w.nx * 1.5; this.vel.z = tz * side * sp * 0.8 - w.nz * 1.5;
+  }
+  // still on it?  own ink under us, next to the face, not past its ends; at the top: pop out onto it
+  wallCheck(dt) {
+    const w = this.wall, f = w.f, along = (f.ax ? this.pos.z : this.pos.x) - f.a0, off = (f.ax ? this.pos.x : this.pos.z) - f.plane;
+    const dist = off * (f.ax ? w.nx : w.nz);
+    if (dist > 0.62 || along < -0.15 || along > f.a1 - f.a0 + 0.15) { this.wall = null; this.climbing = false; return; }
+    if (this.pos.y + 0.35 >= f.h) { this.wallTop(); return; }
+    const own = wallOwner(f, clamp(along, 0, f.a1 - f.a0), this.pos.y + 0.35) === this.team || (wallOwner(f, clamp(along, 0, f.a1 - f.a0), this.pos.y + 0.05) === this.team && this.pos.y > 0.05);
+    if (!own) { this.wall = null; this.climbing = false; return; }
+    if (this.vel.y < 0 && this.pos.y <= groundBelow(this.pos.x, this.pos.z, this.pos.y + 0.3, STEP) + 0.02) { this.wall = null; this.climbing = false; return; }
+    // ripples on the wall when moving: everyone can see someone is climbing
+    const mv = Math.hypot(this.vel.x + w.nx * 1.5, this.vel.y, this.vel.z + w.nz * 1.5);
+    this.rippleT = (this.rippleT || 0) - dt;
+    if (mv > 1 && this.rippleT <= 0) { this.rippleT = 0.07; const x = this.pos.x - w.nx * 0.36, z = this.pos.z - w.nz * 0.36; Fx.add(x + rand(-0.12, 0.12), this.pos.y + 0.3 + rand(-0.1, 0.2), z + rand(-0.12, 0.12), w.nx * rand(0.5, 1.4), rand(0.3, 1.5), w.nz * rand(0.5, 1.4), rand(0.04, 0.08), 0.35, TEAM_HEX[this.team], 10); }
+  }
+  wallTop() {
+    const w = this.wall || {}, nx = w.nx || 0, nz = w.nz || 0;
+    this.vel.y = 6.5; this.pos.x -= nx * 0.45; this.pos.z -= nz * 0.45; this.climbing = false; this.wall = null; this.swimPop = 1;
+    Fx.burstDir(this.pos.x, this.pos.y + 0.4, this.pos.z, TEAM_HEX[this.team], 14, 4, 0.1, 0, 1, 0, 0.7);
+  }
   // hidden from the AI: submerged in own ink (a tiny gap in the ink, < 0.3 s, doesn't give you away)
   hiddenInInk() { return this.swim && (this.submerged || G.time - (this.lastSub ?? -99) < 0.3); }
   eye() { return new THREE.Vector3(this.pos.x, this.pos.y + (this.swim ? 0.5 : 1.3), this.pos.z); }
@@ -319,7 +350,7 @@ class Character {
   }
   die(killer, via) {
     this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0;
-    this.setSwim(false); this.sp = null; this.climbing = false; this.stopCharge(); this.stored = 0;
+    this.setSwim(false); this.sp = null; this.climbing = false; this.wall = null; this.stopCharge(); this.stored = 0;
     this.sj = null; this.fly = null; this.dropY = null; this.dropSJ = false; this.hideSJMarker();
     this.special = Math.floor(this.special * (1 - this.weapon.spLoss));
     const kc = killer ? killer.team : 1 - this.team;
@@ -449,34 +480,44 @@ class Character {
     const W = this.weapon;
     const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging;
     // ----- movement
-    let maxSp;
-    if (this.swim) maxSp = this.submerged ? 12.8 * this.cs.swimK : this.inEnemy ? 2.0 : 3.4;
-    else maxSp = (this.inEnemy ? 2.3 : this.charging ? W.moveCharge : firing ? W.moveFire : 6.4) * this.cs.runK;
-    if (this.sp) maxSp = 3;
-    if (!this.grounded && this.airSpeed > maxSp) maxSp = this.airSpeed;   // airborne: keep take-off speed, only steer
-    const acc = this.grounded ? (this.submerged ? 75 : 48) : 16;
     const mlen = Math.min(1, Math.hypot(I.mx, I.mz));
-    const tx = I.mx * maxSp, tz = I.mz * maxSp;
-    const ax = tx - this.vel.x, az = tz - this.vel.z, al = Math.hypot(ax, az), maxA = acc * dt;
-    if (al > maxA) { this.vel.x += ax / al * maxA; this.vel.z += az / al * maxA; } else { this.vel.x = tx; this.vel.z = tz; }
-    if (I.jump && this.grounded && !this.sp) { this.airSpeed = Math.hypot(this.vel.x, this.vel.z); this.vel.y = (this.swim ? 9.8 : 8.3) * Math.sqrt(this.cs.jumpK || 1); this.grounded = false; if (this.isPlayer) Sfx.jump(); if (this.swim) Fx.burst(this.pos.x, this.pos.y + 0.1, this.pos.z, TEAM_HEX[this.team], 6, 3, 0.08); }
-    I.jump = false;
-    // horizontal integrate + collide
-    const px = this.pos.x, pz = this.pos.z; this._px = px; this._pz = pz;
-    this.pos.x += this.vel.x * dt; this.pos.z += this.vel.z * dt;
-    const hit = this.collide();
-    // climbing
-    this.climbing = false;
-    if (this.swim && hit && hit.s.t === 'box' && hit.s.faces && mlen > 0.2 && !this.sp) {
-      const d = hit.nx > 0.5 ? '+x' : hit.nx < -0.5 ? '-x' : hit.nz > 0.5 ? '+z' : hit.nz < -0.5 ? '-z' : null;
-      const f = d && hit.s.faces[d];
-      const into = -(I.mx * hit.nx + I.mz * hit.nz) / (mlen || 1);
-      if (f && into > 0.3) {
-        const along = f.ax ? this.pos.z : this.pos.x;
-        if (wallOwner(f, along - f.a0, this.pos.y + 0.35) === this.team || wallOwner(f, along - f.a0, this.pos.y + 0.05) === this.team && this.pos.y > 0.05) {
-          this.climbing = true; this.vel.y = 7.5 * into; this.submerged = true;
-          if (this.pos.y + 0.35 >= f.h) { this.vel.y = 6.5; this.pos.x -= hit.nx * 0.45; this.pos.z -= hit.nz * 0.45; this.climbing = false; }
-          if (Math.random() < 0.3) Fx.spark(this.pos.x + hit.nx * 0.1, this.pos.y + 0.3, this.pos.z + hit.nz * 0.1, TEAM_HEX[this.team]);
+    if (this.wall && (!this.swim || this.sp)) this.wall = null;                      // let go of squid form: fall off the wall
+    if (this.wall) {
+      this.wallMove(I);
+      const px = this.pos.x, pz = this.pos.z; this._px = px; this._pz = pz;
+      this.pos.x += this.vel.x * dt; this.pos.z += this.vel.z * dt;
+      this.collide(); this.climbing = !!this.wall;
+      if (this.wall) this.wallCheck(dt);
+      I.jump = false;
+    } else {
+      let maxSp;
+      if (this.swim) maxSp = this.submerged ? 12.8 * this.cs.swimK : this.inEnemy ? 2.0 : 3.4;
+      else maxSp = (this.inEnemy ? 2.3 : this.charging ? W.moveCharge : firing ? W.moveFire : 6.4) * this.cs.runK;
+      if (this.sp) maxSp = 3;
+      if (!this.grounded && this.airSpeed > maxSp) maxSp = this.airSpeed;   // airborne: keep take-off speed, only steer
+      const acc = this.grounded ? (this.submerged ? 75 : 48) : 16;
+      const tx = I.mx * maxSp, tz = I.mz * maxSp;
+      const ax = tx - this.vel.x, az = tz - this.vel.z, al = Math.hypot(ax, az), maxA = acc * dt;
+      if (al > maxA) { this.vel.x += ax / al * maxA; this.vel.z += az / al * maxA; } else { this.vel.x = tx; this.vel.z = tz; }
+      if (I.jump && this.grounded && !this.sp) { this.airSpeed = Math.hypot(this.vel.x, this.vel.z); this.vel.y = (this.swim ? 9.8 : 8.3) * Math.sqrt(this.cs.jumpK || 1); this.grounded = false; if (this.isPlayer) Sfx.jump(); if (this.swim) Fx.burst(this.pos.x, this.pos.y + 0.1, this.pos.z, TEAM_HEX[this.team], 6, 3, 0.08); }
+      I.jump = false;
+      // horizontal integrate + collide
+      const px = this.pos.x, pz = this.pos.z; this._px = px; this._pz = pz;
+      this.pos.x += this.vel.x * dt; this.pos.z += this.vel.z * dt;
+      const hit = this.collide();
+      // climbing
+      this.climbing = false;
+      if (this.swim && hit && hit.s.t === 'box' && hit.s.faces && mlen > 0.2 && !this.sp) {
+        const d = hit.nx > 0.5 ? '+x' : hit.nx < -0.5 ? '-x' : hit.nz > 0.5 ? '+z' : hit.nz < -0.5 ? '-z' : null;
+        const f = d && hit.s.faces[d];
+        const into = -(I.mx * hit.nx + I.mz * hit.nz) / (mlen || 1);
+        if (f && into > 0.3) {
+          const along = f.ax ? this.pos.z : this.pos.x;
+          if (wallOwner(f, along - f.a0, this.pos.y + 0.35) === this.team || wallOwner(f, along - f.a0, this.pos.y + 0.05) === this.team && this.pos.y > 0.05) {
+            this.climbing = true; this.vel.y = 7.2 * this.cs.swimK * into; this.submerged = true;
+            this.wall = { f, nx: hit.nx, nz: hit.nz }; this.swimPop = 1;               // dive into the wall ink: stick to it from now on
+            if (this.pos.y + 0.35 >= f.h) this.wallTop();
+          }
         }
       }
     }
@@ -739,7 +780,16 @@ class Character {
       const wob = Math.sin(T * 14) * 0.08 * run;
       const pop = 1 + this.swimPop * 0.5;
       this.blobBody.scale.set((1 + wob) * pop, (1 - wob) / pop, (1 + run * 0.18) * pop);
-      this.blobBody.rotation.x = this.climbing ? -1.2 : 0;
+      // on a wall: the squid (and your own see-through outline) lies flat against it, head up
+      this.wallK = damp(this.wallK || 0, this.climbing ? 1 : 0, 16, dt); const wk = this.wallK;
+      if (wk > 0.001 || this.wallN) {
+        if (this.wall) this.wallN = { x: this.wall.nx, z: this.wall.nz };
+        const n = this.wallN || { x: 0, z: 1 }, wy = Math.atan2(-n.x, -n.z), rel = angDiff(this.bodyYaw, wy), a = this.bodyYaw, vx = -n.x * 0.3 * wk, vz = -n.z * 0.3 * wk;
+        this.blob.rotation.set(-Math.PI / 2 * wk, rel * wk, 0, 'YXZ');
+        this.blob.position.set(vx * Math.cos(a) - vz * Math.sin(a), 0.32 * wk, vx * Math.sin(a) + vz * Math.cos(a));
+        const gp = 1 + this.swimPop * 0.35; this.blobGhost.scale.set(0.45 * gp, 0.14, 0.5 * gp);
+        if (wk <= 0.001) { this.wallN = null; this.blob.rotation.set(0, 0, 0); this.blob.position.set(0, 0, 0); }
+      }
       if (sub && hs > 3 && Math.random() < 0.35) Fx.wake(this.pos.x, this.pos.y + 0.05, this.pos.z, TEAM_HEX[this.team]);
     }
     if (this.tag) this.tag.visible = this.team === PLAYER.team && this.alive;
