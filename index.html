@@ -404,6 +404,62 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .rrow .rw{flex:none;line-height:0}
 .rosterWrap .vs{flex:none}
 .roster{min-width:0}
+
+/* ---------- loadout screen v2: portrait row + info panel (character / weapon) ---------- */
+.lcol{display:flex;flex-direction:column;min-height:0}
+.cpick{display:flex;gap:10px;margin-bottom:12px}
+.ctile{flex:1;cursor:pointer;font-family:inherit;color:#fff;display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(20,18,40,.88);border:4px solid #111;border-radius:20px;padding:8px 6px 8px;box-shadow:0 6px 0 #111;transition:transform .25s cubic-bezier(.2,1.4,.4,1),background .25s,box-shadow .25s}
+.ctile .pt{width:70px;height:70px;border-radius:16px;border:3px solid #111;display:flex;align-items:center;justify-content:center;background:#2d2a52;transition:background .25s,transform .35s cubic-bezier(.2,1.6,.4,1)}
+.ctile b{font-size:17px}.ctile small{font-size:11px;color:#ffe45c;font-weight:700}
+.ctile:hover{transform:translateY(-3px)}
+.ctile.sel{background:rgba(44,38,90,.98);transform:translateY(-5px);box-shadow:0 11px 0 #111,0 0 0 4px var(--c0)}
+.ctile.sel .pt{background:var(--c1);transform:scale(1.06) rotate(-3deg)}
+.itabs{position:relative;display:flex;background:rgba(10,8,26,.7);border:4px solid #111;border-radius:18px;padding:4px;box-shadow:0 5px 0 #111;margin-bottom:12px}
+.itabs button{flex:1;position:relative;z-index:1;cursor:pointer;font-family:inherit;font-weight:900;font-size:16px;letter-spacing:4px;color:#fff;opacity:.6;background:none;border:none;padding:8px 0;transition:opacity .2s,color .2s}
+.itabs button.sel{opacity:1;color:#111}
+.itabs .ul{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:12px;background:var(--c0);border:3px solid #111;transition:transform .38s cubic-bezier(.3,1.35,.4,1)}
+.itabs[data-tab="weap"] .ul{transform:translateX(100%)}
+.ipanel{position:relative;flex:1;min-height:0}
+.ipage{position:absolute;inset:0;overflow:auto;padding:2px 4px 6px;opacity:0;pointer-events:none;transform:translateX(-26px);transition:opacity .28s ease,transform .38s cubic-bezier(.2,.9,.3,1)}
+#pgWeap.ipage{transform:translateX(26px)}
+.ipage.show{opacity:1;pointer-events:auto;transform:none!important}
+.phead{display:flex;align-items:baseline;gap:10px}
+.phead b{font-size:30px;font-weight:900;font-style:italic;-webkit-text-stroke:1.5px #111;paint-order:stroke fill;text-shadow:0 3px 0 var(--c0)}
+.phead .en{font-size:11px;letter-spacing:3px;opacity:.55}
+.phead em{margin-left:auto;font-style:normal;font-weight:900;color:#ffe45c;font-size:14px}
+.pdesc{margin:6px 0 12px;font-size:13px;line-height:1.65;opacity:.85}
+.srows{display:flex;flex-direction:column;gap:9px;background:rgba(20,18,40,.88);border:4px solid #111;border-radius:18px;padding:12px 16px;box-shadow:0 6px 0 #111}
+.srow{display:grid;grid-template-columns:44px 1fr 58px;gap:10px;align-items:center;font-weight:900;font-size:14px}
+.srow em{font-style:normal;text-align:right;font-size:17px}
+.srow em.up{color:#7dff9a}.srow em.dn{color:#ff9aa8}
+.sbar{display:flex;gap:4px}
+.sbar i{flex:1;height:11px;border-radius:5px;background:rgba(255,255,255,.12);border:1.5px solid rgba(0,0,0,.5);position:relative;overflow:hidden}
+.sbar i.on:after{content:"";position:absolute;inset:0;background:var(--c0);border-radius:4px;transform-origin:left;transform:scaleX(1)}
+.anim .sbar i.on:after{animation:fillbar .45s cubic-bezier(.2,.9,.3,1) both;animation-delay:calc(var(--r,0s) + var(--d,0s))}
+@keyframes fillbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.anim .srow,.anim .wcard2{animation:rise .45s cubic-bezier(.2,.9,.3,1) both;animation-delay:var(--r,0s)}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.ptags{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ptags span{font-size:12px;font-weight:900;background:#2d2a52;border:3px solid #111;border-radius:12px;padding:3px 10px;box-shadow:0 3px 0 #111}
+.wcards{display:flex;flex-direction:column;gap:12px}
+.wcard2{cursor:pointer;background:rgba(20,18,40,.9);border:4px solid #111;border-radius:20px;padding:12px 14px;box-shadow:0 6px 0 #111;transition:transform .2s,background .2s}
+.wcard2:hover{transform:translateY(-2px)}
+.wcard2.sel{background:rgba(44,38,90,.97);outline:4px solid var(--c0);outline-offset:-2px}
+.wtop{display:flex;align-items:center;gap:12px}
+.wtop .wi{line-height:0;filter:drop-shadow(0 3px 0 rgba(0,0,0,.5))}
+.wtop .wn b{display:block;font-size:20px}.wtop .wn small{font-size:12px;color:#ffe45c;font-weight:700}
+.wtop .pick{margin-left:auto;font-size:11px;font-weight:900;background:var(--c0);color:#111;border:2px solid #111;border-radius:10px;padding:2px 9px}
+.wcard2:not(.sel) .wtop .pick{background:#3a3760;color:#fff}
+.wtop .pick.ex{background:#ffe45c;color:#111}
+.wfacts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.wfacts span{background:rgba(0,0,0,.3);border:2px solid #111;border-radius:12px;padding:5px 8px;display:flex;flex-direction:column}
+.wfacts small{font-size:10px;opacity:.6;font-weight:700}.wfacts b{font-size:14px;font-weight:900;white-space:nowrap}
+.wstats{display:grid;grid-template-columns:40px 1fr;gap:5px 10px;align-items:center;font-size:12px;font-weight:700}
+.wkit{display:flex;gap:14px;margin-top:9px;font-size:12px;opacity:.85}.wkit b{color:#ffe45c}
+.wd{margin-top:6px;font-size:12px;line-height:1.55;opacity:.7}
+
+.pvName.tx{animation:pvTx .4s cubic-bezier(.2,.9,.3,1.25)}
+@keyframes pvTx{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
 </style></head><body>
 <canvas id="gl"></canvas>
 
@@ -444,7 +500,9 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   <div class="lobbyBody">
     <div class="lcol">
       <h3>选择角色 <small>每个角色有自己的武器</small></h3>
-      <div class="plist show" id="charList"></div>
+      <div class="cpick" id="charPick"></div>
+      <div class="itabs" id="infoTabs"><button data-tab="char" class="sel">角色</button><button data-tab="weap">武器</button><span class="ul"></span></div>
+      <div class="ipanel"><div class="ipage" id="pgChar"></div><div class="ipage" id="pgWeap"></div></div>
     </div>
     <div class="ccol">
       <div class="pvBox"><canvas id="pvCanvas"></canvas>
@@ -1651,6 +1709,12 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.8.1', date: '2026-09-29', time: '17:19', title: '角色 / 武器面板', items: [
+    '战前准备左边改成角色头像 + 「角色 / 武器」两页信息面板，属性条和数字带动画',
+    '武器页能看到几发击倒、射程、射速和一罐墨能打几发（按角色墨水量算）',
+    '切到武器页时角色钻进墨里，武器悬浮在中间旋转展示，可以拖动转',
+    '修复预览里满满、石墩少一只手臂；大厅打开时更省性能'
+  ] },
   { v: 'v0.8.0', date: '2026-09-29', time: '16:09', title: '角色', items: [
     '新增 3 个角色：阿飒（跑得最快）、满满（墨水最多）、石墩（最耐打），每个角色有自己的武器',
     '战前准备改成选角色：选中的角色会展开，可以看到和切换它的武器',
@@ -3552,7 +3616,7 @@ const ScreenInk = {
 
 /* ============================================================== GAME */
 const G = { mapOpen: false, roster: null, state: 'boot', time: 0, left: 180, shakeAmt: 0, paused: false, introT: 0, endT: 0, bots: [], titleT: 0, flags: {}, shake(a) { this.shakeAmt = Math.max(this.shakeAmt, a); } };
-function show(id, on) { $(id).classList.toggle('show', on); }
+function show(id, on) { $(id).classList.toggle('show', on); if (id === 'lobby') G.lobbyOpen = on; }
 function flash(a = 0.8) { const f = $('flash'); f.style.transition = 'none'; f.style.opacity = a; requestAnimationFrame(() => { f.style.transition = 'opacity .5s'; f.style.opacity = 0; }); }
 function applyPalette() {
   const p = PALETTES[GAME.pal]; TEAM_HEX[0] = p[0]; TEAM_HEX[1] = p[1];
@@ -3722,37 +3786,69 @@ function gotoTitle() {
   resetToAttract(); show('lobby', false); show('title', true); renderLoadCard();
 }
 function openLobby() {
-  resetToAttract(); rollRoster(); renderLobby();
+  resetToAttract(); rollRoster(); G.lobbyTab = 'char'; renderLobby(); setTimeout(lobbyAnimate, 30);
   show('title', false); show('results', false); show('lobby', true);
 }
 function statBars(v) { let s = '<div class="bar">'; for (let i = 1; i <= 5; i++) s += `<i class="${i <= v ? 'on' : ''}"></i>`; return s + '</div>'; }
-// character card: portrait, role, three stat bars; the picked character opens up to show its weapons (operator-style loadout)
-function charCard(id, sel) {
-  const C = CHARACTERS[id], pc = (v, base) => { const p = Math.round(v * 100); return `<em class="${p > base ? 'up' : p < base ? 'dn' : ''}">${p}%</em>`; };
-  const weap = sel ? `<div class="loadout"><div class="lh">武器<small>${C.weapons.length > 1 ? '点击切换' : '专属武器'}</small></div><div class="lw">${C.weapons.map(w => { const W = WEAPONS[w], on = w === Profile.data.weapon; return `<button class="wopt${on ? ' sel' : ''}" data-w="${w}">${weaponIcon(w, '#fff', 58)}<span><b>${W.name}</b><small>${W.role}</small></span>${on ? '<i>✔</i>' : ''}</button>`; }).join('')}</div><div class="wdesc2">${WEAPONS[Profile.data.weapon].desc}</div></div>` : `<div class="wmini">${C.weapons.map(w => weaponIcon(w, '#fff', 34)).join('')}<span>${C.weapons.map(w => WEAPONS[w].name).join(' / ')}</span></div>`;
-  return `<div class="ccard${sel ? ' sel' : ''}" data-id="${id}"><div class="crow"><div class="pt">${charIcon(id, 72)}${sel ? '<span class="tag">出战</span>' : ''}</div>
-    <div class="ci"><div class="nm"><b>${C.name}</b><span class="en">${C.en}</span></div><span class="role">${C.role}</span>
-      <div class="cst"><span>生命</span>${statBars(C.bars.hp)}<em class="${C.hp > 100 ? 'up' : C.hp < 100 ? 'dn' : ''}">${C.hp}</em><span>移速</span>${statBars(C.bars.speed)}${pc(C.runK, 100)}<span>墨水</span>${statBars(C.bars.ink)}${pc(C.inkCap, 100)}</div></div></div>
-    ${sel ? `<div class="cdesc">${C.desc}</div>` : ''}${weap}</div>`;
+// ---- loadout screen: portrait row, then a panel with a "character" and a "weapon" page
+// key numbers for a weapon in the hands of a given character (ink tank size matters)
+function weaponFacts(W, C) {
+  const hp = 100, k = C.inkCap;
+  if (W.type === 'charge') return [['击倒', '满蓄 1 枪'], ['射程', W.minRange + '–' + W.maxRange + ' 米'], ['蓄满', W.chargeTime + ' 秒'], ['一罐墨', '满蓄 ' + Math.floor(100 * k / W.costFull) + ' 枪']];
+  return [['击倒', Math.ceil(hp / W.dmg) + ' 发'], ['射程', W.range + ' 米'], ['射速', Math.round(1 / W.interval) + ' 发/秒'], ['一罐墨', Math.floor(100 * k / W.cost) + ' 发']];
+}
+function barsHTML(v) { let s = '<div class="sbar">'; for (let i = 1; i <= 5; i++) s += `<i class="${i <= v ? 'on' : ''}" style="--d:${i * 0.045}s"></i>`; return s + '</div>'; }
+function charPageHTML(C) {
+  const pc = v => Math.round(v * 100), cls = (v, b) => v > b ? 'up' : v < b ? 'dn' : '';
+  const rows = [['生命', C.bars.hp, C.hp, cls(C.hp, 100), ''], ['走路', C.bars.speed, pc(C.runK), cls(pc(C.runK), 100), '%'], ['潜墨', C.bars.speed, pc(C.swimK), cls(pc(C.swimK), 100), '%'], ['墨水', C.bars.ink, pc(C.inkCap), cls(pc(C.inkCap), 100), '%']];
+  const extra = [C.inkRegen > 1 ? `回墨 +${Math.round((C.inkRegen - 1) * 100)}%` : '', C.knockK < 1 ? '几乎不会被击退' : C.knockK > 1 ? '容易被击退' : ''].filter(Boolean);
+  return `<div class="phead"><b>${C.name}</b><span class="en">${C.en}</span><em>${C.role}</em></div><p class="pdesc">${C.desc}</p>
+    <div class="srows">${rows.map(([l, b, v, c, u], i) => `<div class="srow" style="--r:${i * 0.06}s"><span>${l}</span>${barsHTML(clamp(b, 1, 5))}<em class="${c}" data-n="${v}" data-u="${u}">${v}${u}</em></div>`).join('')}</div>
+    ${extra.length ? `<div class="ptags">${extra.map(t => `<span>${t}</span>`).join('')}</div>` : ''}`;
+}
+function weapPageHTML(C) {
+  return `<div class="wcards">${C.weapons.map((w, i) => {
+    const W = WEAPONS[w], on = w === Profile.data.weapon;
+    return `<div class="wcard2${on ? ' sel' : ''}" data-w="${w}" style="--r:${i * 0.08}s">
+      <div class="wtop"><span class="wi">${weaponIcon(w, '#fff', 74)}</span><span class="wn"><b>${W.name}</b><small>${W.role}</small></span>${C.weapons.length > 1 ? `<span class="pick">${on ? '使用中' : '点击换上'}</span>` : '<span class="pick ex">专属</span>'}</div>
+      <div class="wfacts">${weaponFacts(W, C).map(([l, v]) => `<span><small>${l}</small><b>${v}</b></span>`).join('')}</div>
+      <div class="wstats">${STAT_LABELS.map(([k, l]) => `<span>${l}</span>${barsHTML(W.stats[k])}`).join('')}</div>
+      <div class="wkit"><span>副武器 <b>${SUBS[W.sub].name}</b></span><span>必杀技 <b>${SPECIALS[W.special].name}</b></span></div>
+      <p class="wd">${W.desc}</p></div>`;
+  }).join('')}</div>`;
 }
 function renderLobby() {
   const CH = CHARACTERS[Profile.data.char];
   if (!CH.weapons.includes(Profile.data.weapon)) Profile.data.weapon = CH.weapons[0];
-  const cur = Profile.data.weapon;
-  $('charList').innerHTML = CHAR_ORDER.map(id => charCard(id, id === Profile.data.char)).join('');
-  $('charList').querySelectorAll('.ccard').forEach(el => el.onclick = e => {
-    const wb = e.target.closest && e.target.closest('.wopt');
-    Sfx.init(); Sfx.click();
-    if (wb) { if (Profile.data.weapon !== wb.dataset.w) { Profile.data.weapon = wb.dataset.w; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard(); } return; }
-    if (Profile.data.char === el.dataset.id) return;
-    Profile.data.char = el.dataset.id; Profile.data.weapon = CHARACTERS[el.dataset.id].weapons[0]; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard();
+  const cur = Profile.data.weapon, tab = G.lobbyTab || 'char';
+  $('charPick').innerHTML = CHAR_ORDER.map(id => { const C = CHARACTERS[id]; return `<button class="ctile${id === CH.id ? ' sel' : ''}" data-id="${id}"><span class="pt">${charIcon(id, 64)}</span><b>${C.name}</b><small>${C.role}</small></button>`; }).join('');
+  $('charPick').querySelectorAll('.ctile').forEach(el => el.onclick = () => {
+    Sfx.init(); Sfx.click(); if (Profile.data.char === el.dataset.id) return;
+    Profile.data.char = el.dataset.id; Profile.data.weapon = CHARACTERS[el.dataset.id].weapons[0]; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard(); lobbyAnimate();
   });
-  // preview: the chosen character holding its chosen weapon
-  Preview.show(Profile.data.char, cur);
-  $('pvName').textContent = CH.name; $('pvRole').textContent = CH.role + ' · ' + WEAPONS[cur].name;
+  $('infoTabs').querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.tab === tab));
+  $('infoTabs').dataset.tab = tab;
+  $('pgChar').innerHTML = charPageHTML(CH); $('pgWeap').innerHTML = weapPageHTML(CH);
+  $('pgChar').classList.toggle('show', tab === 'char'); $('pgWeap').classList.toggle('show', tab === 'weap');
+  $('pgWeap').querySelectorAll('.wcard2').forEach(el => el.onclick = () => {
+    Sfx.init(); Sfx.click(); if (Profile.data.weapon === el.dataset.w) return;
+    Profile.data.weapon = el.dataset.w; Profile.save(); enforceRoster(); renderLobby(); renderLoadCard(); lobbyAnimate();
+  });
+  // preview: the character on its pedestal; on the weapon page it raises the gun and the camera moves in
+  Preview.show(Profile.data.char, cur); Preview.mode = tab;
+  const W0 = WEAPONS[cur], nm = tab === 'weap' ? W0.name : CH.name, rl = tab === 'weap' ? W0.role + ' · ' + CH.name + (CH.weapons.length > 1 ? '可用' : '专属') : CH.role + ' · ' + W0.name;
+  if ($('pvName').textContent !== nm) { const pn = $('pvName').parentNode; if (pn && pn.classList) { pn.classList.remove('tx'); void pn.offsetWidth; pn.classList.add('tx'); } }
+  $('pvName').textContent = nm; $('pvRole').textContent = rl;
   ['rosterA', 'rosterB'].forEach((id, t) => {
     $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}"><span class="cp">${charIcon(m.char, 34, TEAM_HEX[t])}</span><span class="rt"><b>${m.name}${m.isPlayer ? '（你）' : ''}</b><small>${CHARACTERS[m.char].name} · ${WEAPONS[m.weapon].name}</small></span><span class="rw">${weaponIcon(m.weapon, '#fff', 34, TEAM_HEX[t])}</span></div>`).join('');
   });
+}
+// replay the entrance animations of the visible page (bars fill, numbers count up)
+function lobbyAnimate() {
+  const pg = $((G.lobbyTab || 'char') === 'char' ? 'pgChar' : 'pgWeap'); if (!pg) return;
+  pg.classList.remove('anim'); void pg.offsetWidth; pg.classList.add('anim');
+  const nums = pg.querySelectorAll ? pg.querySelectorAll('em[data-n]') : [];
+  nums.forEach(el => { const n = +el.dataset.n, u = el.dataset.u; let t0 = null; const step = ts => { if (t0 === null) t0 = ts; const k = Math.min(1, (ts - t0) / 450), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(n * e) + u; if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); });
 }
 function renderLoadCard() {
   const w = WEAPONS[Profile.data.weapon], C = CHARACTERS[Profile.data.char];
@@ -3763,11 +3859,11 @@ function renderLoadCard() {
    Its own small renderer: the chosen character on a pedestal, slowly
    turning; drag to spin it.                                          */
 const Preview = {
-  key: '', yaw: 0.5, drag: null, idleT: 0,
+  key: '', yaw: 0.5, drag: null, idleT: 0, mode: 'char', raise: 0.2, ph: 0, wIn: 1, wSpin: 0.6,
   init() {
     const cv = $('pvCanvas'); this.cv = cv;
     try { this.r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); } catch (e) { this.r = null; return; }
-    if (this.r.setPixelRatio) this.r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    if (this.r.setPixelRatio) this.r.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));     // small panel: 1.5x is plenty
     if (this.r.outputColorSpace !== undefined) this.r.outputColorSpace = THREE.SRGBColorSpace;
     this.r.toneMapping = THREE.ACESFilmicToneMapping;
     const sc = this.sc = new THREE.Scene();
@@ -3780,32 +3876,99 @@ const Preview = {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.97, 0.05, 8, 48), this.ringM); ring.rotation.x = Math.PI / 2; ped.add(ring);
     this.splatM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
     const sp = new THREE.Mesh(new THREE.CircleGeometry(0.7, 28), this.splatM); sp.rotation.x = -Math.PI / 2; sp.position.y = 0.005; ped.add(sp);
-    this.cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); this.cam.position.set(0, 1.35, 4.7); this.cam.lookAt(0, 0.82, 0);
+    // weapon page backdrop: a flat team-colour ink splat behind the floating weapon (the pedestal slides away)
+    this.bdM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false });
+    const bd = this.bd = new THREE.Group(); bd.position.set(0, 1.0, -1.2); sc.add(bd); const cg = new THREE.CircleGeometry(1, 28);
+    const blob = (x, y, r) => { const m = new THREE.Mesh(cg, this.bdM); m.position.set(x, y, 0); m.scale.set(r, r, 1); bd.add(m); };
+    blob(0, 0, 0.78); let sd = 7; const rn = () => (sd = (sd * 9301 + 49297) % 233280) / 233280;
+    for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2 + rn() * 0.4, d = 0.62 + rn() * 0.18; blob(Math.cos(a) * d, Math.sin(a) * d, 0.16 + rn() * 0.16); }
+    for (let k = 0; k < 6; k++) { const a = rn() * Math.PI * 2, d = 1.05 + rn() * 0.35; blob(Math.cos(a) * d, Math.sin(a) * d, 0.04 + rn() * 0.06); }
+    bd.visible = false;
+    this.cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); this.cam.position.set(0, 1.35, 4.7); this.cam.lookAt(0, 0.82, 0); this.look = new THREE.Vector3(0, 0.82, 0);
+    this.shots = [];
     const ev = (n, f) => cv.addEventListener && cv.addEventListener(n, f);
-    ev('pointerdown', e => { this.drag = { x: e.clientX, yaw: this.yaw }; if (cv.setPointerCapture) try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
-    ev('pointermove', e => { if (this.drag) { this.yaw = this.drag.yaw + (e.clientX - this.drag.x) * 0.012; this.idleT = 2.5; } });
+    ev('pointerdown', e => { const wm = this.mode === 'weap'; this.drag = { x: e.clientX, wm, yaw: wm ? (this.wYaw === undefined ? Math.PI / 2 : this.wYaw) : this.yaw }; if (cv.setPointerCapture) try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
+    ev('pointermove', e => { if (this.drag) { const y = this.drag.yaw + (e.clientX - this.drag.x) * 0.012; if (this.drag.wm) { this.wYaw = y; this.wSpin = 0.6; } else this.yaw = y; this.idleT = 2.5; } });
     const up = () => { this.drag = null; }; ev('pointerup', up); ev('pointercancel', up);
   },
   show(charId, weaponId) {
     if (!this.r) return;
     const key = charId + '/' + weaponId + '/' + TEAM_HEX[0];
-    this.ringM.color.set(TEAM_HEX[0]); this.splatM.color.set(TEAM_HEX[0]);
+    this.ringM.color.set(TEAM_HEX[0]); this.splatM.color.set(TEAM_HEX[0]); this.bdM.color.set(TEAM_HEX[0]);
     if (key === this.key && this.c) return;
     this.key = key;
+    const sameChar = this.c && this.c.cs.id === charId;
     if (this.c) { this.ped.remove(this.c.root); }
     const c = new Character('pv', 0, true, { weapon: weaponId, char: charId });
     scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot);
     c.pos.set(0, 0, 0); c.vel.set(0, 0, 0); c.grounded = true; c.state = 'play'; c.lastShot = -99; this.ped.add(c.root); this.c = c;
-    this.pop = 1;
+    this.pop = sameChar ? 0.4 : 1; this.enter = sameChar ? 1 : 0;
+    if (this.wId !== weaponId) this.swapWeapon(weaponId, c.look.trim);
+  },
+  // the floating showcase weapon (weapon page): same model as in the hands, centred on its own bounds
+  swapWeapon(id, trim) {
+    if (this.wOld) this.dropW(this.wOld.g);
+    this.wOld = this.wp && this.ph > 0.3 ? { g: this.wp.g, t: 1, s0: this.wp.g.scale.x } : null; if (this.wp && !this.wOld) this.dropW(this.wp.g);
+    const inner = buildWeaponModel(id, TEAMMAT[0], trim); inner.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(inner), size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
+    inner.position.sub(ctr); inner.traverse(o => { o.castShadow = false; });
+    const tilt = new THREE.Group(); tilt.add(inner); const g = new THREE.Group(); g.add(tilt); this.sc.add(g);
+    this.wp = { g, tilt, size: Math.sqrt(size.z * size.y), spin: inner.userData.spin || null };     // one scale rule for every weapon: same visual weight (length x height)
+    this.wId = id; this.wIn = this.ph > 0.3 ? -0.35 : 1; this.wSpin = 7;     // a new weapon on the weapon page: pops in with a flourish spin
+  },
+  dropW(g) {
+    this.sc.remove(g);
+    g.traverse(o => { if (!o.isMesh) return; if (o.material && !TEAMMAT.includes(o.material)) o.material.dispose(); if (!Object.values(GEO).includes(o.geometry)) o.geometry.dispose(); });
   },
   update(dt) {
     if (!this.r || !this.c || !$('lobby').classList.contains('show')) return;
     const cv = this.cv, w = cv.clientWidth || 400, h = cv.clientHeight || 400;
     if (w !== this.w || h !== this.h) { this.w = w; this.h = h; this.r.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix(); }
-    this.idleT = Math.max(0, this.idleT - dt); if (!this.drag && this.idleT <= 0) this.yaw += dt * 0.55;
-    const c = this.c; c.bodyYaw = c.aimYaw = this.yaw; c.aimPitch = -0.04; c.pos.set(0, 0, 0);
-    c.syncModel(dt); c.root.position.set(0, 0, 0);
+    const wm = this.mode === 'weap', c = this.c, sm = k => k * k * (3 - 2 * k); this.t = (this.t || 0) + dt;
+    this.idleT = Math.max(0, this.idleT - dt);
+    // phase 0 = character on the pedestal, 1 = weapon floating alone; the character dives into the ink, then the weapon rises out of it
+    const ph0 = this.ph || 0; this.ph = clamp(ph0 + (wm ? dt : -dt) / 0.8, 0, 1);
+    const a = clamp(this.ph / 0.42, 0, 1), b = clamp((this.ph - 0.34) / 0.66, 0, 1);
+    if ((ph0 < 0.2) !== (this.ph < 0.2)) this.pop = Math.max(this.pop || 0, 0.7);       // ink splash pulse as the character dives / resurfaces
+    // camera: full body <-> centred on the floating weapon
+    const e = sm(this.ph), dist = lerp(4.7, 4.25, e);
+    this.cam.position.set(0, lerp(1.35, 1.32, e), dist); this.look.set(0, lerp(0.82, 1.0, e), 0); this.cam.lookAt(this.look);
+    // character: slow turntable; on the way out it squashes and sinks into the pedestal ink
+    if (!this.drag && this.idleT <= 0) this.yaw += dt * 0.55;
+    const ck = 1 - sm(a); c.root.visible = ck > 0.01;
+    if (c.root.visible) {
+      this.raise = damp(this.raise, 0.15, 6, dt); this.enter = Math.min(1, (this.enter || 0) + dt * 3.5);
+      c.bodyYaw = c.aimYaw = this.yaw; c.aimPitch = lerp(-0.5, -0.03, this.raise); c.pos.set(0, 0, 0); c.lastShot = -99;
+      c.syncModel(dt); c.root.position.set(0, (1 - this.enter) * -0.25 - a * a * 0.5, 0);
+      const ek = (0.85 + 0.15 * (1 - Math.pow(1 - this.enter, 3))), sq = 1 + 0.3 * Math.sin(Math.PI * a), bw = c.look.bodyW || 1, bh = c.look.bodyH || 1;
+      c.root.scale.set(bw * ek * sq * Math.max(ck, 0.2), bh * ek * Math.max(ck, 0.001), bw * ek * sq * Math.max(ck, 0.2));
+      c.arms[1].rotation.set(0.12, 0, 0.14); c.torso.rotation.y *= this.raise;
+    }
+    // weapon: rises out of the ink with a little overshoot, then floats, bobs and turns; sized to fit the panel
+    const W = this.wp;
+    if (W) {
+      this.wIn = Math.min(1, this.wIn + dt / 0.5); const wi = clamp(this.wIn, 0, 1), k = Math.min(b, wi);
+      const ob = k <= 0 ? 0 : 1 + 2.2 * Math.pow(k - 1, 3) + 1.2 * Math.pow(k - 1, 2);       // ease-out-back
+      W.g.visible = k > 0;
+      if (W.g.visible) {
+        const visW = 2 * dist * Math.tan(this.cam.fov * Math.PI / 360) * this.cam.aspect, fit = Math.min(0.6, visW * 0.33) / W.size;
+        if (!this.drag && this.idleT <= 0) { this.wSpin = damp(this.wSpin, 0.6, 2.2, dt); this.wYaw = (this.wYaw === undefined ? Math.PI / 2 : this.wYaw) + this.wSpin * dt; }
+        W.g.rotation.y = this.wYaw === undefined ? Math.PI / 2 : this.wYaw;
+        W.g.position.set(0, lerp(0.15, 1.0, 1 - Math.pow(1 - k, 3)) + Math.sin(this.t * 1.7 + 1) * 0.035 * k, 0);
+        W.g.scale.setScalar(fit * Math.max(0.001, ob)); W.tilt.rotation.x = 0.16 + Math.sin(this.t * 1.1) * 0.05; W.tilt.rotation.z = Math.sin(this.t * 0.9) * 0.05;
+        if (W.spin) W.spin.rotation.z += dt * (2 + this.wSpin * 3);
+      }
+      const bk = clamp(this.ph * 1.6 - 0.5, 0, 1), bo = bk <= 0 ? 0 : 1 + 1.7 * Math.pow(bk - 1, 3) + 0.7 * Math.pow(bk - 1, 2);
+      this.bd.visible = bk > 0; this.bdM.opacity = 0.2 * bk; this.bd.scale.setScalar(Math.max(0.001, bo)); this.bd.rotation.z += dt * 0.12;
+    }
+    // the previous weapon (weapon swapped on the weapon page) spins off and shrinks away
+    if (this.wOld) {
+      this.wOld.t -= dt / 0.22; const o = this.wOld;
+      if (o.t <= 0) { this.dropW(o.g); this.wOld = null; }
+      else { o.g.rotation.y += dt * 14; o.g.scale.setScalar(Math.max(0.001, o.s0 * o.t * o.t)); o.g.position.y += dt * 0.6; }
+    }
     this.pop = Math.max(0, (this.pop || 0) - dt * 4); const s = 1 + this.pop * 0.12; this.ped.scale.set(s, s, s);
+    const pk = sm(clamp((this.ph - 0.25) / 0.6, 0, 1)); this.ped.position.y = -1.9 * pk; this.ped.visible = pk < 0.99;
     this.r.render(this.sc, this.cam);
   }
 };
@@ -3869,7 +4032,8 @@ function loop() {
     Proj.update(dt); Fx.update(dt); Barrier.update(dt, t);
     uploadPaint(); updateWorld(t, dt);
   }
-  renderer.render(scene, camera);
+  G.frameN = (G.frameN || 0) + 1;
+  if (!G.lobbyOpen || G.frameN % 6 === 0) renderer.render(scene, camera);
 }
 
 /* ------------------------------------------------------------ UI wiring */
@@ -3909,6 +4073,7 @@ function initUI() {
   $('btnStart').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
   $('loadCard').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
   $('btnBack').onclick = () => { Sfx.click(); show('lobby', false); show('title', true); renderLoadCard(); };
+  $('infoTabs').querySelectorAll('button').forEach(b => b.onclick = () => { Sfx.init(); Sfx.click(); if (G.lobbyTab === b.dataset.tab) return; G.lobbyTab = b.dataset.tab; renderLobby(); lobbyAnimate(); });
   $('btnGo').onclick = () => { Sfx.click(); Profile.save(); enforceRoster(); startMatch(); };
   $('btnChange').onclick = () => { Sfx.click(); openLobby(); };
   $('btnHow').onclick = () => { Sfx.init(); Sfx.click(); show('howto', true); };
