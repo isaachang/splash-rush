@@ -87,6 +87,8 @@ const CHARACTERS = {
 const CHAR_ORDER = ['sa', 'man', 'dun'];
 // baseline body used by the automated mechanics tests (not selectable)
 CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', sub: null, hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'charger', 'splatling', 'blaster'] });
+// a plain training dummy for the lobby sub-weapon demo (not selectable)
+CHARACTERS.dummy = Object.assign({}, CHARACTERS.std, { id: 'dummy', name: '假人', look: { skin: '#f3c39b', cloth: '#e9e4d8', cloth2: '#697386', pants: '#3b3f52', hat: 'cap', hatColor: '#697386', trim: '#f0f0f0', bodyW: 1, bodyH: 1, tankK: 1, crestK: 1 } });
 // the character that carries a given weapon (first match)
 function charForWeapon(w) { return CHAR_ORDER.find(id => CHARACTERS[id].weapons.includes(w)) || 'sa'; }
 // portrait: head with tentacle hair in team colour + each character's accessory (SVG, used in cards and lists)
@@ -154,6 +156,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.8.4', date: '2026-09-29', time: '22:48', title: '副武器演示', items: [
+    '战前准备新增「副武器」页：用法、优缺点和关键数字一目了然',
+    '切到副武器页时，中间会循环播放实机演示，左下角可以重播',
+    '副武器说明改成一条一句的要点：绿色是优点、红色是弱点、黄色是限制'
+  ] },
   { v: 'v0.8.3', date: '2026-09-29', time: '20:16', title: '角色专属副武器', items: [
     '阿飒的副武器换成冰壶炸弹：贴地滑出一条墨路，潜进去就能跟着冲',
     '满满的副武器换成涂鸦掩体：挡住敌人的子弹，自己人的子弹能穿过去',
