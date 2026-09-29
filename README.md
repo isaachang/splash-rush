@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.7.0-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.8.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -39,6 +39,7 @@
 ## ✨ 特色
 
 - **实时涂地**：每一发墨水都会涂在地面和墙上，墨面有光泽和厚度，飞溅的墨滴落到哪就涂到哪
+- **三个角色**：阿飒（跑得最快）、满满（墨水最多）、石墩（最耐打），每个角色有自己的武器
 - **三把手感不同的武器**
   - **墨浪步枪**：全能型，子弹几乎瞬间直飞，末端下坠，3 发击倒
   - **重炮狙击**：蓄力瞬间命中，蓄满一发击倒；沿途涂出墨线，有激光瞄准线

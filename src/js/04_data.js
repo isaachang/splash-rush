@@ -147,6 +147,12 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.8.0', date: '2026-09-29', time: '16:09', title: '角色', items: [
+    '新增 3 个角色：阿飒（跑得最快）、满满（墨水最多）、石墩（最耐打），每个角色有自己的武器',
+    '战前准备改成选角色：选中的角色会展开，可以看到和切换它的武器',
+    '中间的 3D 预览会自动旋转，也可以按住拖动',
+    '对阵阵容、Tab 战况和结算页都会显示每个人的角色'
+  ] },
   { v: 'v0.7.0', date: '2026-09-29', time: '15:16', title: '重型加特林', items: [
     '新武器「重型加特林」：按住就扫射，射速极快、射程远，但一罐墨只够打约 40 发',
     '加特林有自己专属的射击音效',
