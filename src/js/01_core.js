@@ -5,6 +5,7 @@
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const rand = (a, b) => a + Math.random() * (b - a);
 const randi = (a, b) => Math.floor(rand(a, b + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -296,6 +297,44 @@ function buildTextures() {
     g.fillStyle = '#9a9ea8'; g.fillRect(0, 0, w, h);
     for (let y = 0; y < 8; y++) for (let x = 0; x < 4; x++) { const l = 140 + Math.random() * 30; g.fillStyle = `rgb(${l},${l + 3},${l + 10})`; g.fillRect(x * 64 + (y % 2) * 32 + 2, y * 32 + 2, 60, 28); }
     speckle(g, w, h, 1500, 0.15);
+  });
+  // skatepark: smooth pool concrete, wooden ramps, grass / hedges, see-through grate
+  TEX.skate = canvasTex(512, 512, (g, w, h) => {
+    g.fillStyle = '#d9dde2'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2600, 0.07); speckle(g, w, h, 900, 0.12, false);
+    for (let i = 0; i < 10; i++) { const x = Math.random() * w, y = Math.random() * h, r = 40 + Math.random() * 90; const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(120,130,145,.10)'); gr.addColorStop(1, 'rgba(120,130,145,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+    g.strokeStyle = 'rgba(90,95,110,.22)'; g.lineWidth = 2; g.strokeRect(1, 1, w - 2, h - 2);
+  });
+  TEX.bowl = canvasTex(512, 512, (g, w, h) => {       // smooth poured concrete of the skate bowls (no slab joints)
+    g.fillStyle = '#e4ebef'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2600, 0.05); speckle(g, w, h, 700, 0.08, false);
+    for (let i = 0; i < 14; i++) { const x = Math.random() * w, y = Math.random() * h, r = 50 + Math.random() * 110; const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(110,130,150,.09)'); gr.addColorStop(1, 'rgba(110,130,150,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+  });
+  TEX.parkWall = canvasTex(1024, 256, (g, w, h) => {   // the park's outer wall: dark panels, a few posters (our own brand)
+    g.fillStyle = '#34404c'; g.fillRect(0, 0, w, h); speckle(g, w, h, 1500, 0.06);
+    g.fillStyle = 'rgba(0,0,0,.25)'; for (let x = 0; x < w; x += 128) g.fillRect(x, 0, 3, h);
+    g.fillStyle = '#5b2bd6'; g.fillRect(0, h - 22, w, 8); g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, 10, w, 4);
+    const post = (x, c0, c1, t) => { g.fillStyle = c0; g.fillRect(x, 46, 150, 150); g.fillStyle = c1; g.beginPath(); g.arc(x + 110, 90, 46, 0, 7); g.fill(); g.font = '900 30px Arial Black, sans-serif'; g.fillStyle = '#fff'; g.textAlign = 'left'; g.fillText(t, x + 12, 180); };
+    post(150, '#ff7a00', '#3346ff', 'RUSH!'); post(560, '#1f8f6a', '#ffe45c', 'INK UP'); post(830, '#d6246e', '#3fd0ff', 'SPLASH');
+  });
+  TEX.wood = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#c99a5b'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 32) { const l = 180 + Math.random() * 30; g.fillStyle = `rgb(${l},${l * 0.74 | 0},${l * 0.46 | 0})`; g.fillRect(0, y + 2, w, 28); g.fillStyle = 'rgba(80,45,15,.35)'; g.fillRect(0, y, w, 2); }
+    for (let i = 0; i < 60; i++) { g.fillStyle = 'rgba(100,60,25,.18)'; g.fillRect(Math.random() * w, Math.random() * h, 20 + Math.random() * 60, 1.5); }
+    g.fillStyle = 'rgba(60,40,20,.5)'; for (let y = 16; y < h; y += 32) [20, w - 20].forEach(x => { g.beginPath(); g.arc(x, y, 2.5, 0, 7); g.fill(); });
+  });
+  TEX.grass = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#4f9a3c'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 2600; i++) { const v = Math.random(); g.fillStyle = v < 0.5 ? 'rgba(40,110,40,.5)' : 'rgba(140,200,90,.35)'; g.fillRect(Math.random() * w, Math.random() * h, 1.5, 3 + Math.random() * 3); }
+  });
+  TEX.hedge = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#3f7d34'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 520; i++) { const x = Math.random() * w, y = Math.random() * h, r = 5 + Math.random() * 9, l = 0.7 + Math.random() * 0.6; g.fillStyle = `rgb(${50 * l | 0},${120 * l | 0},${45 * l | 0})`; g.beginPath(); g.ellipse(x, y, r, r * 0.6, Math.random() * 3, 0, 7); g.fill(); }
+    g.fillStyle = '#6b6f78'; g.fillRect(0, h - 28, w, 28); g.fillStyle = '#ffc629'; g.fillRect(0, h - 30, w, 5);
+  });
+  TEX.grateA = canvasTex(128, 128, (g, w, h) => {
+    g.clearRect(0, 0, w, h); g.strokeStyle = '#7d8592'; g.lineWidth = 5;
+    for (let k = -w; k < w * 2; k += 21) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + h, h); g.stroke(); g.beginPath(); g.moveTo(k + h, 0); g.lineTo(k, h); g.stroke(); }
+    g.strokeStyle = '#c3c9d2'; g.lineWidth = 1.5;
+    for (let k = -w; k < w * 2; k += 21) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + h, h); g.stroke(); }
   });
   TEX.windows = canvasTex(128, 256, (g, w, h) => {
     g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);

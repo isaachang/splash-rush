@@ -3,7 +3,7 @@ const NAV = { W: XH * 2, H: ZH * 2, h: null, cost: null };
 function initNav() {
   const W = NAV.W, H = NAV.H; NAV.h = new Float32Array(W * H); NAV.cost = new Float32Array(W * H);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
-    const x = -XH + i + 0.5, z = -ZH + j + 0.5, h = groundAt(x, z); NAV.h[j * W + i] = h;
+    const x = -XH + i + 0.5, z = -ZH + j + 0.5, h = TERR.on && terrOob(x, z) ? 99 : groundAt(x, z); NAV.h[j * W + i] = h;   // never path outside the park
     let near = 0;
     for (let a = 0; a < 8; a++) { const px = x + Math.cos(a * Math.PI / 4) * 0.75, pz = z + Math.sin(a * Math.PI / 4) * 0.75; if (Math.abs(px) > XH - 0.3 || Math.abs(pz) > ZH - 0.3) { near = 1; continue; } if (groundAt(px, pz) > h + STEP) near = 1; }
     NAV.cost[j * W + i] = near ? 3.5 : 1;
@@ -196,6 +196,8 @@ class Bot {
     this.stuckT += dt;
     if (this.stuckT > 1.4) { if (this.lastPos.distanceTo(c.pos) < 0.6 && (this.path.length || this.mode !== 'paint')) { I.jump = true; this.path = []; this.retarget = 0; } this.lastPos.copy(c.pos); this.stuckT = 0; }
     I.fire = false; I.swim = false; I.aimDir = null;
+    if (G.time - (c.fenceT ?? -9) < 0.25) this.fenceSwim = 0.6;                 // bumped a grate fence: squid through it
+    if (this.fenceSwim > 0) { this.fenceSwim -= dt; I.swim = true; }
     const e = this.enemy;
     const chg = !!c.weapon.charges;
     if (e && e.alive && (this.mode !== 'refill' || e.pos.distanceTo(c.pos) < 7 || (chg && c.ink > 22)) && c.ink > 3) {
@@ -361,6 +363,15 @@ function spectateTarget(c) {
   if (ok(Cam.spec)) return Cam.spec;
   let best = null, bd = 1e9; for (const m of CHARS) if (ok(m)) { const d = m.pos.distanceTo(c.pos); if (d < bd) { bd = d; best = m; } }
   return best;
+}
+// the play camera's pose behind the player on the first frame of a match (same maths as updateCamera at rest)
+function startCamPose() {
+  const c = PLAYER, cp = Math.cos(Cam.pitch), sp = Math.sin(Cam.pitch);
+  const dir = new THREE.Vector3(Math.sin(Cam.yaw) * cp, sp, Math.cos(Cam.yaw) * cp), pivot = new THREE.Vector3(c.pos.x, c.pos.y + 1.5, c.pos.z);
+  const pos = pivot.clone().addScaledVector(dir, -4.6); pos.y += 1.2;
+  const t = segBlocked(pivot.x, pivot.y, pivot.z, pos.x, pos.y, pos.z, 0.15); if (t) pos.lerpVectors(pivot, pos, Math.max(0.1, t - 0.08));
+  if (pos.y < 0.3) pos.y = 0.3;
+  return { pos, look: pivot.clone().addScaledVector(dir, 30) };
 }
 function updateCamera(dt) {
   const c = PLAYER;

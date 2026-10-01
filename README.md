@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.8.6-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.9.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -39,6 +39,7 @@
 ## ✨ 特色
 
 - **实时涂地**：每一发墨水都会涂在地面和墙上，墨面有光泽和厚度，飞溅的墨滴落到哪就涂到哪
+- **两张场地**：潮汐码头广场（集装箱、中路开阔）和墨浪滑板场（S 形下沉泳池、波浪外墙、中央高塔、铁网走道）；滑板场的泳池是真正的碗形曲面，能走下去、顺着弧形坡走上来
 - **三个角色**：阿飒（跑得最快）、满满（墨水最多）、石墩（最耐打），每个角色有自己的武器
 - **三把手感不同的武器**
   - **墨浪步枪**：全能型，子弹几乎瞬间直飞，末端下坠，3 发击倒
@@ -47,7 +48,7 @@
 - **潜墨与爬墙**：在自己的墨水里游动、隐身、1 秒回满血，还能沿着涂过的墙往上爬
 - **超级跳**：打开地图点队友，从天而降直接跳到他身边
 - **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分三档
-- **完整对局流程**：战前准备（选武器、看阵容）→ 开局飞行镜头 → 对局 → 裁判判定 → 结算
+- **完整对局流程**：选场地 → 战前准备（选角色和武器、看阵容）→ 开局飞行镜头 → 对局 → 裁判判定 → 结算
 - **原版风格结算**：俯视判定、比例条拉锯、WIN! / LOSE…，计分板、奖牌和毒舌吐槽奖
 - **阵亡观战**：先看是谁打倒了你，再切到队友视角，等复活时也不无聊
 - **单文件、零依赖**：整个游戏就是一个 HTML 文件，音乐和音效也是程序实时合成的
@@ -65,13 +66,15 @@
 ./tools/build.sh             # 把 src/ 打包成 index.html
 node tools/smoke-test.js     # 无浏览器自动跑完整对局，检查有没有报错
 node tools/feature-test.js   # 逐项验证核心机制（蓄力、准星、炸弹、防护罩……）
+node tools/map-test.js       # 滑板场专项检查（泳池地形、外墙、铁网桥和围栏、爬塔、AI 路线）
+SR_MAP=skate node tools/smoke-test.js   # 在滑板场上跑完整对局
 ```
 
 ```
 src/
   style.css  body.html       界面样式与结构
   js/01_core.js              工具函数、音效与音乐、渲染器、程序纹理
-  js/02_world.js             地图、涂地系统、墨水着色器、竞技场建模
+  js/02_world.js             地图（码头 / 滑板场）、曲面地形、涂地系统、墨水着色器、竞技场建模
   js/03_env.js               天空、海面、城市等环境
   js/04_data.js              武器 / 副武器 / 必杀技数据、玩家存档
   js/05_character.js         角色模型、移动、潜墨、武器逻辑

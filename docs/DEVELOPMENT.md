@@ -34,6 +34,7 @@ git switch -c feat/reticle-like-original
 # 3. 本地验证（两项都要过）
 node tools/smoke-test.js      # 自动跑完整对局，必须显示 SMOKE TEST PASSED
 node tools/feature-test.js    # 逐项验证核心机制，必须全部 PASS
+node tools/map-test.js        # 改了滑板场（或地形代码）时跑，必须 ALL MAP TESTS PASSED
 open index.html               # 自己打开试玩
 
 # 4. 提交：改一小块就提交一次，每次提交都应该是能打包、能运行的状态

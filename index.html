@@ -475,6 +475,48 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .slist i{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid #111;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;font-weight:900;color:#111;box-shadow:0 2px 0 #111}
 .slist i.ok{background:#5be38a}.slist i.no{background:#ff6b6b}.slist i.tm{background:#ffe45c;font-size:10px}
 .anim .slist li{animation:rise .4s cubic-bezier(.2,.9,.3,1) both}.anim .slist li:nth-child(2){animation-delay:.05s}.anim .slist li:nth-child(3){animation-delay:.1s}.anim .slist li:nth-child(4){animation-delay:.15s}.anim .slist li:nth-child(5){animation-delay:.2s}
+
+/* maps */
+.mapcard{cursor:pointer;transition:transform .15s}.mapcard:hover{transform:translateY(-2px)}
+.mapcard em{margin-left:auto;font-style:normal;font-weight:900;font-size:12px;opacity:.6}
+.mapcard .thumb{overflow:hidden;display:flex;align-items:center;justify-content:center;background:#23222f}
+.mapcard .thumb svg{height:58px;width:auto}
+.mpick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* map select: its own screen between the title and the lobby */
+#mapsel{background:linear-gradient(180deg,rgba(10,8,30,.5),rgba(10,8,30,.8));backdrop-filter:blur(3px)}
+.msBody{position:absolute;left:5vw;right:5vw;top:16vh;bottom:20vh;display:flex;gap:4vw;justify-content:center;align-items:center}
+.mscard{position:relative;flex:0 1 520px;display:flex;gap:24px;align-items:center;text-align:left;cursor:pointer;font-family:inherit;color:#fff;background:rgba(20,18,40,.92);border:5px solid #111;border-radius:26px;padding:22px 26px;box-shadow:0 8px 0 #111;transition:transform .2s cubic-bezier(.3,1.5,.5,1),background .2s}
+.mscard:hover{transform:translateY(-4px)}
+.mscard.sel{background:rgba(44,38,90,.97);outline:5px solid var(--c0);outline-offset:-2px;transform:translateY(-6px)}
+.mscard .mt{flex:none;line-height:0;border-radius:14px;overflow:hidden;border:3px solid #111;box-shadow:0 4px 0 #111}.mscard .mt svg{width:min(130px,11vw);height:auto;display:block}
+.mscard .mn{min-width:0}
+.mscard .mn b{display:block;font-size:34px;font-weight:900;font-style:italic;-webkit-text-stroke:1.5px #111;paint-order:stroke fill;text-shadow:0 4px 0 var(--c0)}
+.mscard .mn small{display:block;font-size:13px;letter-spacing:3px;color:#ffe45c;font-weight:900;margin-top:4px}
+.mscard .mn em{display:block;font-style:normal;font-size:15px;opacity:.82;line-height:1.5;margin-top:10px}
+.mscard .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.mscard .chips span{font-size:12px;font-weight:900;padding:3px 10px;border-radius:10px;background:rgba(255,255,255,.1);border:2px solid #111}
+.mscard .chips span.sz{background:#ffe45c;color:#111}
+.mscard .mon{position:absolute;top:-14px;right:18px;font-style:normal;font-size:13px;font-weight:900;background:var(--c0);color:#111;border:3px solid #111;border-radius:10px;padding:1px 10px}
+.msNote{position:absolute;left:0;right:0;bottom:14vh;text-align:center;font-size:13px;font-weight:700;opacity:.55;letter-spacing:1px}
+.mapchip{cursor:pointer;font-family:inherit;font-size:14px;font-weight:900;color:#111;background:#ffe45c;border:3px solid #111;border-radius:14px;padding:3px 12px;box-shadow:0 3px 0 #111;align-self:center;transition:transform .15s}
+.mapchip:hover{transform:translateY(-2px)}
+.mtile{position:relative;display:flex;gap:10px;align-items:center;text-align:left;cursor:pointer;font-family:inherit;color:#fff;background:rgba(20,18,40,.9);border:4px solid #111;border-radius:16px;padding:7px 9px;box-shadow:0 5px 0 #111;transition:transform .18s,background .2s}
+.mtile:hover{transform:translateY(-2px)}
+.mtile.sel{background:rgba(44,38,90,.97);outline:4px solid var(--c0);outline-offset:-2px}
+.mtile .mt{flex:none;line-height:0;border-radius:9px;overflow:hidden;border:2px solid #111}.mtile .mt svg{width:34px;height:auto}
+.mtile .mn b{display:block;font-size:14px;font-weight:900}.mtile .mn small{display:block;font-size:9px;letter-spacing:1px;color:#ffe45c;font-weight:900}
+.mtile .mn em{display:block;font-style:normal;font-size:10px;opacity:.6;line-height:1.3;margin-top:2px}
+.mtile .mon{position:absolute;top:-9px;right:8px;font-style:normal;font-size:10px;font-weight:900;background:var(--c0);color:#111;border:2px solid #111;border-radius:8px;padding:0 6px}
+#mapVeil{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,#3a2b7a,#140f30 70%);opacity:0;pointer-events:none;transition:opacity .35s}
+#mapVeil.show{opacity:1;pointer-events:auto}
+#mapVeil .mv{display:flex;flex-direction:column;align-items:center;gap:6px;transform:scale(.9);transition:transform .45s cubic-bezier(.3,1.4,.4,1)}
+#mapVeil.show .mv{transform:none}
+#mapVeil i{width:64px;height:64px;border-radius:50% 46% 52% 44%;background:var(--c0);border:4px solid #111;box-shadow:0 6px 0 #111;animation:mvSpin 1s linear infinite}
+@keyframes mvSpin{to{transform:rotate(360deg)}}
+#mapVeil b{font-size:38px;font-weight:900;font-style:italic;-webkit-text-stroke:2px #111;paint-order:stroke fill;text-shadow:0 4px 0 var(--c1)}
+#mapVeil small{font-weight:900;letter-spacing:4px;color:#ffe45c}
+#mapVeil span{font-size:13px;opacity:.7;font-weight:700}
+.rcol h3 small{font-size:11px;color:#fff;opacity:.5;letter-spacing:1px;margin-left:8px}
 </style></head><body>
 <canvas id="gl"></canvas>
 
@@ -504,14 +546,14 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
       <em>更换 ›</em>
     </div>
     <h3>场地</h3>
-    <div class="mapcard"><div class="thumb"></div><div><b>潮汐码头广场</b><small>涂地对战 · 4 V 4</small></div></div>
+    <div class="mapcard" id="titleMap"><div class="thumb" id="titleMapThumb"></div><div><b id="titleMapName"></b><small id="titleMapSub"></small></div><em>更换 ›</em></div>
   </div>
   <button class="verchip" id="btnLog"><b id="verTxt">v0.0.0</b><span>版本日志 ›</span></button>
   <div class="footer">进入对局后游戏会锁定鼠标 · 按 Esc 暂停</div>
 </div>
 
 <div id="lobby" class="screen">
-  <div class="lobbyHead"><h2>战前准备</h2><span>涂地对战 · 潮汐码头广场</span></div>
+  <div class="lobbyHead"><h2>战前准备</h2><span id="lobbySub">涂地对战</span><button class="mapchip" id="btnChangeMap">换场地 ›</button></div>
   <div class="lobbyBody">
     <div class="lcol">
       <h3>选择角色 <small>每个角色有自己的武器</small></h3>
@@ -535,6 +577,15 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   </div>
   <div class="lobbyFoot"><button class="btn" id="btnBack">‹ 返回</button><button class="btn big" id="btnGo">出发！</button></div>
 </div>
+
+<div id="mapsel" class="screen">
+  <div class="lobbyHead"><h2>选择场地</h2><span>涂地对战 · 4 V 4</span></div>
+  <div class="msBody" id="mapCards"></div>
+  <div class="msNote">点一张场地，背景会换成那张场地（会重新载入一下）</div>
+  <div class="lobbyFoot"><button class="btn" id="btnMsBack">‹ 返回</button><button class="btn big" id="btnMsNext">下一步 ›</button></div>
+</div>
+
+<div id="mapVeil"><div class="mv"><i></i><b id="mapVeilName"></b><small id="mapVeilEn"></small><span>正在前往场地…</span></div></div>
 
 <div id="hud" class="screen">
   <div id="vignette"></div>
@@ -642,6 +693,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const rand = (a, b) => a + Math.random() * (b - a);
 const randi = (a, b) => Math.floor(rand(a, b + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -934,6 +986,44 @@ function buildTextures() {
     for (let y = 0; y < 8; y++) for (let x = 0; x < 4; x++) { const l = 140 + Math.random() * 30; g.fillStyle = `rgb(${l},${l + 3},${l + 10})`; g.fillRect(x * 64 + (y % 2) * 32 + 2, y * 32 + 2, 60, 28); }
     speckle(g, w, h, 1500, 0.15);
   });
+  // skatepark: smooth pool concrete, wooden ramps, grass / hedges, see-through grate
+  TEX.skate = canvasTex(512, 512, (g, w, h) => {
+    g.fillStyle = '#d9dde2'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2600, 0.07); speckle(g, w, h, 900, 0.12, false);
+    for (let i = 0; i < 10; i++) { const x = Math.random() * w, y = Math.random() * h, r = 40 + Math.random() * 90; const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(120,130,145,.10)'); gr.addColorStop(1, 'rgba(120,130,145,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+    g.strokeStyle = 'rgba(90,95,110,.22)'; g.lineWidth = 2; g.strokeRect(1, 1, w - 2, h - 2);
+  });
+  TEX.bowl = canvasTex(512, 512, (g, w, h) => {       // smooth poured concrete of the skate bowls (no slab joints)
+    g.fillStyle = '#e4ebef'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2600, 0.05); speckle(g, w, h, 700, 0.08, false);
+    for (let i = 0; i < 14; i++) { const x = Math.random() * w, y = Math.random() * h, r = 50 + Math.random() * 110; const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(110,130,150,.09)'); gr.addColorStop(1, 'rgba(110,130,150,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+  });
+  TEX.parkWall = canvasTex(1024, 256, (g, w, h) => {   // the park's outer wall: dark panels, a few posters (our own brand)
+    g.fillStyle = '#34404c'; g.fillRect(0, 0, w, h); speckle(g, w, h, 1500, 0.06);
+    g.fillStyle = 'rgba(0,0,0,.25)'; for (let x = 0; x < w; x += 128) g.fillRect(x, 0, 3, h);
+    g.fillStyle = '#5b2bd6'; g.fillRect(0, h - 22, w, 8); g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, 10, w, 4);
+    const post = (x, c0, c1, t) => { g.fillStyle = c0; g.fillRect(x, 46, 150, 150); g.fillStyle = c1; g.beginPath(); g.arc(x + 110, 90, 46, 0, 7); g.fill(); g.font = '900 30px Arial Black, sans-serif'; g.fillStyle = '#fff'; g.textAlign = 'left'; g.fillText(t, x + 12, 180); };
+    post(150, '#ff7a00', '#3346ff', 'RUSH!'); post(560, '#1f8f6a', '#ffe45c', 'INK UP'); post(830, '#d6246e', '#3fd0ff', 'SPLASH');
+  });
+  TEX.wood = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#c99a5b'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 32) { const l = 180 + Math.random() * 30; g.fillStyle = `rgb(${l},${l * 0.74 | 0},${l * 0.46 | 0})`; g.fillRect(0, y + 2, w, 28); g.fillStyle = 'rgba(80,45,15,.35)'; g.fillRect(0, y, w, 2); }
+    for (let i = 0; i < 60; i++) { g.fillStyle = 'rgba(100,60,25,.18)'; g.fillRect(Math.random() * w, Math.random() * h, 20 + Math.random() * 60, 1.5); }
+    g.fillStyle = 'rgba(60,40,20,.5)'; for (let y = 16; y < h; y += 32) [20, w - 20].forEach(x => { g.beginPath(); g.arc(x, y, 2.5, 0, 7); g.fill(); });
+  });
+  TEX.grass = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#4f9a3c'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 2600; i++) { const v = Math.random(); g.fillStyle = v < 0.5 ? 'rgba(40,110,40,.5)' : 'rgba(140,200,90,.35)'; g.fillRect(Math.random() * w, Math.random() * h, 1.5, 3 + Math.random() * 3); }
+  });
+  TEX.hedge = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#3f7d34'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 520; i++) { const x = Math.random() * w, y = Math.random() * h, r = 5 + Math.random() * 9, l = 0.7 + Math.random() * 0.6; g.fillStyle = `rgb(${50 * l | 0},${120 * l | 0},${45 * l | 0})`; g.beginPath(); g.ellipse(x, y, r, r * 0.6, Math.random() * 3, 0, 7); g.fill(); }
+    g.fillStyle = '#6b6f78'; g.fillRect(0, h - 28, w, 28); g.fillStyle = '#ffc629'; g.fillRect(0, h - 30, w, 5);
+  });
+  TEX.grateA = canvasTex(128, 128, (g, w, h) => {
+    g.clearRect(0, 0, w, h); g.strokeStyle = '#7d8592'; g.lineWidth = 5;
+    for (let k = -w; k < w * 2; k += 21) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + h, h); g.stroke(); g.beginPath(); g.moveTo(k + h, 0); g.lineTo(k, h); g.stroke(); }
+    g.strokeStyle = '#c3c9d2'; g.lineWidth = 1.5;
+    for (let k = -w; k < w * 2; k += 21) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + h, h); g.stroke(); }
+  });
   TEX.windows = canvasTex(128, 256, (g, w, h) => {
     g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
     for (let y = 8; y < h - 8; y += 20) for (let x = 8; x < w - 8; x += 24) { const lit = Math.random(); g.fillStyle = lit > 0.8 ? '#fff6c8' : lit > 0.4 ? '#7f93ad' : '#5d6e87'; g.fillRect(x, y, 14, 12); }
@@ -960,15 +1050,44 @@ function makeNoiseTex(N) {
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true; t.needsUpdate = true;
   return t;
 }
-/* ================================================================ MAP */
-const XH = 28, ZH = 46, CELL = 0.14;
+/* ================================================================ MAP
+   Several maps: the one in use is picked before the world is built (the
+   lobby saves the choice and reloads the page), so every system below just
+   reads XH / ZH / SOLIDS / SPAWN / DECK as before.                        */
+const MAP_LIST = {
+  dock: { id: 'dock', name: '潮汐码头广场', en: 'TIDE DOCK PLAZA', XH: 28, ZH: 46, size: '56 × 92 米', tags: ['集装箱', '中路开阔', '两侧高台'], desc: '码头上的集装箱广场，中路开阔、两侧有高台' },
+  skate: { id: 'skate', name: '墨浪滑板场', en: 'RUSH SKATEPARK', XH: 25.5, ZH: 55.5, cull: true, spawnSlots: [[-1.7, -0.5], [-0.6, 0.7], [0.6, -0.5], [1.7, 0.7]], size: '51 × 111 米', tags: ['S 形泳池', '中央高塔', '铁网走道'], desc: '城市滑板公园：S 形下沉泳池、波浪外墙、中央高塔和铁网走道' }
+};
+const MAP_KEY = 'splashrush.map';
+const MAP_ID = (() => {
+  if (typeof SR_MAP !== 'undefined' && MAP_LIST[SR_MAP]) return SR_MAP;     // tests / tools
+  try { const q = new URLSearchParams(location.search).get('map'); if (q && MAP_LIST[q]) return q; } catch (e) { }
+  try { const v = localStorage.getItem(MAP_KEY); if (v && MAP_LIST[v]) return v; } catch (e) { }
+  return 'dock';
+})();
+const MAP = MAP_LIST[MAP_ID];
+const XH = MAP.XH, ZH = MAP.ZH, CELL = 0.14;
 const NX = Math.ceil(XH * 2 / CELL), NZ = Math.ceil(ZH * 2 / CELL);
 const PSX = NX * CELL, PSZ = NZ * CELL;
 const SOLIDS = [];
+// see-through grate pieces kept apart from SOLIDS: bridges (stand on them in human form, squids and ink fall through)
+// and fences (block people, squids and ink pass)
+const BRIDGES = [], FENCES = [];
+// palm trees (added with the decor): trunk and crown stop shots and bombs but never take ink
+const TREES = [], PALMS = []; let TREE_Y0 = 1e9;
 function box(x0, x1, z0, z1, h, style, top) { return { t: 'box', x0, x1, z0, z1, h, style, top: top || 'concrete' }; }
-function ramp(x0, x1, z0, z1, axis, h0, h1) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: 'grate' }; }
+function ramp(x0, x1, z0, z1, axis, h0, h1, top) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: top || 'grate' }; }
 function mirrorSolid(s) { const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0 }); if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; } return m; }
-function defineMap() {
+function defineMap() { if (MAP_ID === 'skate') defineSkate(); else defineDock(); buildSolidGrid(); }
+// coarse grid over the arena: which solids touch each 4 m cell (padded), so ground / collision lookups stay cheap
+const SG = { S: 4, W: 0, H: 0, cells: null };
+function buildSolidGrid() {
+  SG.W = Math.ceil(XH * 2 / SG.S); SG.H = Math.ceil(ZH * 2 / SG.S); SG.cells = Array.from({ length: SG.W * SG.H }, () => []);
+  const ci = (v, n, E) => clamp(Math.floor((v + E) / SG.S), 0, n - 1);
+  for (const s of SOLIDS) { const i0 = ci(s.x0 - 0.6, SG.W, XH), i1 = ci(s.x1 + 0.6, SG.W, XH), j0 = ci(s.z0 - 0.6, SG.H, ZH), j1 = ci(s.z1 + 0.6, SG.H, ZH); for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) SG.cells[j * SG.W + i].push(s); }
+}
+function solidsNear(x, z) { if (!SG.cells) return SOLIDS; return SG.cells[clamp(Math.floor((z + ZH) / SG.S), 0, SG.H - 1) * SG.W + clamp(Math.floor((x + XH) / SG.S), 0, SG.W - 1)]; }
+function defineDock() {
   const half = [
     box(-9, 9, 37, 46, 2.0, 'deck', 'deck'),
     ramp(-3, 3, 31, 37, 'z', 0, 2.0),
@@ -999,24 +1118,212 @@ function defineMap() {
   SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }));
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
+/* ---- 墨浪滑板场 (skatepark): after the classic skatepark stage (top-down plan traced from the
+   reference, rotated 180° for the other team). Curved parts are terrain (bowls, park outline),
+   straight-edged parts are blocks. Team 0 spawns at +z, its bowl is on the +x side.
+   Heights: bowl floor 0, street 1.0 (SL), spawn platform / side ledge 2.0, tower top 4.0.     */
+const SL = 1.0;    // street level (the bowls and pits are sunk below it)
+const SKATE_LV = { plat: 2.0 };
+// the plan below is traced at the reference's scale, then everything is spread out by SKATE_K (heights stay):
+// at 1.0 the park was ~15% tighter than the original relative to our characters and felt cramped
+const SKATE_K = 1.15;
+// a path made of straight runs ('L') and smooth curves ('C'): [x, z] points
+function pathOf(...parts) { const out = []; for (const [k, P] of parts) { const q = k === 'C' ? smoothPts(P, false, 3) : P; q.forEach(p => { const l = out[out.length - 1]; if (!l || Math.hypot(l[0] - p[0], l[1] - p[1]) > 0.02) out.push(p); }); } return out; }
+function defineSkate() {
+  const oob = (x0, x1, z0, z1, h = 2.8) => Object.assign(box(x0, x1, z0, z1, h, 'hedge', 'grass'), { oob: true });
+  const P = SKATE_LV.plat;
+  // ---- the park outline, team 0's half (from the +x side at z=0, round the spawn, back along the -x side)
+  const half = pathOf(
+    ['L', [[19.2, 0], [19.2, 1.5], [18.3, 1.5], [18.3, 17.3]]],
+    ['C', [[18.3, 17.3], [18.1, 19], [18.3, 22], [18.1, 24.5], [17.3, 26.3], [15.7, 27.7], [14.3, 28.8], [13.3, 30.3], [12.4, 31.7], [10.8, 32.7], [9.0, 33.3], [7.8, 34.4], [7.4, 36.5], [7.2, 38.8], [6.2, 40.3], [4.8, 40.6]]],
+    ['L', [[4.8, 40.6], [-2.6, 40.6], [-3.3, 41.3], [-3.3, 43.0]]],
+    ['C', Array.from({ length: 13 }, (_, k) => { const a = k / 12 * Math.PI; return [-6.8 + Math.cos(a) * 3.5, 43.0 + Math.sin(a) * 3.5]; })],
+    ['L', [[-10.3, 43.0], [-10.3, 34.6]]],
+    ['C', [[-10.3, 34.6], [-10.8, 33.3], [-12.2, 32.3], [-13.4, 31.3], [-13.8, 30.0]]],
+    ['L', [[-13.8, 30.0], [-13.8, 28.9], [-20.3, 28.9], [-20.3, 0]]]
+  );
+  TERR.outline = half.concat(rotPts(half));
+  // ---- team 0's bowl: a kidney-shaped pool along the outer wall, with a snake ridge and a round hump
+  const bowl = {
+    floor: 0, R: 2.4,
+    poly: pathOf(
+      ['C', [[18.6, 17.3], [18.4, 19], [18.6, 22], [18.4, 24.5], [17.6, 26.5], [15.9, 28.0], [14.5, 29.1], [13.5, 30.6], [12.6, 32.0], [10.9, 33.0], [9.1, 33.6], [7.8, 33.9]]],
+      ['L', [[7.8, 33.9], [0.6, 33.7]]],
+      ['C', [[0.6, 33.7], [-1.6, 33.2], [-3.6, 31.7], [-5.0, 29.7], [-5.8, 27.2], [-6.1, 24.6], [-6.2, 22.6]]],
+      ['L', [[-6.2, 22.6], [-6.2, 21.8], [-3.3, 21.8], [-3.3, 16.8]]],
+      ['C', [[-3.3, 16.8], [-2.9, 15.3], [-1.6, 14.2], [0.4, 13.6], [2.5, 13.7], [4.0, 14.4], [4.6, 15.8]]],
+      ['L', [[4.6, 15.8], [4.6, 17.2], [12.4, 17.2], [12.4, 17.3]]]
+    ),
+    ridges: [
+      { pts: smoothPts([[13.6, 17.6], [14.6, 20.5], [14.4, 23.5], [12.7, 26.0], [10.2, 27.2], [8.6, 29.4], [7.0, 31.4]], false, 3), w: 2.0, h: 0.55, flat: 0.45 },
+      { pts: smoothPts([[8.0, 17.6], [5.6, 18.8], [3.6, 20.8], [2.6, 23.4], [3.2, 26.2]], false, 3), w: 1.9, h: 0.5, flat: 0.45 },
+    ],
+    mounds: [{ x: 7.8, z: 24.3, r: 3.0, h: 0.75 }],
+    rims: []
+  };
+  // spawn platform + the narrow side ledge (raised plateau); where it meets the bowl the bowl's rim rises to it
+  const plat = { h: P, mat: 3, poly: [[-3.3, 47.5], [-3.3, 33.7], [0.8, 33.7], [0.8, 30.5], [-0.4, 28.0], [-0.4, 21.8], [-14.0, 21.8], [-14.0, 17.4], [-15.5, 17.4], [-15.5, 15.3], [-21, 15.3], [-21, 47.5]] };   // the side ledge runs right up to the planter (no pocket)
+  bowl.rims.push({ poly: plat.poly, h: P, blend: 2.2 });
+  // the pit under the side grate bridge
+  const pit = { h: 0, mat: 1, poly: [[-21, 5.2], [-11.4, 5.2], [-11.4, 10.0], [-21, 10.0]] };   // includes its way-out ramp
+  TERR.plats = [plat, { h: P, mat: 3, poly: rotPts(plat.poly) }, pit, { h: 0, mat: 1, poly: rotPts(pit.poly) }];
+  const rb = b => ({ floor: b.floor, R: b.R, poly: rotPts(b.poly), ridges: b.ridges.map(r => Object.assign({}, r, { pts: rotPts(r.pts) })), mounds: b.mounds.map(m => Object.assign({}, m, { x: -m.x, z: -m.z })), rims: b.rims.map(r => Object.assign({}, r, { poly: rotPts(r.poly) })) });
+  TERR.bowls = [bowl, rb(bowl)];
+  // thin walls along the plateau's straight edges (paintable, climbable; they also stop people walking up the edge)
+  const W = 0.6;           // thick enough to cover the narrow slope where a raised plateau meets the street
+  const half2 = [
+    // ---- spawn side
+    box(-14.0, -0.4, 21.8 - W, 21.8, P, 'panel', 'concrete'),                  // front face of the spawn platform
+    box(-14.0, -14.0 + W, 17.4, 21.8, P, 'panel', 'concrete'),                   // edge of the side ledge (on the low side, so it hides the terrain's edge)
+    box(-3.3, -3.3 + W, 33.7, 41.4, P, 'panel', 'concrete'),                     // spawn deck's side toward the bowl end
+    box(-3.0, 2.3, 33.7, 36.6, 2.5, 'contB', 'grate'),                           // dark block behind the bowl (flush with the spawn deck: no gap)
+    box(-3.0, 2.6, 36.6, 41.4, 2.5, 'contG', 'grate'),                           // dark grate box behind the bowl
+    // ---- side ledge: walkway past the planter, grate bridge over the pit, out to the street
+    box(-15.5, -13.6, 10.0, 17.4, P, 'stone', 'concrete'),
+    oob(-21, -15.5, 10.0, 15.3, 2.8),
+    ramp(-13.6, -11.4, 5.2 + W, 10.0 - W, 'x', 0, SL, 'skate'),                  // way out of the pit
+    box(-21, -11.4, 5.2, 5.2 + W, SL, 'stone', 'concrete'), box(-21, -11.4, 10.0 - W, 10.0, SL, 'stone', 'concrete'),   // the pit's side walls
+    oob(-18.2, -15.4, 0.6, 3.0, 1.9),                                            // parked car on the street
+    // ---- middle, spawn side of the tower (x<0)
+    box(-14.0, -3.3, 15.3, 21.8, 1.5, 'stone', 'concrete'),                      // raised square in front of the spawn platform
+    oob(-12.8, -9.4, 18.2, 21.5, 2.2),                                           // grass strip along its back ...
+    oob(-9.4, -5.0, 15.3, 21.5, 2.7),                                            // ... joined to the palm planter (no slot between them)
+    box(-4.4, -3.5, 4.8, 10.3, 2.0, 'crate', 'wood'),                            // walkway off the tower balcony (grate beside it)
+    box(-8.7, -6.9, 5.0, 10.3, 1.5, 'crate', 'wood'),                            // crate row (grate beside it)
+    box(-12.8, -10.6, 3.4, 6.8, 1.5, 'crate', 'wood'),
+    box(-4.8, -1.0, 1.0, 4.8, 2.0, 'panel', 'concrete'),                         // tower balcony
+    // ---- middle, +x side
+    oob(4.6, 11.2, 9.2, 16.7, 2.6),                                              // big palm planter (grate walkways on two sides)
+    box(5.8, 11.2, 3.6, 9.2, 2.2, 'panel', 'concrete'),                          // raised block in front of the planter
+    box(10.8, 13.6, 1.5, 3.6, 2.2, 'panel', 'concrete'),
+    box(0.6, 2.6, 9.0, 12.3, 1.5, 'stone', 'concrete'),                          // low step, a 2 m lane to the planter
+    ramp(12.0, 15.3, 6.1, 16.4, 'x', SL, 2.2, 'wood'),                           // wooden ramp up to the side ledge
+    box(15.3, 18.3, 3.9, 16.4, 2.2, 'stone', 'concrete'),                        // side ledge along the wall (overlooks the bowl)
+    box(13.6, 15.3, 3.7, 6.1, 2.2, 'stone', 'concrete'),
+    box(17.6, 18.3, 9.2, 15.1, 3.2, 'panel', 'concrete'),                        // parapet against the park wall
+  ];
+  half2.forEach(s => { SOLIDS.push(s); SOLIDS.push(mirrorSolid(s)); });
+  // the tower: three overlapping blocks make a rounded column, only climbable on its inked walls
+  SOLIDS.push(box(-2.1, 2.1, -1.0, 1.0, 4.0, 'panel', 'concrete'), box(-1.0, 1.0, -2.1, 2.1, 4.0, 'panel', 'concrete'), box(-1.6, 1.6, -1.6, 1.6, 4.0, 'panel', 'concrete'));
+  TERR.tower = { r: 2.35, h: 4.0 };
+  // grate walkways round the palm planters (people walk on them, squids drop through), grate bridges over the side pits
+  const grates = [{ x0: 11.2, x1: 12.0, z0: 9.2, z1: 17.4, h: 2.6 }, { x0: 4.6, x1: 12.0, z0: 16.7, z1: 17.4, h: 2.6 }, { x0: -20.3, x1: -13.6, z0: 5.2, z1: 10.0, h: P },
+    { x0: -3.5, x1: -2.0, z0: 4.8, z1: 10.3, h: 2.0 }, { x0: -10.3, x1: -8.7, z0: 5.0, z1: 10.3, h: 1.5 }];
+  grates.forEach(b => BRIDGES.push(b, Object.assign({}, b, { x0: -b.x1, x1: -b.x0, z0: -b.z1, z1: -b.z0 })));
+  // grate fences beside the tower: people can't pass, squids and ink can
+  const fz = [[2.2, 5.0, 6.0, 6.12], [2.2, 5.0, 8.48, 8.6], [4.88, 5.0, 6.0, 8.6]];
+  fz.forEach(([x0, x1, z0, z1]) => { FENCES.push({ x0, x1, z0, z1, y0: SL, h: SL + 1.6 }, { x0: -x1, x1: -x0, z0: -z1, z1: -z0, y0: SL, h: SL + 1.6 }); });   // taller than a jump
+  // palms: fixed spots in the middle of the planters (mirrored for the other team); the parked car gets none
+  const palms = [[-18.3, 12.7, 1.1], [-11.1, 19.9, 0.85], [-7.2, 18.6, 1.15], [6.8, 11.6, 1.0], [9.1, 14.6, 1.15]];
+  palms.forEach(([x, z, k]) => PALMS.push([x * SKATE_K, z * SKATE_K, k], [-x * SKATE_K, -z * SKATE_K, k]));
+  // spread the whole plan out (plan view only; heights stay)
+  const K = SKATE_K, sp = P => P.map(([x, z]) => [x * K, z * K]), sr = r => { r.x0 *= K; r.x1 *= K; r.z0 *= K; r.z1 *= K; };
+  SOLIDS.forEach(sr); BRIDGES.forEach(sr); FENCES.forEach(sr);
+  TERR.outline = sp(TERR.outline); TERR.plats.forEach(p => { p.poly = sp(p.poly); if (p.h > SL) p.grow = 0.3; else if (p.h < SL) p.shrink = 0.3; });   // raised plateaus reach a little under their edge walls
+  TERR.bowls.forEach(b => { b.poly = sp(b.poly); b.R *= K; b.ridges.forEach(r => { r.pts = sp(r.pts); r.w *= K; }); b.mounds.forEach(m => { m.x *= K; m.z *= K; m.r *= K; }); b.rims.forEach(r => { r.poly = sp(r.poly); r.blend *= K; }); });
+  TERR.tower.r *= K;
+  buildTerrain();
+  SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
+}
 // yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
-const SPAWN = [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
-const DECK = [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
+const SPAWN = MAP_ID === 'skate' ? [{ x: -6.8 * SKATE_K, z: 42.6 * SKATE_K, y: 2.0, yaw: Math.PI }, { x: 6.8 * SKATE_K, z: -42.6 * SKATE_K, y: 2.0, yaw: 0 }] : [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
+const DECK = MAP_ID === 'skate' ? [{ x0: -10.3 * SKATE_K, x1: -3.3 * SKATE_K, z0: 36 * SKATE_K, z1: 46.5 * SKATE_K }, { x0: 3.3 * SKATE_K, x1: 10.3 * SKATE_K, z0: -46.5 * SKATE_K, z1: -36 * SKATE_K }] : [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
 function inRect(s, x, z) { return x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1; }
 function topAt(s, x, z) {
   if (s.t === 'box') return s.h;
   const t = s.axis === 'x' ? (x - s.x0) / (s.x1 - s.x0) : (z - s.z0) / (s.z1 - s.z0);
   return lerp(s.h0, s.h1, clamp(t, 0, 1));
 }
-function groundAt(x, z) { let h = 0; for (const s of SOLIDS) if (!s.bound && inRect(s, x, z)) { const t = topAt(s, x, z); if (t > h) h = t; } return h; }
+
+/* ---- curved terrain: a height field under the blocks (skatepark only).
+   Sunken skate bowls with rounded transitions, snake ridges and humps, plus
+   the park's curved outline (outside it = out of bounds, a solid wall).
+   Everything that asks "how high is the ground here" just takes the higher
+   of the terrain and the blocks, so paint, AI, bombs and the camera all work. */
+const TERR = { on: false, R: 0.25, W: 0, H: 0, h: null, mat: null, oob: null, OOB_H: 2.9, outline: null, bowls: [], plats: [] };
+function terrH(x, z) {
+  const R = TERR.R, fx = clamp((x + XH) / R, 0, TERR.W - 1.001), fz = clamp((z + ZH) / R, 0, TERR.H - 1.001);
+  const i = fx | 0, j = fz | 0, u = fx - i, v = fz - j, W = TERR.W, h = TERR.h, k = j * W + i;
+  return (h[k] * (1 - u) + h[k + 1] * u) * (1 - v) + (h[k + W] * (1 - u) + h[k + W + 1] * u) * v;
+}
+function terrOob(x, z) {
+  const i = Math.floor((x + XH) / TERR.R), j = Math.floor((z + ZH) / TERR.R);
+  if (i < 0 || j < 0 || i >= TERR.W - 1 || j >= TERR.H - 1) return true;
+  return TERR.oob[j * (TERR.W - 1) + i] === 1;
+}
+// polygon helpers (points are [x, z])
+function inPoly(x, z, P) { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, zi] = P[i], [xj, zj] = P[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; } return c; }
+function segDist(x, z, ax, az, bx, bz) { const dx = bx - ax, dz = bz - az, L = dx * dx + dz * dz; let t = L ? ((x - ax) * dx + (z - az) * dz) / L : 0; t = t < 0 ? 0 : t > 1 ? 1 : t; return Math.hypot(x - ax - dx * t, z - az - dz * t); }
+function polyDist(x, z, P, closed = true) { let d = 1e9; const n = P.length; for (let i = 0; i < (closed ? n : n - 1); i++) { const a = P[i], b = P[(i + 1) % n]; const e = segDist(x, z, a[0], a[1], b[0], b[1]); if (e < d) d = e; } return d; }
+// smooth a polyline / polygon through its control points (Catmull-Rom), ~k points per metre
+function smoothPts(P, closed = true, k = 3) {
+  const out = [], n = P.length, get = i => closed ? P[(i + n) % n] : P[clamp(i, 0, n - 1)];
+  for (let i = 0; i < (closed ? n : n - 1); i++) {
+    const p0 = get(i - 1), p1 = get(i), p2 = get(i + 1), p3 = get(i + 2), m = Math.max(2, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) * k));
+    for (let s = 0; s < m; s++) { const t = s / m, t2 = t * t, t3 = t2 * t; out.push([0, 1].map(c => 0.5 * (2 * p1[c] + (-p0[c] + p2[c]) * t + (2 * p0[c] - 5 * p1[c] + 4 * p2[c] - p3[c]) * t2 + (-p0[c] + 3 * p1[c] - 3 * p2[c] + p3[c]) * t3))); }
+  }
+  if (!closed) out.push(P[n - 1].slice());
+  return out;
+}
+const rotPts = P => P.map(([x, z]) => [-x, -z]);
+// height + surface kind of the open ground at (x,z): bowls (rounded transitions up to their rim), raised plateaus, the street
+function terrainAt(x, z) {
+  let h = SL, m = 0, rim = 0;
+  for (const p of TERR.plats) {
+    if (x < p.bb[0] || x > p.bb[1] || z < p.bb[2] || z > p.bb[3]) continue;
+    if (p.shrink) { if (inPoly(x, z, p.poly) && polyDist(x, z, p.poly) >= p.shrink) { h = p.h; m = p.mat; } continue; }   // sunken pits stop a little short of their walls
+    if (inPoly(x, z, p.poly) || (p.grow && polyDist(x, z, p.poly) < p.grow)) { h = p.h; m = p.mat; }
+  }
+  for (const b of TERR.bowls) {
+    if (x < b.bb[0] || x > b.bb[1] || z < b.bb[2] || z > b.bb[3] || !inPoly(x, z, b.poly)) continue;
+    // the rim rises where a plateau borders the bowl (blend over a couple of metres so the coping has no step)
+    let rh = SL;
+    for (const r of b.rims) { const d = inPoly(x, z, r.poly) ? 0 : polyDist(x, z, r.poly); rh = Math.max(rh, lerp(r.h, SL, smoothstep(0, r.blend, d))); }
+    const t = Math.min(1, polyDist(x, z, b.poly) / (b.R * Math.max(1, (rh - b.floor) / (SL - b.floor)))), q = 1 - t;
+    let y = b.floor + (rh - b.floor) * q * q;
+    for (const r of b.ridges) { const d = polyDist(x, z, r.pts, false); if (d < r.w) y = Math.max(y, b.floor + r.h * smoothstep(r.w, r.w * r.flat, d)); }
+    for (const c of b.mounds) { const d = Math.hypot(x - c.x, z - c.z); if (d < c.r) y = Math.max(y, b.floor + c.h * smoothstep(c.r, c.r * 0.45, d)); }
+    h = Math.min(rh, y); m = 1;
+  }
+  return [h, m];
+}
+function buildTerrain() {
+  const R = TERR.R, W = TERR.W = Math.round(XH * 2 / R) + 1, H = TERR.H = Math.round(ZH * 2 / R) + 1;
+  const bbOf = P => { const xs = P.map(p => p[0]), zs = P.map(p => p[1]); return [Math.min(...xs) - 0.5, Math.max(...xs) + 0.5, Math.min(...zs) - 0.5, Math.max(...zs) + 0.5]; };
+  TERR.plats.forEach(p => p.bb = bbOf(p.poly)); TERR.bowls.forEach(b => b.bb = bbOf(b.poly));
+  TERR.h = new Float32Array(W * H); TERR.mat = new Uint8Array((W - 1) * (H - 1)); TERR.oob = new Uint8Array((W - 1) * (H - 1));
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) TERR.h[j * W + i] = terrainAt(i * R - XH, j * R - ZH)[0];
+  for (let j = 0; j < H - 1; j++) for (let i = 0; i < W - 1; i++) {
+    const x = (i + 0.5) * R - XH, z = (j + 0.5) * R - ZH, k = j * (W - 1) + i;
+    TERR.oob[k] = inPoly(x, z, TERR.outline) ? 0 : 1; TERR.mat[k] = terrainAt(x, z)[1];
+  }
+  TERR.on = true;
+}
+
+function groundAt(x, z) {
+  let h = 0;
+  if (TERR.on) { if (terrOob(x, z)) return TERR.OOB_H; h = terrH(x, z); }
+  for (const s of solidsNear(x, z)) if (!s.bound && inRect(s, x, z)) { const t = topAt(s, x, z); if (t > h) h = t; }
+  return h;
+}
 // highest walkable ground under (x,z) that is not above y+step
-function groundBelow(x, z, y, step) { let h = 0; for (const s of SOLIDS) if (inRect(s, x, z)) { const t = topAt(s, x, z); if (t > h && t <= y + step) h = t; } return h; }
-// is point inside solid geometry?
+function groundBelow(x, z, y, step, noBridge) {
+  let h = 0;
+  if (TERR.on) h = terrOob(x, z) && TERR.OOB_H <= y + step ? TERR.OOB_H : terrH(x, z);
+  for (const s of solidsNear(x, z)) if (inRect(s, x, z)) { const t = topAt(s, x, z); if (t > h && t <= y + step) h = t; }
+  if (!noBridge) for (const b of BRIDGES) if (b.h > h && b.h <= y + step && inRect(b, x, z)) h = b.h;
+  return h;
+}
+// is point inside solid geometry?  (true = the ground / terrain, else the block it is in)
 function solidAt(x, y, z) {
   if (y < 0) return true;
-  for (const s of SOLIDS) if (inRect(s, x, z) && y < topAt(s, x, z)) return s;
+  if (TERR.on && (y < terrH(x, z) || (y < TERR.OOB_H && terrOob(x, z)))) return true;
+  if (y > TREE_Y0) for (const t of TREES) { if (y < t.y0 || y > t.y1) continue; const dx = x - t.x, dz = z - t.z, r = y > t.yc ? t.rc : t.r; if (dx * dx + dz * dz < r * r) return t; }
+  for (const s of solidsNear(x, z)) if (inRect(s, x, z) && y < topAt(s, x, z)) return s;
   return null;
 }
+// characters: out of bounds is a wall at any height, terrain too steep to step up is a wall
+function terrBlocked(x, z, y) { return terrOob(x, z) || terrH(x, z) > y; }
 function segBlocked(ax, ay, az, bx, by, bz, stepLen = 0.4) {
   const dx = bx - ax, dy = by - ay, dz = bz - az, L = Math.hypot(dx, dy, dz); const n = Math.max(1, Math.ceil(L / stepLen));
   for (let i = 1; i < n; i++) { const t = i / n; if (solidAt(ax + dx * t, ay + dy * t, az + dz * t)) return t; }
@@ -1025,7 +1332,7 @@ function segBlocked(ax, ay, az, bx, by, bz, stepLen = 0.4) {
 
 /* ============================================================ PAINT */
 const Paint = {
-  data: null, owner: null, hgt: null, tex: null, dirty: false, teamCells: [0, 0], total: NX * NZ,
+  data: null, owner: null, hgt: null, onTerr: null, tex: null, dirty: false, teamCells: [0, 0], total: NX * NZ,
   wdata: null, wtex: null, wdirty: false, W: 1024, H: 1024, PX: 8, faces: []
 };
 function initPaint() {
@@ -1033,6 +1340,15 @@ function initPaint() {
   Paint.owner = new Int8Array(NX * NZ).fill(-1);
   Paint.hgt = new Float32Array(NX * NZ);
   for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) Paint.hgt[j * NX + i] = groundAt((i + 0.5) * CELL - XH, (j + 0.5) * CELL - ZH);
+  // cells whose ground is the curved terrain itself (not a block top): splats may follow its slope
+  Paint.onTerr = new Uint8Array(NX * NZ);
+  if (TERR.on) for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH, k = j * NX + i; if (!terrOob(x, z) && Math.abs(Paint.hgt[k] - terrH(x, z)) < 0.02) Paint.onTerr[k] = 1; }
+  const OOB = SOLIDS.filter(s => s.oob);
+  if (OOB.length || TERR.on) {           // out of bounds: never takes ink, doesn't count toward the turf total
+    let n = 0;
+    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH; if (OOB.some(o => inRect(o, x, z)) || (TERR.on && terrOob(x, z))) Paint.hgt[j * NX + i] = 99; else n++; }
+    Paint.total = n;
+  }
   for (let k = 0; k < NX * NZ; k++) Paint.data[k * 4 + 3] = 255;
   Paint.tex = new THREE.DataTexture(Paint.data, NX, NZ, THREE.RGBAFormat);
   Paint.tex.magFilter = THREE.LinearFilter; Paint.tex.minFilter = THREE.LinearFilter; Paint.tex.generateMipmaps = false; Paint.tex.needsUpdate = true;
@@ -1048,8 +1364,10 @@ function buildWallAtlas() {
   for (const s of SOLIDS) {
     if (s.t === 'ramp') { rampFaces(s, faces); continue; }
     if (s.t !== 'box') continue; s.faces = {};
+    if (s.oob) continue;                                   // out-of-bounds blocks: not paintable, not climbable
     const dirs = s.bound ? [s.bound] : ['+x', '-x', '+z', '-z'];
     for (const d of dirs) {
+      if (MAP.cull && !s.bound && faceHidden(s, d)) continue;
       if (!s.bound) {
         if (d === '+x' && s.x1 >= XH - 0.01) continue; if (d === '-x' && s.x0 <= -XH + 0.01) continue;
         if (d === '+z' && s.z1 >= ZH - 0.01) continue; if (d === '-z' && s.z0 <= -ZH + 0.01) continue;
@@ -1085,6 +1403,26 @@ function buildWallAtlas() {
   Paint.wtex = new THREE.DataTexture(Paint.wdata, W, H, THREE.RGBAFormat);
   Paint.wtex.magFilter = THREE.LinearFilter; Paint.wtex.minFilter = THREE.LinearFilter; Paint.wtex.generateMipmaps = false; Paint.wtex.needsUpdate = true;
 }
+// a box face that can't be seen: every point just outside it is inside something at least as tall,
+// or a taller face in the same plane covers its whole length (avoids flicker where blocks sit on the street slab)
+function faceHidden(s, d) {
+  const ax = d[1] === 'x', sg = d[0] === '+' ? 1 : -1, plane = d === '+x' ? s.x1 : d === '-x' ? s.x0 : d === '+z' ? s.z1 : s.z0, a0 = ax ? s.z0 : s.x0, a1 = ax ? s.z1 : s.x1;
+  let all = true;
+  for (let k = 0; k <= 8 && all; k++) {
+    const a = lerp(a0 + 0.04, a1 - 0.04, k / 8), px = ax ? plane + sg * 0.05 : a, pz = ax ? a : plane + sg * 0.05;
+    if (!SOLIDS.some(o => o !== s && !o.bound && inRect(o, px, pz) && topAt(o, px, pz) >= s.h - 0.05) && !(TERR.on && (terrOob(px, pz) || terrH(px, pz) >= s.h - 0.05))) all = false;
+  }
+  if (all) return true;
+  const iv = [];
+  for (const o of SOLIDS) {
+    if (o === s || o.t !== 'box' || o.bound || o.oob || o.h < s.h - 0.01) continue;
+    const op = d === '+x' ? o.x1 : d === '-x' ? o.x0 : d === '+z' ? o.z1 : o.z0; if (Math.abs(op - plane) > 0.02) continue;
+    iv.push([ax ? o.z0 : o.x0, ax ? o.z1 : o.x1]);
+  }
+  iv.sort((p, q) => p[0] - q[0]); let reach = a0;
+  for (const [b0, b1] of iv) { if (b0 > reach + 0.02) break; reach = Math.max(reach, b1); }
+  return reach >= a1 - 0.02;
+}
 // ramps: the two triangular sides and the tall end are paintable walls too (skipped where another block covers them)
 function rampFaces(s, faces) {
   s.faces = {}; const hi = Math.max(s.h0, s.h1), zAx = s.axis === 'z';
@@ -1096,7 +1434,7 @@ function rampFaces(s, faces) {
     const plane = d === '+x' ? s.x1 : d === '-x' ? s.x0 : d === '+z' ? s.z1 : s.z0, a0 = ax ? s.z0 : s.x0, a1 = ax ? s.z1 : s.x1;
     // covered by a neighbouring block?  (sample just outside the face, low down)
     const am = (a0 + a1) / 2, ox = ax ? plane + nx * 0.05 : am, oz = ax ? am : plane + nz * 0.05;
-    if (d === highD && SOLIDS.some(o => o !== s && !o.bound && inRect(o, ox, oz) && topAt(o, ox, oz) >= hi - 0.05)) continue;
+    if (d === highD && (SOLIDS.some(o => o !== s && !o.bound && inRect(o, ox, oz) && topAt(o, ox, oz) >= hi - 0.05) || (TERR.on && (terrOob(ox, oz) || terrH(ox, oz) >= hi - 0.05)))) continue;
     const f = { s, d, ax, plane, a0, a1, h: hi, nx, nz, ramp: true, side: d !== highD };
     s.faces[d] = f; faces.push(f);
   }
@@ -1115,7 +1453,9 @@ function shapeVal(sh, dx, dz, r, fade) {
   return s < 0 ? 0 : s > 1 ? 1 : s;
 }
 function splatFloor(x, y, z, r, team, tol = 0.7, wallsToo = true, dir = null) {
-  const D = Paint.data, O = Paint.owner, Hg = Paint.hgt, TC = Paint.teamCells;
+  const D = Paint.data, O = Paint.owner, Hg = Paint.hgt, TC = Paint.teamCells, OT = Paint.onTerr;
+  // a splat that lands on the terrain follows its slope (a bowl wall) instead of stopping at a fixed height band
+  const slopeOk = TERR.on && Math.abs(terrH(x, z) - y) < 0.15 && !terrOob(x, z);
   const sh = makeShape(r), fade = CELL * 2.2;
   // dir = {ux, uz, k}: stretch the splat k times along the travel direction (grazing hits)
   const k = dir ? dir.k : 1, ux = dir ? dir.ux : 1, uz = dir ? dir.uz : 0;
@@ -1127,8 +1467,8 @@ function splatFloor(x, y, z, r, team, tol = 0.7, wallsToo = true, dir = null) {
     const dz = (j + 0.5) * CELL - ZH - z;
     for (let i = i0; i <= i1; i++) {
       const q = j * NX + i;
-      if (Math.abs(Hg[q] - y) > tol) continue;
       let ddx = (i + 0.5) * CELL - XH - x, ddz = dz;
+      if (Math.abs(Hg[q] - y) > tol + (slopeOk && OT[q] ? Math.hypot(ddx, ddz) * 0.95 : 0)) continue;
       if (dir) { const a = (ddx * ux + ddz * uz) / k, b = -ddx * uz + ddz * ux; ddx = a; ddz = b; }
       const s = shapeVal(sh, ddx, ddz, r, fade);
       if (s <= 0) continue;
@@ -1238,7 +1578,63 @@ totalEmissiveRadiance += inkC * 0.07 * inkA;`);
 }
 
 /* ===================================================== LAYOUT TEXTURE */
-function makeLayoutTex() {
+function makeLayoutTex() { return MAP_ID === 'skate' ? makeLayoutSkate() : makeLayoutDock(); }
+// skatepark: the only bare floor is the sunken bowls and pits — pale pool concrete with painted S-curves
+// skatepark ground paint: baked slope shading in the bowls (so their curves read from above), white coping
+// along the bowl rims, pale snake humps, soft contact shadows round the blocks, the team logos on the spawn platforms
+function makeLayoutSkate() {
+  const W = 1024, H = Math.round(1024 * PSZ / PSX);
+  const t = canvasTex(W, H, (g) => {
+    const s = W / PSX, m2p = (x, z) => [(x + XH) / PSX * W, (z + ZH) / PSZ * H];
+    // contact shadows (fake AO) round the blocks
+    g.save(); const OFF = W * 3; g.shadowOffsetX = OFF; g.shadowBlur = Math.round(s * 0.9); g.shadowColor = 'rgba(10,12,25,.55)'; g.fillStyle = '#000';
+    for (const so of SOLIDS) { if (so.bound || so.t !== 'box') continue; const [a, b] = m2p(so.x0, so.z0), [c, d] = m2p(so.x1, so.z1), pad = s * 0.15; g.fillRect(a - pad - OFF, b - pad, c - a + pad * 2, d - b + pad * 2); }
+    g.restore();
+    // bowls: per-pixel hill shading from the terrain itself
+    const img = (g.getImageData && g.getImageData(0, 0, W, H)) || g.createImageData(W, H), D = img.data, L = [-0.45, 0.8, -0.4], Ll = Math.hypot(...L);
+    const step = TERR.R;
+    for (let py = 0; py < H; py++) {
+      const z = (py + 0.5) / H * PSZ - ZH;
+      for (let px = 0; px < W; px++) {
+        const x = (px + 0.5) / W * PSX - XH, ci = Math.floor((x + XH) / TERR.R), cj = Math.floor((z + ZH) / TERR.R);
+        if (ci < 0 || cj < 0 || ci >= TERR.W - 1 || cj >= TERR.H - 1) continue;
+        const k = cj * (TERR.W - 1) + ci; if (TERR.mat[k] !== 1 || TERR.oob[k]) continue;
+        const y = terrH(x, z), gx = (terrH(x + step, z) - terrH(x - step, z)) / (2 * step), gz = (terrH(x, z + step) - terrH(x, z - step)) / (2 * step);
+        const nl = Math.hypot(gx, 1, gz), sh = (-gx * L[0] + L[1] - gz * L[2]) / nl / Ll, slope = 1 - 1 / nl;
+        const hump = clamp((y - 0.12) / 0.45, 0, 1) * (1 - clamp(slope * 3, 0, 1));
+        let r = 200, gg = 214, b = 224;
+        r = lerp(r, 196, hump); gg = lerp(gg, 226, hump); b = lerp(b, 236, hump);                      // pale blue snake tops
+        const lum = 0.6 + 0.42 * sh - 0.16 * (1 - clamp(y, 0, 1));
+        const o = (py * W + px) * 4, a0 = D[o + 3] / 255;
+        D[o] = lerp(D[o], clamp(r * lum, 0, 255), 1 - a0 * 0.3); D[o + 1] = lerp(D[o + 1], clamp(gg * lum, 0, 255), 1 - a0 * 0.3); D[o + 2] = lerp(D[o + 2], clamp(b * lum, 0, 255), 1 - a0 * 0.3);
+        D[o + 3] = Math.max(D[o + 3], 215);
+      }
+    }
+    g.putImageData(img, 0, 0);
+    // coping: a white edge with a dark lip all round each bowl rim, and round the humps
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    for (const bw of TERR.bowls) {
+      const pts = bw.poly.filter(([x, z]) => !terrOob(x * 0.995, z * 0.995));
+      const runs = []; let cur = []; bw.poly.forEach(p => { if (terrOob(p[0] - Math.sign(p[0]) * 0.4, p[1])) { if (cur.length > 1) runs.push(cur); cur = []; } else cur.push(p); }); if (cur.length > 1) runs.push(cur);
+      for (const r of runs) {
+        g.beginPath(); r.forEach(([x, z], i) => { const [a, b] = m2p(x, z); i ? g.lineTo(a, b) : g.moveTo(a, b); });
+        g.strokeStyle = 'rgba(40,46,60,.55)'; g.lineWidth = s * 0.55; g.stroke(); g.strokeStyle = 'rgba(250,250,248,.95)'; g.lineWidth = s * 0.32; g.stroke();
+      }
+      for (const rd of bw.ridges) { g.beginPath(); rd.pts.forEach(([x, z], i) => { const [a, b] = m2p(x, z); i ? g.lineTo(a, b) : g.moveTo(a, b); }); g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = s * 0.18; g.stroke(); }
+      for (const c of bw.mounds) { const [a, b] = m2p(c.x, c.z); g.beginPath(); g.arc(a, b, c.r * 0.45 * s, 0, 7); g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = s * 0.16; g.stroke(); g.fillStyle = 'rgba(60,70,85,.75)'; g.beginPath(); g.arc(a, b, s * 0.3, 0, 7); g.fill(); }
+    }
+    // team logos on the spawn platforms (our own ink-arrow emblem)
+    [[-9.4 * SKATE_K, 25.6 * SKATE_K, Math.PI], [9.4 * SKATE_K, -25.6 * SKATE_K, 0]].forEach(([x, z, r]) => {
+      const [a, b] = m2p(x, z); g.save(); g.translate(a, b); g.rotate(r); g.globalAlpha = 0.85;
+      g.fillStyle = '#7ad6a0'; g.beginPath(); g.moveTo(-s * 1.6, s * 1.4); g.lineTo(0, -s * 1.7); g.lineTo(s * 0.2, s * 0.2); g.closePath(); g.fill();
+      g.fillStyle = '#b77bf0'; g.beginPath(); g.moveTo(s * 1.6, s * 1.4); g.lineTo(0, -s * 0.6); g.lineTo(-s * 0.4, s * 1.5); g.closePath(); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = s * 0.12; g.strokeRect(-s * 2, -s * 2.1, s * 4, s * 4); g.restore();
+    });
+  }, false);
+  t.flipY = false; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+function makeLayoutDock() {
   const W = 1024, H = Math.round(1024 * PSZ / PSX);
   const t = canvasTex(W, H, (g) => {
     const m2p = (x, z) => [(x + XH) / PSX * W, (z + ZH) / PSZ * H], s = W / PSX;
@@ -1305,18 +1701,21 @@ const WALL_STYLE = {
   contG: { tex: 'contG', su: 3, vFull: true, color: 0xffffff, rough: 0.55, metal: 0.25 },
   crate: { tex: 'crate', su: 0, vFull: true, color: 0xffffff, rough: 0.8 },
   stone: { tex: 'stone', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
+  hedge: { tex: 'hedge', su: 2, vFull: false, color: 0xffffff, rough: 0.95 },
 };
-const TOP_STYLE = { concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
+const TOP_STYLE = { skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
 let arenaGroup;
 function buildArena() {
   arenaGroup = new THREE.Group(); scene.add(arenaGroup);
   PU.noiseMap.value = TEX.noise; PU.floorPaint.value = Paint.tex; PU.wallPaint.value = Paint.wtex; PU.layoutMap.value = TEX.layout;
+  if (TERR.on) buildTerrainMesh(); else {
   // floor
   const fg = quadGeo([[-XH, 0, -ZH], [XH, 0, -ZH], [XH, 0, ZH], [-XH, 0, ZH]], [[-XH / 8, -ZH / 8], [XH / 8, -ZH / 8], [XH / 8, ZH / 8], [-XH / 8, ZH / 8]], null, null, [0, 1, 0]);
   const floor = new THREE.Mesh(fg, paintMat({ map: TEX.concrete, roughness: 0.92, color: 0xffffff }, 'floor', true));
   floor.receiveShadow = true; arenaGroup.add(floor);
+  }
   // tops & ramps grouped by style
-  const tops = {}, walls = {}, sides = [];
+  const tops = {}, walls = {}, sides = [], hedge = [];
   const PX = Paint.PX, W = Paint.W, H = Paint.H;
   // one wall quad (corners as [along, height]) with its slot in the paint atlas
   const wallQuad = (style, f, corners) => {
@@ -1349,12 +1748,20 @@ function buildArena() {
         sides.push(quadGeo(pts, [[0, 0], [L[1] - L[0], 0], [L[1] - L[0], 1], [0, 1]], null, null, nn[1] === 'x' ? [nn[0] === '+' ? 1 : -1, 0, 0] : [0, 0, nn[0] === '+' ? 1 : -1]));
       }
       for (const d in s.faces) { const f = s.faces[d]; wallQuad(s.style, f, [[f.a0, 0], [f.a1, 0], [f.a1, f.h], [f.a0, f.h]]); }
+      if (s.oob) {                                         // hedge sides above the street, not in the paint atlas
+        const y0 = MAP_ID === 'skate' ? SL : 0;
+        [['+x', s.x1, 1, 0], ['-x', s.x0, -1, 0], ['+z', s.z1, 0, 1], ['-z', s.z0, 0, -1]].forEach(([d, pl, nx, nz]) => {
+          if ((d === '+x' && s.x1 >= XH - 0.01) || (d === '-x' && s.x0 <= -XH + 0.01) || (d === '+z' && s.z1 >= ZH - 0.01) || (d === '-z' && s.z0 <= -ZH + 0.01)) return;
+          const L = nx ? [s.z0, s.z1] : [s.x0, s.x1], pts = [[L[0], y0], [L[1], y0], [L[1], s.h], [L[0], s.h]].map(([a, y]) => nx ? [pl, y, a] : [a, y, pl]);
+          hedge.push(quadGeo(pts, [[L[0] / 2, y0 / 2], [L[1] / 2, y0 / 2], [L[1] / 2, s.h / 2], [L[0] / 2, s.h / 2]], null, null, [nx, 0, nz]));
+        });
+      }
     } else {
       const sc = 2; const c = [[s.x0, s.z0], [s.x1, s.z0], [s.x1, s.z1], [s.x0, s.z1]];
       const p = c.map(([x, z]) => [x, topAt(s, x, z), z]);
       const n = new THREE.Vector3(...p[1]).sub(new THREE.Vector3(...p[0])).cross(new THREE.Vector3(...p[3]).sub(new THREE.Vector3(...p[0]))).normalize();
       if (n.y < 0) n.negate();
-      (tops.grate = tops.grate || []).push(quadGeo(p, c.map(([x, z]) => [x / sc, z / sc]), null, null, [n.x, n.y, n.z]));
+      const tk = TOP_STYLE[s.top] ? s.top : 'grate'; (tops[tk] = tops[tk] || []).push(quadGeo(p, c.map(([x, z]) => [x / sc, z / sc]), null, null, [n.x, n.y, n.z]));
       // sides (triangles as degenerate quads) and the tall end: paintable walls
       const hi = Math.max(s.h0, s.h1), lowAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z0 : s.z1) : (s.h0 < s.h1 ? s.x0 : s.x1), highAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z1 : s.z0) : (s.h0 < s.h1 ? s.x1 : s.x0);
       for (const d in s.faces) {
@@ -1372,8 +1779,24 @@ function buildArena() {
     const st = WALL_STYLE[k]; const m = new THREE.Mesh(mergeGeos(walls[k]), paintMat({ map: TEX[st.tex], color: st.color, roughness: st.rough, metalness: st.metal || 0 }, 'wall', false));
     m.castShadow = m.receiveShadow = true; arenaGroup.add(m);
   }
-  const sm = new THREE.Mesh(mergeGeos(sides), new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.85, side: THREE.DoubleSide }));
-  sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm);
+  if (sides.length) { const sm = new THREE.Mesh(mergeGeos(sides), new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.85, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
+  if (hedge.length) { const hm = new THREE.Mesh(mergeGeos(hedge), new THREE.MeshStandardMaterial({ map: TEX.hedge, roughness: 0.95 })); hm.castShadow = hm.receiveShadow = true; arenaGroup.add(hm); }
+  // see-through grate bridges and fences (yellow frames, like the park's rails)
+  if (BRIDGES.length || FENCES.length) {
+    const gm = new THREE.MeshStandardMaterial({ map: TEX.grateA, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.45, metalness: 0.5 });
+    const fm = new THREE.MeshStandardMaterial({ color: 0xffc629, roughness: 0.45, metalness: 0.3 });
+    const add = (w, h, d, x, y, z, m, ru, rv) => { const g = new THREE.BoxGeometry(w, h, d); if (ru) { const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * ru, uv.getY(i) * rv); } const o = new THREE.Mesh(g, m); o.position.set(x, y, z); o.castShadow = true; arenaGroup.add(o); return o; };
+    for (const b of BRIDGES) {
+      const w = b.x1 - b.x0, d = b.z1 - b.z0, cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
+      add(w, 0.06, d, cx, b.h - 0.03, cz, gm, Math.max(w, d) / 1.2, Math.min(w, d) / 1.2);
+      const along = d > w; [-1, 1].forEach(sg => add(along ? 0.1 : w, 0.14, along ? d : 0.1, along ? cx + sg * (w / 2 - 0.05) : cx, b.h - 0.07, along ? cz : cz + sg * (d / 2 - 0.05), fm));
+    }
+    for (const f of FENCES) {
+      const w = f.x1 - f.x0, d = f.z1 - f.z0, cx = (f.x0 + f.x1) / 2, cz = (f.z0 + f.z1) / 2, hh = f.h - f.y0;
+      add(w, hh, d, cx, f.y0 + hh / 2, cz, gm, Math.max(w, d) / 1.2, hh / 1.2);
+      add(w + 0.06, 0.08, d + 0.06, cx, f.h, cz, fm);
+    }
+  }
   // spawn pads (glowing rings)
   SPAWN.forEach((sp, t) => {
     const ring = new THREE.Mesh(new THREE.RingGeometry(2.2, 2.7, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
@@ -1382,6 +1805,80 @@ function buildArena() {
     disk.rotation.x = -Math.PI / 2; disk.position.set(sp.x, sp.y + 0.025, sp.z); disk.userData.team = t; arenaGroup.add(disk);
     WORLD.spawnFx.push(ring, disk);
   });
+}
+// the terrain surface: flat stretches merged into long strips, bowls as a fine smooth mesh
+const TERR_STYLE = [{ tex: 'concrete', s: 8, rough: 0.9 }, { tex: 'bowl', s: 7, rough: 0.5 }, { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, { tex: 'concrete', s: 5, rough: 0.85, color: 0xd9d2c4 }];
+function buildTerrainMesh() {
+  const R = TERR.R, W = TERR.W, H = TERR.H, h = TERR.h, CW = W - 1, CH = H - 1;
+  const G = TERR_STYLE.map(() => ({ p: [], n: [], u: [], i: [] }));
+  const vh = (i, j) => h[j * W + i];
+  const nrm = (i, j) => { const a = vh(Math.max(0, i - 1), j), b = vh(Math.min(W - 1, i + 1), j), c = vh(i, Math.max(0, j - 1)), d = vh(i, Math.min(H - 1, j + 1)); const nx = -(b - a) / (2 * R), nz = -(d - c) / (2 * R), L = Math.hypot(nx, 1, nz); return [nx / L, 1 / L, nz / L]; };
+  const near = (i, j) => { for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) { const ii = i + a, jj = j + b; if (ii >= 0 && jj >= 0 && ii < CW && jj < CH && !TERR.oob[jj * CW + ii]) return true; } return false; };
+  const quad = (g, P, N) => { const st = TERR_STYLE[g], o = G[g], b = o.p.length / 3; P.forEach((q, k) => { o.p.push(...q); o.n.push(...N[k]); o.u.push(q[0] / st.s, q[2] / st.s); }); o.i.push(b, b + 2, b + 1, b, b + 3, b + 2); };
+  for (let j = 0; j < CH; j++) {
+    let run = null;
+    const flush = () => { if (!run) return; const z0 = j * R - ZH, z1 = z0 + R, x0 = run.i0 * R - XH, x1 = (run.i1 + 1) * R - XH; quad(run.m, [[x0, run.y, z0], [x1, run.y, z0], [x1, run.y, z1], [x0, run.y, z1]], [[0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]]); run = null; };
+    for (let i = 0; i < CW; i++) {
+      const k = j * CW + i; if (TERR.oob[k] && !near(i, j)) { flush(); continue; }
+      const a = vh(i, j), b = vh(i + 1, j), c = vh(i + 1, j + 1), d = vh(i, j + 1), m = TERR.mat[k];
+      if (Math.abs(a - b) < 1e-4 && Math.abs(a - c) < 1e-4 && Math.abs(a - d) < 1e-4) {
+        if (run && run.m === m && Math.abs(run.y - a) < 1e-4 && run.i1 === i - 1) { run.i1 = i; continue; }
+        flush(); run = { i0: i, i1: i, y: a, m }; continue;
+      }
+      flush();
+      const x0 = i * R - XH, z0 = j * R - ZH;
+      quad(m, [[x0, a, z0], [x0 + R, b, z0], [x0 + R, c, z0 + R], [x0, d, z0 + R]], [nrm(i, j), nrm(i + 1, j), nrm(i + 1, j + 1), nrm(i, j + 1)]);
+    }
+    flush();
+  }
+  G.forEach((o, g) => {
+    if (!o.i.length) return;
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(o.p, 3)); geo.setAttribute('normal', new THREE.Float32BufferAttribute(o.n, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(o.u, 2)); geo.setIndex(o.i); geo.computeBoundingSphere();
+    const st = TERR_STYLE[g], m = new THREE.Mesh(geo, paintMat({ map: TEX[st.tex], roughness: st.rough, metalness: st.metal || 0, color: st.color || 0xffffff }, 'floor', true));
+    m.receiveShadow = true; m.castShadow = g === 1; arenaGroup.add(m);
+  });
+  buildParkWall();
+}
+// the park's outer wall along the curved outline: inner face, a flat top, the outside face; a yellow rail on top
+function buildParkWall() {
+  const P = TERR.outline, n = P.length, WT = TERR.OOB_H, T = 0.5;
+  const out = P.map((p, i) => {
+    const a = P[(i - 1 + n) % n], b = P[(i + 1) % n]; let tx = b[0] - a[0], tz = b[1] - a[1]; const L = Math.hypot(tx, tz) || 1; tx /= L; tz /= L;
+    let nx = tz, nz = -tx; if (inPoly(p[0] + nx * 0.3, p[1] + nz * 0.3, P)) { nx = -nx; nz = -nz; } return [nx, nz];
+  });
+  const pos = [], nor = [], uv = [], idx = [], cap = { p: [], n: [], u: [], i: [] };
+  let acc = 0;
+  const lens = P.map((p, i) => { const q = P[(i + 1) % n]; return Math.hypot(q[0] - p[0], q[1] - p[1]); });
+  for (let i = 0; i <= n; i++) {
+    const k = i % n, p = P[k], o = out[k], u = acc / 11.6; acc += lens[k];
+    // inner face (normal points into the park), outer face
+    pos.push(p[0], -0.5, p[1], p[0], WT, p[1]); nor.push(-o[0], 0, -o[1], -o[0], 0, -o[1]); uv.push(u, 0.17, u, 1);
+    pos.push(p[0] + o[0] * T, SL - 0.05, p[1] + o[1] * T, p[0] + o[0] * T, WT, p[1] + o[1] * T); nor.push(o[0], 0, o[1], o[0], 0, o[1]); uv.push(u, 0.4, u, 1);
+    cap.p.push(p[0], WT, p[1], p[0] + o[0] * T, WT, p[1] + o[1] * T); cap.n.push(0, 1, 0, 0, 1, 0); cap.u.push(u, 0, u, 0.2);
+    if (i < n) { const b = i * 4, c = i * 2; idx.push(b, b + 1, b + 5, b, b + 5, b + 4, b + 2, b + 7, b + 3, b + 2, b + 6, b + 7); cap.i.push(c, c + 3, c + 1, c, c + 2, c + 3); }
+  }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeBoundingSphere();
+  const wm = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: TEX.parkWall || TEX.panel, color: 0xffffff, roughness: 0.75, side: THREE.DoubleSide })); wm.castShadow = wm.receiveShadow = true; arenaGroup.add(wm);
+  const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cap.p, 3)); cg.setAttribute('normal', new THREE.Float32BufferAttribute(cap.n, 3)); cg.setAttribute('uv', new THREE.Float32BufferAttribute(cap.u, 2)); cg.setIndex(cap.i); cg.computeBoundingSphere();
+  const cm = new THREE.Mesh(cg, new THREE.MeshStandardMaterial({ map: TEX.stone, color: 0x9aa0ad, roughness: 0.85, side: THREE.DoubleSide })); cm.receiveShadow = true; arenaGroup.add(cm);
+  // yellow coping rail just inside the top edge, on short posts
+  const railM = new THREE.MeshStandardMaterial({ color: 0xffc629, roughness: 0.35, metalness: 0.4 });
+  // points every <= 0.5 m along the wall (long straight runs would make the spline bulge off the wall top)
+  const rp = [];
+  for (let i = 0; i < n; i++) {
+    const p = P[i], q = P[(i + 1) % n], o = out[i], o2 = out[(i + 1) % n], m = Math.max(1, Math.ceil(lens[i] / 0.5));
+    for (let k = 0; k < m; k++) { const t = k / m, ox = lerp(o[0], o2[0], t), oz = lerp(o[1], o2[1], t), L = Math.hypot(ox, oz) || 1; rp.push(new THREE.Vector3(lerp(p[0], q[0], t) + ox / L * 0.22, WT + 0.42, lerp(p[1], q[1], t) + oz / L * 0.22)); }
+  }
+  const curve = new THREE.CatmullRomCurve3(rp, true);
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, rp.length, 0.11, 6, true), railM); tube.castShadow = true; arenaGroup.add(tube);
+  const posts = []; for (let i = 0; i < rp.length; i += 5) posts.push(rp[i]);
+  const pim = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.06, 0.06, 0.42, 6), railM, posts.length), dm = new THREE.Object3D();
+  posts.forEach((q, i) => { dm.position.set(q.x, WT + 0.21, q.z); dm.updateMatrix(); pim.setMatrixAt(i, dm.matrix); }); arenaGroup.add(pim);
+  // the centre tower's round lip (sits round the top edge, never over the paintable top)
+  if (TERR.tower) {
+    const T = TERR.tower, lip = new THREE.Mesh(new THREE.TorusGeometry(T.r - 0.08, 0.12, 8, 48), railM); lip.rotation.x = Math.PI / 2; lip.position.y = T.h + 0.02; arenaGroup.add(lip);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(T.r, T.r, 0.35, 48, 1, true), new THREE.MeshStandardMaterial({ color: 0x2b2f3a, roughness: 0.5, metalness: 0.4, side: THREE.DoubleSide })); band.position.y = T.h - 0.2; arenaGroup.add(band);
+  }
 }
 const WORLD = { spawnFx: [], buoys: [], sea: null, sky: null, flags: null };
 function setTeamColors(c0, c1) {
@@ -1421,6 +1918,7 @@ function buildSkyEnv() {
   pm.dispose();
 }
 function buildSea() {
+  if (MAP_ID === 'skate') return buildPlaza();
   const m = new THREE.ShaderMaterial({
     uniforms: {
       time: { value: 0 }, sunDir: { value: new THREE.Vector3(38, 70, 24).normalize() },
@@ -1461,6 +1959,7 @@ function buildSea() {
 
 /* ================================================================ DECOR */
 function buildDecor() {
+  if (MAP_ID === 'skate') return buildDecorSkate();
   const deco = new THREE.Group(); scene.add(deco);
   const stoneM = new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.9, color: 0xd8dde6 });
   // pier body
@@ -1584,6 +2083,104 @@ function updateWorld(t, dt) {
   WORLD.buoys.forEach(b => { b.position.y = -3.1 + Math.sin(t * 1.3 + b.userData.ph) * 0.3; b.rotation.z = Math.sin(t * 0.9 + b.userData.ph) * 0.12; b.updateMatrix(); });
   const pulse = 0.6 + Math.sin(t * 3) * 0.25;
   WORLD.spawnFx.forEach((m, i) => { m.material.opacity = (i % 2 ? 0.2 : 0.85) * pulse; });
+}
+
+/* ================================================= SKATEPARK SURROUNDINGS
+   City plaza around the park: paving and lawns, the yellow coping rail on
+   the park wall, palms in the planters, grandstands, floodlights, billboards
+   (our own brand: SPLASH RUSH), an elevated highway and the skyline.       */
+function buildPlaza() {
+  const pave = TEX.concrete.clone(); pave.repeat.set(90, 90); pave.needsUpdate = true;
+  // paving round the park, with the park's outline cut out (the bowls sink below street level)
+  const sh = new THREE.Shape([[-700, -700], [700, -700], [700, 700], [-700, 700]].map(([x, y]) => new THREE.Vector2(x, y)));
+  if (TERR.on) sh.holes.push(new THREE.Path(TERR.outline.map(([x, z]) => new THREE.Vector2(x, -z))));
+  const pg = new THREE.ShapeGeometry(sh); const uv = pg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / 1400 + 0.5, uv.getY(i) / 1400 + 0.5);
+  const g = new THREE.Mesh(pg, new THREE.MeshStandardMaterial({ map: pave, color: 0xe6dccb, roughness: 0.95 }));
+  g.rotation.x = -Math.PI / 2; g.position.y = SL - 0.03; g.receiveShadow = true; scene.add(g);
+  const lawnT = TEX.grass.clone(); lawnT.repeat.set(20, 20); lawnT.needsUpdate = true; const lawnM = new THREE.MeshStandardMaterial({ map: lawnT, roughness: 1 });
+  [[-XH - 14, 0, 16, ZH * 2 + 30], [XH + 14, 0, 16, ZH * 2 + 30], [0, -ZH - 12, XH * 2 + 44, 12], [0, ZH + 12, XH * 2 + 44, 12]].forEach(([x, z, w, d]) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), lawnM); m.rotation.x = -Math.PI / 2; m.position.set(x, SL - 0.01, z); m.receiveShadow = true; scene.add(m); });
+}
+function buildDecorSkate() {
+  const deco = new THREE.Group(); scene.add(deco);
+  const dm = new THREE.Object3D();
+  const railM = new THREE.MeshStandardMaterial({ color: 0xffc629, roughness: 0.35, metalness: 0.4 });
+  const darkM = new THREE.MeshStandardMaterial({ color: 0x2b2f3a, roughness: 0.5, metalness: 0.5 });
+  const poleM = new THREE.MeshStandardMaterial({ color: 0x3a3f4d, metalness: 0.7, roughness: 0.35 });
+  // palms on the out-of-bounds planters and gardens
+  const palms = [];
+  PALMS.forEach(([x, z, k]) => { const s = SOLIDS.find(o => o.oob && inRect(o, x, z)); palms.push([x, s ? s.h : groundAt(x, z), z, k]); });
+  const trunkM = new THREE.MeshStandardMaterial({ color: 0x8a6a45, roughness: 0.9 }), leafM = new THREE.MeshStandardMaterial({ color: 0x3e9a47, roughness: 0.8, side: THREE.DoubleSide });
+  const tim = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.18, 0.28, 1, 7), trunkM, palms.length);
+  const leafG = new THREE.ConeGeometry(0.55, 3.2, 4, 1, true); leafG.translate(0, 1.6, 0); leafG.rotateZ(Math.PI / 2.4);
+  const lim = new THREE.InstancedMesh(leafG, leafM, palms.length * 6);
+  palms.forEach(([x, y, z, k], i) => {
+    const hT = 4.2 * k;
+    // collision for shots: trunk up to the crown, then a flatter disc for the fronds (not paintable)
+    const tr = { t: 'box', tree: true, x, z, y0: y, yc: y + hT - 0.35 * k, y1: y + hT + 0.9 * k, r: 0.3 * k, rc: 1.7 * k };
+    Object.assign(tr, { x0: x - tr.rc, x1: x + tr.rc, z0: z - tr.rc, z1: z + tr.rc, h: tr.y1 }); TREES.push(tr); TREE_Y0 = Math.min(TREE_Y0, y); dm.position.set(x, y + hT / 2, z); dm.scale.set(k, hT, k); dm.rotation.set(0, 0, 0); dm.updateMatrix(); tim.setMatrixAt(i, dm.matrix);   // upright, so the crown sits on the trunk
+    for (let j = 0; j < 6; j++) { dm.position.set(x, y + hT, z); dm.scale.set(k, k, k); dm.rotation.set(0, j / 6 * Math.PI * 2 + i, 0); dm.updateMatrix(); lim.setMatrixAt(i * 6 + j, dm.matrix); }
+  });
+  tim.castShadow = lim.castShadow = true; deco.add(tim, lim);
+  // grandstands at the four corners, outside the park
+  const seatM = [0xff5a7a, 0x3fb6ff, 0xffd23a].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.6 }));
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz], k) => {
+    const g = new THREE.Group(); g.position.set(sx * (XH + 9), SL, sz * (ZH - 6)); g.rotation.y = sx > 0 ? -Math.PI / 2 : Math.PI / 2;
+    for (let r = 0; r < 6; r++) { const b = new THREE.Mesh(new THREE.BoxGeometry(14, 0.6 + r * 0.6, 1.4), darkM); b.position.set(0, (0.6 + r * 0.6) / 2, r * 1.4); g.add(b); const st = new THREE.Mesh(new THREE.BoxGeometry(13.6, 0.18, 0.5), seatM[(r + k) % 3]); st.position.set(0, 0.7 + r * 0.6, r * 1.4 - 0.3); g.add(st); }
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(15, 0.3, 9), darkM); roof.position.set(0, 6.4, 3.5); roof.rotation.x = -0.12; g.add(roof);
+    [-7, 7].forEach(x => { const p = new THREE.Mesh(new THREE.BoxGeometry(0.3, 6.4, 0.3), poleM); p.position.set(x, 3.2, 8); g.add(p); });
+    deco.add(g);
+  });
+  // floodlights at the corners
+  const lampM = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff6d8, emissiveIntensity: 1.6 });
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+    const g = new THREE.Group(); g.position.set(sx * (XH + 4), SL, sz * (ZH + 3));
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 18, 10), poleM); pole.position.y = 9; g.add(pole);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.2, 0.5), poleM); head.position.y = 18.4; head.rotation.x = 0.35; g.add(head);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.1), lampM); l.position.set(-1.05 + i * 1.05, 17.8 + j * 0.62, 0.3); g.add(l); }
+    g.lookAt(0, SL, 0); g.rotation.x = 0; g.rotation.z = 0; deco.add(g);
+  });
+  // billboards: SPLASH RUSH brand boards around the park
+  const board = (w, h, draw) => canvasTex(1024, Math.round(1024 * h / w), draw, false);
+  const blob = (g, x, y, r, c) => { g.fillStyle = c; g.beginPath(); for (let a = 0; a <= 6.3; a += 0.3) { const rr = r * (1 + 0.18 * Math.sin(a * 5) + 0.1 * Math.sin(a * 9)); g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.fill(); };
+  const title = (g, w, h, t1, t2, bg0, bg1, c2) => {
+    const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, bg0); gr.addColorStop(1, bg1); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    blob(g, w * 0.15, h * 0.3, h * 0.32, '#ff7a00'); blob(g, w * 0.85, h * 0.7, h * 0.38, '#3346ff'); blob(g, w * 0.62, h * 0.2, h * 0.12, '#ff2d95');
+    g.font = `900 ${Math.round(h * 0.34)}px Arial Black, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = h * 0.05; g.strokeStyle = '#111';
+    g.save(); g.translate(w / 2, h * 0.42); g.rotate(-0.05); g.strokeText(t1, 0, 0); g.fillStyle = '#fff'; g.fillText(t1, 0, 0);
+    g.font = `900 ${Math.round(h * 0.2)}px Arial Black, sans-serif`; g.strokeText(t2, 0, h * 0.32); g.fillStyle = c2; g.fillText(t2, 0, h * 0.32); g.restore();
+  };
+  const boards = [
+    [board(16, 8, (g, w, h) => title(g, w, h, 'SPLASH RUSH', 'SKATEPARK', '#1a1440', '#3b1b6e', '#ffe45c')), 16, 8, -XH - 6, 20, Math.PI / 2],
+    [board(16, 8, (g, w, h) => title(g, w, h, 'SPLASH RUSH', 'INK · SKATE · WIN', '#102c3a', '#1f5b6e', '#7cff5a')), 16, 8, XH + 6, -20, -Math.PI / 2],
+    [board(14, 7, (g, w, h) => title(g, w, h, 'RUSH!', 'SPLASH RUSH', '#3a0f2a', '#6e1b4a', '#3fd0ff')), 14, 7, 12, ZH + 7, Math.PI],
+    [board(14, 7, (g, w, h) => title(g, w, h, 'INK UP!', 'SPLASH RUSH', '#2a2a10', '#5e5a14', '#ff8fb1')), 14, 7, -12, -ZH - 7, 0],
+  ];
+  boards.forEach(([t, w, h, x, z, ry]) => {
+    const g = new THREE.Group(); g.position.set(x, SL, z); g.rotation.y = ry;
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0.35, roughness: 0.5 })); p.position.y = 5 + h / 2; g.add(p);
+    const fr = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, h + 0.6, 0.4), darkM); fr.position.set(0, 5 + h / 2, -0.25); g.add(fr);
+    [-w / 3, w / 3].forEach(px => { const l = new THREE.Mesh(new THREE.BoxGeometry(0.4, 5, 0.4), poleM); l.position.set(px, 2.5, -0.3); g.add(l); });
+    deco.add(g);
+  });
+  // elevated highway behind the park
+  const hwM = new THREE.MeshStandardMaterial({ color: 0xb9c0cc, roughness: 0.8 });
+  const hw = new THREE.Mesh(new THREE.BoxGeometry(14, 1.6, 700), hwM); hw.position.set(95, 22, 0); deco.add(hw);
+  for (let z = -330; z <= 330; z += 30) { const p = new THREE.Mesh(new THREE.BoxGeometry(3, 22, 3), hwM); p.position.set(95, 11, z); deco.add(p); }
+  const trussM = new THREE.MeshStandardMaterial({ color: 0x8e96a4, roughness: 0.6, metalness: 0.4 });
+  [-6.5, 6.5].forEach(dx => { const t = new THREE.Mesh(new THREE.BoxGeometry(0.5, 4, 700), trussM); t.position.set(95 + dx, 25, 0); deco.add(t); for (let z = -340; z <= 340; z += 8) { const d = new THREE.Mesh(new THREE.BoxGeometry(0.3, 5.5, 0.3), trussM); d.position.set(95 + dx, 25, z); d.rotation.x = 0.8; deco.add(d); } });
+  // city skyline + clouds
+  const bld = []; const bCols = ['#ffd9c2', '#c2e3ff', '#ffe9a8', '#d7c9ff', '#b9f0d8', '#ffc4d6', '#f4f4f4', '#9fd6ff'];
+  for (let i = 0; i < 110; i++) { const a = rand(0, Math.PI * 2), r = rand(140, 330); bld.push({ x: Math.cos(a) * r, z: Math.sin(a) * r * 1.2, w: rand(12, 28), d: rand(12, 28), h: rand(20, 110), c: pick(bCols) }); }
+  const bim = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ map: TEX.windows, roughness: 0.6, metalness: 0.1 }), bld.length);
+  bld.forEach((b, i) => { dm.position.set(b.x, b.h / 2 + SL, b.z); dm.rotation.set(0, 0, 0); dm.scale.set(b.w, b.h, b.d); dm.updateMatrix(); bim.setMatrixAt(i, dm.matrix); bim.setColorAt(i, new THREE.Color(b.c)); });
+  deco.add(bim);
+  const puffs = [];
+  for (let c = 0; c < 16; c++) { const a = rand(0, Math.PI * 2), r = rand(260, 520), cx = Math.cos(a) * r, cz = Math.sin(a) * r, cy = rand(80, 150), s = rand(10, 22); for (let k = 0; k < 7; k++) puffs.push([cx + rand(-2.2, 2.2) * s, cy + rand(-0.3, 0.5) * s, cz + rand(-1, 1) * s, s * rand(0.6, 1.15)]); }
+  const cim = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xdde9ff, emissiveIntensity: 0.45, roughness: 1, fog: false }), puffs.length);
+  puffs.forEach(([x, y, z, s], i) => { dm.position.set(x, y, z); dm.scale.set(s, s * 0.7, s); dm.rotation.set(0, 0, 0); dm.updateMatrix(); cim.setMatrixAt(i, dm.matrix); });
+  deco.add(cim);
+  deco.traverse(o => { if (o.isMesh) { o.matrixAutoUpdate = false; o.updateMatrix(); } });
+  deco.updateMatrixWorld(true);
 }
 /* ======================================================= GAME DATA
    Weapons / subs / specials are pure data. Characters read their
@@ -1743,6 +2340,13 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.9.0', date: '2026-10-02', time: '01:50', title: '新地图：墨浪滑板场', items: [
+    '新地图「墨浪滑板场」：S 形下沉泳池、波浪外墙、中央高塔和铁网走道',
+    '泳池是真正的碗形，能走下去、顺着弧形坡走上来，坡面也能涂墨',
+    '新增选场地页面：主页「开始对战」先选场地，背景会换成那张场地',
+    '开场镜头直接落在你身后，开场时动鼠标也不会甩镜头',
+    '棕榈树会挡子弹，人也穿不过树干；铁网围栏和走道不会再穿模'
+  ] },
   { v: 'v0.8.6', date: '2026-09-30', time: '03:01', title: '爬墙', items: [
     '爬墙时鱿鱼会贴着墙面、头朝上',
     '在墙上可以停住，也能往上下左右游',
@@ -1859,7 +2463,8 @@ const VERSION = RELEASES[0].v;
 /* ============================================================ CHARACTERS */
 const CHARS = [];
 let PLAYER = null;
-const STEP = 0.55, GRAV = 24, RESPAWN = 5.5, SPECIAL_AREA = 42;
+const RING8 = Array.from({ length: 8 }, (_, a) => [Math.cos(a * Math.PI / 4), Math.sin(a * Math.PI / 4)]);
+const STEP = 0.55, BODY_H = 1.7, GRAV = 24, RESPAWN = 5.5, SPECIAL_AREA = 42;
 const BOT_NAMES = ['小墨', '咕噜', '泡泡', '阿飞', '闪电', '橘子汽水', '海苔', '奶昔', '跳跳糖', '大橙', '蓝莓', '噗噗', '墨鱼丸'];
 const TEAMMAT = [0, 1].map(() => new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.06, emissive: 0xffffff, emissiveIntensity: 0.16 }));
 const TEAMGHOST = [0, 1].map(() => new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.1, clearcoat: 1, transparent: true, opacity: 0.38, depthWrite: false, emissive: 0xffffff, emissiveIntensity: 0.3 }));
@@ -2381,9 +2986,10 @@ class Character {
     }
     // vertical
     if (!this.climbing) this.vel.y -= GRAV * dt;
-    const wasG = this.grounded;
+    const wasG = this.grounded, y0 = this.pos.y;
     this.pos.y += this.vel.y * dt;
-    const g = groundBelow(this.pos.x, this.pos.z, Math.max(this.pos.y, this.pos.y - this.vel.y * dt), STEP);
+    if (this.vel.y > 0 && !this.swim && BRIDGES.length) for (const b of BRIDGES) { const c = b.h - 0.06 - BODY_H; if (y0 <= c + 1e-3 && this.pos.y > c && inRect(b, this.pos.x, this.pos.z)) { this.pos.y = c; this.vel.y = 0; } }   // head bumps the grate above
+    const g = groundBelow(this.pos.x, this.pos.z, Math.max(this.pos.y, this.pos.y - this.vel.y * dt), STEP, this.swim);   // squids drop through grate bridges
     if (this.pos.y <= g) {
       if (!wasG && this.vel.y < -12 && this.isPlayer) Sfx.land(0.5);
       this.pos.y = g; if (this.vel.y < 0) this.vel.y = 0; this.grounded = true; this.airSpeed = 0;
@@ -2556,7 +3162,7 @@ class Character {
   }
   collide() {
     const r = 0.38; let hit = null;
-    for (const s of SOLIDS) {
+    for (const s of solidsNear(this.pos.x, this.pos.z)) {
       let x = this.pos.x, z = this.pos.z;
       if (x + r < s.x0 || x - r > s.x1 || z + r < s.z0 || z - r > s.z1) continue;
       const cx = clamp(x, s.x0, s.x1), cz = clamp(z, s.z0, s.z1);
@@ -2570,6 +3176,51 @@ class Character {
       }
       const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
       hit = { s, nx, nz };
+    }
+    // curved terrain: the park's outer wall and anything too steep to step onto
+    if (TERR.on) {
+      const y = this.pos.y + STEP;
+      if (terrBlocked(this.pos.x, this.pos.z, y) && this._safe && Math.hypot(this._safe[0] - this.pos.x, this._safe[1] - this.pos.z) < 1.5) { this.pos.x = this._safe[0]; this.pos.z = this._safe[1]; }
+      for (let it = 0; it < 5; it++) {
+        let sx = 0, sz = 0;
+        for (let a = 0; a < 8; a++) { const cx = RING8[a][0], cz = RING8[a][1]; if (terrBlocked(this.pos.x + cx * r, this.pos.z + cz * r, y)) { sx += cx; sz += cz; } }
+        const L = Math.hypot(sx, sz); if (L < 1e-6) break;
+        const nx = -sx / L, nz = -sz / L; this.pos.x += nx * 0.07; this.pos.z += nz * 0.07;
+        const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
+        if (!hit) hit = { s: { t: 'terrain' }, nx, nz };
+      }
+      if (!terrBlocked(this.pos.x, this.pos.z, y)) this._safe = [this.pos.x, this.pos.z];
+    }
+    // palm trunks on the planters: you can stand on the planter, not walk through the tree
+    if (TREES.length && this.pos.y + BODY_H > TREE_Y0) for (const t of TREES) {
+      if (this.pos.y + BODY_H < t.y0 || this.pos.y > t.yc) continue;
+      const dx = this.pos.x - t.x, dz = this.pos.z - t.z, R = t.r + r, d = Math.hypot(dx, dz); if (d >= R) continue;
+      const nx = d > 1e-5 ? dx / d : 1, nz = d > 1e-5 ? dz / d : 0; this.pos.x = t.x + nx * R; this.pos.z = t.z + nz * R;
+      const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
+      if (!hit) hit = { s: t, nx, nz };
+    }
+    // grate walkways seen from below: too low to walk under upright, so people bump into their edge (squids slip under)
+    if (BRIDGES.length && !this.swim) for (const b of BRIDGES) {
+      if (this.pos.y > b.h - STEP || this.pos.y + BODY_H <= b.h - 0.06) continue;
+      const x = this.pos.x, z = this.pos.z; if (x + r < b.x0 || x - r > b.x1 || z + r < b.z0 || z - r > b.z1) continue;
+      const cx = clamp(x, b.x0, b.x1), cz = clamp(z, b.z0, b.z1); let dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), nx, nz;
+      if (d > 1e-5) { if (d >= r) continue; nx = dx / d; nz = dz / d; this.pos.x = cx + nx * r; this.pos.z = cz + nz * r; }
+      else {
+        const pl = x - b.x0, pr = b.x1 - x, pb = z - b.z0, pf = b.z1 - z, m = Math.min(pl, pr, pb, pf);
+        if (m === pl) { nx = -1; nz = 0; this.pos.x = b.x0 - r; } else if (m === pr) { nx = 1; nz = 0; this.pos.x = b.x1 + r; }
+        else if (m === pb) { nx = 0; nz = -1; this.pos.z = b.z0 - r; } else { nx = 0; nz = 1; this.pos.z = b.z1 + r; }
+      }
+      const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
+    }
+    // grate fences: people bump into them, squids slip through
+    if (FENCES.length && !this.swim) for (const f of FENCES) {
+      if (this.pos.y >= f.h || this.pos.y + BODY_H <= f.y0) continue;
+      const x = this.pos.x, z = this.pos.z; if (x + r < f.x0 || x - r > f.x1 || z + r < f.z0 || z - r > f.z1) continue;
+      const cx = clamp(x, f.x0, f.x1), cz = clamp(z, f.z0, f.z1); let dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), nx, nz;
+      if (d > 1e-5) { if (d >= r) continue; nx = dx / d; nz = dz / d; } else { const w = f.x1 - f.x0 < f.z1 - f.z0; nx = w ? Math.sign(x - (f.x0 + f.x1) / 2) || 1 : 0; nz = w ? 0 : Math.sign(z - (f.z0 + f.z1) / 2) || 1; }
+      this.pos.x = cx + nx * r; this.pos.z = cz + nz * r;
+      const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
+      this.fenceT = G.time;
     }
     { const sp = SPAWN[1 - this.team], dx = this.pos.x - sp.x, dz = this.pos.z - sp.z, d = Math.hypot(dx, dz), R = BARRIER_R + 0.4;
       if (d < R && this.pos.y < BARRIER_H && d > 1e-4) { const nx = dx / d, nz = dz / d; this.pos.x = sp.x + nx * R; this.pos.z = sp.z + nz * R; const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; } Barrier.flash(1 - this.team); } }
@@ -2828,7 +3479,9 @@ const Proj = {
   spray(owner, p, v, r, big = false) { if (this.shots.length > this.N - 5) return; this.shots.push({ owner, team: owner.team, p: p.clone(), v: v.clone(), t: 1, kind: 'drop', r, sz: 0.045 + r * 0.13, big }); },
   // what did a straight ray / projectile hit?  -> floor (with height) or wall (with face)
   classify(s, prev, p) {
+    if (s === true && TERR.on && terrOob(p.x, p.z) && p.y < TERR.OOB_H - 0.08) { const n = new THREE.Vector3(prev.x - p.x, 0, prev.z - p.z); if (n.lengthSq() < 1e-6) n.set(0, 1, 0); n.normalize(); return { type: 'none', y: p.y, n, pt: p.clone() }; }   // the park's outer wall
     if (s === true) return { type: 'floor', y: groundAt(p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
+    if (s.tree) return { type: 'none', y: p.y, n: new THREE.Vector3(0, 1, 0), pt: p.clone() };
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
     if (prev.y >= tPrev - 0.08) return { type: 'floor', y: topAt(s, p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
     if (!s.faces) return { type: 'none', y: p.y, n: new THREE.Vector3(0, 1, 0) };
@@ -2906,7 +3559,8 @@ const Proj = {
     b.t = (b.t || 0) + dt;
     const sp = Math.hypot(b.v.x, b.v.z); if (sp > 1e-3 && b.t > CURL_CRUISE) { const k = Math.max(0, sp - 16 * dt) / sp; b.v.x *= k; b.v.z *= k; }   // full speed, then brakes near the end
     let bounced = false;
-    const blocked = (x, z) => Math.abs(x) > XH - 0.35 || Math.abs(z) > ZH - 0.35 || !!solidAt(x, b.p.y + 0.18, z) || inBarrier(1 - b.team, new THREE.Vector3(x, b.p.y, z)) || !!Cover.at(b.team, x, b.p.y + 0.18, z);
+    const hitSolid = (x, z) => { const s = solidAt(x, b.p.y + 0.18, z); return s === true && TERR.on ? terrBlocked(x, z, b.p.y + 0.45) : !!s; };   // glides up gentle bowl slopes
+    const blocked = (x, z) => Math.abs(x) > XH - 0.35 || Math.abs(z) > ZH - 0.35 || hitSolid(x, z) || inBarrier(1 - b.team, new THREE.Vector3(x, b.p.y, z)) || !!Cover.at(b.team, x, b.p.y + 0.18, z);
     const nx = b.p.x + b.v.x * dt; if (blocked(nx, b.p.z)) { b.v.x *= -0.8; bounced = true; } else b.p.x = nx;
     const nz = b.p.z + b.v.z * dt; if (blocked(b.p.x, nz)) { b.v.z *= -0.8; bounced = true; } else b.p.z = nz;
     const g = groundBelow(b.p.x, b.p.z, b.p.y + 0.5, 0);
@@ -2979,6 +3633,10 @@ const Proj = {
       if (r > 0.8) { owner.addPaint(splatFloor(hx, y, hz, r * 0.6, team, 0.7, false)); this.splatLater(0.05, () => owner.addPaint(splatFloor(hx, y, hz, r, team, 0.7, true))); }
       else owner.addPaint(splatFloor(hx, y, hz, r, team, 0.7, false));
     };
+    if (s === true && TERR.on && terrOob(hx, hz) && p.y < TERR.OOB_H - 0.08) {           // the park's outer wall: splash on it, no paint
+      const nx = prev.x - p.x, nz = prev.z - p.z, L = Math.hypot(nx, nz) || 1; this.fx(prev.x, p.y, prev.z, team, r, nx / L, 0, nz / L); return true;
+    }
+    if (s.tree) { const nx = prev.x - p.x, nz = prev.z - p.z, L = Math.hypot(nx, nz) || 1; this.fx(prev.x, prev.y, prev.z, team, r * 0.7, nx / L, 0.3, nz / L); return true; }   // palm: stops the shot, takes no ink
     if (s === true) { if (inside) { const g = groundAt(hx, hz); floorHit(g); this.fx(hx, g + 0.05, hz, team, r, 0, 1, 0); } return true; }
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
     if (prev.y >= tPrev - 0.08) {
@@ -3056,7 +3714,8 @@ const Proj = {
         else { const cv = Cover.at(b.team, b.p.x, b.p.y, b.p.z); if (cv) { b.p.copy(prev); b.v.x *= -0.35; b.v.z *= -0.35; Cover.hit(cv, 0, b.p); } }
         for (const c of CHARS) if (c.team !== b.team && this.hitChar(c, b.p, 0.2)) { b.fuse = 0.25; b.v.set(0, 0, 0); break; }
         const s = solidAt(b.p.x, b.p.y, b.p.z);
-        if (s) {
+        if (s === true && TERR.on && terrOob(b.p.x, b.p.z) && !terrOob(prev.x, prev.z) && b.p.y < TERR.OOB_H - 0.05) { b.p.copy(prev); b.v.x *= -0.4; b.v.z *= -0.4; }   // bounce off the park wall
+        else if (s) {
           const onTop = s === true || prev.y >= topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1)) - 0.05;
           if (onTop) {
             b.p.y = s === true ? 0 : topAt(s, b.p.x, b.p.z); b.p.y = Math.max(b.p.y, groundAt(b.p.x, b.p.z)) + 0.2;
@@ -3320,7 +3979,7 @@ const NAV = { W: XH * 2, H: ZH * 2, h: null, cost: null };
 function initNav() {
   const W = NAV.W, H = NAV.H; NAV.h = new Float32Array(W * H); NAV.cost = new Float32Array(W * H);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
-    const x = -XH + i + 0.5, z = -ZH + j + 0.5, h = groundAt(x, z); NAV.h[j * W + i] = h;
+    const x = -XH + i + 0.5, z = -ZH + j + 0.5, h = TERR.on && terrOob(x, z) ? 99 : groundAt(x, z); NAV.h[j * W + i] = h;   // never path outside the park
     let near = 0;
     for (let a = 0; a < 8; a++) { const px = x + Math.cos(a * Math.PI / 4) * 0.75, pz = z + Math.sin(a * Math.PI / 4) * 0.75; if (Math.abs(px) > XH - 0.3 || Math.abs(pz) > ZH - 0.3) { near = 1; continue; } if (groundAt(px, pz) > h + STEP) near = 1; }
     NAV.cost[j * W + i] = near ? 3.5 : 1;
@@ -3513,6 +4172,8 @@ class Bot {
     this.stuckT += dt;
     if (this.stuckT > 1.4) { if (this.lastPos.distanceTo(c.pos) < 0.6 && (this.path.length || this.mode !== 'paint')) { I.jump = true; this.path = []; this.retarget = 0; } this.lastPos.copy(c.pos); this.stuckT = 0; }
     I.fire = false; I.swim = false; I.aimDir = null;
+    if (G.time - (c.fenceT ?? -9) < 0.25) this.fenceSwim = 0.6;                 // bumped a grate fence: squid through it
+    if (this.fenceSwim > 0) { this.fenceSwim -= dt; I.swim = true; }
     const e = this.enemy;
     const chg = !!c.weapon.charges;
     if (e && e.alive && (this.mode !== 'refill' || e.pos.distanceTo(c.pos) < 7 || (chg && c.ink > 22)) && c.ink > 3) {
@@ -3679,6 +4340,15 @@ function spectateTarget(c) {
   let best = null, bd = 1e9; for (const m of CHARS) if (ok(m)) { const d = m.pos.distanceTo(c.pos); if (d < bd) { bd = d; best = m; } }
   return best;
 }
+// the play camera's pose behind the player on the first frame of a match (same maths as updateCamera at rest)
+function startCamPose() {
+  const c = PLAYER, cp = Math.cos(Cam.pitch), sp = Math.sin(Cam.pitch);
+  const dir = new THREE.Vector3(Math.sin(Cam.yaw) * cp, sp, Math.cos(Cam.yaw) * cp), pivot = new THREE.Vector3(c.pos.x, c.pos.y + 1.5, c.pos.z);
+  const pos = pivot.clone().addScaledVector(dir, -4.6); pos.y += 1.2;
+  const t = segBlocked(pivot.x, pivot.y, pivot.z, pos.x, pos.y, pos.z, 0.15); if (t) pos.lerpVectors(pivot, pos, Math.max(0.1, t - 0.08));
+  if (pos.y < 0.3) pos.y = 0.3;
+  return { pos, look: pivot.clone().addScaledVector(dir, 30) };
+}
 function updateCamera(dt) {
   const c = PLAYER;
   let px = c.pos.x, py = c.pos.y, pz = c.pos.z;
@@ -3736,11 +4406,13 @@ const TIPS = ['潜进自己的墨水里，墨水和体力都会飞快恢复', '�
 const HUD = {
   mmT: 0, base: null, img: null, rgb: [[0, 0, 0], [0, 0, 0]], hurtV: 0, lowInkT: 0,
   init() {
-    const mm = $('minimap'); this.ctx = mm.getContext('2d'); this.mw = mm.width; this.mh = mm.height;
+    const mm = $('minimap'); mm.width = Math.round(mm.height * XH / ZH); this.ctx = mm.getContext('2d'); this.mw = mm.width; this.mh = mm.height;
     this.img = this.ctx.createImageData(this.mw, this.mh); this.base = new Uint8ClampedArray(this.mw * this.mh * 4);
     for (let y = 0; y < this.mh; y++) for (let x = 0; x < this.mw; x++) {
       const i = Math.floor(x / this.mw * NX), j = Math.floor(y / this.mh * NZ), h = Paint.hgt[j * NX + i];
-      const v = 58 + h * 22, o = (y * this.mw + x) * 4; this.base[o] = v; this.base[o + 1] = v + 2; this.base[o + 2] = v + 12; this.base[o + 3] = 255;
+      const o = (y * this.mw + x) * 4;
+      if (h > 50) { this.base[o] = 22; this.base[o + 1] = 30; this.base[o + 2] = 28; this.base[o + 3] = 255; continue; }     // out of bounds
+      const v = 58 + h * 22; this.base[o] = v; this.base[o + 1] = v + 2; this.base[o + 2] = v + 12; this.base[o + 3] = 255;
     }
   },
   buildTeams() {
@@ -4061,10 +4733,11 @@ function enforceRoster() {
 function spawnTeams() {
   clearChars();
   if (!G.roster) rollRoster();
-  const offs = [-4.5, -1.5, 1.5, 4.5];
+  // where the four stand on the spawn pad: [sideways, back] from its centre (a narrow pad gets a tight 2 x 2)
+  const slots = MAP.spawnSlots || [[-4.5, -0.4], [-1.5, 0.8], [1.5, -0.4], [4.5, 0.8]];
   for (let t = 0; t < 2; t++) G.roster[t].forEach((m, i) => {
     const c = new Character(m.name, t, m.isPlayer, { weapon: m.weapon, look: m.look, char: m.char });
-    const sp = SPAWN[t]; c.pos.set(sp.x + offs[i] * (t ? -1 : 1), sp.y, sp.z + (t ? -1 : 1) * (i % 2 ? 0.8 : -0.4)); c.aimYaw = c.yaw = c.bodyYaw = sp.yaw;
+    const sp = SPAWN[t], sl = slots[i % slots.length]; c.pos.set(sp.x + sl[0] * (t ? -1 : 1), sp.y, sp.z + (t ? -1 : 1) * sl[1]); c.aimYaw = c.yaw = c.bodyYaw = sp.yaw;
     CHARS.push(c); if (m.isPlayer) PLAYER = c; else G.bots.push(new Bot(c, m.role));
   });
 }
@@ -4197,11 +4870,11 @@ function resetToAttract() {
   Sfx.music('title');
 }
 function gotoTitle() {
-  resetToAttract(); show('lobby', false); show('title', true); renderLoadCard();
+  resetToAttract(); show('lobby', false); show('mapsel', false); show('title', true); renderLoadCard();
 }
 function openLobby() {
   resetToAttract(); rollRoster(); G.lobbyTab = 'char'; renderLobby(); setTimeout(lobbyAnimate, 30);
-  show('title', false); show('results', false); show('lobby', true);
+  show('title', false); show('results', false); show('mapsel', false); show('lobby', true);
 }
 function statBars(v) { let s = '<div class="bar">'; for (let i = 1; i <= 5; i++) s += `<i class="${i <= v ? 'on' : ''}"></i>`; return s + '</div>'; }
 // ---- loadout screen: portrait row, then a panel with a "character" and a "weapon" page
@@ -4279,6 +4952,28 @@ function renderLobby() {
   ['rosterA', 'rosterB'].forEach((id, t) => {
     $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}"><span class="cp">${charIcon(m.char, 34, TEAM_HEX[t])}</span><span class="rt"><b>${m.name}${m.isPlayer ? '（你）' : ''}</b><small>${CHARACTERS[m.char].name} · ${WEAPONS[m.weapon].name}</small></span><span class="rw">${weaponIcon(m.weapon, '#fff', 34, TEAM_HEX[t])}</span></div>`).join('');
   });
+}
+// ---- maps: pick in the lobby; switching saves the choice and reloads into the lobby of the new map
+const MAP_THUMB = {"dock": "<svg viewBox=\"0 0 64 110\" width=\"64\" height=\"110\"><rect x=\"0\" y=\"0\" width=\"64\" height=\"110\" rx=\"8\" fill=\"#23222f\"/><rect x=\"18.3\" y=\"88.5\" width=\"6.9\" height=\"1.4\" fill=\"#6b6b79\"/><rect x=\"38.9\" y=\"20.1\" width=\"6.9\" height=\"1.4\" fill=\"#6b6b79\"/><rect x=\"38.9\" y=\"88.5\" width=\"6.9\" height=\"1.4\" fill=\"#6b6b79\"/><rect x=\"18.3\" y=\"20.1\" width=\"6.9\" height=\"1.4\" fill=\"#6b6b79\"/><rect x=\"24.0\" y=\"72.9\" width=\"2.3\" height=\"2.4\" fill=\"#6e6e7c\"/><rect x=\"37.7\" y=\"34.7\" width=\"2.3\" height=\"2.4\" fill=\"#6e6e7c\"/><rect x=\"36.6\" y=\"78.3\" width=\"2.3\" height=\"2.4\" fill=\"#6e6e7c\"/><rect x=\"25.1\" y=\"29.3\" width=\"2.3\" height=\"2.4\" fill=\"#6e6e7c\"/><rect x=\"1.7\" y=\"59.8\" width=\"2.3\" height=\"4.8\" fill=\"#6e6e7c\"/><rect x=\"60.0\" y=\"45.4\" width=\"2.3\" height=\"4.8\" fill=\"#6e6e7c\"/><rect x=\"43.4\" y=\"65.8\" width=\"5.7\" height=\"4.8\" fill=\"#757583\"/><rect x=\"14.9\" y=\"39.5\" width=\"5.7\" height=\"4.8\" fill=\"#757583\"/><rect x=\"21.7\" y=\"99.2\" width=\"20.6\" height=\"10.8\" fill=\"#8a8a98\"/><rect x=\"21.7\" y=\"0.0\" width=\"20.6\" height=\"10.8\" fill=\"#8a8a98\"/><rect x=\"28.6\" y=\"92.1\" width=\"6.9\" height=\"7.2\" fill=\"#686876\"/><rect x=\"28.6\" y=\"10.8\" width=\"6.9\" height=\"7.2\" fill=\"#686876\"/><rect x=\"42.3\" y=\"102.2\" width=\"5.7\" height=\"6.0\" fill=\"#686876\"/><rect x=\"16.0\" y=\"1.8\" width=\"5.7\" height=\"6.0\" fill=\"#686876\"/><rect x=\"16.0\" y=\"102.2\" width=\"5.7\" height=\"6.0\" fill=\"#686876\"/><rect x=\"42.3\" y=\"1.8\" width=\"5.7\" height=\"6.0\" fill=\"#686876\"/><rect x=\"56.0\" y=\"57.4\" width=\"2.3\" height=\"12.0\" fill=\"#90909e\"/><rect x=\"5.7\" y=\"40.7\" width=\"2.3\" height=\"12.0\" fill=\"#90909e\"/><rect x=\"29.1\" y=\"60.4\" width=\"5.7\" height=\"7.2\" fill=\"#6e6e7c\"/><rect x=\"29.1\" y=\"42.4\" width=\"5.7\" height=\"7.2\" fill=\"#6e6e7c\"/><rect x=\"24.0\" y=\"49.6\" width=\"16.0\" height=\"10.8\" fill=\"#9797a5\"/><rect x=\"4.6\" y=\"78.9\" width=\"5.7\" height=\"10.8\" fill=\"#9e9eac\"/><rect x=\"53.7\" y=\"20.3\" width=\"5.7\" height=\"10.8\" fill=\"#9e9eac\"/><rect x=\"51.4\" y=\"76.5\" width=\"9.1\" height=\"3.6\" fill=\"#9e9eac\"/><rect x=\"3.4\" y=\"29.9\" width=\"9.1\" height=\"3.6\" fill=\"#9e9eac\"/><rect x=\"12.6\" y=\"65.8\" width=\"6.9\" height=\"7.2\" fill=\"#acacba\"/><rect x=\"44.6\" y=\"37.1\" width=\"6.9\" height=\"7.2\" fill=\"#acacba\"/><rect x=\"13.7\" y=\"72.9\" width=\"4.6\" height=\"7.2\" fill=\"#797987\"/><rect x=\"45.7\" y=\"29.9\" width=\"4.6\" height=\"7.2\" fill=\"#797987\"/><rect x=\"36.0\" y=\"56.2\" width=\"2.3\" height=\"2.4\" fill=\"#c0c0ce\"/><rect x=\"25.7\" y=\"51.4\" width=\"2.3\" height=\"2.4\" fill=\"#c0c0ce\"/><rect x=\"4.8\" y=\"86.3\" width=\"2.9\" height=\"3.1\" fill=\"#d4d4e2\"/><rect x=\"56.3\" y=\"20.6\" width=\"2.9\" height=\"3.1\" fill=\"#d4d4e2\"/><circle cx=\"32.0\" cy=\"105.2\" r=\"4.5\" fill=\"var(--c0)\" stroke=\"#111\" stroke-width=\"1.5\"/><circle cx=\"32.0\" cy=\"4.8\" r=\"4.5\" fill=\"var(--c1)\" stroke=\"#111\" stroke-width=\"1.5\"/></svg>", "skate": "<svg viewBox=\"0 0 64 110\" width=\"64\" height=\"110\"><rect x=\"0\" y=\"0\" width=\"64\" height=\"110\" rx=\"8\" fill=\"#23222f\"/><rect x=\"39.5\" y=\"2.0\" width=\"4.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"2.5\" width=\"6.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"37.6\" y=\"3.0\" width=\"7.7\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"37.6\" y=\"3.5\" width=\"8.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"37.0\" y=\"4.0\" width=\"9.6\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"36.4\" y=\"5.0\" width=\"0.8\" height=\"3.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"5.0\" width=\"9.6\" height=\"3.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"8.4\" width=\"13.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"8.4\" width=\"9.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"22.6\" y=\"8.9\" width=\"5.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"8.9\" width=\"8.4\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"8.9\" width=\"10.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"22.0\" y=\"9.4\" width=\"6.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"28.2\" y=\"9.4\" width=\"8.4\" height=\"1.2\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"9.4\" width=\"10.2\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"21.3\" y=\"10.4\" width=\"7.1\" height=\"3.2\" fill=\"#686876\"/><rect x=\"28.2\" y=\"10.4\" width=\"8.4\" height=\"3.2\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"10.4\" width=\"10.2\" height=\"3.2\" fill=\"#8a8a98\"/><rect x=\"21.3\" y=\"13.4\" width=\"7.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"28.9\" y=\"13.4\" width=\"7.7\" height=\"1.2\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"13.4\" width=\"10.2\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"20.7\" y=\"14.4\" width=\"8.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"28.9\" y=\"14.4\" width=\"7.7\" height=\"1.2\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"14.4\" width=\"10.2\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"20.7\" y=\"15.4\" width=\"8.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"15.4\" width=\"7.7\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"15.4\" width=\"10.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"20.1\" y=\"15.9\" width=\"9.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"15.9\" width=\"7.7\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"15.9\" width=\"10.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"19.5\" y=\"16.4\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"20.7\" y=\"16.4\" width=\"0.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"21.3\" y=\"16.4\" width=\"9.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"30.1\" y=\"16.4\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"31.4\" y=\"16.4\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.6\" y=\"16.4\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"18.2\" y=\"16.8\" width=\"12.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"30.1\" y=\"16.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"30.7\" y=\"16.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"32.0\" y=\"16.8\" width=\"15.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"16.3\" y=\"17.3\" width=\"14.6\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"30.7\" y=\"17.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"31.4\" y=\"17.3\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"33.9\" y=\"17.3\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"15.1\" y=\"17.8\" width=\"16.5\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"31.4\" y=\"17.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.0\" y=\"17.8\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"35.1\" y=\"17.8\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"14.4\" y=\"18.3\" width=\"17.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"32.0\" y=\"18.3\" width=\"2.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"33.9\" y=\"18.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"35.8\" y=\"18.3\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"13.8\" y=\"18.8\" width=\"20.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"33.9\" y=\"18.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"34.5\" y=\"18.8\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"36.4\" y=\"18.8\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"13.2\" y=\"19.3\" width=\"21.5\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"34.5\" y=\"19.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"35.1\" y=\"19.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"37.0\" y=\"19.3\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"19.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"13.2\" y=\"19.8\" width=\"22.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.1\" y=\"19.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"35.8\" y=\"19.8\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"37.6\" y=\"19.8\" width=\"14.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"20.3\" width=\"23.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.8\" y=\"20.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"36.4\" y=\"20.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.3\" y=\"20.3\" width=\"13.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"20.8\" width=\"24.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"20.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"20.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.3\" y=\"20.8\" width=\"13.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"21.3\" width=\"25.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.0\" y=\"21.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"21.3\" width=\"12.7\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.3\" y=\"21.8\" width=\"25.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.0\" y=\"21.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.6\" y=\"21.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"21.8\" width=\"22.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"10.7\" y=\"22.3\" width=\"27.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.6\" y=\"22.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"39.5\" y=\"22.3\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"9.4\" y=\"22.8\" width=\"28.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.6\" y=\"22.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.3\" y=\"22.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"39.5\" y=\"22.8\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"8.8\" y=\"23.3\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.6\" y=\"23.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.3\" y=\"23.3\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"39.5\" y=\"23.3\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"8.2\" y=\"23.8\" width=\"29.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.6\" y=\"23.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.3\" y=\"23.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"39.5\" y=\"23.8\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"7.5\" y=\"24.3\" width=\"30.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"24.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"24.3\" width=\"20.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"6.9\" y=\"24.8\" width=\"31.6\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"24.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"24.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"24.8\" width=\"20.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"6.3\" y=\"25.3\" width=\"32.2\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"25.3\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"25.3\" width=\"1.5\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"25.3\" width=\"20.9\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"26.3\" width=\"32.8\" height=\"2.2\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"26.3\" width=\"0.8\" height=\"2.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"26.3\" width=\"1.5\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"26.3\" width=\"20.9\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"28.2\" width=\"30.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.8\" y=\"28.2\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"28.2\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"28.2\" width=\"20.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"28.7\" width=\"29.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.1\" y=\"28.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"35.8\" y=\"28.7\" width=\"4.6\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"28.7\" width=\"20.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"29.2\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"34.5\" y=\"29.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"35.1\" y=\"29.2\" width=\"5.2\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"29.2\" width=\"20.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"29.7\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"34.5\" y=\"29.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"35.1\" y=\"29.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"36.4\" y=\"29.7\" width=\"24.7\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"30.2\" width=\"27.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"32.6\" y=\"30.2\" width=\"28.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"30.7\" width=\"29.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.1\" y=\"30.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"36.4\" y=\"30.7\" width=\"0.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"37.0\" y=\"30.7\" width=\"15.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"30.7\" width=\"9.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"31.2\" width=\"30.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.8\" y=\"31.2\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"31.2\" width=\"11.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"50.2\" y=\"31.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"31.2\" width=\"9.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"31.7\" width=\"30.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"31.7\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"31.7\" width=\"11.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"50.2\" y=\"31.7\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"31.7\" width=\"9.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"32.2\" width=\"30.9\" height=\"2.2\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"32.2\" width=\"0.8\" height=\"2.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"32.2\" width=\"2.1\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"32.2\" width=\"11.5\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"50.2\" y=\"32.2\" width=\"2.1\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"32.2\" width=\"9.0\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"34.2\" width=\"30.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"34.2\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"34.2\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"34.2\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"45.8\" y=\"34.2\" width=\"6.5\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"34.2\" width=\"9.0\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"35.2\" width=\"20.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"35.2\" width=\"10.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"35.2\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"35.2\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"35.2\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"45.8\" y=\"35.2\" width=\"5.8\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"51.5\" y=\"35.2\" width=\"3.3\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"35.2\" width=\"6.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"5.6\" y=\"36.2\" width=\"4.6\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"36.2\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"36.2\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"36.2\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"36.2\" width=\"9.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"36.2\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"36.2\" width=\"10.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"36.2\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"36.2\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"36.2\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"45.8\" y=\"36.2\" width=\"5.8\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"51.5\" y=\"36.2\" width=\"3.3\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"36.2\" width=\"6.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"5.6\" y=\"37.2\" width=\"4.6\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"37.2\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"37.2\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"37.2\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"37.2\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"37.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"37.2\" width=\"10.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.8\" y=\"37.2\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"37.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"37.2\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"45.8\" y=\"37.2\" width=\"5.8\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"51.5\" y=\"37.2\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"37.2\" width=\"6.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"37.7\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"37.7\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"37.7\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"37.7\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"37.7\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"37.7\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"37.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"37.7\" width=\"10.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.8\" y=\"37.7\" width=\"15.9\" height=\"0.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"37.7\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"37.7\" width=\"6.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"38.2\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"38.2\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"38.2\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"38.2\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"38.2\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"38.2\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"38.2\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"26.4\" y=\"38.2\" width=\"8.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"34.5\" y=\"38.2\" width=\"17.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"38.2\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"38.2\" width=\"6.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"38.6\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"38.6\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"38.6\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"38.6\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"38.6\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"38.6\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"38.6\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"27.6\" y=\"38.6\" width=\"5.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"33.3\" y=\"38.6\" width=\"18.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"38.6\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"38.6\" width=\"6.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"39.1\" width=\"1.5\" height=\"2.2\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"39.1\" width=\"3.3\" height=\"2.2\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"39.1\" width=\"2.1\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"39.1\" width=\"2.7\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"39.1\" width=\"1.5\" height=\"2.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"39.1\" width=\"9.6\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"39.1\" width=\"26.6\" height=\"2.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"39.1\" width=\"3.3\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"39.1\" width=\"6.5\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"41.1\" width=\"1.5\" height=\"2.2\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"41.1\" width=\"3.3\" height=\"2.2\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"41.1\" width=\"2.1\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"41.1\" width=\"2.7\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"41.1\" width=\"1.5\" height=\"2.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"41.1\" width=\"9.6\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"41.1\" width=\"3.3\" height=\"2.2\" fill=\"#686876\"/><rect x=\"28.2\" y=\"41.1\" width=\"3.3\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"31.4\" y=\"41.1\" width=\"20.3\" height=\"2.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"41.1\" width=\"3.3\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"41.1\" width=\"6.5\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"43.1\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"43.1\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"43.1\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"43.1\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"43.1\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"43.1\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"43.1\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"43.1\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"31.4\" y=\"43.1\" width=\"5.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"43.1\" width=\"1.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"43.1\" width=\"4.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"42.0\" y=\"43.1\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"43.1\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"43.1\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"43.1\" width=\"6.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"43.6\" width=\"1.5\" height=\"1.2\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"43.6\" width=\"3.3\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"43.6\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"43.6\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"43.6\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"43.6\" width=\"9.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"43.6\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"28.2\" y=\"43.6\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"31.4\" y=\"43.6\" width=\"5.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"43.6\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"43.6\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"42.0\" y=\"43.6\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"43.6\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"43.6\" width=\"9.6\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"5.6\" y=\"44.6\" width=\"4.6\" height=\"2.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"44.6\" width=\"2.1\" height=\"2.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"44.6\" width=\"2.7\" height=\"2.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"44.6\" width=\"1.5\" height=\"2.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"44.6\" width=\"8.4\" height=\"2.7\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"44.6\" width=\"13.4\" height=\"2.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"44.6\" width=\"1.5\" height=\"2.7\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"44.6\" width=\"4.0\" height=\"2.7\" fill=\"#686876\"/><rect x=\"42.0\" y=\"44.6\" width=\"2.7\" height=\"2.7\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"44.6\" width=\"7.1\" height=\"2.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"44.6\" width=\"9.6\" height=\"2.7\" fill=\"#4a4f63\"/><rect x=\"5.6\" y=\"47.1\" width=\"4.6\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"47.1\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"47.1\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"47.1\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"47.1\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"47.1\" width=\"13.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"47.1\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"47.1\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"42.0\" y=\"47.1\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"47.1\" width=\"2.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"47.1\" y=\"47.1\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"50.2\" y=\"47.1\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"47.1\" width=\"9.6\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"5.6\" y=\"48.1\" width=\"7.1\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"12.5\" y=\"48.1\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"48.1\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"48.1\" width=\"13.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"48.1\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"48.1\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"42.0\" y=\"48.1\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"48.1\" width=\"2.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"47.1\" y=\"48.1\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"50.2\" y=\"48.1\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"48.1\" width=\"9.6\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"5.6\" y=\"49.1\" width=\"7.1\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"12.5\" y=\"49.1\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"49.1\" width=\"8.4\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"49.1\" width=\"13.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"49.1\" width=\"1.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"49.1\" width=\"4.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"42.0\" y=\"49.1\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"49.1\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"47.1\" y=\"49.1\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"50.2\" y=\"49.1\" width=\"10.9\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"49.5\" width=\"7.1\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"12.5\" y=\"49.5\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"49.5\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"49.5\" width=\"9.6\" height=\"1.2\" fill=\"#686876\"/><rect x=\"33.3\" y=\"49.5\" width=\"5.8\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"49.5\" width=\"8.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"47.1\" y=\"49.5\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"50.2\" y=\"49.5\" width=\"10.9\" height=\"1.2\" fill=\"#686876\"/><rect x=\"5.6\" y=\"50.5\" width=\"10.2\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"50.5\" width=\"8.4\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"50.5\" width=\"9.6\" height=\"0.7\" fill=\"#686876\"/><rect x=\"33.3\" y=\"50.5\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"50.5\" width=\"8.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"47.1\" y=\"50.5\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"50.2\" y=\"50.5\" width=\"10.9\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"51.0\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"12.5\" y=\"51.0\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"16.3\" y=\"51.0\" width=\"17.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"33.3\" y=\"51.0\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"51.0\" width=\"22.2\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"51.5\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"12.5\" y=\"51.5\" width=\"4.0\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"16.3\" y=\"51.5\" width=\"17.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"33.3\" y=\"51.5\" width=\"5.8\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"51.5\" width=\"15.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"54.0\" y=\"51.5\" width=\"4.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"58.4\" y=\"51.5\" width=\"2.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"5.6\" y=\"52.5\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"12.5\" y=\"52.5\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"16.3\" y=\"52.5\" width=\"14.6\" height=\"0.7\" fill=\"#686876\"/><rect x=\"30.7\" y=\"52.5\" width=\"2.7\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"33.3\" y=\"52.5\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"52.5\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"54.0\" y=\"52.5\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"58.4\" y=\"52.5\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"4.4\" y=\"53.0\" width=\"8.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"12.5\" y=\"53.0\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"16.3\" y=\"53.0\" width=\"13.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"53.0\" width=\"5.2\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"34.5\" y=\"53.0\" width=\"4.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"53.0\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"54.0\" y=\"53.0\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"58.4\" y=\"53.0\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"4.4\" y=\"53.5\" width=\"25.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"53.5\" width=\"5.2\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"34.5\" y=\"53.5\" width=\"4.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"53.5\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"54.0\" y=\"53.5\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"58.4\" y=\"53.5\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"4.4\" y=\"54.0\" width=\"24.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"54.0\" width=\"6.5\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"35.1\" y=\"54.0\" width=\"19.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"54.0\" y=\"54.0\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"58.4\" y=\"54.0\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"4.4\" y=\"54.5\" width=\"24.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"54.5\" width=\"6.5\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"35.1\" y=\"54.5\" width=\"25.9\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"55.0\" width=\"26.6\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"55.0\" width=\"6.5\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"35.1\" y=\"55.0\" width=\"24.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"55.5\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"55.5\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"10.0\" y=\"55.5\" width=\"19.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"55.5\" width=\"6.5\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"35.1\" y=\"55.5\" width=\"24.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"56.0\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"56.0\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"10.0\" y=\"56.0\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.1\" y=\"56.0\" width=\"4.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"29.5\" y=\"56.0\" width=\"5.2\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"34.5\" y=\"56.0\" width=\"25.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"56.5\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"56.5\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"10.0\" y=\"56.5\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.1\" y=\"56.5\" width=\"4.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"29.5\" y=\"56.5\" width=\"5.2\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"34.5\" y=\"56.5\" width=\"13.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"47.7\" y=\"56.5\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"51.5\" y=\"56.5\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"57.0\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"57.0\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"10.0\" y=\"57.0\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.1\" y=\"57.0\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"30.7\" y=\"57.0\" width=\"2.7\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"33.3\" y=\"57.0\" width=\"14.6\" height=\"0.7\" fill=\"#686876\"/><rect x=\"47.7\" y=\"57.0\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"51.5\" y=\"57.0\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"57.5\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"5.6\" y=\"57.5\" width=\"4.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"10.0\" y=\"57.5\" width=\"15.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.1\" y=\"57.5\" width=\"5.8\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"30.7\" y=\"57.5\" width=\"17.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"47.7\" y=\"57.5\" width=\"4.0\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"51.5\" y=\"57.5\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"2.5\" y=\"58.5\" width=\"22.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.1\" y=\"58.5\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"30.7\" y=\"58.5\" width=\"17.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"47.7\" y=\"58.5\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"51.5\" y=\"58.5\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"59.0\" width=\"11.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"13.8\" y=\"59.0\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"16.9\" y=\"59.0\" width=\"8.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.1\" y=\"59.0\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"30.7\" y=\"59.0\" width=\"9.6\" height=\"0.7\" fill=\"#686876\"/><rect x=\"40.2\" y=\"59.0\" width=\"8.4\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"59.0\" width=\"10.2\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"59.5\" width=\"11.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"13.8\" y=\"59.5\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"16.9\" y=\"59.5\" width=\"8.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.1\" y=\"59.5\" width=\"5.8\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"30.7\" y=\"59.5\" width=\"9.6\" height=\"1.2\" fill=\"#686876\"/><rect x=\"40.2\" y=\"59.5\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"59.5\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"59.5\" width=\"7.1\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"60.5\" width=\"11.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"13.8\" y=\"60.5\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"16.9\" y=\"60.5\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"19.5\" y=\"60.5\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"60.5\" width=\"4.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"60.5\" width=\"1.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"60.5\" width=\"13.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"40.2\" y=\"60.5\" width=\"8.4\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"60.5\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"60.5\" width=\"7.1\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"60.9\" width=\"10.2\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"12.5\" y=\"60.9\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"13.8\" y=\"60.9\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"16.9\" y=\"60.9\" width=\"2.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"19.5\" y=\"60.9\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"60.9\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"60.9\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"60.9\" width=\"13.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"40.2\" y=\"60.9\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"60.9\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"60.9\" width=\"7.1\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"61.9\" width=\"10.2\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"12.5\" y=\"61.9\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"13.8\" y=\"61.9\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"16.9\" y=\"61.9\" width=\"2.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"19.5\" y=\"61.9\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"61.9\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"61.9\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"61.9\" width=\"13.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"40.2\" y=\"61.9\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"61.9\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"49.6\" y=\"61.9\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"61.9\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"61.9\" width=\"4.6\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"62.9\" width=\"10.2\" height=\"2.7\" fill=\"#4a4f63\"/><rect x=\"12.5\" y=\"62.9\" width=\"7.1\" height=\"2.7\" fill=\"#686876\"/><rect x=\"19.5\" y=\"62.9\" width=\"2.7\" height=\"2.7\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"62.9\" width=\"4.0\" height=\"2.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"62.9\" width=\"1.5\" height=\"2.7\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"62.9\" width=\"13.4\" height=\"2.7\" fill=\"#686876\"/><rect x=\"40.2\" y=\"62.9\" width=\"8.4\" height=\"2.7\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"62.9\" width=\"1.5\" height=\"2.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"62.9\" width=\"2.7\" height=\"2.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"62.9\" width=\"2.1\" height=\"2.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"62.9\" width=\"4.6\" height=\"2.7\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"65.4\" width=\"10.2\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"12.5\" y=\"65.4\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"19.5\" y=\"65.4\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"65.4\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"65.4\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"65.4\" width=\"5.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"32.6\" y=\"65.4\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"35.8\" y=\"65.4\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"65.4\" width=\"9.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"65.4\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"49.6\" y=\"65.4\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"65.4\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"65.4\" width=\"3.3\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"65.4\" width=\"1.5\" height=\"1.2\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"66.4\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"66.4\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"66.4\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"19.5\" y=\"66.4\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"66.4\" width=\"4.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"66.4\" width=\"1.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"66.4\" width=\"5.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.6\" y=\"66.4\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"35.8\" y=\"66.4\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"66.4\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"66.4\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"66.4\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"66.4\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"66.4\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"66.4\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"66.9\" width=\"7.1\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"66.9\" width=\"3.3\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"66.9\" width=\"20.3\" height=\"2.2\" fill=\"#686876\"/><rect x=\"32.6\" y=\"66.9\" width=\"3.3\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"35.8\" y=\"66.9\" width=\"3.3\" height=\"2.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"66.9\" width=\"9.6\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"66.9\" width=\"1.5\" height=\"2.2\" fill=\"#686876\"/><rect x=\"49.6\" y=\"66.9\" width=\"2.7\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"66.9\" width=\"2.1\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"66.9\" width=\"3.3\" height=\"2.2\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"66.9\" width=\"1.5\" height=\"2.2\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"68.9\" width=\"7.1\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"68.9\" width=\"3.3\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"68.9\" width=\"26.6\" height=\"2.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"68.9\" width=\"9.6\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"68.9\" width=\"1.5\" height=\"2.2\" fill=\"#686876\"/><rect x=\"49.6\" y=\"68.9\" width=\"2.7\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"68.9\" width=\"2.1\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"68.9\" width=\"3.3\" height=\"2.2\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"68.9\" width=\"1.5\" height=\"2.2\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"70.9\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"70.9\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"70.9\" width=\"18.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"30.7\" y=\"70.9\" width=\"5.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"70.9\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"70.9\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"70.9\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"70.9\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"70.9\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"70.9\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"70.9\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"71.4\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"71.4\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"71.4\" width=\"17.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"71.4\" width=\"8.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.6\" y=\"71.4\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"71.4\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"71.4\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"71.4\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"71.4\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"71.4\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"71.4\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"71.8\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"71.8\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"71.8\" width=\"15.9\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"71.8\" width=\"10.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"71.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"71.8\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"71.8\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"71.8\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"71.8\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"71.8\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"71.8\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"72.3\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"9.4\" y=\"72.3\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"72.3\" width=\"5.8\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"18.2\" y=\"72.3\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"72.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"72.3\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"72.3\" width=\"10.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"72.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"72.3\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"72.3\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"72.3\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"72.3\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"72.3\" width=\"4.6\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"72.8\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"9.4\" y=\"72.8\" width=\"3.3\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"72.8\" width=\"5.8\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"18.2\" y=\"72.8\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"72.8\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"72.8\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"27.6\" y=\"72.8\" width=\"10.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"72.8\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"72.8\" width=\"9.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"72.8\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"49.6\" y=\"72.8\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"72.8\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"72.8\" width=\"4.6\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"73.8\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"9.4\" y=\"73.8\" width=\"3.3\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"73.8\" width=\"5.8\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"18.2\" y=\"73.8\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"73.8\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"73.8\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"27.6\" y=\"73.8\" width=\"10.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"73.8\" width=\"20.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"2.5\" y=\"74.8\" width=\"9.6\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"74.8\" width=\"6.5\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"18.2\" y=\"74.8\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"74.8\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"74.8\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"27.6\" y=\"74.8\" width=\"30.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"75.8\" width=\"9.6\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"75.8\" width=\"2.1\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"13.8\" y=\"75.8\" width=\"11.5\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"75.8\" width=\"2.1\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"75.8\" width=\"0.8\" height=\"2.2\" fill=\"#686876\"/><rect x=\"27.6\" y=\"75.8\" width=\"30.3\" height=\"2.2\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"77.8\" width=\"9.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"77.8\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"13.8\" y=\"77.8\" width=\"11.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"77.8\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.6\" y=\"77.8\" width=\"30.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"78.3\" width=\"9.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"78.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"13.8\" y=\"78.3\" width=\"11.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"78.3\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.2\" y=\"78.3\" width=\"30.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"78.8\" width=\"9.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"78.8\" width=\"15.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"78.8\" width=\"0.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"78.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.9\" y=\"78.8\" width=\"29.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"79.3\" width=\"29.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"31.4\" y=\"79.3\" width=\"27.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"79.8\" width=\"25.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"79.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.9\" y=\"79.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"79.8\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"80.3\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"80.3\" width=\"5.2\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.9\" y=\"80.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"80.3\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"80.8\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"80.8\" width=\"4.6\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.2\" y=\"80.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"80.8\" width=\"29.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"81.3\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"81.3\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.1\" y=\"81.3\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"81.3\" width=\"30.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"81.8\" width=\"21.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"81.8\" width=\"1.5\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"25.1\" y=\"81.8\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"81.8\" width=\"32.8\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"82.7\" width=\"21.5\" height=\"1.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"82.7\" width=\"1.5\" height=\"1.7\" fill=\"#7c7c8a\"/><rect x=\"25.1\" y=\"82.7\" width=\"0.8\" height=\"1.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"82.7\" width=\"32.2\" height=\"1.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"84.2\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"84.2\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.1\" y=\"84.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"84.2\" width=\"31.6\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"84.7\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"84.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.1\" y=\"84.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"84.7\" width=\"30.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"85.2\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"85.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.7\" y=\"85.2\" width=\"30.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"85.7\" width=\"22.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"24.5\" y=\"85.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.7\" y=\"85.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"26.4\" y=\"85.7\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"86.2\" width=\"22.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"24.5\" y=\"86.2\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.7\" y=\"86.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"26.4\" y=\"86.2\" width=\"28.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"86.7\" width=\"22.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"24.5\" y=\"86.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.7\" y=\"86.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"26.4\" y=\"86.7\" width=\"27.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"87.2\" width=\"22.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"24.5\" y=\"87.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"26.4\" y=\"87.2\" width=\"26.6\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"11.9\" y=\"87.7\" width=\"13.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"25.1\" y=\"87.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"26.4\" y=\"87.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"27.0\" y=\"87.7\" width=\"25.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"11.9\" y=\"88.2\" width=\"13.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"25.1\" y=\"88.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"88.2\" width=\"25.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"11.9\" y=\"88.7\" width=\"14.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"25.7\" y=\"88.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"88.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"27.6\" y=\"88.7\" width=\"24.0\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"11.9\" y=\"89.2\" width=\"14.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"25.7\" y=\"89.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.6\" y=\"89.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"89.2\" width=\"22.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"11.9\" y=\"89.7\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"26.4\" y=\"89.7\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.2\" y=\"89.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"89.7\" width=\"22.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"12.5\" y=\"90.2\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"90.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.9\" y=\"90.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"90.2\" width=\"20.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"13.2\" y=\"90.7\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"90.7\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"29.5\" y=\"90.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"30.1\" y=\"90.7\" width=\"19.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"13.8\" y=\"91.2\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"28.2\" y=\"91.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"30.1\" y=\"91.2\" width=\"2.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.0\" y=\"91.2\" width=\"17.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"14.4\" y=\"91.7\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"28.9\" y=\"91.7\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"32.0\" y=\"91.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.6\" y=\"91.7\" width=\"15.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"15.7\" y=\"92.2\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"30.1\" y=\"92.2\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"32.6\" y=\"92.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"33.3\" y=\"92.2\" width=\"13.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"16.3\" y=\"92.7\" width=\"15.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"32.0\" y=\"92.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"33.3\" y=\"92.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"33.9\" y=\"92.7\" width=\"10.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"16.9\" y=\"93.2\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"31.4\" y=\"93.2\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.6\" y=\"93.2\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"33.9\" y=\"93.2\" width=\"9.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"42.7\" y=\"93.2\" width=\"0.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"43.3\" y=\"93.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"93.6\" width=\"10.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"93.6\" width=\"7.7\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"35.1\" y=\"93.6\" width=\"8.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"94.1\" width=\"10.9\" height=\"2.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"94.1\" width=\"7.7\" height=\"2.7\" fill=\"#acacba\"/><rect x=\"35.1\" y=\"94.1\" width=\"7.7\" height=\"2.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"96.6\" width=\"10.9\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"96.6\" width=\"8.4\" height=\"2.2\" fill=\"#acacba\"/><rect x=\"35.8\" y=\"96.6\" width=\"7.1\" height=\"2.2\" fill=\"#686876\"/><rect x=\"16.9\" y=\"98.6\" width=\"10.9\" height=\"1.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"98.6\" width=\"8.4\" height=\"1.7\" fill=\"#acacba\"/><rect x=\"35.8\" y=\"98.6\" width=\"6.5\" height=\"1.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"100.1\" width=\"10.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"100.1\" width=\"8.4\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"35.8\" y=\"100.1\" width=\"5.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"100.6\" width=\"10.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"100.6\" width=\"8.4\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"35.8\" y=\"100.6\" width=\"5.2\" height=\"0.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"101.1\" width=\"10.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"101.1\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"101.6\" width=\"10.2\" height=\"3.7\" fill=\"#8a8a98\"/><rect x=\"17.6\" y=\"105.0\" width=\"9.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"17.6\" y=\"105.5\" width=\"9.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"18.2\" y=\"106.0\" width=\"8.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"18.8\" y=\"106.5\" width=\"7.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"19.5\" y=\"107.0\" width=\"5.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"20.7\" y=\"107.5\" width=\"2.7\" height=\"0.7\" fill=\"#8a8a98\"/><circle cx=\"22.2\" cy=\"103.5\" r=\"4.5\" fill=\"var(--c0)\" stroke=\"#111\" stroke-width=\"1.5\"/><circle cx=\"41.8\" cy=\"6.5\" r=\"4.5\" fill=\"var(--c1)\" stroke=\"#111\" stroke-width=\"1.5\"/></svg>"};
+function renderMaps() {
+  const cur = MAP_ID;
+  $('titleMapThumb').innerHTML = MAP_THUMB[cur] || ''; $('titleMapName').textContent = MAP.name; $('titleMapSub').textContent = '涂地对战 · 4 V 4 · ' + MAP.en;
+  $('lobbySub').textContent = '涂地对战 · ' + MAP.name;
+  const sel = cur;
+  $('mapCards').innerHTML = Object.values(MAP_LIST).map(m => `<button class="mscard${m.id === sel ? ' sel' : ''}" data-id="${m.id}"><span class="mt">${MAP_THUMB[m.id] || ''}</span><span class="mn"><b>${m.name}</b><small>${m.en}</small><em>${m.desc}</em><span class="chips"><span class="sz">${m.size || ''}</span>${(m.tags || []).map(t => `<span>${t}</span>`).join('')}</span></span>${m.id === cur ? '<i class="mon">当前</i>' : ''}</button>`).join('');
+  $('mapCards').querySelectorAll('.mscard').forEach(el => { el.onclick = () => { Sfx.init(); Sfx.click(); if (el.dataset.id !== MAP_ID) switchMap(el.dataset.id, 'mapsel'); }; el.ondblclick = () => { if (el.dataset.id === MAP_ID) mapSelNext(); }; });
+}
+// the lobby and map select are laid out for ~1500 x 860: on a smaller window shrink them as a whole instead of squeezing
+function fitMenus() { const k = Math.min(1, innerWidth / 1500, innerHeight / 860); ['lobby', 'mapsel'].forEach(id => { const el = $(id); if (el) el.style.zoom = k < 0.999 ? k.toFixed(3) : ''; }); }
+addEventListener('resize', fitMenus);
+// map select screen: title -> pick a map -> lobby (a different map reloads the page and reopens the lobby)
+function openMapSel() { renderMaps(); show('title', false); show('lobby', false); show('results', false); show('mapsel', true); }
+function mapSelNext() { Sfx.init(); Sfx.click(); show('mapsel', false); openLobby(); }
+function switchMap(id, reopen = 'lobby') {
+  const m = MAP_LIST[id]; if (!m) return;
+  try { localStorage.setItem(MAP_KEY, id); sessionStorage.setItem('splashrush.reopen', reopen); } catch (e) { }
+  $('mapVeilName').textContent = m.name; $('mapVeilEn').textContent = m.en; $('mapVeil').classList.add('show');
+  setTimeout(() => { try { location.href = location.pathname + location.hash; } catch (e) { location.reload(); } }, 420);
 }
 // replay the entrance animations of the visible page (bars fill, numbers count up)
 function lobbyAnimate() {
@@ -4582,13 +5277,15 @@ const Preview = {
 /* ------------------------------------------------------------- update */
 function updateIntro(dt) {
   G.introT += dt; const t = G.introT;
+  Input.dx = Input.dy = 0;            // no looking around during the opening shot (it used to pile up and swing the camera at GO)
   const k = clamp(t / 3.0, 0, 1), e = k * k * (3 - 2 * k);
   // fly from enemy side high over arena down behind player
-  const p0 = new THREE.Vector3(18, 26, -52), p1 = new THREE.Vector3(-12, 18, 0), p2 = new THREE.Vector3(0, SPAWN[0].y + 2.7, SPAWN[0].z + 4.6);
+  // ... and land exactly where the play camera starts (behind the player, not the pad's centre), so GO doesn't jump
+  const end = startCamPose(), p0 = new THREE.Vector3(18, 26, -ZH - 4), p1 = new THREE.Vector3(-12, 18, 0), p2 = end.pos;
   const a = p0.clone().lerp(p1, e), b = p1.clone().lerp(p2, e), pos = a.lerp(b, e);
-  camera.position.copy(pos); const look = new THREE.Vector3(0, 0, -10).lerp(new THREE.Vector3(0, SPAWN[0].y + 1.4, SPAWN[0].z - 20), e);
+  camera.position.copy(pos); const look = new THREE.Vector3(0, 0, -10).lerp(end.look, e);
   camera.lookAt(look);
-  if (t > 0.2 && !G.flags.t1) { G.flags.t1 = 1; HUD.center('涂地对战', '潮汐码头广场 · 4 V 4', 2400); }
+  if (t > 0.2 && !G.flags.t1) { G.flags.t1 = 1; HUD.center('涂地对战', MAP.name + ' · 4 V 4', 2400); }
   if (t > 3.1 && !G.flags.t2) { G.flags.t2 = 1; HUD.center('READY?', '', 1000); Sfx.beep(false); }
   if (t > 4.1) {
     G.state = 'play'; HUD.center('GO!', '', 900); Sfx.whistle(); Sfx.beep(true); flash(0.35); Sfx.music('game');
@@ -4676,7 +5373,13 @@ function initUI() {
   $('minimap').addEventListener('mousedown', e => { e.stopPropagation(); HUD.mapClick(e); });
   $('pname').value = GAME.name;
   $('pname').oninput = e => { GAME.name = e.target.value.trim().slice(0, 8); Profile.save(); };
-  $('btnStart').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
+  $('btnStart').onclick = () => { Sfx.init(); Sfx.click(); openMapSel(); };
+  $('titleMap').onclick = () => { Sfx.init(); Sfx.click(); openMapSel(); };
+  $('btnMsBack').onclick = () => { Sfx.click(); show('mapsel', false); show('title', true); renderLoadCard(); };
+  $('btnMsNext').onclick = mapSelNext;
+  fitMenus();
+  $('btnChangeMap').onclick = () => { Sfx.click(); Profile.save(); openMapSel(); };
+  renderMaps();
   $('loadCard').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
   $('btnBack').onclick = () => { Sfx.click(); show('lobby', false); show('title', true); renderLoadCard(); };
   $('pvReplay').onclick = () => { Sfx.init(); Sfx.click(); SubDemo.restart(); };
@@ -4717,6 +5420,9 @@ function boot() {
   renderer.compile(scene, camera);
   G.state = 'title';
   show('loading', false); show('title', true);
+  // just switched map in the lobby: come straight back to the lobby
+  let reopen = null; try { reopen = sessionStorage.getItem('splashrush.reopen'); sessionStorage.removeItem('splashrush.reopen'); } catch (e) { }
+  if (reopen === 'lobby') openLobby(); else if (reopen === 'mapsel') openMapSel();
   loop();
 }
 function showFatal(msg) {

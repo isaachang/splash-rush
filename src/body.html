@@ -26,14 +26,14 @@
       <em>更换 ›</em>
     </div>
     <h3>场地</h3>
-    <div class="mapcard"><div class="thumb"></div><div><b>潮汐码头广场</b><small>涂地对战 · 4 V 4</small></div></div>
+    <div class="mapcard" id="titleMap"><div class="thumb" id="titleMapThumb"></div><div><b id="titleMapName"></b><small id="titleMapSub"></small></div><em>更换 ›</em></div>
   </div>
   <button class="verchip" id="btnLog"><b id="verTxt">v0.0.0</b><span>版本日志 ›</span></button>
   <div class="footer">进入对局后游戏会锁定鼠标 · 按 Esc 暂停</div>
 </div>
 
 <div id="lobby" class="screen">
-  <div class="lobbyHead"><h2>战前准备</h2><span>涂地对战 · 潮汐码头广场</span></div>
+  <div class="lobbyHead"><h2>战前准备</h2><span id="lobbySub">涂地对战</span><button class="mapchip" id="btnChangeMap">换场地 ›</button></div>
   <div class="lobbyBody">
     <div class="lcol">
       <h3>选择角色 <small>每个角色有自己的武器</small></h3>
@@ -57,6 +57,15 @@
   </div>
   <div class="lobbyFoot"><button class="btn" id="btnBack">‹ 返回</button><button class="btn big" id="btnGo">出发！</button></div>
 </div>
+
+<div id="mapsel" class="screen">
+  <div class="lobbyHead"><h2>选择场地</h2><span>涂地对战 · 4 V 4</span></div>
+  <div class="msBody" id="mapCards"></div>
+  <div class="msNote">点一张场地，背景会换成那张场地（会重新载入一下）</div>
+  <div class="lobbyFoot"><button class="btn" id="btnMsBack">‹ 返回</button><button class="btn big" id="btnMsNext">下一步 ›</button></div>
+</div>
+
+<div id="mapVeil"><div class="mv"><i></i><b id="mapVeilName"></b><small id="mapVeilEn"></small><span>正在前往场地…</span></div></div>
 
 <div id="hud" class="screen">
   <div id="vignette"></div>

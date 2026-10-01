@@ -156,6 +156,13 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.9.0', date: '2026-10-02', time: '01:50', title: '新地图：墨浪滑板场', items: [
+    '新地图「墨浪滑板场」：S 形下沉泳池、波浪外墙、中央高塔和铁网走道',
+    '泳池是真正的碗形，能走下去、顺着弧形坡走上来，坡面也能涂墨',
+    '新增选场地页面：主页「开始对战」先选场地，背景会换成那张场地',
+    '开场镜头直接落在你身后，开场时动鼠标也不会甩镜头',
+    '棕榈树会挡子弹，人也穿不过树干；铁网围栏和走道不会再穿模'
+  ] },
   { v: 'v0.8.6', date: '2026-09-30', time: '03:01', title: '爬墙', items: [
     '爬墙时鱿鱼会贴着墙面、头朝上',
     '在墙上可以停住，也能往上下左右游',
