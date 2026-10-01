@@ -1074,7 +1074,7 @@ const SOLIDS = [];
 // and fences (block people, squids and ink pass)
 const BRIDGES = [], FENCES = [];
 // palm trees (added with the decor): trunk and crown stop shots and bombs but never take ink
-const TREES = []; let TREE_Y0 = 1e9;
+const TREES = [], PALMS = []; let TREE_Y0 = 1e9;
 function box(x0, x1, z0, z1, h, style, top) { return { t: 'box', x0, x1, z0, z1, h, style, top: top || 'concrete' }; }
 function ramp(x0, x1, z0, z1, axis, h0, h1, top) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: top || 'grate' }; }
 function mirrorSolid(s) { const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0 }); if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; } return m; }
@@ -1212,7 +1212,10 @@ function defineSkate() {
   grates.forEach(b => BRIDGES.push(b, Object.assign({}, b, { x0: -b.x1, x1: -b.x0, z0: -b.z1, z1: -b.z0 })));
   // grate fences beside the tower: people can't pass, squids and ink can
   const fz = [[2.2, 5.0, 6.0, 6.12], [2.2, 5.0, 8.48, 8.6], [4.88, 5.0, 6.0, 8.6]];
-  fz.forEach(([x0, x1, z0, z1]) => { FENCES.push({ x0, x1, z0, z1, y0: SL, h: SL + 1.25 }, { x0: -x1, x1: -x0, z0: -z1, z1: -z0, y0: SL, h: SL + 1.25 }); });
+  fz.forEach(([x0, x1, z0, z1]) => { FENCES.push({ x0, x1, z0, z1, y0: SL, h: SL + 1.6 }, { x0: -x1, x1: -x0, z0: -z1, z1: -z0, y0: SL, h: SL + 1.6 }); });   // taller than a jump
+  // palms: fixed spots in the middle of the planters (mirrored for the other team); the parked car gets none
+  const palms = [[-18.3, 12.7, 1.1], [-11.1, 19.9, 0.85], [-7.2, 18.6, 1.15], [6.8, 11.6, 1.0], [9.1, 14.6, 1.15]];
+  palms.forEach(([x, z, k]) => PALMS.push([x * SKATE_K, z * SKATE_K, k], [-x * SKATE_K, -z * SKATE_K, k]));
   // spread the whole plan out (plan view only; heights stay)
   const K = SKATE_K, sp = P => P.map(([x, z]) => [x * K, z * K]), sr = r => { r.x0 *= K; r.x1 *= K; r.z0 *= K; r.z1 *= K; };
   SOLIDS.forEach(sr); BRIDGES.forEach(sr); FENCES.forEach(sr);
@@ -1860,10 +1863,15 @@ function buildParkWall() {
   const cm = new THREE.Mesh(cg, new THREE.MeshStandardMaterial({ map: TEX.stone, color: 0x9aa0ad, roughness: 0.85, side: THREE.DoubleSide })); cm.receiveShadow = true; arenaGroup.add(cm);
   // yellow coping rail just inside the top edge, on short posts
   const railM = new THREE.MeshStandardMaterial({ color: 0xffc629, roughness: 0.35, metalness: 0.4 });
-  const rp = P.map((p, i) => new THREE.Vector3(p[0] + out[i][0] * 0.22, WT + 0.42, p[1] + out[i][1] * 0.22));
+  // points every <= 0.5 m along the wall (long straight runs would make the spline bulge off the wall top)
+  const rp = [];
+  for (let i = 0; i < n; i++) {
+    const p = P[i], q = P[(i + 1) % n], o = out[i], o2 = out[(i + 1) % n], m = Math.max(1, Math.ceil(lens[i] / 0.5));
+    for (let k = 0; k < m; k++) { const t = k / m, ox = lerp(o[0], o2[0], t), oz = lerp(o[1], o2[1], t), L = Math.hypot(ox, oz) || 1; rp.push(new THREE.Vector3(lerp(p[0], q[0], t) + ox / L * 0.22, WT + 0.42, lerp(p[1], q[1], t) + oz / L * 0.22)); }
+  }
   const curve = new THREE.CatmullRomCurve3(rp, true);
-  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.min(1400, n * 2), 0.11, 6, true), railM); tube.castShadow = true; arenaGroup.add(tube);
-  const posts = []; let d = 0; for (let i = 0; i < n; i++) { d += lens[i]; if (d > 2.2) { d = 0; posts.push(rp[i]); } }
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, rp.length, 0.11, 6, true), railM); tube.castShadow = true; arenaGroup.add(tube);
+  const posts = []; for (let i = 0; i < rp.length; i += 5) posts.push(rp[i]);
   const pim = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.06, 0.06, 0.42, 6), railM, posts.length), dm = new THREE.Object3D();
   posts.forEach((q, i) => { dm.position.set(q.x, WT + 0.21, q.z); dm.updateMatrix(); pim.setMatrixAt(i, dm.matrix); }); arenaGroup.add(pim);
   // the centre tower's round lip (sits round the top edge, never over the paintable top)
@@ -2100,10 +2108,7 @@ function buildDecorSkate() {
   const poleM = new THREE.MeshStandardMaterial({ color: 0x3a3f4d, metalness: 0.7, roughness: 0.35 });
   // palms on the out-of-bounds planters and gardens
   const palms = [];
-  SOLIDS.filter(s => s.oob).forEach(s => {
-    const n = Math.max(1, Math.round((s.x1 - s.x0) * (s.z1 - s.z0) / 38));
-    for (let i = 0; i < n; i++) palms.push([rand(s.x0 + 0.8, s.x1 - 0.8), s.h, rand(s.z0 + 0.8, s.z1 - 0.8), rand(0.8, 1.2)]);
-  });
+  PALMS.forEach(([x, z, k]) => { const s = SOLIDS.find(o => o.oob && inRect(o, x, z)); palms.push([x, s ? s.h : groundAt(x, z), z, k]); });
   const trunkM = new THREE.MeshStandardMaterial({ color: 0x8a6a45, roughness: 0.9 }), leafM = new THREE.MeshStandardMaterial({ color: 0x3e9a47, roughness: 0.8, side: THREE.DoubleSide });
   const tim = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.18, 0.28, 1, 7), trunkM, palms.length);
   const leafG = new THREE.ConeGeometry(0.55, 3.2, 4, 1, true); leafG.translate(0, 1.6, 0); leafG.rotateZ(Math.PI / 2.4);
@@ -2112,7 +2117,7 @@ function buildDecorSkate() {
     const hT = 4.2 * k;
     // collision for shots: trunk up to the crown, then a flatter disc for the fronds (not paintable)
     const tr = { t: 'box', tree: true, x, z, y0: y, yc: y + hT - 0.35 * k, y1: y + hT + 0.9 * k, r: 0.3 * k, rc: 1.7 * k };
-    Object.assign(tr, { x0: x - tr.rc, x1: x + tr.rc, z0: z - tr.rc, z1: z + tr.rc, h: tr.y1 }); TREES.push(tr); TREE_Y0 = Math.min(TREE_Y0, y); dm.position.set(x, y + hT / 2, z); dm.scale.set(k, hT, k); dm.rotation.set(rand(-0.08, 0.08), 0, rand(-0.08, 0.08)); dm.updateMatrix(); tim.setMatrixAt(i, dm.matrix);
+    Object.assign(tr, { x0: x - tr.rc, x1: x + tr.rc, z0: z - tr.rc, z1: z + tr.rc, h: tr.y1 }); TREES.push(tr); TREE_Y0 = Math.min(TREE_Y0, y); dm.position.set(x, y + hT / 2, z); dm.scale.set(k, hT, k); dm.rotation.set(0, 0, 0); dm.updateMatrix(); tim.setMatrixAt(i, dm.matrix);   // upright, so the crown sits on the trunk
     for (let j = 0; j < 6; j++) { dm.position.set(x, y + hT, z); dm.scale.set(k, k, k); dm.rotation.set(0, j / 6 * Math.PI * 2 + i, 0); dm.updateMatrix(); lim.setMatrixAt(i * 6 + j, dm.matrix); }
   });
   tim.castShadow = lim.castShadow = true; deco.add(tim, lim);
@@ -2340,7 +2345,7 @@ const RELEASES = [
     '泳池是真正的碗形，能走下去、顺着弧形坡走上来，坡面也能涂墨',
     '新增选场地页面：主页「开始对战」先选场地，背景会换成那张场地',
     '开场镜头直接落在你身后，开场时动鼠标也不会甩镜头',
-    '棕榈树会挡子弹'
+    '棕榈树会挡子弹，人也穿不过树干；铁网围栏和走道不会再穿模'
   ] },
   { v: 'v0.8.6', date: '2026-09-30', time: '03:01', title: '爬墙', items: [
     '爬墙时鱿鱼会贴着墙面、头朝上',
@@ -2459,7 +2464,7 @@ const VERSION = RELEASES[0].v;
 const CHARS = [];
 let PLAYER = null;
 const RING8 = Array.from({ length: 8 }, (_, a) => [Math.cos(a * Math.PI / 4), Math.sin(a * Math.PI / 4)]);
-const STEP = 0.55, GRAV = 24, RESPAWN = 5.5, SPECIAL_AREA = 42;
+const STEP = 0.55, BODY_H = 1.7, GRAV = 24, RESPAWN = 5.5, SPECIAL_AREA = 42;
 const BOT_NAMES = ['小墨', '咕噜', '泡泡', '阿飞', '闪电', '橘子汽水', '海苔', '奶昔', '跳跳糖', '大橙', '蓝莓', '噗噗', '墨鱼丸'];
 const TEAMMAT = [0, 1].map(() => new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.06, emissive: 0xffffff, emissiveIntensity: 0.16 }));
 const TEAMGHOST = [0, 1].map(() => new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.1, clearcoat: 1, transparent: true, opacity: 0.38, depthWrite: false, emissive: 0xffffff, emissiveIntensity: 0.3 }));
@@ -2981,8 +2986,9 @@ class Character {
     }
     // vertical
     if (!this.climbing) this.vel.y -= GRAV * dt;
-    const wasG = this.grounded;
+    const wasG = this.grounded, y0 = this.pos.y;
     this.pos.y += this.vel.y * dt;
+    if (this.vel.y > 0 && !this.swim && BRIDGES.length) for (const b of BRIDGES) { const c = b.h - 0.06 - BODY_H; if (y0 <= c + 1e-3 && this.pos.y > c && inRect(b, this.pos.x, this.pos.z)) { this.pos.y = c; this.vel.y = 0; } }   // head bumps the grate above
     const g = groundBelow(this.pos.x, this.pos.z, Math.max(this.pos.y, this.pos.y - this.vel.y * dt), STEP, this.swim);   // squids drop through grate bridges
     if (this.pos.y <= g) {
       if (!wasG && this.vel.y < -12 && this.isPlayer) Sfx.land(0.5);
@@ -3160,7 +3166,7 @@ class Character {
       let x = this.pos.x, z = this.pos.z;
       if (x + r < s.x0 || x - r > s.x1 || z + r < s.z0 || z - r > s.z1) continue;
       const cx = clamp(x, s.x0, s.x1), cz = clamp(z, s.z0, s.z1);
-      if (!s.oob && topAt(s, cx, cz) <= this.pos.y + STEP) continue;     // out-of-bounds planters (and their palms) are walls at any height
+      if (topAt(s, cx, cz) <= this.pos.y + STEP) continue;
       let dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), nx, nz;
       if (d > 1e-5) { if (d >= r) continue; nx = dx / d; nz = dz / d; this.pos.x = cx + nx * r; this.pos.z = cz + nz * r; }
       else {
@@ -3185,9 +3191,30 @@ class Character {
       }
       if (!terrBlocked(this.pos.x, this.pos.z, y)) this._safe = [this.pos.x, this.pos.z];
     }
+    // palm trunks on the planters: you can stand on the planter, not walk through the tree
+    if (TREES.length && this.pos.y + BODY_H > TREE_Y0) for (const t of TREES) {
+      if (this.pos.y + BODY_H < t.y0 || this.pos.y > t.yc) continue;
+      const dx = this.pos.x - t.x, dz = this.pos.z - t.z, R = t.r + r, d = Math.hypot(dx, dz); if (d >= R) continue;
+      const nx = d > 1e-5 ? dx / d : 1, nz = d > 1e-5 ? dz / d : 0; this.pos.x = t.x + nx * R; this.pos.z = t.z + nz * R;
+      const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
+      if (!hit) hit = { s: t, nx, nz };
+    }
+    // grate walkways seen from below: too low to walk under upright, so people bump into their edge (squids slip under)
+    if (BRIDGES.length && !this.swim) for (const b of BRIDGES) {
+      if (this.pos.y > b.h - STEP || this.pos.y + BODY_H <= b.h - 0.06) continue;
+      const x = this.pos.x, z = this.pos.z; if (x + r < b.x0 || x - r > b.x1 || z + r < b.z0 || z - r > b.z1) continue;
+      const cx = clamp(x, b.x0, b.x1), cz = clamp(z, b.z0, b.z1); let dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), nx, nz;
+      if (d > 1e-5) { if (d >= r) continue; nx = dx / d; nz = dz / d; this.pos.x = cx + nx * r; this.pos.z = cz + nz * r; }
+      else {
+        const pl = x - b.x0, pr = b.x1 - x, pb = z - b.z0, pf = b.z1 - z, m = Math.min(pl, pr, pb, pf);
+        if (m === pl) { nx = -1; nz = 0; this.pos.x = b.x0 - r; } else if (m === pr) { nx = 1; nz = 0; this.pos.x = b.x1 + r; }
+        else if (m === pb) { nx = 0; nz = -1; this.pos.z = b.z0 - r; } else { nx = 0; nz = 1; this.pos.z = b.z1 + r; }
+      }
+      const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
+    }
     // grate fences: people bump into them, squids slip through
     if (FENCES.length && !this.swim) for (const f of FENCES) {
-      if (this.pos.y >= f.h || this.pos.y + 1.3 <= f.y0) continue;
+      if (this.pos.y >= f.h || this.pos.y + BODY_H <= f.y0) continue;
       const x = this.pos.x, z = this.pos.z; if (x + r < f.x0 || x - r > f.x1 || z + r < f.z0 || z - r > f.z1) continue;
       const cx = clamp(x, f.x0, f.x1), cz = clamp(z, f.z0, f.z1); let dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), nx, nz;
       if (d > 1e-5) { if (d >= r) continue; nx = dx / d; nz = dz / d; } else { const w = f.x1 - f.x0 < f.z1 - f.z0; nx = w ? Math.sign(x - (f.x0 + f.x1) / 2) || 1 : 0; nz = w ? 0 : Math.sign(z - (f.z0 + f.z1) / 2) || 1; }
@@ -3952,7 +3979,7 @@ const NAV = { W: XH * 2, H: ZH * 2, h: null, cost: null };
 function initNav() {
   const W = NAV.W, H = NAV.H; NAV.h = new Float32Array(W * H); NAV.cost = new Float32Array(W * H);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
-    const x = -XH + i + 0.5, z = -ZH + j + 0.5, out = (TERR.on && terrOob(x, z)) || SOLIDS.some(s => s.oob && inRect(s, x, z)), h = out ? 99 : groundAt(x, z); NAV.h[j * W + i] = h;   // never path over planters / outside the park
+    const x = -XH + i + 0.5, z = -ZH + j + 0.5, h = TERR.on && terrOob(x, z) ? 99 : groundAt(x, z); NAV.h[j * W + i] = h;   // never path outside the park
     let near = 0;
     for (let a = 0; a < 8; a++) { const px = x + Math.cos(a * Math.PI / 4) * 0.75, pz = z + Math.sin(a * Math.PI / 4) * 0.75; if (Math.abs(px) > XH - 0.3 || Math.abs(pz) > ZH - 0.3) { near = 1; continue; } if (groundAt(px, pz) > h + STEP) near = 1; }
     NAV.cost[j * W + i] = near ? 3.5 : 1;

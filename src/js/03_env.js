@@ -220,10 +220,7 @@ function buildDecorSkate() {
   const poleM = new THREE.MeshStandardMaterial({ color: 0x3a3f4d, metalness: 0.7, roughness: 0.35 });
   // palms on the out-of-bounds planters and gardens
   const palms = [];
-  SOLIDS.filter(s => s.oob).forEach(s => {
-    const n = Math.max(1, Math.round((s.x1 - s.x0) * (s.z1 - s.z0) / 38));
-    for (let i = 0; i < n; i++) palms.push([rand(s.x0 + 0.8, s.x1 - 0.8), s.h, rand(s.z0 + 0.8, s.z1 - 0.8), rand(0.8, 1.2)]);
-  });
+  PALMS.forEach(([x, z, k]) => { const s = SOLIDS.find(o => o.oob && inRect(o, x, z)); palms.push([x, s ? s.h : groundAt(x, z), z, k]); });
   const trunkM = new THREE.MeshStandardMaterial({ color: 0x8a6a45, roughness: 0.9 }), leafM = new THREE.MeshStandardMaterial({ color: 0x3e9a47, roughness: 0.8, side: THREE.DoubleSide });
   const tim = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.18, 0.28, 1, 7), trunkM, palms.length);
   const leafG = new THREE.ConeGeometry(0.55, 3.2, 4, 1, true); leafG.translate(0, 1.6, 0); leafG.rotateZ(Math.PI / 2.4);
@@ -232,7 +229,7 @@ function buildDecorSkate() {
     const hT = 4.2 * k;
     // collision for shots: trunk up to the crown, then a flatter disc for the fronds (not paintable)
     const tr = { t: 'box', tree: true, x, z, y0: y, yc: y + hT - 0.35 * k, y1: y + hT + 0.9 * k, r: 0.3 * k, rc: 1.7 * k };
-    Object.assign(tr, { x0: x - tr.rc, x1: x + tr.rc, z0: z - tr.rc, z1: z + tr.rc, h: tr.y1 }); TREES.push(tr); TREE_Y0 = Math.min(TREE_Y0, y); dm.position.set(x, y + hT / 2, z); dm.scale.set(k, hT, k); dm.rotation.set(rand(-0.08, 0.08), 0, rand(-0.08, 0.08)); dm.updateMatrix(); tim.setMatrixAt(i, dm.matrix);
+    Object.assign(tr, { x0: x - tr.rc, x1: x + tr.rc, z0: z - tr.rc, z1: z + tr.rc, h: tr.y1 }); TREES.push(tr); TREE_Y0 = Math.min(TREE_Y0, y); dm.position.set(x, y + hT / 2, z); dm.scale.set(k, hT, k); dm.rotation.set(0, 0, 0); dm.updateMatrix(); tim.setMatrixAt(i, dm.matrix);   // upright, so the crown sits on the trunk
     for (let j = 0; j < 6; j++) { dm.position.set(x, y + hT, z); dm.scale.set(k, k, k); dm.rotation.set(0, j / 6 * Math.PI * 2 + i, 0); dm.updateMatrix(); lim.setMatrixAt(i * 6 + j, dm.matrix); }
   });
   tim.castShadow = lim.castShadow = true; deco.add(tim, lim);

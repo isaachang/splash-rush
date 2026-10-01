@@ -3,7 +3,7 @@ const NAV = { W: XH * 2, H: ZH * 2, h: null, cost: null };
 function initNav() {
   const W = NAV.W, H = NAV.H; NAV.h = new Float32Array(W * H); NAV.cost = new Float32Array(W * H);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
-    const x = -XH + i + 0.5, z = -ZH + j + 0.5, out = (TERR.on && terrOob(x, z)) || SOLIDS.some(s => s.oob && inRect(s, x, z)), h = out ? 99 : groundAt(x, z); NAV.h[j * W + i] = h;   // never path over planters / outside the park
+    const x = -XH + i + 0.5, z = -ZH + j + 0.5, h = TERR.on && terrOob(x, z) ? 99 : groundAt(x, z); NAV.h[j * W + i] = h;   // never path outside the park
     let near = 0;
     for (let a = 0; a < 8; a++) { const px = x + Math.cos(a * Math.PI / 4) * 0.75, pz = z + Math.sin(a * Math.PI / 4) * 0.75; if (Math.abs(px) > XH - 0.3 || Math.abs(pz) > ZH - 0.3) { near = 1; continue; } if (groundAt(px, pz) > h + STEP) near = 1; }
     NAV.cost[j * W + i] = near ? 3.5 : 1;

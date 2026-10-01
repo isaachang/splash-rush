@@ -22,7 +22,7 @@ const SOLIDS = [];
 // and fences (block people, squids and ink pass)
 const BRIDGES = [], FENCES = [];
 // palm trees (added with the decor): trunk and crown stop shots and bombs but never take ink
-const TREES = []; let TREE_Y0 = 1e9;
+const TREES = [], PALMS = []; let TREE_Y0 = 1e9;
 function box(x0, x1, z0, z1, h, style, top) { return { t: 'box', x0, x1, z0, z1, h, style, top: top || 'concrete' }; }
 function ramp(x0, x1, z0, z1, axis, h0, h1, top) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: top || 'grate' }; }
 function mirrorSolid(s) { const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0 }); if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; } return m; }
@@ -160,7 +160,10 @@ function defineSkate() {
   grates.forEach(b => BRIDGES.push(b, Object.assign({}, b, { x0: -b.x1, x1: -b.x0, z0: -b.z1, z1: -b.z0 })));
   // grate fences beside the tower: people can't pass, squids and ink can
   const fz = [[2.2, 5.0, 6.0, 6.12], [2.2, 5.0, 8.48, 8.6], [4.88, 5.0, 6.0, 8.6]];
-  fz.forEach(([x0, x1, z0, z1]) => { FENCES.push({ x0, x1, z0, z1, y0: SL, h: SL + 1.25 }, { x0: -x1, x1: -x0, z0: -z1, z1: -z0, y0: SL, h: SL + 1.25 }); });
+  fz.forEach(([x0, x1, z0, z1]) => { FENCES.push({ x0, x1, z0, z1, y0: SL, h: SL + 1.6 }, { x0: -x1, x1: -x0, z0: -z1, z1: -z0, y0: SL, h: SL + 1.6 }); });   // taller than a jump
+  // palms: fixed spots in the middle of the planters (mirrored for the other team); the parked car gets none
+  const palms = [[-18.3, 12.7, 1.1], [-11.1, 19.9, 0.85], [-7.2, 18.6, 1.15], [6.8, 11.6, 1.0], [9.1, 14.6, 1.15]];
+  palms.forEach(([x, z, k]) => PALMS.push([x * SKATE_K, z * SKATE_K, k], [-x * SKATE_K, -z * SKATE_K, k]));
   // spread the whole plan out (plan view only; heights stay)
   const K = SKATE_K, sp = P => P.map(([x, z]) => [x * K, z * K]), sr = r => { r.x0 *= K; r.x1 *= K; r.z0 *= K; r.z1 *= K; };
   SOLIDS.forEach(sr); BRIDGES.forEach(sr); FENCES.forEach(sr);
@@ -808,10 +811,15 @@ function buildParkWall() {
   const cm = new THREE.Mesh(cg, new THREE.MeshStandardMaterial({ map: TEX.stone, color: 0x9aa0ad, roughness: 0.85, side: THREE.DoubleSide })); cm.receiveShadow = true; arenaGroup.add(cm);
   // yellow coping rail just inside the top edge, on short posts
   const railM = new THREE.MeshStandardMaterial({ color: 0xffc629, roughness: 0.35, metalness: 0.4 });
-  const rp = P.map((p, i) => new THREE.Vector3(p[0] + out[i][0] * 0.22, WT + 0.42, p[1] + out[i][1] * 0.22));
+  // points every <= 0.5 m along the wall (long straight runs would make the spline bulge off the wall top)
+  const rp = [];
+  for (let i = 0; i < n; i++) {
+    const p = P[i], q = P[(i + 1) % n], o = out[i], o2 = out[(i + 1) % n], m = Math.max(1, Math.ceil(lens[i] / 0.5));
+    for (let k = 0; k < m; k++) { const t = k / m, ox = lerp(o[0], o2[0], t), oz = lerp(o[1], o2[1], t), L = Math.hypot(ox, oz) || 1; rp.push(new THREE.Vector3(lerp(p[0], q[0], t) + ox / L * 0.22, WT + 0.42, lerp(p[1], q[1], t) + oz / L * 0.22)); }
+  }
   const curve = new THREE.CatmullRomCurve3(rp, true);
-  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.min(1400, n * 2), 0.11, 6, true), railM); tube.castShadow = true; arenaGroup.add(tube);
-  const posts = []; let d = 0; for (let i = 0; i < n; i++) { d += lens[i]; if (d > 2.2) { d = 0; posts.push(rp[i]); } }
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, rp.length, 0.11, 6, true), railM); tube.castShadow = true; arenaGroup.add(tube);
+  const posts = []; for (let i = 0; i < rp.length; i += 5) posts.push(rp[i]);
   const pim = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.06, 0.06, 0.42, 6), railM, posts.length), dm = new THREE.Object3D();
   posts.forEach((q, i) => { dm.position.set(q.x, WT + 0.21, q.z); dm.updateMatrix(); pim.setMatrixAt(i, dm.matrix); }); arenaGroup.add(pim);
   // the centre tower's round lip (sits round the top edge, never over the paintable top)

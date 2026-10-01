@@ -48,11 +48,18 @@ const tests = function () {
   // the round end of the bowl: run along the curved wall, slide along it, never through
   put(14 * K, 0.2, 24 * K); let worst = 0; Cam.yaw = Math.PI / 2; Input.keys = { KeyW: true, KeyD: true }; for (let i = 0; i < 120; i++) { loop(); if (terrOob(P.pos.x, P.pos.z)) worst++; } Input.keys = {};
   ok(worst === 0, 'curved bowl wall: running into it slides along, never through');
-  // planters are out of bounds: from the grate walkway beside the big planter you can't walk onto it (or into its palms)
+  // planters: you can jump up onto them, but their palm trunks are solid (no walking through the tree)
   const PL = SOLIDS.find(o => o.oob && o.x0 > 4 && o.z0 > 9 && o.h > 2.5), GW = BRIDGES.find(o => o.x0 > PL.x1 - 0.1 && o.h > 2.5);
-  put((GW.x0 + GW.x1) / 2, GW.h, (PL.z0 + PL.z1) / 2); walk(-Math.PI / 2, 45); const onPlanter = inRect(PL, P.pos.x, P.pos.z);
-  put((GW.x0 + GW.x1) / 2, GW.h, (PL.z0 + PL.z1) / 2); Cam.yaw = -Math.PI / 2; Input.jumpQ = true; walk(-Math.PI / 2, 45, { Space: true }); const jumpedOn = inRect(PL, P.pos.x, P.pos.z);
-  ok(!onPlanter && !jumpedOn && TREES.every(t => Math.hypot(P.pos.x - t.x, P.pos.z - t.z) > t.r + 0.3), 'planters: no walking or jumping onto them, so nobody walks through the palm trees');
+  put((GW.x0 + GW.x1) / 2, GW.h, (PL.z0 + PL.z1) / 2); Cam.yaw = -Math.PI / 2; Input.jumpQ = true; walk(-Math.PI / 2, 25, { Space: true }); const jumpedOn = inRect(PL, P.pos.x, P.pos.z) && Math.abs(P.pos.y - PL.h) < 0.05;
+  const TR = TREES.filter(t => inRect(PL, t.x, t.z)); let thru = 0;
+  TR.forEach(t => { put(t.x + 1.6, PL.h, t.z); for (let i = 0; i < 60; i++) { Cam.yaw = Math.atan2(t.x - P.pos.x, t.z - P.pos.z) + Math.PI; Cam.pitch = 0; Input.keys = { KeyW: true }; loop(); if (Math.hypot(P.pos.x - t.x, P.pos.z - t.z) < t.r + 0.3) thru++; } Input.keys = {}; });
+  ok(jumpedOn && TR.length === 2 && !thru, 'planters: jump up onto them; the palm trunks block people (' + TR.length + ' palms checked)');
+  ok(PALMS.length % 2 === 0 && PALMS.every(([x, z], i) => i % 2 === 0 ? Math.abs(PALMS[i + 1][0] + x) < 1e-6 && Math.abs(PALMS[i + 1][1] + z) < 1e-6 : true) && TREES.every(t => SOLIDS.some(o => o.oob && inRect(o, t.x, t.z) && Math.abs(o.h - t.y0) < 1e-6 && Math.min(t.x - o.x0, o.x1 - t.x, t.z - o.z0, o.z1 - t.z) > 0.9)), 'palms: fixed mirrored spots, each standing well inside its planter');
+  // a grate walkway at chest height: people bump into it instead of walking under it (squids slip under)
+  const WG = BRIDGES.find(o => o.h === 2.0 && o.x0 < 0 && o.x1 > -3 && o.z0 > 4);
+  put(WG.x1 + 1.2, SL, (WG.z0 + WG.z1) / 2); walk(-Math.PI / 2, 40); const underBlocked = P.pos.x > WG.x1 && P.pos.y < SL + 0.05;
+  put(WG.x1 + 1.2, SL, (WG.z0 + WG.z1) / 2); walk(-Math.PI / 2, 40, { ShiftLeft: true }); const squidUnder = P.pos.x < WG.x1 - 0.3;
+  ok(underBlocked && squidUnder, 'grate walkway at chest height: people bump into it, squids slip under it');
   // grate bridge over the side pit: stand on it, drop through it as a squid
   const B = BRIDGES.find(b => b.h === SKATE_LV.plat && b.x0 < -15), bx = (B.x0 + B.x1) / 2, bz = (B.z0 + B.z1) / 2;
   put(bx, B.h + 0.05, bz); for (let i = 0; i < 15; i++) loop(); const stood = Math.abs(P.pos.y - B.h) < 0.05;
@@ -67,6 +74,8 @@ const tests = function () {
   const e = CHARS.find(c => c.team === 1); e.pos.set(fx, SL, fn.z1 + 1.2); e.hp = e.maxHp; e.alive = true; e.state = 'play'; e.invulnT = 0; e.swim = e.submerged = false; e.intent.swim = false; const h0 = e.hp;
   Proj.shot(P, new THREE.Vector3(fx, SL + 0.95, fn.z0 - 1.5), new THREE.Vector3(0, 0, 1), WEAPONS.rifle); for (let i = 0; i < 10; i++) loop();
   ok(blocked && through && e.hp < h0, 'grate fence: blocks people, squids slip through, ink goes through it');
+  put(fx, SL, fn.z0 - 0.6); Cam.yaw = 0; Input.jumpQ = true; walk(0, 40, { Space: true }); const overFence = P.pos.z > fn.z1;
+  ok(!overFence, 'grate fence: too tall to jump over');
   e.pos.set(15 * K, SL, -44 * K);
   // the tower: too high to jump onto from its balcony, climbable once its wall is inked
   const T = SOLIDS.find(s => s.t === 'box' && Math.abs(s.x0 + 1.6 * K) < 0.01 && s.h >= 3.9), tz = 1.5;

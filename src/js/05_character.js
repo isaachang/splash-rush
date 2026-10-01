@@ -2,7 +2,7 @@
 const CHARS = [];
 let PLAYER = null;
 const RING8 = Array.from({ length: 8 }, (_, a) => [Math.cos(a * Math.PI / 4), Math.sin(a * Math.PI / 4)]);
-const STEP = 0.55, GRAV = 24, RESPAWN = 5.5, SPECIAL_AREA = 42;
+const STEP = 0.55, BODY_H = 1.7, GRAV = 24, RESPAWN = 5.5, SPECIAL_AREA = 42;
 const BOT_NAMES = ['小墨', '咕噜', '泡泡', '阿飞', '闪电', '橘子汽水', '海苔', '奶昔', '跳跳糖', '大橙', '蓝莓', '噗噗', '墨鱼丸'];
 const TEAMMAT = [0, 1].map(() => new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.06, emissive: 0xffffff, emissiveIntensity: 0.16 }));
 const TEAMGHOST = [0, 1].map(() => new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.1, clearcoat: 1, transparent: true, opacity: 0.38, depthWrite: false, emissive: 0xffffff, emissiveIntensity: 0.3 }));
@@ -524,8 +524,9 @@ class Character {
     }
     // vertical
     if (!this.climbing) this.vel.y -= GRAV * dt;
-    const wasG = this.grounded;
+    const wasG = this.grounded, y0 = this.pos.y;
     this.pos.y += this.vel.y * dt;
+    if (this.vel.y > 0 && !this.swim && BRIDGES.length) for (const b of BRIDGES) { const c = b.h - 0.06 - BODY_H; if (y0 <= c + 1e-3 && this.pos.y > c && inRect(b, this.pos.x, this.pos.z)) { this.pos.y = c; this.vel.y = 0; } }   // head bumps the grate above
     const g = groundBelow(this.pos.x, this.pos.z, Math.max(this.pos.y, this.pos.y - this.vel.y * dt), STEP, this.swim);   // squids drop through grate bridges
     if (this.pos.y <= g) {
       if (!wasG && this.vel.y < -12 && this.isPlayer) Sfx.land(0.5);
@@ -703,7 +704,7 @@ class Character {
       let x = this.pos.x, z = this.pos.z;
       if (x + r < s.x0 || x - r > s.x1 || z + r < s.z0 || z - r > s.z1) continue;
       const cx = clamp(x, s.x0, s.x1), cz = clamp(z, s.z0, s.z1);
-      if (!s.oob && topAt(s, cx, cz) <= this.pos.y + STEP) continue;     // out-of-bounds planters (and their palms) are walls at any height
+      if (topAt(s, cx, cz) <= this.pos.y + STEP) continue;
       let dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), nx, nz;
       if (d > 1e-5) { if (d >= r) continue; nx = dx / d; nz = dz / d; this.pos.x = cx + nx * r; this.pos.z = cz + nz * r; }
       else {
@@ -728,9 +729,30 @@ class Character {
       }
       if (!terrBlocked(this.pos.x, this.pos.z, y)) this._safe = [this.pos.x, this.pos.z];
     }
+    // palm trunks on the planters: you can stand on the planter, not walk through the tree
+    if (TREES.length && this.pos.y + BODY_H > TREE_Y0) for (const t of TREES) {
+      if (this.pos.y + BODY_H < t.y0 || this.pos.y > t.yc) continue;
+      const dx = this.pos.x - t.x, dz = this.pos.z - t.z, R = t.r + r, d = Math.hypot(dx, dz); if (d >= R) continue;
+      const nx = d > 1e-5 ? dx / d : 1, nz = d > 1e-5 ? dz / d : 0; this.pos.x = t.x + nx * R; this.pos.z = t.z + nz * R;
+      const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
+      if (!hit) hit = { s: t, nx, nz };
+    }
+    // grate walkways seen from below: too low to walk under upright, so people bump into their edge (squids slip under)
+    if (BRIDGES.length && !this.swim) for (const b of BRIDGES) {
+      if (this.pos.y > b.h - STEP || this.pos.y + BODY_H <= b.h - 0.06) continue;
+      const x = this.pos.x, z = this.pos.z; if (x + r < b.x0 || x - r > b.x1 || z + r < b.z0 || z - r > b.z1) continue;
+      const cx = clamp(x, b.x0, b.x1), cz = clamp(z, b.z0, b.z1); let dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), nx, nz;
+      if (d > 1e-5) { if (d >= r) continue; nx = dx / d; nz = dz / d; this.pos.x = cx + nx * r; this.pos.z = cz + nz * r; }
+      else {
+        const pl = x - b.x0, pr = b.x1 - x, pb = z - b.z0, pf = b.z1 - z, m = Math.min(pl, pr, pb, pf);
+        if (m === pl) { nx = -1; nz = 0; this.pos.x = b.x0 - r; } else if (m === pr) { nx = 1; nz = 0; this.pos.x = b.x1 + r; }
+        else if (m === pb) { nx = 0; nz = -1; this.pos.z = b.z0 - r; } else { nx = 0; nz = 1; this.pos.z = b.z1 + r; }
+      }
+      const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
+    }
     // grate fences: people bump into them, squids slip through
     if (FENCES.length && !this.swim) for (const f of FENCES) {
-      if (this.pos.y >= f.h || this.pos.y + 1.3 <= f.y0) continue;
+      if (this.pos.y >= f.h || this.pos.y + BODY_H <= f.y0) continue;
       const x = this.pos.x, z = this.pos.z; if (x + r < f.x0 || x - r > f.x1 || z + r < f.z0 || z - r > f.z1) continue;
       const cx = clamp(x, f.x0, f.x1), cz = clamp(z, f.z0, f.z1); let dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), nx, nz;
       if (d > 1e-5) { if (d >= r) continue; nx = dx / d; nz = dz / d; } else { const w = f.x1 - f.x0 < f.z1 - f.z0; nx = w ? Math.sign(x - (f.x0 + f.x1) / 2) || 1 : 0; nz = w ? 0 : Math.sign(z - (f.z0 + f.z1) / 2) || 1; }
