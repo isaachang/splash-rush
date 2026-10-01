@@ -48,6 +48,11 @@ const tests = function () {
   // the round end of the bowl: run along the curved wall, slide along it, never through
   put(14 * K, 0.2, 24 * K); let worst = 0; Cam.yaw = Math.PI / 2; Input.keys = { KeyW: true, KeyD: true }; for (let i = 0; i < 120; i++) { loop(); if (terrOob(P.pos.x, P.pos.z)) worst++; } Input.keys = {};
   ok(worst === 0, 'curved bowl wall: running into it slides along, never through');
+  // planters are out of bounds: from the grate walkway beside the big planter you can't walk onto it (or into its palms)
+  const PL = SOLIDS.find(o => o.oob && o.x0 > 4 && o.z0 > 9 && o.h > 2.5), GW = BRIDGES.find(o => o.x0 > PL.x1 - 0.1 && o.h > 2.5);
+  put((GW.x0 + GW.x1) / 2, GW.h, (PL.z0 + PL.z1) / 2); walk(-Math.PI / 2, 45); const onPlanter = inRect(PL, P.pos.x, P.pos.z);
+  put((GW.x0 + GW.x1) / 2, GW.h, (PL.z0 + PL.z1) / 2); Cam.yaw = -Math.PI / 2; Input.jumpQ = true; walk(-Math.PI / 2, 45, { Space: true }); const jumpedOn = inRect(PL, P.pos.x, P.pos.z);
+  ok(!onPlanter && !jumpedOn && TREES.every(t => Math.hypot(P.pos.x - t.x, P.pos.z - t.z) > t.r + 0.3), 'planters: no walking or jumping onto them, so nobody walks through the palm trees');
   // grate bridge over the side pit: stand on it, drop through it as a squid
   const B = BRIDGES.find(b => b.h === SKATE_LV.plat && b.x0 < -15), bx = (B.x0 + B.x1) / 2, bz = (B.z0 + B.z1) / 2;
   put(bx, B.h + 0.05, bz); for (let i = 0; i < 15; i++) loop(); const stood = Math.abs(P.pos.y - B.h) < 0.05;

@@ -703,7 +703,7 @@ class Character {
       let x = this.pos.x, z = this.pos.z;
       if (x + r < s.x0 || x - r > s.x1 || z + r < s.z0 || z - r > s.z1) continue;
       const cx = clamp(x, s.x0, s.x1), cz = clamp(z, s.z0, s.z1);
-      if (topAt(s, cx, cz) <= this.pos.y + STEP) continue;
+      if (!s.oob && topAt(s, cx, cz) <= this.pos.y + STEP) continue;     // out-of-bounds planters (and their palms) are walls at any height
       let dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), nx, nz;
       if (d > 1e-5) { if (d >= r) continue; nx = dx / d; nz = dz / d; this.pos.x = cx + nx * r; this.pos.z = cz + nz * r; }
       else {
