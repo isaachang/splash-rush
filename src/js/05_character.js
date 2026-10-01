@@ -35,6 +35,16 @@ function buildWeaponModel(id, T, trimHex) {
     const mz = mesh(GEO.cyl, trim, 0, 0.03, 0.66, 0.125, 0.1, 0.125); mz.rotation.x = Math.PI / 2; g.add(mz);
     g.add(mesh(GEO.sphere, T, 0, 0.16, 0.12, 0.085));
     g.add(mesh(new THREE.BoxGeometry(0.06, 0.13, 0.06), body, 0, -0.085, 0.02));
+  } else if (id === 'smg') {
+    // compact SMG: short receiver, stubby barrel, a long team-colour ink magazine hanging under it, folding stock
+    g.add(mesh(new THREE.BoxGeometry(0.09, 0.11, 0.3), body, 0, 0.02, 0.06));
+    g.add(mesh(new THREE.BoxGeometry(0.094, 0.02, 0.3), trim, 0, 0.08, 0.06));
+    g.add(rx(mesh(GEO.cyl, body, 0, 0.03, 0.3, 0.032, 0.18, 0.032)));
+    g.add(mesh(new THREE.TorusGeometry(0.04, 0.013, 6, 12), trim, 0, 0.03, 0.39));
+    g.add(mesh(new THREE.BoxGeometry(0.05, 0.2, 0.07), T, 0, -0.1, 0.12));                       // ink magazine
+    g.add(mesh(new THREE.BoxGeometry(0.055, 0.11, 0.06), body, 0, -0.07, -0.04));                // grip
+    g.add(mesh(new THREE.BoxGeometry(0.02, 0.06, 0.2), trim, 0, 0.0, -0.2));                     // wire stock
+    g.add(mesh(new THREE.BoxGeometry(0.07, 0.07, 0.02), body, 0, 0.0, -0.3));
   } else if (id === 'charger') {
     g.add(mesh(new THREE.BoxGeometry(0.11, 0.14, 0.44), body, 0, 0.02, 0.06));
     g.add(rx(mesh(GEO.cyl, trim, 0, 0.04, 0.64, 0.034, 0.76, 0.034)));
@@ -383,7 +393,9 @@ class Character {
     if (this.isPlayer) { Sfx.superJump(); HUD.respawned(); Cam.yaw = sp.yaw; Cam.pitch = -0.1; }
     if (tgt) { this.pos.set(sp.x, sp.y, sp.z); this.beginFlight(tgt); }
   }
+  stopSpin() { this.spinning = false; this.spin = 0; if (this.isPlayer) Sfx.spinStop(); }
   stopCharge() {
+    if (this.spinning) this.stopSpin();
     this.charge = 0; this.charging = false;
     if (this.laser) { this.laser.visible = false; this.laserDot.visible = false; }
     if (this.isPlayer) Sfx.chargeStop();
@@ -479,7 +491,7 @@ class Character {
       }
     }
     const W = this.weapon;
-    const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging;
+    const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging || this.spinning;
     // ----- movement
     const mlen = Math.min(1, Math.hypot(I.mx, I.mz));
     if (this.wall && (!this.swim || this.sp)) this.wall = null;                      // let go of squid form: fall off the wall
@@ -536,8 +548,10 @@ class Character {
     else { if (wasG) this.airSpeed = Math.max(this.airSpeed, Math.hypot(this.vel.x, this.vel.z)); this.grounded = false; }
     if (this.pos.y < -10) { this.die(this.lastAttacker); return; }
     // ----- ink / hp
-    if (this.submerged) { this.ink = Math.min(100, this.ink + 40 * dt * this.cs.inkRegen); }
-    else if (T - this.lastShot > 0.6) this.ink = Math.min(100, this.ink + (this.swim ? 12 : 6.5) * dt * this.cs.inkRegen);
+    // refill: the character's tank sets the pace; a few weapons (the SMG) refill faster and start sooner
+    const rk = this.cs.inkRegen * (W.inkRegenK || 1);
+    if (this.submerged) { this.ink = Math.min(100, this.ink + 40 * dt * rk); }
+    else if (T - this.lastShot > (W.regenDelay ?? 0.6)) this.ink = Math.min(100, this.ink + (this.swim ? 12 : 6.5) * dt * rk);
     // regen like the original: starts after 1 s without damage; 12.5/s standing, 100/s submerged in own ink
     if (T - this.lastHurt > 1.0 && !(this.inEnemy && !this.invuln())) this.hp = Math.min(this.maxHp, this.hp + (this.submerged ? 100 : 12.5) * (this.maxHp / 100) * dt);
     // enemy ink: ~30 HP/s but never below 50
@@ -548,7 +562,20 @@ class Character {
     else if (!this.swim) this.bodyYaw += angDiff(this.bodyYaw, this.aimYaw) * Math.min(1, dt * turnK);
     // ----- weapons
     if (W.type === 'auto') {
-      if (I.fire && !this.swim && !this.sp && this.fireCd <= 0 && G.state === 'play') {
+      // gatling: barrels have to spin up first; only while the trigger stays held does it keep firing
+      let spunUp = true;
+      if (W.spinUp) {
+        if (I.fire) this._wantT = T;
+        const held = I.fire || (!this.isPlayer && this.spinning && T - (this._wantT ?? -9) < 0.3);   // bots flicker the trigger: give them a short grace so the barrels keep turning
+        const want = held && !this.swim && !this.sp && G.state === 'play';
+        if (want) {
+          if (!this.spinning) { this.spinning = true; this.spin = 0; if (this.isPlayer) Sfx.spinStart(W.spinUp); }
+          const before = this.spin; this.spin += dt; this.lastShot = Math.max(this.lastShot, T - 0.2);
+          if (before < W.spinUp && this.spin >= W.spinUp && this.isPlayer) Sfx.spinReady();
+          spunUp = this.spin >= W.spinUp;
+        } else { if (this.spinning) this.stopSpin(); spunUp = false; }
+      }
+      if (spunUp && (I.fire || (W.spinUp && this.spinning)) && !this.swim && !this.sp && this.fireCd <= 0 && G.state === 'play') {
         if (this.ink >= W.cost / this.inkK) {
           this.fireCd = W.interval; this.ink -= W.cost / this.inkK; this.lastShot = T; this.recoil = 1;
           const m = this.muzzle();
@@ -559,8 +586,8 @@ class Character {
           // muzzle: small ink flash + droplets spraying forward
           Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.11, 0.06, TEAM_HEX[this.team], 0);
           Fx.burstDir(m.x, m.y, m.z, TEAM_HEX[this.team], 3, 5, 0.045, dir.x, dir.y, dir.z, 0.35);
-          if (this.isPlayer) { Cam.kick = Math.min(0.014, (Cam.kick || 0) + (W.id === 'splatling' ? 0.003 : 0.0045)); }
-          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) (W.id === 'splatling' ? Sfx.gatling : Sfx.shoot)(v, this.isPlayer ? 0 : sndPan(this.pos));
+          if (this.isPlayer) { Cam.kick = Math.min(0.014, (Cam.kick || 0) + (W.id === 'splatling' ? 0.003 : W.id === 'smg' ? 0.0028 : 0.0045)); }
+          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) (W.id === 'splatling' ? Sfx.gatling : W.id === 'smg' ? Sfx.smg : Sfx.shoot)(v, this.isPlayer ? 0 : sndPan(this.pos));
         } else if (this.isPlayer) HUD.lowInk();
       }
     } else if (W.charges) this.updateCharge(dt, I, T);
@@ -799,7 +826,7 @@ class Character {
       this.arms[0].rotation.set(-Math.PI / 2 - pitch + this.recoil * 0.12, 0, 0);
       this.gun.position.y = -0.33 + this.recoil * 0.06;
       const firing = G.time - this.lastShot < 0.3;
-      if (this.gunSpin) { this.spinV = damp(this.spinV || 0, G.time - this.lastShot < 0.15 ? 45 : 0, 8, dt); this.gunSpin.rotation.z += this.spinV * dt; }
+      if (this.gunSpin) { this.spinV = damp(this.spinV || 0, this.spinning ? 45 * Math.min(1, this.spin / (this.weapon.spinUp || 1)) : G.time - this.lastShot < 0.15 ? 45 : 0, 8, dt); this.gunSpin.rotation.z += this.spinV * dt; }
       if (['charger', 'splatling', 'blaster'].includes(this.weapon.cls)) {
         // two-handed long gun: left hand supports the barrel; crouch while charging
         this.arms[1].rotation.set(-Math.PI / 2 * 0.97 - pitch, 0, -0.62);

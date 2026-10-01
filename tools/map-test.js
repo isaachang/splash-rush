@@ -87,6 +87,15 @@ const tests = function () {
   const before = Paint.teamCells[0]; Proj.shot(P, new THREE.Vector3(-6.8 * K, SKATE_LV.plat + 0.9, 44 * K), new THREE.Vector3(0, 0, 1), WEAPONS.rifle); for (let i = 0; i < 20; i++) loop();
   ok(Paint.teamCells[0] - before < 60, 'shots at the outer wall do not paint the ground behind it');
   quitToTitle(); for (let i = 0; i < 5; i++) loop();
+  // switching maps on the map select screen rebuilds the world in place (no page reload) and back again
+  const n0 = SOLIDS.length, kids0 = scene.children.length;
+  openMapSel(); switchMap('dock'); for (let i = 0; i < 5; i++) loop();
+  const dockOk = MAP_ID === 'dock' && XH === 28 && !TERR.on && !TREES.length && Paint.total === NX * NZ && NAV.W === 56 && SPAWN[0].z === 42;
+  switchMap('skate'); for (let i = 0; i < 5; i++) loop();
+  const backOk = MAP_ID === 'skate' && SOLIDS.length === n0 && TERR.on && TREES.length === PALMS.length && scene.children.length === kids0;
+  mapSelNext(); startMatch(); Input.locked = true; let fr2 = 0; while (G.state !== 'play' && fr2++ < 400) loop(); for (let i = 0; i < 30; i++) loop();
+  ok(dockOk && backOk && G.state === 'play' && Math.abs(PLAYER.pos.z - SPAWN[0].z) < 4 && !!astar(navIdx(SPAWN[0].x, SPAWN[0].z), navIdx(SPAWN[1].x, SPAWN[1].z)), 'map select: switching maps rebuilds the park in place (no reload), back and forth, and a match starts fine on it');
+  quitToTitle(); for (let i = 0; i < 5; i++) loop();
   return res;
 };
 const out = vm.runInContext('(' + tests.toString() + ')()', g);

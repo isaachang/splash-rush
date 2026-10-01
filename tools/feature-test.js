@@ -224,8 +224,8 @@ vm.runInContext(`(() => {
       const A = run('sa'), M = run('man'), D = run('dun');
       ok(Math.abs(A.walk - 6.4 * 1.25) < 0.2 && A.hp === 80 && A.root < 1 && A.shots >= 54 && A.shots <= 57 && Math.abs(A.bomb - 70) < 0.5, '阿飒: 80 HP, runs ' + A.walk.toFixed(2) + ' m/s (125%), slim build, 80% tank (' + A.shots + ' shots, a bomb takes ' + A.bomb.toFixed(0) + '%)');
       ok(M.hp === 85 && M.w === 'charger' && M.inkK === 1.2 && Math.floor(100 * M.inkK / WEAPONS.charger.costFull) === 6 && Math.abs(M.walk - 6.4 * 0.95) < 0.2, '满满: sniper only (' + M.w + ' ' + M.inkK + '), 85 HP, walks ' + M.walk.toFixed(2) + ' m/s (95%), 120% tank = 6 full charges');
-      ok(D.hp === 160 && D.hits === 5 && Math.abs(D.walk - 6.4 * 0.6) < 0.2 && D.push < A.push * 0.5 && D.root > 1, '石墩: 160 HP takes ' + D.hits + ' rifle hits, walks ' + D.walk.toFixed(2) + ' m/s (60%), barely pushed back');
-      ok(CHARACTERS.sa.weapons.join() === 'rifle' && CHARACTERS.man.weapons.join() === 'charger' && CHARACTERS.dun.weapons.join() === 'splatling', 'each character has its own weapon: 阿飒 rifle, 满满 sniper, 石墩 gatling');
+      ok(D.hp === 160 && D.hits === 5 && Math.abs(D.walk - 6.4 * 0.57) < 0.15 && CHARACTERS.dun.swimK === 0.665 && D.push < A.push * 0.5 && D.root > 1, '石墩: 160 HP takes ' + D.hits + ' rifle hits, walks ' + D.walk.toFixed(2) + ' m/s (57%), swims at 66.5%, barely pushed back');
+      ok(CHARACTERS.sa.weapons.join() === 'rifle,smg' && CHARACTERS.man.weapons.join() === 'charger' && CHARACTERS.dun.weapons.join() === 'splatling', 'weapons per character: 阿飒 rifle or SMG, 满满 sniper, 石墩 gatling');
       ok(A.hits === 3 && M.hits === 3, 'a rifle still takes 3 hits on 阿飒 and 满满');
       Profile.data.char = 'std'; quitToTitle(); for (let i = 0; i < 3; i++) loop();
     }
@@ -240,12 +240,23 @@ vm.runInContext(`(() => {
       const foe = k => { const e = CHARS.filter(c => c.team === 1)[k]; e.hp = 100; e.alive = true; e.state = 'play'; e.invulnT = 0; e.vel.set(0, 0, 0); return e; };
       // --- heavy gatling: hold = fires straight away, very fast, but the tank only lasts ~40 rounds
       let Q = setup('splatling'); const WS = WEAPONS.splatling; let shots = 0; const os = Proj.shot.bind(Proj); Proj.shot = (o, ...a) => { if (o === Q) shots++; return os(o, ...a); };
-      Input.fire = true; loop(); loop(); const first = shots; Input.keys.KeyW = true; for (let i = 0; i < 20; i++) loop(); const spd = Math.hypot(Q.vel.x, Q.vel.z); Input.keys.KeyW = false;
+      Input.fire = true; for (let i = 0; i < 7; i++) loop(); const early = shots; for (let i = 0; i < 3; i++) loop(); const spunUp = shots;
+      Input.fire = false; loop(); const stopped = shots; Input.fire = true; for (let i = 0; i < 6; i++) loop(); const respin = shots - stopped; Input.fire = false; loop();
+      ok(early === 0 && spunUp >= 1 && !Q.spinning && respin === 0, 'gatling: barrels spin up for ' + WS.spinUp + ' s before the first round (' + early + ' then ' + spunUp + '), letting go stops it and pressing again spins up again');
+      Q.ink = 100; shots = 0; Input.fire = true; Input.keys.KeyW = true; for (let i = 0; i < 20; i++) loop(); const spd = Math.hypot(Q.vel.x, Q.vel.z); Input.keys.KeyW = false;
       for (let i = 0; i < 70; i++) loop(); Input.fire = false; Proj.shot = os;
       const pr = Proj.predict(Q, Q.muzzle(), new THREE.Vector3(0, 0, -1)), reach = Q.muzzle().distanceTo(pr.end);
-      ok(first >= 1 && shots >= 36 && shots <= 42 && Q.ink < WS.cost && Math.abs(spd - WS.moveFire) < 0.3 && reach > 19, 'gatling: fires the moment you press, ' + shots + ' rounds empty the tank, walks ' + spd.toFixed(1) + ' m/s while firing, reaches ' + reach.toFixed(1) + ' m');
+      ok(shots >= 36 && shots <= 42 && Q.ink < WS.cost && Math.abs(spd - WS.moveFire) < 0.3 && reach > 19, 'gatling: held down it keeps firing, ' + shots + ' rounds empty the tank, walks ' + spd.toFixed(1) + ' m/s while firing, reaches ' + reach.toFixed(1) + ' m');
       const g1 = foe(0); g1.pos.set(-9, 0, 4); Q.ink = 100; Q.pos.set(-9, 0, 20); Input.fire = true; let fr = 0; while (g1.alive && fr < 60) { loop(); fr++; } Input.fire = false;
-      ok(!g1.alive && g1.lastVia === 'splatling' && fr < 30, 'gatling shreds someone at 16 m in ' + (fr / 30).toFixed(2) + ' s');
+      ok(!g1.alive && g1.lastVia === 'splatling' && fr < 39, 'gatling shreds someone at 16 m in ' + (fr / 30).toFixed(2) + ' s (spin-up included)');
+      // --- 阿飒's SMG: weak fast rounds, 5 to knock out, a short-lived tank that refills faster than the rifle's
+      quitToTitle(); for (let i = 0; i < 3; i++) loop(); Profile.data.char = 'sa'; Q = setup('smg'); const WM = WEAPONS.smg; shots = 0; Proj.shot = (o, ...a) => { if (o === Q) shots++; return os(o, ...a); };
+      Input.fire = true; let fT = 0; while (Q.ink >= WM.cost / Q.inkK && fT < 300) { loop(); fT++; } Input.fire = false; Proj.shot = os;
+      const s1 = foe(0); s1.pos.set(-9, 0, 10); Q.ink = 100; Q.fireCd = 0; Input.fire = true; let sf = 0; while (s1.alive && sf < 60) { loop(); sf++; } Input.fire = false;
+      const refill = w => { Q.weapon = WEAPONS[w]; Q.ink = 20; Q.lastShot = G.time; for (let i = 0; i < 30; i++) loop(); return Q.ink - 20; };
+      const rS = refill('smg'), rR = refill('rifle'); Q.weapon = WM;
+      ok(Q.weapon.id === 'smg' && shots >= 48 && shots <= 52 && Math.abs(fT / 30 - 3) < 0.35 && !s1.alive && s1.lastVia === 'smg' && Math.ceil(100 / WM.dmg) === 5 && rS > rR * 1.5, '阿飒 SMG: ' + shots + ' rounds in ' + (fT / 30).toFixed(1) + ' s empty the tank, knocks out in ' + (sf / 30).toFixed(2) + ' s, refills ' + rS.toFixed(1) + '% vs rifle ' + rR.toFixed(1) + '% in the first second');
+      Profile.data.char = 'std';
       // --- range blaster: direct hit = knockout, splash near a miss, airburst at max range
       Q = setup('blaster'); const WB = WEAPONS.blaster; const b1 = foe(0); b1.pos.set(-9, 0, 12);
       Cam.pitch = 0.0; for (let i = 0; i < 2; i++) loop(); Input.fire = true; loop(); Input.fire = false; for (let i = 0; i < 20; i++) loop();
@@ -322,7 +333,7 @@ vm.runInContext(`(() => {
       const nearHit = Proj.hitChar(D4, { x: D4.pos.x + 0.57, y: D4.pos.y + 0.9, z: D4.pos.z }, 0.05), stdMiss = !Proj.hitChar(f5, { x: f5.pos.x + 0.57, y: f5.pos.y + 0.9, z: f5.pos.z }, 0.05);
       const sa4 = CHARS.find(c => c.team === 1 && c.cs.id === 'sa') || null;
       Input.jumpQ = true; let peak = D4.pos.y, j = 0; loop(); while (j++ < 60) { loop(); peak = Math.max(peak, D4.pos.y); }
-      ok(nearHit && stdMiss && peak > 0.95 && peak < 1.25 && D4.cs.swimK === 0.7, '石墩: bigger hitbox (hit at 0.57 m from centre, others miss there), jumps ' + peak.toFixed(2) + ' m (normal 1.43), swims 70%');
+      ok(nearHit && stdMiss && peak > 0.95 && peak < 1.25 && D4.cs.swimK === 0.665, '石墩: bigger hitbox (hit at 0.57 m from centre, others miss there), jumps ' + peak.toFixed(2) + ' m (normal 1.43), swims 66.5%');
       const bx = SOLIDS.find(s => s.t === 'box' && !s.bound && Math.abs(s.h - 1.4) < 0.01);
       if (bx) { D4.pos.set((bx.x0 + bx.x1) / 2, groundAt((bx.x0 + bx.x1) / 2, bx.z1 + 0.8), bx.z1 + 0.8); D4.vel.set(0, 0, 0); for (let i = 0; i < 5; i++) loop(); Cam.yaw = Math.PI; Input.keys.KeyW = true; Input.jumpQ = true; for (let i = 0; i < 40; i++) loop(); Input.keys.KeyW = false; Input.keys.KeyS = false;
         ok(D4.pos.y > 1.3, '石墩 can still jump onto a 1.4 m box (y ' + D4.pos.y.toFixed(2) + ')'); }

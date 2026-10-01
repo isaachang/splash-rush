@@ -1,22 +1,28 @@
 /* ================================================================ MAP
-   Several maps: the one in use is picked before the world is built (the
-   lobby saves the choice and reloads the page), so every system below just
-   reads XH / ZH / SOLIDS / SPAWN / DECK as before.                        */
+   Several maps. The one in use sets XH / ZH / SOLIDS / SPAWN / DECK that
+   every system below reads; switching maps (setMap + loadMap in the game
+   module) rebuilds the world in place, without reloading the page.        */
 const MAP_LIST = {
   dock: { id: 'dock', name: '潮汐码头广场', en: 'TIDE DOCK PLAZA', XH: 28, ZH: 46, size: '56 × 92 米', tags: ['集装箱', '中路开阔', '两侧高台'], desc: '码头上的集装箱广场，中路开阔、两侧有高台' },
   skate: { id: 'skate', name: '墨浪滑板场', en: 'RUSH SKATEPARK', XH: 25.5, ZH: 55.5, cull: true, spawnSlots: [[-1.7, -0.5], [-0.6, 0.7], [0.6, -0.5], [1.7, 0.7]], size: '51 × 111 米', tags: ['S 形泳池', '中央高塔', '铁网走道'], desc: '城市滑板公园：S 形下沉泳池、波浪外墙、中央高塔和铁网走道' }
 };
 const MAP_KEY = 'splashrush.map';
-const MAP_ID = (() => {
+let MAP_ID = (() => {
   if (typeof SR_MAP !== 'undefined' && MAP_LIST[SR_MAP]) return SR_MAP;     // tests / tools
   try { const q = new URLSearchParams(location.search).get('map'); if (q && MAP_LIST[q]) return q; } catch (e) { }
   try { const v = localStorage.getItem(MAP_KEY); if (v && MAP_LIST[v]) return v; } catch (e) { }
   return 'dock';
 })();
-const MAP = MAP_LIST[MAP_ID];
-const XH = MAP.XH, ZH = MAP.ZH, CELL = 0.14;
-const NX = Math.ceil(XH * 2 / CELL), NZ = Math.ceil(ZH * 2 / CELL);
-const PSX = NX * CELL, PSZ = NZ * CELL;
+const CELL = 0.14;
+let MAP, XH, ZH, NX, NZ, PSX, PSZ, SPAWN, DECK;
+// point every map-sized global at the chosen map (the world itself is rebuilt by loadMap)
+function setMap(id) {
+  MAP_ID = MAP_LIST[id] ? id : 'dock'; MAP = MAP_LIST[MAP_ID];
+  XH = MAP.XH; ZH = MAP.ZH; NX = Math.ceil(XH * 2 / CELL); NZ = Math.ceil(ZH * 2 / CELL); PSX = NX * CELL; PSZ = NZ * CELL;
+  // yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
+  SPAWN = MAP_ID === 'skate' ? [{ x: -6.8 * SKATE_K, z: 42.6 * SKATE_K, y: 2.0, yaw: Math.PI }, { x: 6.8 * SKATE_K, z: -42.6 * SKATE_K, y: 2.0, yaw: 0 }] : [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
+  DECK = MAP_ID === 'skate' ? [{ x0: -10.3 * SKATE_K, x1: -3.3 * SKATE_K, z0: 36 * SKATE_K, z1: 46.5 * SKATE_K }, { x0: 3.3 * SKATE_K, x1: 10.3 * SKATE_K, z0: -46.5 * SKATE_K, z1: -36 * SKATE_K }] : [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
+}
 const SOLIDS = [];
 // see-through grate pieces kept apart from SOLIDS: bridges (stand on them in human form, squids and ink fall through)
 // and fences (block people, squids and ink pass)
@@ -26,7 +32,24 @@ const TREES = [], PALMS = []; let TREE_Y0 = 1e9;
 function box(x0, x1, z0, z1, h, style, top) { return { t: 'box', x0, x1, z0, z1, h, style, top: top || 'concrete' }; }
 function ramp(x0, x1, z0, z1, axis, h0, h1, top) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: top || 'grate' }; }
 function mirrorSolid(s) { const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0 }); if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; } return m; }
-function defineMap() { if (MAP_ID === 'skate') defineSkate(); else defineDock(); buildSolidGrid(); }
+// each map's layout is built once and kept, so switching back and forth is instant
+const MAP_CACHE = {};
+function defineMap() {
+  SOLIDS.length = BRIDGES.length = FENCES.length = TREES.length = PALMS.length = 0; TREE_Y0 = 1e9;   // start from an empty world (map switch)
+  Object.assign(TERR, { on: false, W: 0, H: 0, h: null, mat: null, oob: null, outline: null, bowls: [], plats: [], tower: null });
+  const c = MAP_CACHE[MAP_ID];
+  if (c && c.solids) { SOLIDS.push(...c.solids); BRIDGES.push(...c.bridges); FENCES.push(...c.fences); PALMS.push(...c.palms); Object.assign(TERR, c.terr); Object.assign(SG, c.sg); return; }
+  if (MAP_ID === 'skate') defineSkate(); else defineDock(); buildSolidGrid();
+  MAP_CACHE[MAP_ID] = Object.assign(c || {}, { solids: SOLIDS.slice(), bridges: BRIDGES.slice(), fences: FENCES.slice(), palms: PALMS.slice(), terr: Object.assign({}, TERR), sg: Object.assign({}, SG) });
+}
+// the floor layout texture (baked shadows, bowl shading, markings), also built once per map
+function layoutTex() { const c = MAP_CACHE[MAP_ID] || (MAP_CACHE[MAP_ID] = {}); return c.layout || (c.layout = makeLayoutTex()); }
+// do the slow part of every other map up front (during the loading screen), then come back to the current one
+function prebuildMaps() {
+  const cur = MAP_ID;
+  for (const id in MAP_LIST) { if (id === cur || (MAP_CACHE[id] && MAP_CACHE[id].layout)) continue; setMap(id); defineMap(); layoutTex(); }
+  setMap(cur); defineMap();
+}
 // coarse grid over the arena: which solids touch each 4 m cell (padded), so ground / collision lookups stay cheap
 const SG = { S: 4, W: 0, H: 0, cells: null };
 function buildSolidGrid() {
@@ -75,6 +98,7 @@ const SKATE_LV = { plat: 2.0 };
 // the plan below is traced at the reference's scale, then everything is spread out by SKATE_K (heights stay):
 // at 1.0 the park was ~15% tighter than the original relative to our characters and felt cramped
 const SKATE_K = 1.15;
+setMap(MAP_ID);
 // a path made of straight runs ('L') and smooth curves ('C'): [x, z] points
 function pathOf(...parts) { const out = []; for (const [k, P] of parts) { const q = k === 'C' ? smoothPts(P, false, 3) : P; q.forEach(p => { const l = out[out.length - 1]; if (!l || Math.hypot(l[0] - p[0], l[1] - p[1]) > 0.02) out.push(p); }); } return out; }
 function defineSkate() {
@@ -173,9 +197,6 @@ function defineSkate() {
   buildTerrain();
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
-// yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
-const SPAWN = MAP_ID === 'skate' ? [{ x: -6.8 * SKATE_K, z: 42.6 * SKATE_K, y: 2.0, yaw: Math.PI }, { x: 6.8 * SKATE_K, z: -42.6 * SKATE_K, y: 2.0, yaw: 0 }] : [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
-const DECK = MAP_ID === 'skate' ? [{ x0: -10.3 * SKATE_K, x1: -3.3 * SKATE_K, z0: 36 * SKATE_K, z1: 46.5 * SKATE_K }, { x0: 3.3 * SKATE_K, x1: 10.3 * SKATE_K, z0: -46.5 * SKATE_K, z1: -36 * SKATE_K }] : [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
 function inRect(s, x, z) { return x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1; }
 function topAt(s, x, z) {
   if (s.t === 'box') return s.h;
@@ -280,10 +301,13 @@ function segBlocked(ax, ay, az, bx, by, bz, stepLen = 0.4) {
 
 /* ============================================================ PAINT */
 const Paint = {
-  data: null, owner: null, hgt: null, onTerr: null, tex: null, dirty: false, teamCells: [0, 0], total: NX * NZ,
+  data: null, owner: null, hgt: null, onTerr: null, tex: null, dirty: false, teamCells: [0, 0], total: 0,
   wdata: null, wtex: null, wdirty: false, W: 1024, H: 1024, PX: 8, faces: []
 };
 function initPaint() {
+  if (Paint.tex) Paint.tex.dispose();
+  Paint.total = NX * NZ; Paint.teamCells = [0, 0];
+  PU.paintOrigin.value.set(-XH, -ZH); PU.paintSize.value.set(PSX, PSZ);
   Paint.data = new Uint8Array(NX * NZ * 4);
   Paint.owner = new Int8Array(NX * NZ).fill(-1);
   Paint.hgt = new Float32Array(NX * NZ);
