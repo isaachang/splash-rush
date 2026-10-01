@@ -556,19 +556,19 @@ function renderMaps() {
   const cur = MAP_ID;
   $('titleMapThumb').innerHTML = MAP_THUMB[cur] || ''; $('titleMapName').textContent = MAP.name; $('titleMapSub').textContent = '涂地对战 · 4 V 4 · ' + MAP.en;
   $('lobbySub').textContent = '涂地对战 · ' + MAP.name;
-  const sel = G.mapSel || cur;
+  const sel = cur;
   $('mapCards').innerHTML = Object.values(MAP_LIST).map(m => `<button class="mscard${m.id === sel ? ' sel' : ''}" data-id="${m.id}"><span class="mt">${MAP_THUMB[m.id] || ''}</span><span class="mn"><b>${m.name}</b><small>${m.en}</small><em>${m.desc}</em><span class="chips"><span class="sz">${m.size || ''}</span>${(m.tags || []).map(t => `<span>${t}</span>`).join('')}</span></span>${m.id === cur ? '<i class="mon">当前</i>' : ''}</button>`).join('');
-  $('mapCards').querySelectorAll('.mscard').forEach(el => { el.onclick = () => { Sfx.init(); Sfx.click(); G.mapSel = el.dataset.id; renderMaps(); }; el.ondblclick = () => mapSelNext(); });
+  $('mapCards').querySelectorAll('.mscard').forEach(el => { el.onclick = () => { Sfx.init(); Sfx.click(); if (el.dataset.id !== MAP_ID) switchMap(el.dataset.id, 'mapsel'); }; el.ondblclick = () => { if (el.dataset.id === MAP_ID) mapSelNext(); }; });
 }
 // the lobby and map select are laid out for ~1500 x 860: on a smaller window shrink them as a whole instead of squeezing
 function fitMenus() { const k = Math.min(1, innerWidth / 1500, innerHeight / 860); ['lobby', 'mapsel'].forEach(id => { const el = $(id); if (el) el.style.zoom = k < 0.999 ? k.toFixed(3) : ''; }); }
 addEventListener('resize', fitMenus);
 // map select screen: title -> pick a map -> lobby (a different map reloads the page and reopens the lobby)
-function openMapSel() { G.mapSel = MAP_ID; renderMaps(); show('title', false); show('lobby', false); show('results', false); show('mapsel', true); }
-function mapSelNext() { Sfx.init(); Sfx.click(); const id = G.mapSel || MAP_ID; if (id !== MAP_ID) { switchMap(id); return; } show('mapsel', false); openLobby(); }
-function switchMap(id) {
+function openMapSel() { renderMaps(); show('title', false); show('lobby', false); show('results', false); show('mapsel', true); }
+function mapSelNext() { Sfx.init(); Sfx.click(); show('mapsel', false); openLobby(); }
+function switchMap(id, reopen = 'lobby') {
   const m = MAP_LIST[id]; if (!m) return;
-  try { localStorage.setItem(MAP_KEY, id); sessionStorage.setItem('splashrush.reopen', 'lobby'); } catch (e) { }
+  try { localStorage.setItem(MAP_KEY, id); sessionStorage.setItem('splashrush.reopen', reopen); } catch (e) { }
   $('mapVeilName').textContent = m.name; $('mapVeilEn').textContent = m.en; $('mapVeil').classList.add('show');
   setTimeout(() => { try { location.href = location.pathname + location.hash; } catch (e) { location.reload(); } }, 420);
 }
@@ -874,6 +874,7 @@ const Preview = {
 /* ------------------------------------------------------------- update */
 function updateIntro(dt) {
   G.introT += dt; const t = G.introT;
+  Input.dx = Input.dy = 0;            // no looking around during the opening shot (it used to pile up and swing the camera at GO)
   const k = clamp(t / 3.0, 0, 1), e = k * k * (3 - 2 * k);
   // fly from enemy side high over arena down behind player
   // ... and land exactly where the play camera starts (behind the player, not the pad's centre), so GO doesn't jump
@@ -1018,7 +1019,7 @@ function boot() {
   show('loading', false); show('title', true);
   // just switched map in the lobby: come straight back to the lobby
   let reopen = null; try { reopen = sessionStorage.getItem('splashrush.reopen'); sessionStorage.removeItem('splashrush.reopen'); } catch (e) { }
-  if (reopen === 'lobby') openLobby();
+  if (reopen === 'lobby') openLobby(); else if (reopen === 'mapsel') openMapSel();
   loop();
 }
 function showFatal(msg) {

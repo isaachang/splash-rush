@@ -229,7 +229,10 @@ function buildDecorSkate() {
   const leafG = new THREE.ConeGeometry(0.55, 3.2, 4, 1, true); leafG.translate(0, 1.6, 0); leafG.rotateZ(Math.PI / 2.4);
   const lim = new THREE.InstancedMesh(leafG, leafM, palms.length * 6);
   palms.forEach(([x, y, z, k], i) => {
-    const hT = 4.2 * k; dm.position.set(x, y + hT / 2, z); dm.scale.set(k, hT, k); dm.rotation.set(rand(-0.08, 0.08), 0, rand(-0.08, 0.08)); dm.updateMatrix(); tim.setMatrixAt(i, dm.matrix);
+    const hT = 4.2 * k;
+    // collision for shots: trunk up to the crown, then a flatter disc for the fronds (not paintable)
+    const tr = { t: 'box', tree: true, x, z, y0: y, yc: y + hT - 0.35 * k, y1: y + hT + 0.9 * k, r: 0.3 * k, rc: 1.7 * k };
+    Object.assign(tr, { x0: x - tr.rc, x1: x + tr.rc, z0: z - tr.rc, z1: z + tr.rc, h: tr.y1 }); TREES.push(tr); TREE_Y0 = Math.min(TREE_Y0, y); dm.position.set(x, y + hT / 2, z); dm.scale.set(k, hT, k); dm.rotation.set(rand(-0.08, 0.08), 0, rand(-0.08, 0.08)); dm.updateMatrix(); tim.setMatrixAt(i, dm.matrix);
     for (let j = 0; j < 6; j++) { dm.position.set(x, y + hT, z); dm.scale.set(k, k, k); dm.rotation.set(0, j / 6 * Math.PI * 2 + i, 0); dm.updateMatrix(); lim.setMatrixAt(i * 6 + j, dm.matrix); }
   });
   tim.castShadow = lim.castShadow = true; deco.add(tim, lim);

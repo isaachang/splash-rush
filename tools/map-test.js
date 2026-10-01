@@ -28,6 +28,10 @@ const tests = function () {
   Object.keys(spots).forEach(k => { if (k !== 'enemy spawn') spots[k] = spots[k].map(v => v * K); });
   const miss = Object.keys(spots).filter(k => !astar(from, navIdx(...spots[k])));
   ok(!miss.length, 'AI can walk from the spawn to every area' + (miss.length ? ' (missing: ' + miss.join(', ') + ')' : ''));
+  // mouse movement during the opening shot is dropped (it used to pile up and swing the camera at GO)
+  openLobby(); startMatch(); Input.locked = true; const yaw0 = Cam.yaw; let fr0 = 0; while (G.state !== 'play' && fr0++ < 400) { Input.dx += 40; loop(); } loop();
+  ok(G.state === 'play' && Math.abs(Cam.yaw - yaw0) < 1e-6, 'opening shot: moving the mouse during it does not turn the camera at GO');
+  quitToTitle(); for (let i = 0; i < 5; i++) loop();
   GAME.uniformChars = true; Profile.data.char = 'std'; Profile.data.weapon = 'rifle'; openLobby(); startMatch(); Input.locked = true; while (G.state !== 'play') loop();
   G.bots.forEach(b => b.update = () => { }); CHARS.forEach(c => { if (c !== PLAYER) { c.pos.set((-8 + c.id * 0.9) * K, SKATE_LV.plat, 44 * K); c.intent.mx = c.intent.mz = 0; c.intent.fire = false; } });
   const P = PLAYER; const put = (x, y, z) => { P.pos.set(x, y, z); P.vel.set(0, 0, 0); P.wall = null; P.climbing = false; P._safe = null; Input.keys = {}; for (let i = 0; i < 3; i++) loop(); };
@@ -49,6 +53,8 @@ const tests = function () {
   put(bx, B.h + 0.05, bz); for (let i = 0; i < 15; i++) loop(); const stood = Math.abs(P.pos.y - B.h) < 0.05;
   Input.keys.ShiftLeft = true; for (let i = 0; i < 25; i++) loop(); const dropped = P.pos.y < 0.2; Input.keys = {}; for (let i = 0; i < 5; i++) loop();
   ok(stood && dropped, 'grate bridge: people stand on it, squids drop through into the pit');
+  walk(Math.PI / 2, 90); const outPit = P.pos.y > SL - 0.05;
+  ok(outPit, 'side pit: walk out of it up its ramp (y ' + P.pos.y.toFixed(2) + ')');
   // fence pocket beside the tower: blocks people, squids slip through, ink flies through
   const fn = FENCES.find(f => f.z1 - f.z0 < 0.2 && f.z0 > 5 && f.z0 < 8 && f.x0 > 0), fx = (fn.x0 + fn.x1) / 2;
   put(fx, SL, fn.z0 - 0.8); Cam.yaw = 0; Cam.pitch = 0; Input.keys.KeyW = true; for (let i = 0; i < 30; i++) loop(); const blocked = P.pos.z < fn.z0;

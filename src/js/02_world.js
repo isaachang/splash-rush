@@ -21,6 +21,8 @@ const SOLIDS = [];
 // see-through grate pieces kept apart from SOLIDS: bridges (stand on them in human form, squids and ink fall through)
 // and fences (block people, squids and ink pass)
 const BRIDGES = [], FENCES = [];
+// palm trees (added with the decor): trunk and crown stop shots and bombs but never take ink
+const TREES = []; let TREE_Y0 = 1e9;
 function box(x0, x1, z0, z1, h, style, top) { return { t: 'box', x0, x1, z0, z1, h, style, top: top || 'concrete' }; }
 function ramp(x0, x1, z0, z1, axis, h0, h1, top) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: top || 'grate' }; }
 function mirrorSolid(s) { const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0 }); if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; } return m; }
@@ -108,32 +110,33 @@ function defineSkate() {
     rims: []
   };
   // spawn platform + the narrow side ledge (raised plateau); where it meets the bowl the bowl's rim rises to it
-  const plat = { h: P, mat: 3, poly: [[-3.3, 47.5], [-3.3, 33.7], [-0.4, 33.7], [-0.4, 21.8], [-14.0, 21.8], [-14.0, 17.4], [-21, 17.4], [-21, 47.5]] };
+  const plat = { h: P, mat: 3, poly: [[-3.3, 47.5], [-3.3, 33.7], [0.8, 33.7], [0.8, 30.5], [-0.4, 28.0], [-0.4, 21.8], [-14.0, 21.8], [-14.0, 17.4], [-15.5, 17.4], [-15.5, 15.3], [-21, 15.3], [-21, 47.5]] };   // the side ledge runs right up to the planter (no pocket)
   bowl.rims.push({ poly: plat.poly, h: P, blend: 2.2 });
   // the pit under the side grate bridge
-  const pit = { h: 0, mat: 1, poly: [[-21, 5.2], [-13.6, 5.2], [-13.6, 10.0], [-21, 10.0]] };
+  const pit = { h: 0, mat: 1, poly: [[-21, 5.2], [-11.4, 5.2], [-11.4, 10.0], [-21, 10.0]] };   // includes its way-out ramp
   TERR.plats = [plat, { h: P, mat: 3, poly: rotPts(plat.poly) }, pit, { h: 0, mat: 1, poly: rotPts(pit.poly) }];
   const rb = b => ({ floor: b.floor, R: b.R, poly: rotPts(b.poly), ridges: b.ridges.map(r => Object.assign({}, r, { pts: rotPts(r.pts) })), mounds: b.mounds.map(m => Object.assign({}, m, { x: -m.x, z: -m.z })), rims: b.rims.map(r => Object.assign({}, r, { poly: rotPts(r.poly) })) });
   TERR.bowls = [bowl, rb(bowl)];
   // thin walls along the plateau's straight edges (paintable, climbable; they also stop people walking up the edge)
-  const W = 0.3;
+  const W = 0.6;           // thick enough to cover the narrow slope where a raised plateau meets the street
   const half2 = [
     // ---- spawn side
     box(-14.0, -0.4, 21.8 - W, 21.8, P, 'panel', 'concrete'),                  // front face of the spawn platform
-    box(-14.0 - W, -14.0, 17.4, 21.8, P, 'panel', 'concrete'),
-    box(-3.3, -3.3 + W, 33.7, 40.6, P, 'panel', 'concrete'),                     // spawn deck's side toward the bowl end
-    box(-3.0, 2.3, 34.0, 36.6, 2.5, 'contB', 'grate'),                           // dark block behind the bowl (flush with the spawn deck: no gap)
-    box(-3.0, 2.6, 36.6, 40.6, 2.5, 'contG', 'grate'),                           // dark grate box behind the bowl
+    box(-14.0, -14.0 + W, 17.4, 21.8, P, 'panel', 'concrete'),                   // edge of the side ledge (on the low side, so it hides the terrain's edge)
+    box(-3.3, -3.3 + W, 33.7, 41.4, P, 'panel', 'concrete'),                     // spawn deck's side toward the bowl end
+    box(-3.0, 2.3, 33.7, 36.6, 2.5, 'contB', 'grate'),                           // dark block behind the bowl (flush with the spawn deck: no gap)
+    box(-3.0, 2.6, 36.6, 41.4, 2.5, 'contG', 'grate'),                           // dark grate box behind the bowl
     // ---- side ledge: walkway past the planter, grate bridge over the pit, out to the street
     box(-15.5, -13.6, 10.0, 17.4, P, 'stone', 'concrete'),
     oob(-21, -15.5, 10.0, 15.3, 2.8),
-    ramp(-13.6, -11.4, 5.4, 9.8, 'x', 0, SL, 'skate'),                           // way out of the pit
+    ramp(-13.6, -11.4, 5.2 + W, 10.0 - W, 'x', 0, SL, 'skate'),                  // way out of the pit
+    box(-21, -11.4, 5.2, 5.2 + W, SL, 'stone', 'concrete'), box(-21, -11.4, 10.0 - W, 10.0, SL, 'stone', 'concrete'),   // the pit's side walls
     oob(-18.2, -15.4, 0.6, 3.0, 1.9),                                            // parked car on the street
     // ---- middle, spawn side of the tower (x<0)
     box(-14.0, -3.3, 15.3, 21.8, 1.5, 'stone', 'concrete'),                      // raised square in front of the spawn platform
-    oob(-12.8, -9.4, 18.2, 20.8, 2.2),                                           // grass strip along its back ...
-    oob(-9.4, -5.0, 15.3, 20.8, 2.7),                                            // ... joined to the palm planter (no slot between them)
-    box(-4.4, -3.5, 4.9, 10.3, 2.0, 'crate', 'wood'),                            // walkway off the tower balcony (grate beside it)
+    oob(-12.8, -9.4, 18.2, 21.5, 2.2),                                           // grass strip along its back ...
+    oob(-9.4, -5.0, 15.3, 21.5, 2.7),                                            // ... joined to the palm planter (no slot between them)
+    box(-4.4, -3.5, 4.8, 10.3, 2.0, 'crate', 'wood'),                            // walkway off the tower balcony (grate beside it)
     box(-8.7, -6.9, 5.0, 10.3, 1.5, 'crate', 'wood'),                            // crate row (grate beside it)
     box(-12.8, -10.6, 3.4, 6.8, 1.5, 'crate', 'wood'),
     box(-4.8, -1.0, 1.0, 4.8, 2.0, 'panel', 'concrete'),                         // tower balcony
@@ -153,7 +156,7 @@ function defineSkate() {
   TERR.tower = { r: 2.35, h: 4.0 };
   // grate walkways round the palm planters (people walk on them, squids drop through), grate bridges over the side pits
   const grates = [{ x0: 11.2, x1: 12.0, z0: 9.2, z1: 17.4, h: 2.6 }, { x0: 4.6, x1: 12.0, z0: 16.7, z1: 17.4, h: 2.6 }, { x0: -20.3, x1: -13.6, z0: 5.2, z1: 10.0, h: P },
-    { x0: -3.5, x1: -2.0, z0: 4.9, z1: 10.3, h: 2.0 }, { x0: -10.3, x1: -8.7, z0: 5.0, z1: 10.3, h: 1.5 }];
+    { x0: -3.5, x1: -2.0, z0: 4.8, z1: 10.3, h: 2.0 }, { x0: -10.3, x1: -8.7, z0: 5.0, z1: 10.3, h: 1.5 }];
   grates.forEach(b => BRIDGES.push(b, Object.assign({}, b, { x0: -b.x1, x1: -b.x0, z0: -b.z1, z1: -b.z0 })));
   // grate fences beside the tower: people can't pass, squids and ink can
   const fz = [[2.2, 5.0, 6.0, 6.12], [2.2, 5.0, 8.48, 8.6], [4.88, 5.0, 6.0, 8.6]];
@@ -161,7 +164,7 @@ function defineSkate() {
   // spread the whole plan out (plan view only; heights stay)
   const K = SKATE_K, sp = P => P.map(([x, z]) => [x * K, z * K]), sr = r => { r.x0 *= K; r.x1 *= K; r.z0 *= K; r.z1 *= K; };
   SOLIDS.forEach(sr); BRIDGES.forEach(sr); FENCES.forEach(sr);
-  TERR.outline = sp(TERR.outline); TERR.plats.forEach(p => p.poly = sp(p.poly));
+  TERR.outline = sp(TERR.outline); TERR.plats.forEach(p => { p.poly = sp(p.poly); if (p.h > SL) p.grow = 0.3; else if (p.h < SL) p.shrink = 0.3; });   // raised plateaus reach a little under their edge walls
   TERR.bowls.forEach(b => { b.poly = sp(b.poly); b.R *= K; b.ridges.forEach(r => { r.pts = sp(r.pts); r.w *= K; }); b.mounds.forEach(m => { m.x *= K; m.z *= K; m.r *= K; }); b.rims.forEach(r => { r.poly = sp(r.poly); r.blend *= K; }); });
   TERR.tower.r *= K;
   buildTerrain();
@@ -213,7 +216,8 @@ function terrainAt(x, z) {
   let h = SL, m = 0, rim = 0;
   for (const p of TERR.plats) {
     if (x < p.bb[0] || x > p.bb[1] || z < p.bb[2] || z > p.bb[3]) continue;
-    if (inPoly(x, z, p.poly)) { h = p.h; m = p.mat; }
+    if (p.shrink) { if (inPoly(x, z, p.poly) && polyDist(x, z, p.poly) >= p.shrink) { h = p.h; m = p.mat; } continue; }   // sunken pits stop a little short of their walls
+    if (inPoly(x, z, p.poly) || (p.grow && polyDist(x, z, p.poly) < p.grow)) { h = p.h; m = p.mat; }
   }
   for (const b of TERR.bowls) {
     if (x < b.bb[0] || x > b.bb[1] || z < b.bb[2] || z > b.bb[3] || !inPoly(x, z, b.poly)) continue;
@@ -259,6 +263,7 @@ function groundBelow(x, z, y, step, noBridge) {
 function solidAt(x, y, z) {
   if (y < 0) return true;
   if (TERR.on && (y < terrH(x, z) || (y < TERR.OOB_H && terrOob(x, z)))) return true;
+  if (y > TREE_Y0) for (const t of TREES) { if (y < t.y0 || y > t.y1) continue; const dx = x - t.x, dz = z - t.z, r = y > t.yc ? t.rc : t.r; if (dx * dx + dz * dz < r * r) return t; }
   for (const s of solidsNear(x, z)) if (inRect(s, x, z) && y < topAt(s, x, z)) return s;
   return null;
 }

@@ -174,6 +174,7 @@ const Proj = {
   classify(s, prev, p) {
     if (s === true && TERR.on && terrOob(p.x, p.z) && p.y < TERR.OOB_H - 0.08) { const n = new THREE.Vector3(prev.x - p.x, 0, prev.z - p.z); if (n.lengthSq() < 1e-6) n.set(0, 1, 0); n.normalize(); return { type: 'none', y: p.y, n, pt: p.clone() }; }   // the park's outer wall
     if (s === true) return { type: 'floor', y: groundAt(p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
+    if (s.tree) return { type: 'none', y: p.y, n: new THREE.Vector3(0, 1, 0), pt: p.clone() };
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
     if (prev.y >= tPrev - 0.08) return { type: 'floor', y: topAt(s, p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
     if (!s.faces) return { type: 'none', y: p.y, n: new THREE.Vector3(0, 1, 0) };
@@ -328,6 +329,7 @@ const Proj = {
     if (s === true && TERR.on && terrOob(hx, hz) && p.y < TERR.OOB_H - 0.08) {           // the park's outer wall: splash on it, no paint
       const nx = prev.x - p.x, nz = prev.z - p.z, L = Math.hypot(nx, nz) || 1; this.fx(prev.x, p.y, prev.z, team, r, nx / L, 0, nz / L); return true;
     }
+    if (s.tree) { const nx = prev.x - p.x, nz = prev.z - p.z, L = Math.hypot(nx, nz) || 1; this.fx(prev.x, prev.y, prev.z, team, r * 0.7, nx / L, 0.3, nz / L); return true; }   // palm: stops the shot, takes no ink
     if (s === true) { if (inside) { const g = groundAt(hx, hz); floorHit(g); this.fx(hx, g + 0.05, hz, team, r, 0, 1, 0); } return true; }
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
     if (prev.y >= tPrev - 0.08) {
