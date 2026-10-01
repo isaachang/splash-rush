@@ -12,32 +12,37 @@ const g = makeSandbox();
 const tests = function () {
   const res = []; const ok = (c, m) => res.push((c ? 'PASS ' : 'FAIL ') + m);
   clock.getDelta = () => 1 / 30; for (let i = 0; i < 5; i++) loop();
-  ok(MAP_ID === 'skate' && XH === 22 && ZH === 48 && TERR.on, 'skatepark map boots with curved terrain (44 x 96 m)');
+  const K = SKATE_K;            // the plan is spread out by K (heights unchanged)
+  ok(MAP_ID === 'skate' && XH === 25.5 && ZH === 55.5 && TERR.on, 'skatepark map boots with curved terrain (51 x 111 m)');
   ok(Paint.total < NX * NZ * 0.8 && Paint.total > NX * NZ * 0.5, 'outside the park and the planters are excluded from the turf total (' + (Paint.total / (NX * NZ) * 100).toFixed(0) + '% of the floor counts)');
   const oo = SOLIDS.find(s => s.oob); ok(splatFloor((oo.x0 + oo.x1) / 2, oo.h, (oo.z0 + oo.z1) / 2, 2, 0, 0.7, false) === 0, 'ink does not stick to out-of-bounds planters');
-  ok(splatFloor(-17, TERR.OOB_H, 40, 2, 0, 0.7, false) === 0 && terrOob(-17, 40), 'ink does not stick outside the park wall');
+  ok(splatFloor(-17 * K, TERR.OOB_H, 40 * K, 2, 0, 0.7, false) === 0 && terrOob(-17 * K, 40 * K), 'ink does not stick outside the park wall');
   // rotational symmetry of the terrain
   let asym = 0; for (let k = 0; k < 400; k++) { const x = Math.random() * 40 - 20, z = Math.random() * 90 - 45; if (Math.abs(groundAt(x, z) - groundAt(-x, -z)) > 0.05) asym++; }
   ok(asym < 4, 'both halves are the same (rotated 180°): ' + asym + ' / 400 samples differ');
-  ok(terrH(8, 24) > 0.5 && terrH(12, 22) < 0.1 && terrH(15, 21) > 0.3 && Math.abs(terrH(0, 6) - SL) < 0.01, 'bowl: floor below the street, a round hump and a snake ridge inside');
+  ok(terrH(8 * K, 24 * K) > 0.5 && terrH(12 * K, 22 * K) < 0.1 && terrH(15 * K, 21 * K) > 0.3 && Math.abs(terrH(0, 6 * K) - SL) < 0.01, 'bowl: floor below the street, a round hump and a snake ridge inside');
   let clash = 0; const F = Paint.faces.filter(f => !f.cap && !f.ramp);
   for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const a = F[i], b = F[j]; if (a.d !== b.d || Math.abs(a.plane - b.plane) > 0.02) continue; const o = Math.min(a.a1, b.a1) - Math.max(a.a0, b.a0); if (o > 0.05) clash++; }
   ok(clash === 0, 'no overlapping wall faces (' + clash + ')');
   const from = navIdx(SPAWN[0].x, SPAWN[0].z), spots = { 'enemy spawn': [SPAWN[1].x, SPAWN[1].z], 'own bowl floor': [12, 22], 'enemy bowl floor': [-12, -22], 'tower foot': [0.3, 2.6], 'side ledge': [17, 8], 'spawn platform': [-10, 30], 'narrow ledge': [-17, 22], 'side pit': [-17, 7], 'enemy narrow ledge': [17, -22] };
+  Object.keys(spots).forEach(k => { if (k !== 'enemy spawn') spots[k] = spots[k].map(v => v * K); });
   const miss = Object.keys(spots).filter(k => !astar(from, navIdx(...spots[k])));
   ok(!miss.length, 'AI can walk from the spawn to every area' + (miss.length ? ' (missing: ' + miss.join(', ') + ')' : ''));
   GAME.uniformChars = true; Profile.data.char = 'std'; Profile.data.weapon = 'rifle'; openLobby(); startMatch(); Input.locked = true; while (G.state !== 'play') loop();
-  G.bots.forEach(b => b.update = () => { }); CHARS.forEach(c => { if (c !== PLAYER) { c.pos.set(-8 + c.id * 0.9, SKATE_LV.plat, 44); c.intent.mx = c.intent.mz = 0; c.intent.fire = false; } });
+  G.bots.forEach(b => b.update = () => { }); CHARS.forEach(c => { if (c !== PLAYER) { c.pos.set((-8 + c.id * 0.9) * K, SKATE_LV.plat, 44 * K); c.intent.mx = c.intent.mz = 0; c.intent.fire = false; } });
   const P = PLAYER; const put = (x, y, z) => { P.pos.set(x, y, z); P.vel.set(0, 0, 0); P.wall = null; P.climbing = false; P._safe = null; Input.keys = {}; for (let i = 0; i < 3; i++) loop(); };
   const walk = (yaw, n, keys = {}) => { Cam.yaw = yaw; Cam.pitch = 0; Input.keys = Object.assign({ KeyW: true }, keys); for (let i = 0; i < n; i++) loop(); Input.keys = {}; for (let i = 0; i < 4; i++) loop(); };
   // into the bowl and back out up the rounded transition
-  put(1, SL, 10); walk(0, 60); const inBowl = P.pos.y < SL - 0.3; walk(Math.PI, 60); const outBowl = P.pos.z < 13 && Math.abs(P.pos.y - SL) < 0.05;
+  put(-1, SL, 10 * K); walk(0, 60); const inBowl = P.pos.y < SL - 0.3; walk(Math.PI, 60); const outBowl = P.pos.z < 13 * K && Math.abs(P.pos.y - SL) < 0.05;
   ok(inBowl && outBowl, 'bowl: walk down into it and back up its rounded edge (in ' + inBowl + ', out ' + outBowl + ')');
+  // where the bowl meets the spawn platform its edge rises 2 m: still a slope you can walk up (no dead wall)
+  put(-1.5 * K, 0.1, 27 * K); walk(-Math.PI / 2, 120); const upRim = P.pos.y > SKATE_LV.plat - 0.05;
+  ok(upRim, 'bowl edge by the spawn platform: walk straight up onto the platform (y ' + P.pos.y.toFixed(2) + ')');
   // the outer wall: can't walk or jump out of the park
-  put(-6.8, SKATE_LV.plat, 44); walk(0, 90); const z1 = P.pos.z; put(-6.8, SKATE_LV.plat, 44); Input.jumpQ = true; walk(0, 50, { Space: true });
-  ok(z1 < 46.6 && P.pos.z < 46.6 && !terrOob(P.pos.x, P.pos.z), 'outer wall: no walking or jumping out of the park (z ' + z1.toFixed(2) + ', ' + P.pos.z.toFixed(2) + ')');
+  put(-6.8 * K, SKATE_LV.plat, 44 * K); walk(0, 90); const z1 = P.pos.z; put(-6.8 * K, SKATE_LV.plat, 44 * K); Input.jumpQ = true; walk(0, 50, { Space: true });
+  ok(z1 < 46.6 * K && P.pos.z < 46.6 * K && !terrOob(P.pos.x, P.pos.z), 'outer wall: no walking or jumping out of the park (z ' + z1.toFixed(2) + ', ' + P.pos.z.toFixed(2) + ')');
   // the round end of the bowl: run along the curved wall, slide along it, never through
-  put(14, 0.2, 24); let worst = 0; Cam.yaw = Math.PI / 2; Input.keys = { KeyW: true, KeyD: true }; for (let i = 0; i < 120; i++) { loop(); if (terrOob(P.pos.x, P.pos.z)) worst++; } Input.keys = {};
+  put(14 * K, 0.2, 24 * K); let worst = 0; Cam.yaw = Math.PI / 2; Input.keys = { KeyW: true, KeyD: true }; for (let i = 0; i < 120; i++) { loop(); if (terrOob(P.pos.x, P.pos.z)) worst++; } Input.keys = {};
   ok(worst === 0, 'curved bowl wall: running into it slides along, never through');
   // grate bridge over the side pit: stand on it, drop through it as a squid
   const B = BRIDGES.find(b => b.h === SKATE_LV.plat && b.x0 < -15), bx = (B.x0 + B.x1) / 2, bz = (B.z0 + B.z1) / 2;
@@ -45,21 +50,21 @@ const tests = function () {
   Input.keys.ShiftLeft = true; for (let i = 0; i < 25; i++) loop(); const dropped = P.pos.y < 0.2; Input.keys = {}; for (let i = 0; i < 5; i++) loop();
   ok(stood && dropped, 'grate bridge: people stand on it, squids drop through into the pit');
   // fence pocket beside the tower: blocks people, squids slip through, ink flies through
-  const fn = FENCES.find(f => f.z1 - f.z0 < 0.2 && f.z0 > 5 && f.z0 < 7 && f.x0 > 0), fx = (fn.x0 + fn.x1) / 2;
+  const fn = FENCES.find(f => f.z1 - f.z0 < 0.2 && f.z0 > 5 && f.z0 < 8 && f.x0 > 0), fx = (fn.x0 + fn.x1) / 2;
   put(fx, SL, fn.z0 - 0.8); Cam.yaw = 0; Cam.pitch = 0; Input.keys.KeyW = true; for (let i = 0; i < 30; i++) loop(); const blocked = P.pos.z < fn.z0;
   Input.keys.ShiftLeft = true; for (let i = 0; i < 30; i++) loop(); const through = P.pos.z > fn.z1 + 0.3; Input.keys = {}; for (let i = 0; i < 5; i++) loop();
   const e = CHARS.find(c => c.team === 1); e.pos.set(fx, SL, fn.z1 + 1.2); e.hp = e.maxHp; e.alive = true; e.state = 'play'; e.invulnT = 0; e.swim = e.submerged = false; e.intent.swim = false; const h0 = e.hp;
   Proj.shot(P, new THREE.Vector3(fx, SL + 0.95, fn.z0 - 1.5), new THREE.Vector3(0, 0, 1), WEAPONS.rifle); for (let i = 0; i < 10; i++) loop();
   ok(blocked && through && e.hp < h0, 'grate fence: blocks people, squids slip through, ink goes through it');
-  e.pos.set(15, SL, -44);
+  e.pos.set(15 * K, SL, -44 * K);
   // the tower: too high to jump onto from its balcony, climbable once its wall is inked
-  const T = SOLIDS.find(s => s.t === 'box' && Math.abs(s.x0 + 2.1) < 0.01 && s.h >= 3.9);
-  put(-3.0, 2.0, 0); Cam.yaw = Math.PI / 2; Input.keys.KeyW = true; Input.jumpQ = true; Input.keys.Space = true; for (let i = 0; i < 40; i++) loop(); Input.keys = {}; const jumpedUp = P.pos.y > T.h - 0.2;
-  for (let v = 0.1; v < T.h; v += 0.3) splatWall(T.faces['-x'], 1.0, v, 0.8, 0);
-  put(-2.9, 2.0, 0); Cam.yaw = Math.PI / 2; Input.keys.ShiftLeft = true; Input.keys.KeyW = true; let fr = 0; while (fr++ < 90 && P.pos.y < T.h - 0.05) loop(); for (let i = 0; i < 15; i++) loop(); Input.keys = {};
+  const T = SOLIDS.find(s => s.t === 'box' && Math.abs(s.x0 + 1.6 * K) < 0.01 && s.h >= 3.9), tz = 1.5;
+  put(-3.4, 2.0, tz); Cam.yaw = Math.PI / 2; Input.keys.KeyW = true; Input.jumpQ = true; Input.keys.Space = true; for (let i = 0; i < 40; i++) loop(); Input.keys = {}; const jumpedUp = P.pos.y > T.h - 0.2;
+  for (let v = 0.1; v < T.h; v += 0.3) splatWall(T.faces['-x'], tz - T.z0, v, 0.8, 0);
+  put(-3.3, 2.0, tz); Cam.yaw = Math.PI / 2; Input.keys.ShiftLeft = true; Input.keys.KeyW = true; let fr = 0; while (fr++ < 90 && P.pos.y < T.h - 0.05) loop(); for (let i = 0; i < 15; i++) loop(); Input.keys = {};
   ok(!jumpedUp && P.pos.y > T.h - 0.1, 'centre tower: too high to jump onto, climbable once its wall is inked (y ' + P.pos.y.toFixed(2) + ')');
   // shots at the outer wall splash on it and leave no paint
-  const before = Paint.teamCells[0]; Proj.shot(P, new THREE.Vector3(-6.8, SKATE_LV.plat + 0.9, 44), new THREE.Vector3(0, 0, 1), WEAPONS.rifle); for (let i = 0; i < 20; i++) loop();
+  const before = Paint.teamCells[0]; Proj.shot(P, new THREE.Vector3(-6.8 * K, SKATE_LV.plat + 0.9, 44 * K), new THREE.Vector3(0, 0, 1), WEAPONS.rifle); for (let i = 0; i < 20; i++) loop();
   ok(Paint.teamCells[0] - before < 60, 'shots at the outer wall do not paint the ground behind it');
   quitToTitle(); for (let i = 0; i < 5; i++) loop();
   return res;

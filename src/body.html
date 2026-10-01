@@ -33,7 +33,7 @@
 </div>
 
 <div id="lobby" class="screen">
-  <div class="lobbyHead"><h2>战前准备</h2><span id="lobbySub">涂地对战</span></div>
+  <div class="lobbyHead"><h2>战前准备</h2><span id="lobbySub">涂地对战</span><button class="mapchip" id="btnChangeMap">换场地 ›</button></div>
   <div class="lobbyBody">
     <div class="lcol">
       <h3>选择角色 <small>每个角色有自己的武器</small></h3>
@@ -51,12 +51,18 @@
       <div class="opts">
         <div><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">地狱</button></div></div>
         <div><h3>对战时长</h3><div class="seg" id="dur"><button data-v="90">1:30</button><button data-v="180" class="sel">3:00</button><button data-v="300">5:00</button></div></div>
-        <div class="full"><h3>场地 <small>切换后会重新载入</small></h3><div class="mpick" id="mapPick"></div></div>
         <div class="full"><h3>队伍配色</h3><div class="swatches" id="swatches"></div></div>
       </div>
     </div>
   </div>
   <div class="lobbyFoot"><button class="btn" id="btnBack">‹ 返回</button><button class="btn big" id="btnGo">出发！</button></div>
+</div>
+
+<div id="mapsel" class="screen">
+  <div class="lobbyHead"><h2>选择场地</h2><span>涂地对战 · 4 V 4</span></div>
+  <div class="msBody" id="mapCards"></div>
+  <div class="msNote">切换到另一张场地时会重新载入一下</div>
+  <div class="lobbyFoot"><button class="btn" id="btnMsBack">‹ 返回</button><button class="btn big" id="btnMsNext">下一步 ›</button></div>
 </div>
 
 <div id="mapVeil"><div class="mv"><i></i><b id="mapVeilName"></b><small id="mapVeilEn"></small><span>正在前往场地…</span></div></div>

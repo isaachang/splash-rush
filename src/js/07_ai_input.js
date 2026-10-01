@@ -364,6 +364,15 @@ function spectateTarget(c) {
   let best = null, bd = 1e9; for (const m of CHARS) if (ok(m)) { const d = m.pos.distanceTo(c.pos); if (d < bd) { bd = d; best = m; } }
   return best;
 }
+// the play camera's pose behind the player on the first frame of a match (same maths as updateCamera at rest)
+function startCamPose() {
+  const c = PLAYER, cp = Math.cos(Cam.pitch), sp = Math.sin(Cam.pitch);
+  const dir = new THREE.Vector3(Math.sin(Cam.yaw) * cp, sp, Math.cos(Cam.yaw) * cp), pivot = new THREE.Vector3(c.pos.x, c.pos.y + 1.5, c.pos.z);
+  const pos = pivot.clone().addScaledVector(dir, -4.6); pos.y += 1.2;
+  const t = segBlocked(pivot.x, pivot.y, pivot.z, pos.x, pos.y, pos.z, 0.15); if (t) pos.lerpVectors(pivot, pos, Math.max(0.1, t - 0.08));
+  if (pos.y < 0.3) pos.y = 0.3;
+  return { pos, look: pivot.clone().addScaledVector(dir, 30) };
+}
 function updateCamera(dt) {
   const c = PLAYER;
   let px = c.pos.x, py = c.pos.y, pz = c.pos.z;

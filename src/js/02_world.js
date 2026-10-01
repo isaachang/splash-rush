@@ -3,8 +3,8 @@
    lobby saves the choice and reloads the page), so every system below just
    reads XH / ZH / SOLIDS / SPAWN / DECK as before.                        */
 const MAP_LIST = {
-  dock: { id: 'dock', name: '潮汐码头广场', en: 'TIDE DOCK PLAZA', XH: 28, ZH: 46, desc: '码头上的集装箱广场，中路开阔、两侧有高台' },
-  skate: { id: 'skate', name: '墨浪滑板场', en: 'RUSH SKATEPARK', XH: 22, ZH: 48, cull: true, desc: '城市滑板公园：S 形下沉泳池、波浪外墙、中央高塔和铁网走道' }
+  dock: { id: 'dock', name: '潮汐码头广场', en: 'TIDE DOCK PLAZA', XH: 28, ZH: 46, size: '56 × 92 米', tags: ['集装箱', '中路开阔', '两侧高台'], desc: '码头上的集装箱广场，中路开阔、两侧有高台' },
+  skate: { id: 'skate', name: '墨浪滑板场', en: 'RUSH SKATEPARK', XH: 25.5, ZH: 55.5, cull: true, spawnSlots: [[-1.7, -0.5], [-0.6, 0.7], [0.6, -0.5], [1.7, 0.7]], size: '51 × 111 米', tags: ['S 形泳池', '中央高塔', '铁网走道'], desc: '城市滑板公园：S 形下沉泳池、波浪外墙、中央高塔和铁网走道' }
 };
 const MAP_KEY = 'splashrush.map';
 const MAP_ID = (() => {
@@ -70,6 +70,9 @@ function defineDock() {
    Heights: bowl floor 0, street 1.0 (SL), spawn platform / side ledge 2.0, tower top 4.0.     */
 const SL = 1.0;    // street level (the bowls and pits are sunk below it)
 const SKATE_LV = { plat: 2.0 };
+// the plan below is traced at the reference's scale, then everything is spread out by SKATE_K (heights stay):
+// at 1.0 the park was ~15% tighter than the original relative to our characters and felt cramped
+const SKATE_K = 1.15;
 // a path made of straight runs ('L') and smooth curves ('C'): [x, z] points
 function pathOf(...parts) { const out = []; for (const [k, P] of parts) { const q = k === 'C' ? smoothPts(P, false, 3) : P; q.forEach(p => { const l = out[out.length - 1]; if (!l || Math.hypot(l[0] - p[0], l[1] - p[1]) > 0.02) out.push(p); }); } return out; }
 function defineSkate() {
@@ -119,10 +122,8 @@ function defineSkate() {
     box(-14.0, -0.4, 21.8 - W, 21.8, P, 'panel', 'concrete'),                  // front face of the spawn platform
     box(-14.0 - W, -14.0, 17.4, 21.8, P, 'panel', 'concrete'),
     box(-3.3, -3.3 + W, 33.7, 40.6, P, 'panel', 'concrete'),                     // spawn deck's side toward the bowl end
-    box(-1.5, 2.3, 34.0, 36.6, 2.4, 'contB', 'grate'),                           // dark block behind the bowl
-    box(-3.1, -2.1, 25.5, 26.5, 1.4, 'crate', 'crate'),                          // bollard in the bowl
-    box(-2.2, 2.6, 36.6, 40.6, 2.6, 'contG', 'grate'),                           // dark grate box behind the bowl
-    box(-14.0, -12.8, 21.8, 23.7, 2.6, 'panel', 'concrete'),                     // pillar at the platform corner
+    box(-3.0, 2.3, 34.0, 36.6, 2.5, 'contB', 'grate'),                           // dark block behind the bowl (flush with the spawn deck: no gap)
+    box(-3.0, 2.6, 36.6, 40.6, 2.5, 'contG', 'grate'),                           // dark grate box behind the bowl
     // ---- side ledge: walkway past the planter, grate bridge over the pit, out to the street
     box(-15.5, -13.6, 10.0, 17.4, P, 'stone', 'concrete'),
     oob(-21, -15.5, 10.0, 15.3, 2.8),
@@ -130,23 +131,21 @@ function defineSkate() {
     oob(-18.2, -15.4, 0.6, 3.0, 1.9),                                            // parked car on the street
     // ---- middle, spawn side of the tower (x<0)
     box(-14.0, -3.3, 15.3, 21.8, 1.5, 'stone', 'concrete'),                      // raised square in front of the spawn platform
-    oob(-12.8, -6.2, 18.2, 20.8, 2.2),                                           // grass strip along its back
-    oob(-9.4, -5.0, 15.3, 17.6, 2.7),                                            // small palm planter
-    box(-6.2, -3.7, 10.5, 11.2, 2.6, 'panel', 'concrete'),                       // post
+    oob(-12.8, -9.4, 18.2, 20.8, 2.2),                                           // grass strip along its back ...
+    oob(-9.4, -5.0, 15.3, 20.8, 2.7),                                            // ... joined to the palm planter (no slot between them)
     box(-4.4, -3.5, 4.9, 10.3, 2.0, 'crate', 'wood'),                            // walkway off the tower balcony (grate beside it)
-    box(-8.7, -6.9, 5.0, 10.3, 1.6, 'crate', 'wood'),                            // crate row (grate beside it)
-    box(-12.8, -10.6, 3.4, 6.8, 1.6, 'crate', 'wood'),
+    box(-8.7, -6.9, 5.0, 10.3, 1.5, 'crate', 'wood'),                            // crate row (grate beside it)
+    box(-12.8, -10.6, 3.4, 6.8, 1.5, 'crate', 'wood'),
     box(-4.8, -1.0, 1.0, 4.8, 2.0, 'panel', 'concrete'),                         // tower balcony
-    box(-4.5, -2.1, -0.5, 1.0, 2.3, 'contB', 'grate'),                           // dark block against the tower
     // ---- middle, +x side
     oob(4.6, 11.2, 9.2, 16.7, 2.6),                                              // big palm planter (grate walkways on two sides)
     box(5.8, 11.2, 3.6, 9.2, 2.2, 'panel', 'concrete'),                          // raised block in front of the planter
     box(10.8, 13.6, 1.5, 3.6, 2.2, 'panel', 'concrete'),
-    box(1.2, 3.6, 9.0, 12.3, 1.6, 'stone', 'concrete'),
+    box(0.6, 2.6, 9.0, 12.3, 1.5, 'stone', 'concrete'),                          // low step, a 2 m lane to the planter
     ramp(12.0, 15.3, 6.1, 16.4, 'x', SL, 2.2, 'wood'),                           // wooden ramp up to the side ledge
     box(15.3, 18.3, 3.9, 16.4, 2.2, 'stone', 'concrete'),                        // side ledge along the wall (overlooks the bowl)
     box(13.6, 15.3, 3.7, 6.1, 2.2, 'stone', 'concrete'),
-    box(16.6, 17.3, 9.2, 15.1, 2.9, 'panel', 'concrete'),                        // low parapet on it
+    box(17.6, 18.3, 9.2, 15.1, 3.2, 'panel', 'concrete'),                        // parapet against the park wall
   ];
   half2.forEach(s => { SOLIDS.push(s); SOLIDS.push(mirrorSolid(s)); });
   // the tower: three overlapping blocks make a rounded column, only climbable on its inked walls
@@ -154,17 +153,23 @@ function defineSkate() {
   TERR.tower = { r: 2.35, h: 4.0 };
   // grate walkways round the palm planters (people walk on them, squids drop through), grate bridges over the side pits
   const grates = [{ x0: 11.2, x1: 12.0, z0: 9.2, z1: 17.4, h: 2.6 }, { x0: 4.6, x1: 12.0, z0: 16.7, z1: 17.4, h: 2.6 }, { x0: -20.3, x1: -13.6, z0: 5.2, z1: 10.0, h: P },
-    { x0: -3.5, x1: -2.0, z0: 4.9, z1: 10.3, h: 2.0 }, { x0: -10.3, x1: -8.7, z0: 5.0, z1: 10.3, h: 1.6 }];
+    { x0: -3.5, x1: -2.0, z0: 4.9, z1: 10.3, h: 2.0 }, { x0: -10.3, x1: -8.7, z0: 5.0, z1: 10.3, h: 1.5 }];
   grates.forEach(b => BRIDGES.push(b, Object.assign({}, b, { x0: -b.x1, x1: -b.x0, z0: -b.z1, z1: -b.z0 })));
   // grate fences beside the tower: people can't pass, squids and ink can
   const fz = [[2.2, 5.0, 6.0, 6.12], [2.2, 5.0, 8.48, 8.6], [4.88, 5.0, 6.0, 8.6]];
   fz.forEach(([x0, x1, z0, z1]) => { FENCES.push({ x0, x1, z0, z1, y0: SL, h: SL + 1.25 }, { x0: -x1, x1: -x0, z0: -z1, z1: -z0, y0: SL, h: SL + 1.25 }); });
+  // spread the whole plan out (plan view only; heights stay)
+  const K = SKATE_K, sp = P => P.map(([x, z]) => [x * K, z * K]), sr = r => { r.x0 *= K; r.x1 *= K; r.z0 *= K; r.z1 *= K; };
+  SOLIDS.forEach(sr); BRIDGES.forEach(sr); FENCES.forEach(sr);
+  TERR.outline = sp(TERR.outline); TERR.plats.forEach(p => p.poly = sp(p.poly));
+  TERR.bowls.forEach(b => { b.poly = sp(b.poly); b.R *= K; b.ridges.forEach(r => { r.pts = sp(r.pts); r.w *= K; }); b.mounds.forEach(m => { m.x *= K; m.z *= K; m.r *= K; }); b.rims.forEach(r => { r.poly = sp(r.poly); r.blend *= K; }); });
+  TERR.tower.r *= K;
   buildTerrain();
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
 // yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
-const SPAWN = MAP_ID === 'skate' ? [{ x: -6.8, z: 42.6, y: 2.0, yaw: Math.PI }, { x: 6.8, z: -42.6, y: 2.0, yaw: 0 }] : [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
-const DECK = MAP_ID === 'skate' ? [{ x0: -10.3, x1: -3.3, z0: 36, z1: 46.5 }, { x0: 3.3, x1: 10.3, z0: -46.5, z1: -36 }] : [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
+const SPAWN = MAP_ID === 'skate' ? [{ x: -6.8 * SKATE_K, z: 42.6 * SKATE_K, y: 2.0, yaw: Math.PI }, { x: 6.8 * SKATE_K, z: -42.6 * SKATE_K, y: 2.0, yaw: 0 }] : [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
+const DECK = MAP_ID === 'skate' ? [{ x0: -10.3 * SKATE_K, x1: -3.3 * SKATE_K, z0: 36 * SKATE_K, z1: 46.5 * SKATE_K }, { x0: 3.3 * SKATE_K, x1: 10.3 * SKATE_K, z0: -46.5 * SKATE_K, z1: -36 * SKATE_K }] : [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
 function inRect(s, x, z) { return x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1; }
 function topAt(s, x, z) {
   if (s.t === 'box') return s.h;
@@ -215,7 +220,7 @@ function terrainAt(x, z) {
     // the rim rises where a plateau borders the bowl (blend over a couple of metres so the coping has no step)
     let rh = SL;
     for (const r of b.rims) { const d = inPoly(x, z, r.poly) ? 0 : polyDist(x, z, r.poly); rh = Math.max(rh, lerp(r.h, SL, smoothstep(0, r.blend, d))); }
-    const t = Math.min(1, polyDist(x, z, b.poly) / b.R), q = 1 - t;
+    const t = Math.min(1, polyDist(x, z, b.poly) / (b.R * Math.max(1, (rh - b.floor) / (SL - b.floor)))), q = 1 - t;
     let y = b.floor + (rh - b.floor) * q * q;
     for (const r of b.ridges) { const d = polyDist(x, z, r.pts, false); if (d < r.w) y = Math.max(y, b.floor + r.h * smoothstep(r.w, r.w * r.flat, d)); }
     for (const c of b.mounds) { const d = Math.hypot(x - c.x, z - c.z); if (d < c.r) y = Math.max(y, b.floor + c.h * smoothstep(c.r, c.r * 0.45, d)); }
@@ -267,7 +272,7 @@ function segBlocked(ax, ay, az, bx, by, bz, stepLen = 0.4) {
 
 /* ============================================================ PAINT */
 const Paint = {
-  data: null, owner: null, hgt: null, tex: null, dirty: false, teamCells: [0, 0], total: NX * NZ,
+  data: null, owner: null, hgt: null, onTerr: null, tex: null, dirty: false, teamCells: [0, 0], total: NX * NZ,
   wdata: null, wtex: null, wdirty: false, W: 1024, H: 1024, PX: 8, faces: []
 };
 function initPaint() {
@@ -275,6 +280,9 @@ function initPaint() {
   Paint.owner = new Int8Array(NX * NZ).fill(-1);
   Paint.hgt = new Float32Array(NX * NZ);
   for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) Paint.hgt[j * NX + i] = groundAt((i + 0.5) * CELL - XH, (j + 0.5) * CELL - ZH);
+  // cells whose ground is the curved terrain itself (not a block top): splats may follow its slope
+  Paint.onTerr = new Uint8Array(NX * NZ);
+  if (TERR.on) for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH, k = j * NX + i; if (!terrOob(x, z) && Math.abs(Paint.hgt[k] - terrH(x, z)) < 0.02) Paint.onTerr[k] = 1; }
   const OOB = SOLIDS.filter(s => s.oob);
   if (OOB.length || TERR.on) {           // out of bounds: never takes ink, doesn't count toward the turf total
     let n = 0;
@@ -385,7 +393,9 @@ function shapeVal(sh, dx, dz, r, fade) {
   return s < 0 ? 0 : s > 1 ? 1 : s;
 }
 function splatFloor(x, y, z, r, team, tol = 0.7, wallsToo = true, dir = null) {
-  const D = Paint.data, O = Paint.owner, Hg = Paint.hgt, TC = Paint.teamCells;
+  const D = Paint.data, O = Paint.owner, Hg = Paint.hgt, TC = Paint.teamCells, OT = Paint.onTerr;
+  // a splat that lands on the terrain follows its slope (a bowl wall) instead of stopping at a fixed height band
+  const slopeOk = TERR.on && Math.abs(terrH(x, z) - y) < 0.15 && !terrOob(x, z);
   const sh = makeShape(r), fade = CELL * 2.2;
   // dir = {ux, uz, k}: stretch the splat k times along the travel direction (grazing hits)
   const k = dir ? dir.k : 1, ux = dir ? dir.ux : 1, uz = dir ? dir.uz : 0;
@@ -397,8 +407,8 @@ function splatFloor(x, y, z, r, team, tol = 0.7, wallsToo = true, dir = null) {
     const dz = (j + 0.5) * CELL - ZH - z;
     for (let i = i0; i <= i1; i++) {
       const q = j * NX + i;
-      if (Math.abs(Hg[q] - y) > tol) continue;
       let ddx = (i + 0.5) * CELL - XH - x, ddz = dz;
+      if (Math.abs(Hg[q] - y) > tol + (slopeOk && OT[q] ? Math.hypot(ddx, ddz) * 0.95 : 0)) continue;
       if (dir) { const a = (ddx * ux + ddz * uz) / k, b = -ddx * uz + ddz * ux; ddx = a; ddz = b; }
       const s = shapeVal(sh, ddx, ddz, r, fade);
       if (s <= 0) continue;
@@ -554,7 +564,7 @@ function makeLayoutSkate() {
       for (const c of bw.mounds) { const [a, b] = m2p(c.x, c.z); g.beginPath(); g.arc(a, b, c.r * 0.45 * s, 0, 7); g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = s * 0.16; g.stroke(); g.fillStyle = 'rgba(60,70,85,.75)'; g.beginPath(); g.arc(a, b, s * 0.3, 0, 7); g.fill(); }
     }
     // team logos on the spawn platforms (our own ink-arrow emblem)
-    [[-9.4, 25.6, Math.PI], [9.4, -25.6, 0]].forEach(([x, z, r]) => {
+    [[-9.4 * SKATE_K, 25.6 * SKATE_K, Math.PI], [9.4 * SKATE_K, -25.6 * SKATE_K, 0]].forEach(([x, z, r]) => {
       const [a, b] = m2p(x, z); g.save(); g.translate(a, b); g.rotate(r); g.globalAlpha = 0.85;
       g.fillStyle = '#7ad6a0'; g.beginPath(); g.moveTo(-s * 1.6, s * 1.4); g.lineTo(0, -s * 1.7); g.lineTo(s * 0.2, s * 0.2); g.closePath(); g.fill();
       g.fillStyle = '#b77bf0'; g.beginPath(); g.moveTo(s * 1.6, s * 1.4); g.lineTo(0, -s * 0.6); g.lineTo(-s * 0.4, s * 1.5); g.closePath(); g.fill();
