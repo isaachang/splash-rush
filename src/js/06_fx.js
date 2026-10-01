@@ -172,6 +172,7 @@ const Proj = {
   spray(owner, p, v, r, big = false) { if (this.shots.length > this.N - 5) return; this.shots.push({ owner, team: owner.team, p: p.clone(), v: v.clone(), t: 1, kind: 'drop', r, sz: 0.045 + r * 0.13, big }); },
   // what did a straight ray / projectile hit?  -> floor (with height) or wall (with face)
   classify(s, prev, p) {
+    if (s === true && TERR.on && terrOob(p.x, p.z) && p.y < TERR.OOB_H - 0.08) { const n = new THREE.Vector3(prev.x - p.x, 0, prev.z - p.z); if (n.lengthSq() < 1e-6) n.set(0, 1, 0); n.normalize(); return { type: 'none', y: p.y, n, pt: p.clone() }; }   // the park's outer wall
     if (s === true) return { type: 'floor', y: groundAt(p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
     if (prev.y >= tPrev - 0.08) return { type: 'floor', y: topAt(s, p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
@@ -250,7 +251,8 @@ const Proj = {
     b.t = (b.t || 0) + dt;
     const sp = Math.hypot(b.v.x, b.v.z); if (sp > 1e-3 && b.t > CURL_CRUISE) { const k = Math.max(0, sp - 16 * dt) / sp; b.v.x *= k; b.v.z *= k; }   // full speed, then brakes near the end
     let bounced = false;
-    const blocked = (x, z) => Math.abs(x) > XH - 0.35 || Math.abs(z) > ZH - 0.35 || !!solidAt(x, b.p.y + 0.18, z) || inBarrier(1 - b.team, new THREE.Vector3(x, b.p.y, z)) || !!Cover.at(b.team, x, b.p.y + 0.18, z);
+    const hitSolid = (x, z) => { const s = solidAt(x, b.p.y + 0.18, z); return s === true && TERR.on ? terrBlocked(x, z, b.p.y + 0.45) : !!s; };   // glides up gentle bowl slopes
+    const blocked = (x, z) => Math.abs(x) > XH - 0.35 || Math.abs(z) > ZH - 0.35 || hitSolid(x, z) || inBarrier(1 - b.team, new THREE.Vector3(x, b.p.y, z)) || !!Cover.at(b.team, x, b.p.y + 0.18, z);
     const nx = b.p.x + b.v.x * dt; if (blocked(nx, b.p.z)) { b.v.x *= -0.8; bounced = true; } else b.p.x = nx;
     const nz = b.p.z + b.v.z * dt; if (blocked(b.p.x, nz)) { b.v.z *= -0.8; bounced = true; } else b.p.z = nz;
     const g = groundBelow(b.p.x, b.p.z, b.p.y + 0.5, 0);
@@ -323,6 +325,9 @@ const Proj = {
       if (r > 0.8) { owner.addPaint(splatFloor(hx, y, hz, r * 0.6, team, 0.7, false)); this.splatLater(0.05, () => owner.addPaint(splatFloor(hx, y, hz, r, team, 0.7, true))); }
       else owner.addPaint(splatFloor(hx, y, hz, r, team, 0.7, false));
     };
+    if (s === true && TERR.on && terrOob(hx, hz) && p.y < TERR.OOB_H - 0.08) {           // the park's outer wall: splash on it, no paint
+      const nx = prev.x - p.x, nz = prev.z - p.z, L = Math.hypot(nx, nz) || 1; this.fx(prev.x, p.y, prev.z, team, r, nx / L, 0, nz / L); return true;
+    }
     if (s === true) { if (inside) { const g = groundAt(hx, hz); floorHit(g); this.fx(hx, g + 0.05, hz, team, r, 0, 1, 0); } return true; }
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
     if (prev.y >= tPrev - 0.08) {
@@ -400,7 +405,8 @@ const Proj = {
         else { const cv = Cover.at(b.team, b.p.x, b.p.y, b.p.z); if (cv) { b.p.copy(prev); b.v.x *= -0.35; b.v.z *= -0.35; Cover.hit(cv, 0, b.p); } }
         for (const c of CHARS) if (c.team !== b.team && this.hitChar(c, b.p, 0.2)) { b.fuse = 0.25; b.v.set(0, 0, 0); break; }
         const s = solidAt(b.p.x, b.p.y, b.p.z);
-        if (s) {
+        if (s === true && TERR.on && terrOob(b.p.x, b.p.z) && !terrOob(prev.x, prev.z) && b.p.y < TERR.OOB_H - 0.05) { b.p.copy(prev); b.v.x *= -0.4; b.v.z *= -0.4; }   // bounce off the park wall
+        else if (s) {
           const onTop = s === true || prev.y >= topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1)) - 0.05;
           if (onTop) {
             b.p.y = s === true ? 0 : topAt(s, b.p.x, b.p.z); b.p.y = Math.max(b.p.y, groundAt(b.p.x, b.p.z)) + 0.2;

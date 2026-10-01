@@ -203,7 +203,11 @@ function updateWorld(t, dt) {
    (our own brand: SPLASH RUSH), an elevated highway and the skyline.       */
 function buildPlaza() {
   const pave = TEX.concrete.clone(); pave.repeat.set(90, 90); pave.needsUpdate = true;
-  const g = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.MeshStandardMaterial({ map: pave, color: 0xe6dccb, roughness: 0.95 }));
+  // paving round the park, with the park's outline cut out (the bowls sink below street level)
+  const sh = new THREE.Shape([[-700, -700], [700, -700], [700, 700], [-700, 700]].map(([x, y]) => new THREE.Vector2(x, y)));
+  if (TERR.on) sh.holes.push(new THREE.Path(TERR.outline.map(([x, z]) => new THREE.Vector2(x, -z))));
+  const pg = new THREE.ShapeGeometry(sh); const uv = pg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / 1400 + 0.5, uv.getY(i) / 1400 + 0.5);
+  const g = new THREE.Mesh(pg, new THREE.MeshStandardMaterial({ map: pave, color: 0xe6dccb, roughness: 0.95 }));
   g.rotation.x = -Math.PI / 2; g.position.y = SL - 0.03; g.receiveShadow = true; scene.add(g);
   const lawnT = TEX.grass.clone(); lawnT.repeat.set(20, 20); lawnT.needsUpdate = true; const lawnM = new THREE.MeshStandardMaterial({ map: lawnT, roughness: 1 });
   [[-XH - 14, 0, 16, ZH * 2 + 30], [XH + 14, 0, 16, ZH * 2 + 30], [0, -ZH - 12, XH * 2 + 44, 12], [0, ZH + 12, XH * 2 + 44, 12]].forEach(([x, z, w, d]) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), lawnM); m.rotation.x = -Math.PI / 2; m.position.set(x, SL - 0.01, z); m.receiveShadow = true; scene.add(m); });
@@ -214,12 +218,6 @@ function buildDecorSkate() {
   const railM = new THREE.MeshStandardMaterial({ color: 0xffc629, roughness: 0.35, metalness: 0.4 });
   const darkM = new THREE.MeshStandardMaterial({ color: 0x2b2f3a, roughness: 0.5, metalness: 0.5 });
   const poleM = new THREE.MeshStandardMaterial({ color: 0x3a3f4d, metalness: 0.7, roughness: 0.35 });
-  // yellow coping rail running around the park wall
-  const wallTop = SL + 1.6, tube = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), m = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, L, 8), railM); m.position.set((x0 + x1) / 2, wallTop + 0.55, (z0 + z1) / 2); m.rotation.z = Math.PI / 2; m.rotation.y = -Math.atan2(z1 - z0, x1 - x0); deco.add(m); };
-  const o = 0.75; tube(-XH - o, -ZH - o, XH + o, -ZH - o); tube(-XH - o, ZH + o, XH + o, ZH + o); tube(-XH - o, -ZH - o, -XH - o, ZH + o); tube(XH + o, -ZH - o, XH + o, ZH + o);
-  const posts = []; for (let x = -XH; x <= XH; x += 3) posts.push([x, -ZH - o], [x, ZH + o]); for (let z = -ZH; z <= ZH; z += 3) posts.push([-XH - o, z], [XH + o, z]);
-  const pim = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.07, 0.07, 0.55, 6), railM, posts.length);
-  posts.forEach(([x, z], i) => { dm.position.set(x, wallTop + 0.27, z); dm.updateMatrix(); pim.setMatrixAt(i, dm.matrix); }); deco.add(pim);
   // palms on the out-of-bounds planters and gardens
   const palms = [];
   SOLIDS.filter(s => s.oob).forEach(s => {

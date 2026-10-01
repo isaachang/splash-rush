@@ -1,6 +1,7 @@
 /* ============================================================ CHARACTERS */
 const CHARS = [];
 let PLAYER = null;
+const RING8 = Array.from({ length: 8 }, (_, a) => [Math.cos(a * Math.PI / 4), Math.sin(a * Math.PI / 4)]);
 const STEP = 0.55, GRAV = 24, RESPAWN = 5.5, SPECIAL_AREA = 42;
 const BOT_NAMES = ['小墨', '咕噜', '泡泡', '阿飞', '闪电', '橘子汽水', '海苔', '奶昔', '跳跳糖', '大橙', '蓝莓', '噗噗', '墨鱼丸'];
 const TEAMMAT = [0, 1].map(() => new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.06, emissive: 0xffffff, emissiveIntensity: 0.16 }));
@@ -712,6 +713,20 @@ class Character {
       }
       const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
       hit = { s, nx, nz };
+    }
+    // curved terrain: the park's outer wall and anything too steep to step onto
+    if (TERR.on) {
+      const y = this.pos.y + STEP;
+      if (terrBlocked(this.pos.x, this.pos.z, y) && this._safe && Math.hypot(this._safe[0] - this.pos.x, this._safe[1] - this.pos.z) < 1.5) { this.pos.x = this._safe[0]; this.pos.z = this._safe[1]; }
+      for (let it = 0; it < 5; it++) {
+        let sx = 0, sz = 0;
+        for (let a = 0; a < 8; a++) { const cx = RING8[a][0], cz = RING8[a][1]; if (terrBlocked(this.pos.x + cx * r, this.pos.z + cz * r, y)) { sx += cx; sz += cz; } }
+        const L = Math.hypot(sx, sz); if (L < 1e-6) break;
+        const nx = -sx / L, nz = -sz / L; this.pos.x += nx * 0.07; this.pos.z += nz * 0.07;
+        const vn = this.vel.x * nx + this.vel.z * nz; if (vn < 0) { this.vel.x -= nx * vn; this.vel.z -= nz * vn; }
+        if (!hit) hit = { s: { t: 'terrain' }, nx, nz };
+      }
+      if (!terrBlocked(this.pos.x, this.pos.z, y)) this._safe = [this.pos.x, this.pos.z];
     }
     // grate fences: people bump into them, squids slip through
     if (FENCES.length && !this.swim) for (const f of FENCES) {
