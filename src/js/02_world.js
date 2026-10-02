@@ -223,25 +223,25 @@ function defineCanton() {
     tag(box(-26, 26, 3.5, 52, CL, 'canal', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
     // ---- spawn: the tea house's roof terrace
     tag(S(-10, 10, 42, 52, 2.0, 'brick', 'tile'), 'spawn'),
-    R(-3, 3, 36, 42, 'z', 0, 2.0, 'paving'),
+    R(-3, 3, 36, 42, 'z', 0, 2.0, 'stairZ'),
     S(10, 26, 42, 52, 2.0, 'brick', 'tile'),
     tag(S(15, 17, 46, 48, 3.6, 'contB', 'grate'), 'tank'),
     tag(oob(-26, -10, 44, 52, 9.0), 'teahouse'),
-    R(20.3, 26, 36, 42, 'z', 3.8, 2.0, 'tile'),
+    R(20.3, 26, 36, 42, 'z', 3.8, 2.0, 'stairZ'),
     // ---- qilou arcade along the +x wall: covered street below, walkable deck above
     tag(F(20.3, 26, 8, 36, 3.4, 3.8, 'plaster', 'tile'), 'arcade'),
     // ---- Xiguan mansion along the -x wall: two roofed wings, an open gate into the courtyard, the main hall at the back
-    tag(S(-26, -15, 12, 16, 2.6, 'brick', 'tile'), 'mansion'), tag(S(-26, -15, 30, 34, 2.6, 'brick', 'tile'), 'mansion'),
+    tag(S(-26, -15, 12, 16, 2.6, 'brick', 'gtile'), 'mansion'), tag(S(-26, -15, 30, 34, 2.6, 'brick', 'gtile'), 'mansion'),
     tag(oob(-26, -23, 16, 30, 4.4), 'hall'),
-    S(-16, -15, 16, 21, 2.6, 'brick', 'tile'), S(-16, -15, 25, 30, 2.6, 'brick', 'tile'),
-    tag(F(-16, -15, 21, 25, 2.2, 2.6, 'brick', 'tile'), 'lintel'),
-    S(-20.5, -18, 21, 25, 1.0, 'crate', 'grass'),
-    R(-15, -10, 12.4, 16, 'x', 2.6, 0, 'paving'), R(-15, -10, 30, 34, 'x', 2.6, 0, 'paving'),
+    S(-16, -15, 16, 21, 2.6, 'brick', 'gtile'), S(-16, -15, 25, 30, 2.6, 'brick', 'gtile'),
+    tag(F(-16, -15, 21, 25, 2.2, 2.6, 'brick', 'gtile'), 'lintel'),
+    S(-20.5, -18, 21, 25, 1.0, 'cstone', 'grass'),
+    R(-15, -10, 12.4, 16, 'x', 2.6, 0, 'stairX'), R(-15, -10, 30, 34, 'x', 2.6, 0, 'stairX'),
     // ---- the street between them
     tag(S(-11, -5, 18, 25, 2.4, 'plaster', 'tile'), 'house'),
-    S(-5, -3.5, 18, 19.6, 1.2, 'crate', 'crate'), S(-1, 0.6, 14, 15.6, 0.5, 'crate', 'crate'),
+    S(-5, -3.5, 18, 19.6, 1.2, 'bamboo', 'bamboo'), S(-1, 0.6, 14, 15.6, 0.5, 'cstone', 'flag'),
     S(5, 11, 13, 18, 0.5, 'cstone', 'grass'),
-    tag(S(2, 5, 25, 26.6, 1.1, 'panel', 'wood'), 'stall'), S(13, 15, 24, 26.5, 1.2, 'contB', 'wood'), S(14, 17, 16, 17, 1.0, 'cstone', 'grass'),
+    tag(S(2, 5, 25, 26.6, 1.1, 'panel', 'wood'), 'stall'), S(13, 15, 24, 26.5, 1.2, 'cargo', 'wood'), S(14, 17, 16, 17, 1.0, 'cstone', 'grass'),
     tag(S(-4.4, -3.6, 30.6, 31.4, 4.6, 'cstone', 'concrete'), 'paifang'), tag(S(3.6, 4.4, 30.6, 31.4, 4.6, 'cstone', 'concrete'), 'paifang'),
     tag(F(-5, 5, 30.5, 31.5, 3.4, 4.6, 'stone', 'concrete'), 'paifang'),
     // ---- canal side: kapok planters, stone landing steps down into the canal, a stone bridge, a moored dragon boat
@@ -256,7 +256,7 @@ function defineCanton() {
     // ---- beside the tower: two steps of the old city wall (jump 1 m, then 2 m)
     F(2.5, 5, -2.5, 0, 0, 2.0, 'redwall', 'flag', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'redwall', 'flag', ON),
   ];
-  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'plaster', 'concrete'), 'column')); }
+  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'cstone', 'concrete'), 'column')); }
   half.forEach(s => { SOLIDS.push(s); SOLIDS.push(Object.assign(mirrorSolid(s), { team1: true })); });
   // centre: a square deck over the canal (only squids fit underneath), Zhenhai Tower on it — climb its inked walls to the 4 m terrace
   SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'stone', 'flag', { navTop: true }), 'deck'));
@@ -814,8 +814,10 @@ const WALL_STYLE = {
   cstone: { tex: 'cstone', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.85 },
   redwall: { tex: 'sandstone', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.9 },
   hull: { tex: 'hull', su: 2, vFull: true, color: 0xffffff, rough: 0.5 },
+  bamboo: { tex: 'bamboo', su: 1.2, sv: 0.72, vFull: false, color: 0xffffff, rough: 0.8 },
+  cargo: { tex: 'plaster', su: 3, vFull: false, color: 0x4f7fd0, rough: 0.6 },
 };
-const TOP_STYLE = { paving: { tex: 'granite', s: 4, rough: 0.9 }, tile: { tex: 'terrace', s: 2.4, rough: 0.8 }, flag: { tex: 'cstone', s: 2, rough: 0.85 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
+const TOP_STYLE = { paving: { tex: 'granite', s: 4, rough: 0.9 }, tile: { tex: 'terrace', s: 2.4, rough: 0.8 }, flag: { tex: 'cstone', s: 2, rough: 0.85 }, gtile: { tex: 'gtile', s: 2, rough: 0.7 }, stairZ: { tex: 'stairZ', s: 2, rough: 0.85 }, stairX: { tex: 'stairX', s: 2, rough: 0.85 }, bamboo: { tex: 'bamboo', s: 1.2, rough: 0.8 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
 let arenaGroup;
 function buildArena() {
   arenaGroup = new THREE.Group(); scene.add(arenaGroup);

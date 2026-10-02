@@ -30,8 +30,7 @@ function buildSkyEnv() {
   pm.dispose();
 }
 function buildSea() {
-  // 西關大屋 is lit warmer (late-afternoon sun on plaster and brick); the other maps keep the cool seaside light
-  if (hemi && hemi.color) { const c = MAP_ID === 'canton'; hemi.color.set(c ? 0xf4e8d4 : 0xd6ecff); hemi.groundColor.set(c ? 0xa89474 : 0x9b8a74); hemi.intensity = c ? 0.75 : 0.55; if (sun && sun.color) sun.color.set(c ? 0xffe6c0 : 0xfff0d8); }
+  applyMapLight();
   if (MAP_ID === 'skate') return buildPlaza();
   if (MAP_ID === 'canton') return buildCantonGround();
   const m = new THREE.ShaderMaterial({
@@ -72,8 +71,28 @@ function buildSea() {
   sea.rotation.x = -Math.PI / 2; sea.position.y = -3.2; scene.add(sea); WORLD.sea = sea;
 }
 
+// 西關大屋 has its own light: a soft warm day (grey shadows, a paler sky, warm reflections); the other maps keep the cool seaside light
+function applyMapLight() {
+  if (!hemi || !hemi.color) return;
+  const c = MAP_ID === 'canton';
+  hemi.color.set(c ? 0xf6efe2 : 0xd6ecff); hemi.groundColor.set(c ? 0xb0a48e : 0x9b8a74); hemi.intensity = c ? 0.5 : 0.55;
+  if (sun && sun.color) { sun.color.set(c ? 0xffecd0 : 0xfff0d8); sun.intensity = c ? 3.5 : 3.4; }
+  if (fillLight && fillLight.color) { fillLight.color.set(c ? 0xefe2cc : 0xa9c8ff); fillLight.intensity = c ? 0.55 : 0.7; }
+  if (scene.fog && scene.fog.color) scene.fog.color.set(c ? 0xe6e4da : 0xc4e6ff);
+  const sk = WORLD.sky && WORLD.sky.material && WORLD.sky.material.uniforms;
+  if (sk && sk.top) { sk.top.value.set(c ? '#6fa5de' : '#2a76f0'); sk.mid.value.set(c ? '#b9d6ee' : '#79c4ff'); sk.hor.value.set(c ? '#f2eee2' : '#e6f6ff'); }
+  if (scene.environment && typeof THREE.PMREMGenerator === 'function' && renderer && renderer.capabilities) {
+    WORLD.envCool = WORLD.envCool || scene.environment;
+    if (c && !WORLD.envWarm) { try {
+      const es = new THREE.Scene(), m = skyMaterial(); m.uniforms.top.value.set('#5f7f9c'); m.uniforms.mid.value.set('#9aa39f'); m.uniforms.hor.value.set('#c9bfa8'); m.uniforms.sunDir.value.set(0, -1, 0);
+      es.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), m)); const gd = new THREE.Mesh(new THREE.CircleGeometry(49, 32), new THREE.MeshBasicMaterial({ color: 0x8a8272 })); gd.rotation.x = -Math.PI / 2; gd.position.y = -3; es.add(gd);
+      const pm = new THREE.PMREMGenerator(renderer); WORLD.envWarm = pm.fromScene(es, 0.02).texture; pm.dispose(); } catch (e) { WORLD.envWarm = WORLD.envCool; } }
+    scene.environment = c ? WORLD.envWarm : WORLD.envCool;
+  }
+}
 /* ================================================================ DECOR */
 function buildDecor() {
+  applyMapLight();
   if (MAP_ID === 'skate') return buildDecorSkate();
   if (MAP_ID === 'canton') return buildDecorCanton();
   const deco = new THREE.Group(); scene.add(deco);
@@ -313,11 +332,11 @@ function buildCantonGround() {
       float a = texture2D(noiseMap, p * 0.11 + vec2(time * 0.020, time * 0.006)).r, b = texture2D(noiseMap, p * 0.23 - vec2(time * 0.013, -time * 0.017)).r;
       float n = a * 0.6 + b * 0.4;
       vec3 v = normalize(cameraPosition - vW); float fr = pow(1.0 - clamp(v.y, 0.0, 1.0), 3.0);
-      vec3 col = mix(vec3(0.33, 0.56, 0.52), vec3(0.74, 0.88, 0.90), fr * 0.8);
+      vec3 col = mix(vec3(0.10, 0.42, 0.33), vec3(0.62, 0.82, 0.76), fr * 0.75);
       float glint = smoothstep(0.66, 0.72, n) * (0.25 + 0.75 * fr);
       float edge = smoothstep(3.1, 3.5, abs(vW.z));                       // a paler line where the water meets the banks
       col += glint * 0.5 + edge * 0.10;
-      gl_FragColor = vec4(col, clamp(0.26 + fr * 0.4 + glint * 0.3 + (n - 0.5) * 0.12 + edge * 0.12, 0.0, 0.85));
+      gl_FragColor = vec4(col, clamp(0.52 + fr * 0.3 + glint * 0.3 + (n - 0.5) * 0.12 + edge * 0.12, 0.0, 0.85));
     }` });
   const w = new THREE.Mesh(new THREE.PlaneGeometry(XH * 2 + 240, 7), wm); w.rotation.x = -Math.PI / 2; w.position.y = 0.22; w.renderOrder = 1; scene.add(w); WORLD.sea = w;
   // the city outside: paving at street level with the canal running on through it
@@ -503,7 +522,7 @@ function cantonHallFace() {
 function buildDecorCanton() {
   const deco = new THREE.Group(); scene.add(deco);
   const std = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.8 }, o || {}));
-  const M = { stone: std(0xe9e2d2, { map: TEX.stone }), green: std(0x2f8f62, { roughness: 0.5 }), red: std(0xb5503f), wood: std(0x6e3220), bark: std(0x857565, { roughness: 0.95 }), leaf: std(0x3f6f38, { flatShading: true }), flower: std(0xe4402a, { emissive: 0x3a0800 }), gold: std(0xd8a640, { metalness: 0.5, roughness: 0.4 }), white: std(0xf4f1e8), cstone: std(0xffffff, { map: TEX.cstone }), plaster: std(0xffffff, { map: TEX.plaster }) };
+  const M = { stone: std(0xe9e2d2, { map: TEX.stone }), green: std(0x2f8f62, { roughness: 0.5 }), red: std(0xb5503f), wood: std(0x6e3220), bark: std(0x857565, { roughness: 0.95 }), trunk: std(0x6b4c34, { roughness: 0.95 }), leaf: std(0x3f7a38, { flatShading: true }), leaf2: std(0x2f6630, { flatShading: true }), pot: std(0xa8402c), flower: std(0xe0281c, { emissive: 0x4a0a04, flatShading: true }), gold: std(0xd8a640, { metalness: 0.5, roughness: 0.4 }), white: std(0xf4f1e8), cstone: std(0xffffff, { map: TEX.cstone }), plaster: std(0xffffff, { map: TEX.plaster }) };
   const add = (geo, mat, x, y, z, ry) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (ry) m.rotation.y = ry; m.castShadow = true; m.receiveShadow = true; deco.add(m); return m; };
   const boxAt = (x0, x1, y0, y1, z0, z1, mat) => add(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
   const sign = (text, w, h, x, y, z, ry, bg, fg, two) => { const m = cantonSign(text, w, h, bg, fg); m.position.set(x, y, z); m.rotation.y = ry; deco.add(m); if (two) { const b = m.clone(); b.rotation.y = ry + Math.PI; deco.add(b); } };
@@ -512,9 +531,21 @@ function buildDecorCanton() {
     const x = tx * sg, z = tz * sg, y = CL + ph, ban = kind === 'banyan', hT = ban ? 4.4 : 6.6;
     const tr = { t: 'box', tree: true, x, z, y0: y, yc: y + hT - 0.4, y1: y + hT + (ban ? 2.4 : 0.8), r: ban ? 0.75 : 0.32, rc: ban ? 3.6 : 1.5 };
     Object.assign(tr, { x0: x - tr.rc, x1: x + tr.rc, z0: z - tr.rc, z1: z + tr.rc, h: tr.y1 }); TREES.push(tr); TREE_Y0 = Math.min(TREE_Y0, y);
-    add(new THREE.CylinderGeometry(tr.r * 0.65, tr.r, hT, 9), M.bark, x, y + hT / 2, z);
-    if (ban) for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283, r = i ? 2.4 : 0; const g = new THREE.IcosahedronGeometry(2.3, 1); g.scale(1, 0.6, 1); add(g, M.leaf, x + Math.cos(a) * r, y + hT + 1.0, z + Math.sin(a) * r); }
-    else for (let i = 0; i < 26; i++) { const a = i * 2.4, r = 0.5 + (i % 5) * 0.28; add(new THREE.IcosahedronGeometry(0.22, 0), M.flower, x + Math.cos(a) * r, y + hT - 2.6 + (i % 7) * 0.5, z + Math.sin(a) * r); }
+    const limb = (ax, ay, az, bx2, by, bz, r0, r1, mat) => { const A = new THREE.Vector3(ax, ay, az), B = new THREE.Vector3(bx2, by, bz), m = add(new THREE.CylinderGeometry(r1, r0, A.distanceTo(B), 6), mat, (ax + bx2) / 2, (ay + by) / 2, (az + bz) / 2); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize()); return m; };
+    if (ban) {                                        // 榕樹: a stout trunk, a crown of several lobes, aerial roots hanging to the ground
+      add(new THREE.CylinderGeometry(tr.r * 0.7, tr.r * 1.15, hT, 10), M.trunk, x, y + hT / 2, z);
+      [[0, 0, 1.25, 2.5], [2.3, 0.4, 0.5, 2.1], [-2.1, 1.0, 0.6, 2.0], [0.6, 2.3, 0.4, 2.0], [-0.8, -2.3, 0.5, 2.1], [1.9, -1.6, 0.9, 1.7], [-2.0, -1.2, 1.0, 1.6]].forEach(([dx, dz, dy, r], i) => { const g = new THREE.IcosahedronGeometry(r, 1); g.scale(1, 0.72, 1); add(g, i % 2 ? M.leaf : M.leaf2, x + dx, y + hT + dy, z + dz); });
+      for (let i = 0; i < 9; i++) { const a = i * 0.7 + 0.3, r = 1.25 + (i % 3) * 0.45; limb(x + Math.cos(a) * r, y, z + Math.sin(a) * r, x + Math.cos(a) * r * 0.9, y + hT - 0.2 + (i % 2) * 0.4, z + Math.sin(a) * r * 0.9, 0.035, 0.05, M.trunk).castShadow = false; }
+    } else {                                          // 木棉: a straight trunk, tiers of bare branches, big red flowers along them and at the tips
+      add(new THREE.CylinderGeometry(tr.r * 0.45, tr.r, hT, 8), M.trunk, x, y + hT / 2, z);
+      let n = 0;
+      for (let tier = 0; tier < 4; tier++) for (let k = 0; k < 4; k++) {
+        const a = k * Math.PI / 2 + tier * 0.6, by = y + hT * (0.5 + tier * 0.13), L = 2.0 - tier * 0.32, ex = x + Math.cos(a) * L, ez = z + Math.sin(a) * L, ey = by + 0.55 + tier * 0.1;
+        limb(x, by, z, ex, ey, ez, 0.1 - tier * 0.015, 0.035, M.trunk);
+        for (const f of [0.55, 0.8, 1.02]) { const fl = add(new THREE.IcosahedronGeometry(0.3 - (n % 3) * 0.04, 0), M.flower, x + (ex - x) * f, by + (ey - by) * f + 0.16, z + (ez - z) * f); fl.rotation.set(n, n * 2, 0); n++; }
+      }
+      add(new THREE.IcosahedronGeometry(0.32, 0), M.flower, x, y + hT + 0.2, z);
+    }
   }));
   // ---- landmarks and shops, different on the two halves (team 0 at +z, team 1 at -z)
   const names = [
@@ -546,7 +577,7 @@ function buildDecorCanton() {
     // ---- shops under the arcade: each one's own frontage on the back wall (ink doesn't stick to it), its vertical sign on the facade above the deck
     n.shops.forEach(([nm, zc, bg, fg, key]) => {
       face(G, TEX._shopFace(key, 8, 3.0), 8, 3.0, 25.97, CL + 1.5, zc, -Math.PI / 2);
-      const L = nm.length * 0.85 + 0.3; const v = face(G, TEX._vsign(nm, bg, fg), 0.95, L, 27.0, CL + 9.6 - L / 2, zc + 3.2, 0, { side: THREE.DoubleSide }); v.castShadow = true; bx(27.0, 27.5, CL + 9.45, CL + 9.55, zc + 3.17, zc + 3.23, M.dark);
+      const L = nm.length * 0.8 + 0.3, vt = TEX._vsign(nm, bg, fg), vz = zc + 1.9; face(G, vt, 0.9, L, 19.72, CL + 5.0 + L / 2, vz + 0.03, 0).castShadow = true; face(G, vt, 0.9, L, 19.72, CL + 5.0 + L / 2, vz - 0.03, Math.PI); bx(20.2, 20.3, CL + 3.8, CL + 5.1 + L, vz - 0.05, vz + 0.05, M.dark); bx(19.25, 20.3, CL + 5.0 + L, CL + 5.06 + L, vz - 0.03, vz + 0.03, M.dark);
     });
     // ---- arcade colonnade: plinth and capital on every column, a beam with corner brackets between them, ceiling joists; a balustrade on the deck edge
     for (let i = 0; i < 8; i++) {
@@ -554,10 +585,18 @@ function buildDecorCanton() {
       bx(20.18, 21.02, CL, CL + 0.32, c - 0.42, c + 0.42, M.cstone); bx(20.24, 20.96, CL + 0.32, CL + 0.4, c - 0.36, c + 0.36, M.cstone);
       bx(20.22, 20.98, CL + 3.02, CL + 3.12, c - 0.38, c + 0.38, M.white); bx(20.16, 21.04, CL + 3.12, CL + 3.39, c - 0.44, c + 0.44, M.white);
       bx(20.9, 26, CL + 3.22, CL + 3.39, c - 0.12, c + 0.12, M.plaster);
-      if (i < 7) { bx(20.44, 20.76, CL + 3.08, CL + 3.39, c + 0.3, c + d - 0.3, M.plaster);
-        for (const e of [0, 1]) for (let q = 0; q < 3; q++) { const bz = e ? c + d - 0.44 - q * 0.22 : c + 0.44 + q * 0.22; bx(20.46, 20.74, CL + 2.84 + q * 0.08, CL + 3.08, bz - 0.11, bz + 0.11, M.plaster); } }
+      if (i < 7) {                                   // an arch from column to column
+        const W = d - 0.6, H = 0.95, sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0, H); sh.lineTo(W, H); sh.lineTo(W, 0); sh.quadraticCurveTo(W / 2, 1.42, 0, 0);
+        const ag = new THREE.ExtrudeGeometry(sh, { depth: 0.36, bevelEnabled: false, curveSegments: 10 }); const am = new THREE.Mesh(ag, M.cstone); am.rotation.y = -Math.PI / 2; am.position.set(20.78, CL + 2.44, c + 0.3); am.castShadow = true; G.add(am);
+      }
     }
-    bx(20.33, 20.57, CL + 4.55, CL + 4.7, 8, 36, M.white); for (let i = 0; i < 28; i++) bx(20.39, 20.51, CL + 3.8, CL + 4.55, 8.44 + i, 8.56 + i, M.white);
+    // stone balustrade on the deck edge: a base, a handrail, vase-shaped balusters, a post at every column
+    bx(20.3, 20.6, CL + 3.8, CL + 3.9, 8, 36, M.cstone); bx(20.28, 20.62, CL + 4.58, CL + 4.72, 8, 36, M.cstone);
+    for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; bx(20.27, 20.63, CL + 3.8, CL + 4.82, c - 0.18, c + 0.18, M.cstone); }
+    { const prof = [[0.05, 0], [0.09, 0.05], [0.06, 0.12], [0.115, 0.3], [0.1, 0.42], [0.05, 0.56], [0.07, 0.64], [0.05, 0.68]].map(([r, y2]) => new THREE.Vector2(r, y2));
+      const bal = new THREE.InstancedMesh(new THREE.LatheGeometry(prof, 8), M.cstone, 68), mt = new THREE.Matrix4(); let n = 0;
+      for (let q = 0; q < 70 && n < 68; q++) { const bz = 8.5 + q * 0.4; if (bz > 35.6) break; const rel = (bz - 8.3) % ((35.7 - 8.3) / 7); if (rel < 0.3 || rel > (35.7 - 8.3) / 7 - 0.3) continue; mt.makeTranslation(20.45, CL + 3.9, bz); bal.setMatrixAt(n++, mt); }
+      bal.count = n; bal.castShadow = true; G.add(bal); }
     // ---- the café on the street (吳系茶餐廳 / 廣州酒家): frontage toward the street centre, a parapet, the big board on the roof
     face(G, TEX._shopFace(n.hk, 7, 2.4), 7, 2.4, -4.97, CL + 1.2, 21.5, Math.PI / 2);
     bx(-5.25, -5, CL + 2.4, CL + 2.62, 18, 25, M.cream);
@@ -571,8 +610,8 @@ function buildDecorCanton() {
     bx(13.95, 14.05, CL + 0.5, CL + 1.55, 26.7, 26.8, M.dark); bx(13.6, 14.4, CL + 1.5, CL + 1.58, 26.72, 26.8, M.dark);
     [[-4.3, 25.6, 5], [-3.5, 25.9, 7], [-4.0, 26.6, 4]].forEach(([sx, sz, nS]) => { for (let i = 0; i < nS; i++) { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.17, 14), std(i % 2 ? 0xc9a463 : 0xb89152)); st.position.set(sx, CL + 0.09 + i * 0.18, sz); st.castShadow = true; G.add(st); } });
     // ---- lantern strings across the street
-    [[15.5, 5.6], [28.2, 5.9]].forEach(([lz, ly]) => { const line = bx(-15, 20.3, CL + ly, CL + ly + 0.025, lz - 0.012, lz + 0.012, M.dark); line.castShadow = false;
-      for (let i = 0; i < 9; i++) { const lx = -12 + i * 3.7; const l = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), M.lantern); l.scale.y = 0.8; l.position.set(lx, CL + ly - 0.32, lz); G.add(l); bx(lx - 0.1, lx + 0.1, CL + ly - 0.1, CL + ly - 0.06, lz - 0.1, lz + 0.1, M.gold); } });
+    [[11, 5.4], [19, 5.9], [28.2, 5.9], [34, 5.6]].forEach(([lz, ly]) => { const line = bx(-15, 20.3, CL + ly, CL + ly + 0.025, lz - 0.012, lz + 0.012, M.dark); line.castShadow = false;
+      for (let i = 0; i < 12; i++) { const lx = -13 + i * 2.9; const l = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 8), M.lantern); l.scale.y = 0.82; l.position.set(lx, CL + ly - 0.4, lz); G.add(l); bx(lx - 0.1, lx + 0.1, CL + ly - 0.1, CL + ly - 0.06, lz - 0.1, lz + 0.1, M.gold); } });
 
     // ---- tea house at the spawn end (out of bounds block): manchu-window facades on its two open sides, a parapet, a green pavilion on the roof
     const tf = cantonTeaFace();
@@ -586,10 +625,12 @@ function buildDecorCanton() {
     frustum(G, -6.0, -2.2, 29.9, 32.1, CL + 4.62, CL + 5.25, 0.5, 0.95, M.groof); frustum(G, 2.2, 6.0, 29.9, 32.1, CL + 4.62, CL + 5.25, 0.5, 0.95, M.groof);
     bx(-2.3, 2.3, CL + 4.6, CL + 5.45, 30.6, 31.4, M.cstone); frustum(G, -3.2, 3.2, 29.8, 32.2, CL + 5.45, CL + 6.3, 0.7, 1.05, M.groof);
     [[-2.2, CL + 5.25], [2.2, CL + 5.25], [0, CL + 6.3]].forEach(([rx, ry2], i) => bx(rx - (i < 2 ? 1.5 : 2.5), rx + (i < 2 ? 1.5 : 2.5), ry2, ry2 + 0.16, 30.9, 31.1, M.groof));
-    [-4, 4].forEach(px => { bx(px - 0.55, px + 0.55, CL, CL + 0.5, 30.3, 31.7, M.cstone); [-1, 1].forEach(e => bx(px + e * 0.9 - 0.45, px + e * 0.9 + 0.45, CL + 3.0, CL + 3.4, 30.8, 31.2, M.cstone)); });
+    [[-6.0, 29.9, CL + 4.62], [-6.0, 32.1, CL + 4.62], [6.0, 29.9, CL + 4.62], [6.0, 32.1, CL + 4.62], [-3.2, 29.8, CL + 5.45], [-3.2, 32.2, CL + 5.45], [3.2, 29.8, CL + 5.45], [3.2, 32.2, CL + 5.45]].forEach(([ex, ez, ey]) => { const h = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.7, 5), M.groof); h.position.set(ex + Math.sign(ex) * 0.12, ey + 0.2, ez + (ez > 31 ? 0.1 : -0.1)); h.rotation.set((ez > 31 ? 1 : -1) * 0.75, 0, -Math.sign(ex) * 0.75); G.add(h); });
+    [-4, 4].forEach(px => { bx(px - 0.5, px + 0.5, CL, CL + 0.28, 30.2, 31.8, M.cstone); [30.3, 31.7].forEach(dz => { const dr = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.26, 18), M.cstone); dr.rotation.z = Math.PI / 2; dr.position.set(px, CL + 0.7, dz + (dz > 31 ? 0.14 : -0.14)); dr.castShadow = true; G.add(dr); }); [-1, 1].forEach(e => bx(px + e * 0.9 - 0.45, px + e * 0.9 + 0.45, CL + 3.0, CL + 3.4, 30.8, 31.2, M.cstone)); });
 
     // ---- stone bridge: posts on the parapets, an arch under each side, a string course
     [14.15, 17.85].forEach(px => { for (let i = 0; i < 5; i++) { const pz = -3.3 + i * 1.65, py = CL + 0.5 + 0.9 * clamp((3.5 - Math.abs(pz)) / 2.3, 0, 1) - 0.06; bx(px - 0.2, px + 0.2, py, py + 0.34, pz - 0.2, pz + 0.2, M.cstone); bx(px - 0.13, px + 0.13, py + 0.34, py + 0.46, pz - 0.13, pz + 0.13, M.cstone); } });
+    [14.15, 17.85].forEach(px => { for (let i = 0; i < 4; i++) { const z0 = -3.3 + i * 1.65, z1 = z0 + 1.65, yy = pz => CL + 0.5 + 0.9 * clamp((3.5 - Math.abs(pz)) / 2.3, 0, 1) + 0.3, r = bx(-0.09, 0.09, -0.06, 0.06, -0.86, 0.86, M.cstone); r.position.set(px, (yy(z0) + yy(z1)) / 2, (z0 + z1) / 2); r.rotation.x = -Math.atan2(yy(z1) - yy(z0), 1.65); } });
     [[13.99, -Math.PI / 2], [18.01, Math.PI / 2]].forEach(([px, r]) => face(G, TEX.archFace, 7, CL, px, CL / 2, 0, r, { transparent: true, alphaTest: 0.5, side: THREE.DoubleSide }));
 
     // ---- dragon boat (head toward the tower): neck and head, horns, eyes, a curled tail, the drum, a red parasol, flags
@@ -618,6 +659,23 @@ function buildDecorCanton() {
         const cap = new THREE.Mesh(new THREE.ExtrudeGeometry(wk, { depth: 0.42, bevelEnabled: false }), std(0x2c2f33)); cap.scale.set(1.04, 1.03, 1); cap.position.set(-24.4, CL + 2.6, gz - 0.06); cap.renderOrder = -1; G.add(cap); w.position.z = gz - 0.07; w.scale.z = 1.5; }); }
     bx(-16.12, -14.88, CL, CL + 2.19, 20.7, 21.05, M.cstone); bx(-16.12, -14.88, CL, CL + 2.19, 24.95, 25.3, M.cstone);                // gate jambs
     bx(-17.9, -16.05, CL + 0.05, CL + 2.1, 20.82, 20.94, M.dwood); bx(-17.9, -16.05, CL + 0.05, CL + 2.1, 25.06, 25.18, M.dwood);  // door leaves, open
+    // 趟櫳 slid open beside the gate; the hall's verandah (two columns, a tiled eave) and its 「積厚流光」 board; manchu windows round the courtyard; a bonsai and shrubs in the planter
+    for (let b = 0; b < 9; b++) bx(-14.98, -14.9, CL + 0.25 + b * 0.22, CL + 0.34 + b * 0.22, 19.15, 20.65, M.dwood); bx(-14.99, -14.89, CL + 0.1, CL + 2.2, 19.1, 19.2, M.dwood); bx(-14.99, -14.89, CL + 0.1, CL + 2.2, 20.6, 20.7, M.dwood);
+    [19.2, 26.8].forEach(cz => { const col = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 3.3, 10), M.cream); col.position.set(-21.8, CL + 1.65, cz); col.castShadow = true; G.add(col); bx(-22.05, -21.55, CL, CL + 0.18, cz - 0.25, cz + 0.25, M.cstone); });
+    frustum(G, -23, -21.4, 16.05, 29.95, CL + 3.3, CL + 3.95, 1.55, 0.01, M.roof);
+    { const [px2, pz2] = P(-22.95, 23); sign('積厚流光', 2.6, 0.62, px2, CL + 3.72, pz2, ry(Math.PI / 2), '#6a1410', '#f0cf7a'); }
+    [[16.03, 0], [29.97, Math.PI]].forEach(([wz, r]) => [-21.3, -19.4, -17.5].forEach(wx => { const w = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.7), M.manchu); w.position.set(wx, CL + 1.5, wz); w.rotation.y = r; G.add(w); const fr = bx(wx - 0.82, wx + 0.82, CL + 0.58, CL + 2.42, wz - 0.012, wz + 0.012, M.cream); fr.position.z = wz + (r ? 0.008 : -0.008); }));
+    { const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.24, 0.42, 10), M.pot); pot.position.set(-19.25, CL + 1.21, 23); pot.castShadow = true; G.add(pot);
+      const tk = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 6), M.trunk); tk.position.set(-19.25, CL + 1.85, 23); G.add(tk);
+      [[0, 2.35, 0, 0.5], [0.42, 2.05, 0.2, 0.36], [-0.4, 1.95, -0.15, 0.34], [0.1, 2.0, -0.42, 0.3]].forEach(([dx, dy, dz, r2]) => { const g2 = new THREE.IcosahedronGeometry(r2, 0); g2.scale(1, 0.4, 1); const m2 = new THREE.Mesh(g2, M.leaf); m2.position.set(-19.25 + dx, CL + dy, 23 + dz); m2.castShadow = true; G.add(m2); });
+      [[-19.9, 21.6, 0.42], [-18.6, 21.9, 0.36], [-19.6, 24.4, 0.4], [-18.7, 24.2, 0.34]].forEach(([sx2, sz2, r2], i) => { const m2 = new THREE.Mesh(new THREE.IcosahedronGeometry(r2, 0), i % 2 ? M.leaf : M.leaf2); m2.position.set(sx2, CL + 1.0 + r2 * 0.7, sz2); m2.castShadow = true; G.add(m2); }); }
+    // shrubs in the stone planter by the arcade; bamboo steamers on the cargo trike
+    [[14.6, 16.5, 0.42], [15.5, 16.45, 0.36], [16.4, 16.55, 0.4]].forEach(([sx2, sz2, r2], i) => { const m2 = new THREE.Mesh(new THREE.IcosahedronGeometry(r2, 0), i % 2 ? M.leaf2 : M.leaf); m2.position.set(sx2, CL + 1.0 + r2 * 0.7, sz2); m2.castShadow = true; G.add(m2); });
+    for (let i = 0; i < 4; i++) { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.17, 14), std(i % 2 ? 0xc9a463 : 0xb89152)); st.position.set(13.5, CL + 1.29 + i * 0.18, 24.6); st.castShadow = true; G.add(st); }
+    // the tea house's two hanging banners
+    [['正宗粵菜', -24.6], ['星期美點', -11.4]].forEach(([tx2, bx2]) => face(G, TEX._vsign(tx2, '#141210', '#e8c15a'), 1.0, 3.5, bx2, CL + 6.3, 43.94, Math.PI));
+    // bunting between the café and the arcade
+    { const cols = [0xd8291c, 0xe9c64a, 0x2f8f62, 0x2f66b0, 0xf4f1e8]; bx(-5, 20.3, CL + 4.6, CL + 4.62, 21.99, 22.01, M.dark).castShadow = false; for (let i = 0; i < 30; i++) { const f = bx(-4.6 + i * 0.82, -4.6 + i * 0.82 + 0.34, CL + 4.18, CL + 4.6, 21.995, 22.005, std(cols[i % 5], { side: THREE.DoubleSide })); f.castShadow = false; } }
     [18.5, 27.5].forEach(wz => { bx(-14.99, -14.93, CL + 0.75, CL + 2.25, wz - 0.75, wz + 0.75, M.cream); const w = new THREE.Mesh(new THREE.PlaneGeometry(1.26, 1.26), M.manchu); w.position.set(-14.92, CL + 1.5, wz); w.rotation.y = Math.PI / 2; G.add(w); });
   });
 

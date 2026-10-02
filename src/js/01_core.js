@@ -221,7 +221,7 @@ const Sfx = (() => {
 })();
 
 /* ------------------------------------------------------------ renderer */
-let renderer, scene, camera, sun, hemi;
+let renderer, scene, camera, sun, hemi, fillLight;
 const clock = new THREE.Clock();
 function initRenderer() {
   renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, powerPreference: 'high-performance' });
@@ -244,7 +244,7 @@ function initRenderer() {
   const sc = sun.shadow.camera; sc.left = -62; sc.right = 62; sc.top = 62; sc.bottom = -62; sc.near = 10; sc.far = 200;
   sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.04;
   scene.add(sun, sun.target);
-  const fill = new THREE.DirectionalLight(0xa9c8ff, 0.7); fill.position.set(-30, 25, -40); scene.add(fill);
+  const fill = fillLight = new THREE.DirectionalLight(0xa9c8ff, 0.7); fill.position.set(-30, 25, -40); scene.add(fill);
   applyQuality();
   addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
 }
@@ -332,9 +332,9 @@ function buildTextures() {
   // ---- 西關大屋: granite street slabs, grey-blue brick, damp canal blocks, red terrace tiles, cream plaster, dressed stone
   const tone = (r, g2, b, k) => `rgb(${Math.round(r * k)},${Math.round(g2 * k)},${Math.round(b * k)})`, rr = (a, b) => a + (b - a) * Math.random();
   TEX.granite = canvasTex(512, 512, (g, w, h) => {      // 麻石: long slabs in running courses (texture = 4 m); kept pale and calm so ink reads on it
-    g.fillStyle = '#6f695e'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#9a8f78'; g.fillRect(0, 0, w, h);
     const rows = 8, rh = h / rows;
-    for (let r = 0; r < rows; r++) { let x = -rr(0, 120); while (x < w) { const L = rr(110, 220); g.fillStyle = tone(158, 147, 128, rr(0.93, 1.05)); g.fillRect(x + 2, r * rh + 2, L - 4, rh - 4); if (x + L > w) g.fillRect(x + 2 - w, r * rh + 2, L - 4, rh - 4); x += L; } }
+    for (let r = 0; r < rows; r++) { let x = -rr(0, 120); while (x < w) { const L = rr(110, 220); g.fillStyle = tone(186, 170, 138, rr(0.94, 1.04)); g.fillRect(x + 2, r * rh + 2, L - 4, rh - 4); if (x + L > w) g.fillRect(x + 2 - w, r * rh + 2, L - 4, rh - 4); x += L; } }
     speckle(g, w, h, 5000, 0.1);
   });
   TEX.brick = canvasTex(512, 512, (g, w, h) => {        // 青磚 (texture = 2 m)
@@ -360,9 +360,26 @@ function buildTextures() {
     speckle(g, w, h, 1800, 0.06);
   });
   TEX.cstone = canvasTex(256, 256, (g, w, h) => {       // dressed pale granite (texture = 2 m): steps, bridges, the paifang, plinths
-    g.fillStyle = '#7d7668'; g.fillRect(0, 0, w, h);
-    for (let r = 0; r < 4; r++) for (let c = -1; c < 2; c++) { g.fillStyle = tone(178, 168, 148, rr(0.94, 1.04)); g.fillRect(c * 128 + (r % 2) * 64 + 2, r * 64 + 2, 124, 60); }
+    g.fillStyle = '#b0a48a'; g.fillRect(0, 0, w, h);
+    for (let r = 0; r < 4; r++) for (let c = -1; c < 2; c++) { g.fillStyle = tone(196, 182, 152, rr(0.96, 1.03)); g.fillRect(c * 128 + (r % 2) * 64 + 1, r * 64 + 1, 126, 62); }
     speckle(g, w, h, 2500, 0.09);
+  });
+  TEX.gtile = canvasTex(256, 256, (g, w, h) => {        // grey roof tiles you can walk on (the mansion's wings)
+    g.fillStyle = '#4f555a'; g.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 32) { const gr = g.createLinearGradient(x, 0, x + 32, 0); gr.addColorStop(0, '#5a6167'); gr.addColorStop(0.5, '#8d959b'); gr.addColorStop(1, '#5a6167'); g.fillStyle = gr; g.fillRect(x + 1, 0, 30, h); }
+    for (let y = 0; y < h; y += 43) { g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(0, y, w, 3); }
+  });
+  // stone stairs drawn on a slope (2 m of texture = 4 treads): a lit nosing, the tread, the shadow under the next riser
+  const stairs = vert => canvasTex(256, 256, (g, w, h) => {
+    for (let k = 0; k < 4; k++) { const gr = vert ? g.createLinearGradient(0, k * 64, 0, k * 64 + 64) : g.createLinearGradient(k * 64, 0, k * 64 + 64, 0);
+      gr.addColorStop(0, '#6f6656'); gr.addColorStop(0.16, '#8e846f'); gr.addColorStop(0.22, '#c9bb9b'); gr.addColorStop(0.9, '#c4b696'); gr.addColorStop(0.93, '#e6dcc2'); gr.addColorStop(1, '#e6dcc2'); g.fillStyle = gr;
+      if (vert) g.fillRect(0, k * 64, w, 64); else g.fillRect(k * 64, 0, 64, h); }
+    speckle(g, w, h, 2200, 0.08);
+  });
+  TEX.stairZ = stairs(true); TEX.stairX = stairs(false);
+  TEX.bamboo = canvasTex(128, 128, (g, w, h) => {       // a stack of bamboo steamers
+    for (let y = 0; y < h; y += 32) { g.fillStyle = '#c9a463'; g.fillRect(0, y, w, 32); g.fillStyle = '#a8833f'; g.fillRect(0, y + 26, w, 6); g.fillStyle = '#e0c287'; g.fillRect(0, y, w, 4); }
+    for (let x = 0; x < w; x += 5) { g.fillStyle = `rgba(90,60,20,${rr(0.04, 0.16)})`; g.fillRect(x, 0, 1.5, h); }
   });
   TEX.sandstone = canvasTex(256, 256, (g, w, h) => {    // 紅砂岩: the old city wall under Zhenhai Tower (texture = 2 m)
     g.fillStyle = '#4a221b'; g.fillRect(0, 0, w, h);
