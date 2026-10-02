@@ -219,55 +219,56 @@ function defineCanton() {
   const tag = (s, kind) => Object.assign(s, { kind });
   const FR = (x0, x1, z0, z1, y0, h0, h1) => Object.assign(framp(x0, x1, z0, z1, 'z', CL + y0, CL + h0, CL + h1, 'flag'), { navTop: true });
   const ON = { walls: true, navTop: true };          // stands on the centre deck: the canal tunnel underneath stays open, its sides are normal inkable walls
+  const GH = { ghost: true };                        // collision only: the draft's own model stands there, it takes no ink
   const half = [
-    tag(box(-26, 26, 3.5, 52, CL, 'canal', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
+    tag(box(-26, 26, 3.5, 52, CL, 'dCanal', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
     // ---- spawn: the tea house's roof terrace
-    tag(S(-10, 10, 42, 52, 2.0, 'brick', 'tile'), 'spawn'),
+    tag(S(-10, 10, 42, 52, 2.0, 'dFac3', 'tile'), 'spawn'),
     R(-3, 3, 36, 42, 'z', 0, 2.0, 'stairZ'),
-    S(10, 26, 42, 52, 2.0, 'brick', 'tile'),
-    tag(S(15, 17, 46, 48, 3.6, 'contB', 'grate'), 'tank'),
-    tag(oob(-26, -10, 44, 52, 9.0), 'teahouse'),
-    R(20.3, 26, 36, 42, 'z', 3.8, 2.0, 'stairZ'),
-    // ---- qilou arcade along the +x wall: covered street below, walkable deck above
-    tag(F(20.3, 26, 8, 36, 3.4, 3.8, 'plaster', 'tile'), 'arcade'),
+    S(10, 26, 42, 52, 2.0, 'dFac3', 'tile'),
+    Object.assign(tag(S(15, 17, 46, 48, 3.6, 'dSteel', 'steel'), 'tank'), GH),
+    Object.assign(tag(oob(-26, -10, 44, 52, 9.0), 'teahouse'), GH),
+    R(20.3, 26, 36, 42, 'z', 3.8, 2.0, 'tile'),
+    // ---- qilou arcade along the +x wall: covered street below, walkable deck above, a stone balustrade on its edge (jump over it)
+    tag(F(20.3, 26, 8, 36, 3.4, 3.8, 'dPlaster', 'tile'), 'arcade'),
+    Object.assign(F(20.3, 20.6, 8, 36, 3.8, 4.7, 'dPlasterW', 'tile', { navTop: true }), GH),
     // ---- Xiguan mansion along the -x wall: two roofed wings, an open gate into the courtyard, the main hall at the back
-    tag(S(-26, -15, 12, 16, 2.6, 'brick', 'gtile'), 'mansion'), tag(S(-26, -15, 30, 34, 2.6, 'brick', 'gtile'), 'mansion'),
-    tag(oob(-26, -23, 16, 30, 4.4), 'hall'),
-    S(-16, -15, 16, 21, 2.6, 'brick', 'gtile'), S(-16, -15, 25, 30, 2.6, 'brick', 'gtile'),
-    tag(F(-16, -15, 21, 25, 2.2, 2.6, 'brick', 'gtile'), 'lintel'),
-    S(-20.5, -18, 21, 25, 1.0, 'cstone', 'grass'),
+    tag(S(-26, -15, 12, 16, 2.6, 'dBrick', 'tile'), 'mansion'), tag(S(-26, -15, 30, 34, 2.6, 'dBrick', 'tile'), 'mansion'),
+    Object.assign(tag(oob(-26, -23, 16, 30, 4.4), 'hall'), GH),
+    S(-16, -15, 16, 21, 2.6, 'dBrick', 'tile'), S(-16, -15, 25, 30, 2.6, 'dBrick', 'tile'),
+    tag(F(-16, -15, 21, 25, 2.2, 2.6, 'dStone', 'tile'), 'lintel'),
+    S(-20.5, -18, 21, 25, 1.0, 'dStone', 'dgrass'),
     R(-15, -10, 12.4, 16, 'x', 2.6, 0, 'stairX'), R(-15, -10, 30, 34, 'x', 2.6, 0, 'stairX'),
     // ---- the street between them
-    tag(S(-11, -5, 18, 25, 2.4, 'plaster', 'tile'), 'house'),
-    S(-5, -3.5, 18, 19.6, 1.2, 'bamboo', 'bamboo'), S(-1, 0.6, 14, 15.6, 0.5, 'cstone', 'flag'),
-    S(5, 11, 13, 18, 0.5, 'cstone', 'grass'),
-    tag(S(2, 5, 25, 26.6, 1.1, 'panel', 'wood'), 'stall'), S(13, 15, 24, 26.5, 1.2, 'cargo', 'wood'), S(14, 17, 16, 17, 1.0, 'cstone', 'grass'),
-    tag(S(-4.4, -3.6, 30.6, 31.4, 4.6, 'cstone', 'concrete'), 'paifang'), tag(S(3.6, 4.4, 30.6, 31.4, 4.6, 'cstone', 'concrete'), 'paifang'),
-    tag(F(-5, 5, 30.5, 31.5, 3.4, 4.6, 'stone', 'concrete'), 'paifang'),
+    tag(S(-11, -5, 18, 25, 2.4, 'dFac6', 'tile'), 'house'),
+    Object.assign(S(-5, -3.5, 18, 19.6, 1.2, 'bamboo', 'bamboo'), GH), Object.assign(S(-1, 0.6, 14, 15.6, 0.5, 'bamboo', 'bamboo'), GH),
+    S(5, 11, 13, 18, 0.5, 'dStone', 'dgrass'),
+    tag(S(2, 5, 25, 26.6, 1.1, 'dSteel', 'steel'), 'stall'), Object.assign(S(13, 15, 24, 26.5, 1.2, 'cargo', 'wood'), GH), S(14, 17, 16, 17, 1.0, 'dStone', 'dgrass'),
+    tag(S(-4.4, -3.6, 30.6, 31.4, 4.6, 'dStone', 'flag'), 'paifang'), tag(S(3.6, 4.4, 30.6, 31.4, 4.6, 'dStone', 'flag'), 'paifang'),
+    tag(F(-5, 5, 30.5, 31.5, 3.4, 4.6, 'dStone', 'flag'), 'paifang'),
     // ---- canal side: kapok planters, stone landing steps down into the canal, a stone bridge, a moored dragon boat
-    S(-7, -5, 6, 8, 0.5, 'cstone', 'grass'), S(10, 12, 5.5, 7.5, 0.5, 'cstone', 'grass'),
+    S(-7, -5, 6, 8, 0.5, 'dStone', 'dgrass'), S(10, 12, 5.5, 7.5, 0.5, 'dStone', 'dgrass'),
     // (four 0.44 m steps running straight out from the bank, 3 m wide: walk up them toward the street)
-    ...[[-12, -9], [20, 23]].flatMap(([x0, x1]) => [0, 1, 2, 3].map(k => box(x0, x1, 2.9 - k * 0.6, 3.5 - k * 0.6, CL - 0.44 * (k + 1), 'cstone', 'paving'))),
+    ...[[-12, -9], [20, 23]].flatMap(([x0, x1]) => [0, 1, 2, 3].map(k => box(x0, x1, 2.9 - k * 0.6, 3.5 - k * 0.6, CL - 0.44 * (k + 1), 'dStone', 'flag'))),
     // an arched stone bridge: up 0.9 m, a flat crown high enough for the dragon boat's flags, down again; people walk under the ramps too.
-    // Its parapets are the two edge strips, 0.5 m higher: you step over them to drop into the canal.
+    // Its edge strips are 0.5 m higher (under the balustrade): you step over them to drop into the canal.
     ...[[14.3, 17.7, 0], [14, 14.3, 0.5], [17.7, 18, 0.5]].flatMap(([x0, x1, up]) => [
-      tag(FR(x0, x1, -3.5, -1.2, -0.3, up, 0.9 + up), 'bridge'), tag(F(x0, x1, -1.2, 1.2, 0.5, 0.9 + up, 'stone', 'flag', { navTop: true }), 'bridge'), tag(FR(x0, x1, 1.2, 3.5, -0.3, 0.9 + up, up), 'bridge')]),
-    tag(box(8.5, 18, 0.2, 1.4, 0.7, 'hull', 'wood'), 'boat'),
+      tag(FR(x0, x1, -3.5, -1.2, -0.3, up, 0.9 + up), 'bridge'), tag(F(x0, x1, -1.2, 1.2, 0.5, 0.9 + up, 'dStone', 'flag', { navTop: true }), 'bridge'), tag(FR(x0, x1, 1.2, 3.5, -0.3, 0.9 + up, up), 'bridge')].map(q => up ? Object.assign(q, GH) : q)),
+    Object.assign(tag(box(8.5, 19, 0.2, 1.4, 0.7, 'hull', 'wood'), 'boat'), GH),
     // ---- beside the tower: two steps of the old city wall (jump 1 m, then 2 m)
-    F(2.5, 5, -2.5, 0, 0, 2.0, 'redwall', 'flag', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'redwall', 'flag', ON),
+    F(2.5, 5, -2.5, 0, 0, 2.0, 'dRedstone', 'paving', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'dRedstone', 'paving', ON),
   ];
-  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'cstone', 'concrete'), 'column')); }
-  half.forEach(s => { SOLIDS.push(s); SOLIDS.push(Object.assign(mirrorSolid(s), { team1: true })); });
+  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'dPlasterW', 'flag'), 'column')); }
+  half.forEach(s => { SOLIDS.push(s); const m = Object.assign(mirrorSolid(s), { team1: true }); if (m.kind === 'house') m.style = 'dFac2'; if (m.kind === 'stall') { m.style = 'dTeal'; m.top = 'wood'; } SOLIDS.push(m); });
   // centre: a square deck over the canal (only squids fit underneath), Zhenhai Tower on it — climb its inked walls to the 4 m terrace
-  SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'stone', 'flag', { navTop: true }), 'deck'));
-  [-1, 1].forEach(sg => SOLIDS.push(Object.assign(F(sg > 0 ? 6.7 : -7, sg > 0 ? 7 : -6.7, -3.5, 3.5, 0, 0.5, 'cstone', 'flag', ON), sg < 0 ? { team1: true } : {})));
-  SOLIDS.push(tag(F(-2.5, 2.5, -2.5, 2.5, 0, 4.0, 'redwall', 'tile', ON), 'tower'), tag(F(-1, 1, -1, 1, 0, 8.2, 'redwall', 'tile', ON), 'towerTop'));
-  // perimeter walls (only the inner face takes ink)
+  SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'dStone', 'paving', { navTop: true }), 'deck'));
+  SOLIDS.push(tag(F(-2.5, 2.5, -2.5, 2.5, 0, 4.0, 'dRedwall', 'tile', ON), 'tower'), Object.assign(tag(F(-1, 1, -1, 1, 0, 8.2, 'dRedwall', 'tile', ON), 'towerTop'), GH));
+  // perimeter: the house fronts stand right on the edge (collision only)
   const B = CL + 3.4;
-  SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'plaster'), { bound: '-x' }));
-  SOLIDS.push(Object.assign(box(-XH - 1.5, -XH, -ZH, ZH, B, 'plaster'), { bound: '+x' }));
-  SOLIDS.push(Object.assign(box(-XH, XH, ZH, ZH + 1.5, B, 'plaster'), { bound: '-z' }));
-  SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'plaster'), { bound: '+z' }));
+  SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'panel'), { bound: '-x' }, GH));
+  SOLIDS.push(Object.assign(box(-XH - 1.5, -XH, -ZH, ZH, B, 'panel'), { bound: '+x' }, GH));
+  SOLIDS.push(Object.assign(box(-XH, XH, ZH, ZH + 1.5, B, 'panel'), { bound: '-z' }, GH));
+  SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }, GH));
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
 // canal bed paint: darker wet stone, contact shadows along the banks and under the bridges
@@ -405,10 +406,10 @@ function initPaint() {
   // cells whose ground is the curved terrain itself (not a block top): splats may follow its slope
   Paint.onTerr = new Uint8Array(NX * NZ);
   if (TERR.on) for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH, k = j * NX + i; if (!terrOob(x, z) && Math.abs(Paint.hgt[k] - terrH(x, z)) < 0.02) Paint.onTerr[k] = 1; }
-  const OOB = SOLIDS.filter(s => s.oob);
+  const OOB = SOLIDS.filter(s => s.oob || (s.ghost && !s.bound));     // ghost = collision only: drawn by the map's own decor, takes no ink
   if (OOB.length || TERR.on) {           // out of bounds: never takes ink, doesn't count toward the turf total
     let n = 0;
-    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH; if (OOB.some(o => inRect(o, x, z)) || (TERR.on && terrOob(x, z))) Paint.hgt[j * NX + i] = 99; else n++; }
+    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH; const ob = OOB.find(o => inRect(o, x, z) && (o.oob || Math.abs(topAt(o, x, z) - Paint.hgt[j * NX + i]) < 0.01)); if (ob || (TERR.on && terrOob(x, z))) Paint.hgt[j * NX + i] = ob && !ob.oob ? 98 : 99; else n++; }
     Paint.total = n;
   }
   for (let k = 0; k < NX * NZ; k++) Paint.data[k * 4 + 3] = 255;
@@ -429,7 +430,7 @@ function initPaintLayer2() {
     const i0 = Math.max(0, Math.floor((f.x0 + XH) / CELL)), i1 = Math.min(NX - 1, Math.floor((f.x1 + XH) / CELL)), j0 = Math.max(0, Math.floor((f.z0 + ZH) / CELL)), j1 = Math.min(NZ - 1, Math.floor((f.z1 + ZH) / CELL));
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH, k = j * NX + i;
-      if (!inRect(f, x, z) || Paint.hgt[k] > 50 || Paint.hgt2[k] > -90) continue;
+      if (!inRect(f, x, z) || Paint.hgt[k] > 98.5 || Paint.hgt2[k] > -90) continue;       // (98 = a ghost block on top: the ground under it still takes ink)
       const low = groundBelow(x, z, f.y0 - 0.05, 0, true); if (low > f.y0 - 0.4) continue;      // something fills the gap: nothing to paint under here
       Paint.hgt2[k] = low; lay[k * 4] = Math.round(clamp((f.y0 - 0.05 + 8) / 32, 0, 1) * 255); lay[k * 4 + 3] = 255; Paint.total++;
     }
@@ -449,6 +450,7 @@ function resetPaint() {
 function buildWallAtlas() {
   const faces = [];
   for (const s of SOLIDS) {
+    if (s.ghost) { s.faces = {}; continue; }
     if (s.t === 'ramp') { if (s.float) s.faces = {}; else rampFaces(s, faces); continue; }
     if (s.t !== 'box') continue; s.faces = {};
     if (s.oob || (s.float && !s.walls)) continue;                        // out-of-bounds and floating blocks: sides not paintable, not climbable
@@ -628,7 +630,7 @@ const PU = {
   floorPaint2: { value: null }, layerMap: { value: null }
 };
 function paintMat(opts, mode, layout) {
-  const m = new THREE.MeshStandardMaterial(opts);
+  const m = new THREE.MeshStandardMaterial(opts); if (MAP_ID === 'canton') m.envMapIntensity = 0.25;
   const floor = mode === 'floor';
   m.onBeforeCompile = sh => {
     sh.uniforms.paintMap = floor ? PU.floorPaint : PU.wallPaint;
@@ -809,6 +811,11 @@ const WALL_STYLE = {
   stone: { tex: 'stone', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
   hedge: { tex: 'hedge', su: 2, vFull: false, color: 0xffffff, rough: 0.95 },
   brick: { tex: 'brick', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.9 },
+  dStone: { tex: 'd_stone', su: 2.4, sv: 2.4, color: 0xf4f0e8, rough: 0.85 }, dPlasterW: { tex: 'd_stone', su: 3, sv: 3, color: 0xf6f1e6, rough: 0.85 }, dPlaster: { tex: 'd_stone', su: 3, sv: 3, color: 0xf1e3c2, rough: 0.85 },
+  dBrick: { tex: 'd_brick', su: 2, sv: 2, color: 0xffffff, rough: 0.85 }, dCanal: { tex: 'd_canal', su: 6, vFull: true, color: 0xffffff, rough: 0.85 },
+  dRedwall: { tex: 'd_stone', su: 2.4, sv: 2.4, color: 0xb5503f, rough: 0.85 }, dRedstone: { tex: 'd_canal', su: 4, sv: 1.6, color: 0xc98a78, rough: 0.85 },
+  dFac2: { tex: 'd_fac2', su: 4, sv: 12.8, color: 0xffffff, rough: 0.85 }, dFac3: { tex: 'd_fac3', su: 4, sv: 12.8, color: 0xffffff, rough: 0.85 }, dFac6: { tex: 'd_fac6', su: 4, sv: 12.8, color: 0xffffff, rough: 0.85 },
+  dSteel: { tex: 'white', su: 3, color: 0xc9ced3, rough: 0.35, metal: 0.15 }, dTeal: { tex: 'white', su: 3, color: 0x2f7d6d, rough: 0.6 },
   canal: { tex: 'canal', su: 4, vFull: true, color: 0xffffff, rough: 0.95 },
   plaster: { tex: 'plaster', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
   cstone: { tex: 'cstone', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.85 },
@@ -817,15 +824,16 @@ const WALL_STYLE = {
   bamboo: { tex: 'bamboo', su: 1.2, sv: 0.72, vFull: false, color: 0xffffff, rough: 0.8 },
   cargo: { tex: 'plaster', su: 3, vFull: false, color: 0x4f7fd0, rough: 0.6 },
 };
-const TOP_STYLE = { paving: { tex: 'granite', s: 4, rough: 0.9 }, tile: { tex: 'terrace', s: 2.4, rough: 0.8 }, flag: { tex: 'cstone', s: 2, rough: 0.85 }, gtile: { tex: 'gtile', s: 2, rough: 0.7 }, stairZ: { tex: 'stairZ', s: 2, rough: 0.85 }, stairX: { tex: 'stairX', s: 2, rough: 0.85 }, bamboo: { tex: 'bamboo', s: 1.2, rough: 0.8 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
+const TOP_STYLE = { paving: { tex: 'd_granite', s: 4, rough: 0.85 }, tile: { tex: 'd_terrace', s: 2.4, rough: 0.85 }, flag: { tex: 'd_stone', s: 2.4, rough: 0.85, color: 0xf4f0e8 }, steel: { tex: 'white', s: 3, rough: 0.35, metal: 0.15, color: 0xc9ced3 }, dgrass: { tex: 'white', s: 3, rough: 1, color: 0x6e9b4a }, gtile: { tex: 'gtile', s: 2, rough: 0.7 }, stairZ: { tex: 'stairZ', s: 2, rough: 0.85 }, stairX: { tex: 'stairX', s: 2, rough: 0.85 }, bamboo: { tex: 'bamboo', s: 1.2, rough: 0.8 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
 let arenaGroup;
 function buildArena() {
+  if (MAP_ID === 'canton') cantonDesignTex();
   arenaGroup = new THREE.Group(); scene.add(arenaGroup);
   PU.noiseMap.value = TEX.noise; PU.floorPaint.value = Paint.tex; PU.floorPaint2.value = Paint.tex2; PU.layerMap.value = Paint.layTex; PU.wallPaint.value = Paint.wtex; PU.layoutMap.value = TEX.layout; PU.inkRelief.value = MAP_ID === 'canton' ? 0.8 : 0;   // 西關大屋: ink keeps the joints of the stone and brick it covers
   if (TERR.on) buildTerrainMesh(); else {
   // floor
   const fg = quadGeo([[-XH, 0, -ZH], [XH, 0, -ZH], [XH, 0, ZH], [-XH, 0, ZH]], [[-XH / 8, -ZH / 8], [XH / 8, -ZH / 8], [XH / 8, ZH / 8], [-XH / 8, ZH / 8]], null, null, [0, 1, 0]);
-  const floor = new THREE.Mesh(fg, paintMat({ map: TEX.concrete, roughness: 0.92, color: 0xffffff }, 'floor', true));
+  const floor = new THREE.Mesh(fg, paintMat(MAP_ID === 'canton' ? { map: TEX.d_granite, roughness: 0.9, color: 0x9a978c } : { map: TEX.concrete, roughness: 0.92, color: 0xffffff }, 'floor', true));
   floor.receiveShadow = true; arenaGroup.add(floor);
   }
   // a side of a floating block that sits against an ordinary block at least as tall (the canal bank): not drawn, it would flicker
@@ -834,17 +842,19 @@ function buildArena() {
   const tops = {}, walls = {}, sides = [], hedge = [], slabs = [];
   const PX = Paint.PX, W = Paint.W, H = Paint.H;
   // one wall quad (corners as [along, height]) with its slot in the paint atlas
+  const VY0 = MAP_ID === 'canton' ? CL : 0, RSIDE = MAP_ID === 'canton' ? 'dStone' : 'stone';
   const wallQuad = (style, f, corners) => {
     const st = WALL_STYLE[style], su = st.su || f.h, pts = [], uv = [], puv = [], nuv = [];
     for (const [a, y] of corners) {
       pts.push(f.ax ? [f.plane, y, a] : [a, y, f.plane]);
-      uv.push([(a - f.a0) / su, st.vFull ? y / f.h : y / (st.sv || 3)]);
+      uv.push([(a - f.a0) / su, st.vFull ? y / f.h : (y - VY0) / (st.sv || 3)]);
       puv.push([(f.rx + 1 + (a - f.a0) * PX) / W, (f.ry + 1 + y * PX) / H]);
       nuv.push([a * 1.0 + f.plane * 0.37, y]);
     }
     (walls[style] = walls[style] || []).push(quadGeo(pts, uv, puv, nuv, [f.nx, 0, f.nz]));
   };
   for (const s of SOLIDS) {
+    if (s.ghost) continue;
     if (s.bound) { /* inner faces + top cap */ }
     if (s.t === 'box') {
       const ts = TOP_STYLE[s.top] || TOP_STYLE.concrete, sc = ts.s;
@@ -888,8 +898,8 @@ function buildArena() {
       const hi = Math.max(s.h0, s.h1), lowAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z0 : s.z1) : (s.h0 < s.h1 ? s.x0 : s.x1), highAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z1 : s.z0) : (s.h0 < s.h1 ? s.x1 : s.x0);
       for (const d in s.faces) {
         const f = s.faces[d];
-        if (f.side) wallQuad('stone', f, [[lowAt, 0], [highAt, 0], [highAt, hi], [lowAt, Math.max(0.001, Math.min(s.h0, s.h1))]]);
-        else wallQuad('stone', f, [[f.a0, 0], [f.a1, 0], [f.a1, hi], [f.a0, hi]]);
+        if (f.side) wallQuad(RSIDE, f, [[lowAt, 0], [highAt, 0], [highAt, hi], [lowAt, Math.max(0.001, Math.min(s.h0, s.h1))]]);
+        else wallQuad(RSIDE, f, [[f.a0, 0], [f.a1, 0], [f.a1, hi], [f.a0, hi]]);
       }
       if (s.float) {                                       // floating ramp (z axis): plain sides, the tall end, the underside
         const y0 = s.y0, lo = s.h0 < s.h1 ? s.z0 : s.z1, hiZ = s.h0 < s.h1 ? s.z1 : s.z0, hl = Math.min(s.h0, s.h1);
@@ -908,7 +918,7 @@ function buildArena() {
     m.castShadow = m.receiveShadow = true; arenaGroup.add(m);
   }
   if (sides.length) { const sm = new THREE.Mesh(mergeGeos(sides), new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.85, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
-  if (slabs.length) { const sm = new THREE.Mesh(mergeGeos(slabs), new THREE.MeshStandardMaterial({ map: TEX.cstone, roughness: 0.85, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
+  if (slabs.length) { const sm = new THREE.Mesh(mergeGeos(slabs), new THREE.MeshStandardMaterial(MAP_ID === 'canton' ? { map: TEX.d_stone, color: 0xf4f0e8, roughness: 0.85, side: THREE.DoubleSide, envMapIntensity: 0 } : { map: TEX.cstone, roughness: 0.85, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
   if (hedge.length) { const hm = new THREE.Mesh(mergeGeos(hedge), new THREE.MeshStandardMaterial({ map: TEX.hedge, roughness: 0.95 })); hm.castShadow = hm.receiveShadow = true; arenaGroup.add(hm); }
   // see-through grate bridges and fences (yellow frames, like the park's rails)
   if (BRIDGES.length || FENCES.length) {

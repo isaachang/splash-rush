@@ -1356,55 +1356,56 @@ function defineCanton() {
   const tag = (s, kind) => Object.assign(s, { kind });
   const FR = (x0, x1, z0, z1, y0, h0, h1) => Object.assign(framp(x0, x1, z0, z1, 'z', CL + y0, CL + h0, CL + h1, 'flag'), { navTop: true });
   const ON = { walls: true, navTop: true };          // stands on the centre deck: the canal tunnel underneath stays open, its sides are normal inkable walls
+  const GH = { ghost: true };                        // collision only: the draft's own model stands there, it takes no ink
   const half = [
-    tag(box(-26, 26, 3.5, 52, CL, 'canal', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
+    tag(box(-26, 26, 3.5, 52, CL, 'dCanal', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
     // ---- spawn: the tea house's roof terrace
-    tag(S(-10, 10, 42, 52, 2.0, 'brick', 'tile'), 'spawn'),
+    tag(S(-10, 10, 42, 52, 2.0, 'dFac3', 'tile'), 'spawn'),
     R(-3, 3, 36, 42, 'z', 0, 2.0, 'stairZ'),
-    S(10, 26, 42, 52, 2.0, 'brick', 'tile'),
-    tag(S(15, 17, 46, 48, 3.6, 'contB', 'grate'), 'tank'),
-    tag(oob(-26, -10, 44, 52, 9.0), 'teahouse'),
-    R(20.3, 26, 36, 42, 'z', 3.8, 2.0, 'stairZ'),
-    // ---- qilou arcade along the +x wall: covered street below, walkable deck above
-    tag(F(20.3, 26, 8, 36, 3.4, 3.8, 'plaster', 'tile'), 'arcade'),
+    S(10, 26, 42, 52, 2.0, 'dFac3', 'tile'),
+    Object.assign(tag(S(15, 17, 46, 48, 3.6, 'dSteel', 'steel'), 'tank'), GH),
+    Object.assign(tag(oob(-26, -10, 44, 52, 9.0), 'teahouse'), GH),
+    R(20.3, 26, 36, 42, 'z', 3.8, 2.0, 'tile'),
+    // ---- qilou arcade along the +x wall: covered street below, walkable deck above, a stone balustrade on its edge (jump over it)
+    tag(F(20.3, 26, 8, 36, 3.4, 3.8, 'dPlaster', 'tile'), 'arcade'),
+    Object.assign(F(20.3, 20.6, 8, 36, 3.8, 4.7, 'dPlasterW', 'tile', { navTop: true }), GH),
     // ---- Xiguan mansion along the -x wall: two roofed wings, an open gate into the courtyard, the main hall at the back
-    tag(S(-26, -15, 12, 16, 2.6, 'brick', 'gtile'), 'mansion'), tag(S(-26, -15, 30, 34, 2.6, 'brick', 'gtile'), 'mansion'),
-    tag(oob(-26, -23, 16, 30, 4.4), 'hall'),
-    S(-16, -15, 16, 21, 2.6, 'brick', 'gtile'), S(-16, -15, 25, 30, 2.6, 'brick', 'gtile'),
-    tag(F(-16, -15, 21, 25, 2.2, 2.6, 'brick', 'gtile'), 'lintel'),
-    S(-20.5, -18, 21, 25, 1.0, 'cstone', 'grass'),
+    tag(S(-26, -15, 12, 16, 2.6, 'dBrick', 'tile'), 'mansion'), tag(S(-26, -15, 30, 34, 2.6, 'dBrick', 'tile'), 'mansion'),
+    Object.assign(tag(oob(-26, -23, 16, 30, 4.4), 'hall'), GH),
+    S(-16, -15, 16, 21, 2.6, 'dBrick', 'tile'), S(-16, -15, 25, 30, 2.6, 'dBrick', 'tile'),
+    tag(F(-16, -15, 21, 25, 2.2, 2.6, 'dStone', 'tile'), 'lintel'),
+    S(-20.5, -18, 21, 25, 1.0, 'dStone', 'dgrass'),
     R(-15, -10, 12.4, 16, 'x', 2.6, 0, 'stairX'), R(-15, -10, 30, 34, 'x', 2.6, 0, 'stairX'),
     // ---- the street between them
-    tag(S(-11, -5, 18, 25, 2.4, 'plaster', 'tile'), 'house'),
-    S(-5, -3.5, 18, 19.6, 1.2, 'bamboo', 'bamboo'), S(-1, 0.6, 14, 15.6, 0.5, 'cstone', 'flag'),
-    S(5, 11, 13, 18, 0.5, 'cstone', 'grass'),
-    tag(S(2, 5, 25, 26.6, 1.1, 'panel', 'wood'), 'stall'), S(13, 15, 24, 26.5, 1.2, 'cargo', 'wood'), S(14, 17, 16, 17, 1.0, 'cstone', 'grass'),
-    tag(S(-4.4, -3.6, 30.6, 31.4, 4.6, 'cstone', 'concrete'), 'paifang'), tag(S(3.6, 4.4, 30.6, 31.4, 4.6, 'cstone', 'concrete'), 'paifang'),
-    tag(F(-5, 5, 30.5, 31.5, 3.4, 4.6, 'stone', 'concrete'), 'paifang'),
+    tag(S(-11, -5, 18, 25, 2.4, 'dFac6', 'tile'), 'house'),
+    Object.assign(S(-5, -3.5, 18, 19.6, 1.2, 'bamboo', 'bamboo'), GH), Object.assign(S(-1, 0.6, 14, 15.6, 0.5, 'bamboo', 'bamboo'), GH),
+    S(5, 11, 13, 18, 0.5, 'dStone', 'dgrass'),
+    tag(S(2, 5, 25, 26.6, 1.1, 'dSteel', 'steel'), 'stall'), Object.assign(S(13, 15, 24, 26.5, 1.2, 'cargo', 'wood'), GH), S(14, 17, 16, 17, 1.0, 'dStone', 'dgrass'),
+    tag(S(-4.4, -3.6, 30.6, 31.4, 4.6, 'dStone', 'flag'), 'paifang'), tag(S(3.6, 4.4, 30.6, 31.4, 4.6, 'dStone', 'flag'), 'paifang'),
+    tag(F(-5, 5, 30.5, 31.5, 3.4, 4.6, 'dStone', 'flag'), 'paifang'),
     // ---- canal side: kapok planters, stone landing steps down into the canal, a stone bridge, a moored dragon boat
-    S(-7, -5, 6, 8, 0.5, 'cstone', 'grass'), S(10, 12, 5.5, 7.5, 0.5, 'cstone', 'grass'),
+    S(-7, -5, 6, 8, 0.5, 'dStone', 'dgrass'), S(10, 12, 5.5, 7.5, 0.5, 'dStone', 'dgrass'),
     // (four 0.44 m steps running straight out from the bank, 3 m wide: walk up them toward the street)
-    ...[[-12, -9], [20, 23]].flatMap(([x0, x1]) => [0, 1, 2, 3].map(k => box(x0, x1, 2.9 - k * 0.6, 3.5 - k * 0.6, CL - 0.44 * (k + 1), 'cstone', 'paving'))),
+    ...[[-12, -9], [20, 23]].flatMap(([x0, x1]) => [0, 1, 2, 3].map(k => box(x0, x1, 2.9 - k * 0.6, 3.5 - k * 0.6, CL - 0.44 * (k + 1), 'dStone', 'flag'))),
     // an arched stone bridge: up 0.9 m, a flat crown high enough for the dragon boat's flags, down again; people walk under the ramps too.
-    // Its parapets are the two edge strips, 0.5 m higher: you step over them to drop into the canal.
+    // Its edge strips are 0.5 m higher (under the balustrade): you step over them to drop into the canal.
     ...[[14.3, 17.7, 0], [14, 14.3, 0.5], [17.7, 18, 0.5]].flatMap(([x0, x1, up]) => [
-      tag(FR(x0, x1, -3.5, -1.2, -0.3, up, 0.9 + up), 'bridge'), tag(F(x0, x1, -1.2, 1.2, 0.5, 0.9 + up, 'stone', 'flag', { navTop: true }), 'bridge'), tag(FR(x0, x1, 1.2, 3.5, -0.3, 0.9 + up, up), 'bridge')]),
-    tag(box(8.5, 18, 0.2, 1.4, 0.7, 'hull', 'wood'), 'boat'),
+      tag(FR(x0, x1, -3.5, -1.2, -0.3, up, 0.9 + up), 'bridge'), tag(F(x0, x1, -1.2, 1.2, 0.5, 0.9 + up, 'dStone', 'flag', { navTop: true }), 'bridge'), tag(FR(x0, x1, 1.2, 3.5, -0.3, 0.9 + up, up), 'bridge')].map(q => up ? Object.assign(q, GH) : q)),
+    Object.assign(tag(box(8.5, 19, 0.2, 1.4, 0.7, 'hull', 'wood'), 'boat'), GH),
     // ---- beside the tower: two steps of the old city wall (jump 1 m, then 2 m)
-    F(2.5, 5, -2.5, 0, 0, 2.0, 'redwall', 'flag', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'redwall', 'flag', ON),
+    F(2.5, 5, -2.5, 0, 0, 2.0, 'dRedstone', 'paving', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'dRedstone', 'paving', ON),
   ];
-  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'cstone', 'concrete'), 'column')); }
-  half.forEach(s => { SOLIDS.push(s); SOLIDS.push(Object.assign(mirrorSolid(s), { team1: true })); });
+  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'dPlasterW', 'flag'), 'column')); }
+  half.forEach(s => { SOLIDS.push(s); const m = Object.assign(mirrorSolid(s), { team1: true }); if (m.kind === 'house') m.style = 'dFac2'; if (m.kind === 'stall') { m.style = 'dTeal'; m.top = 'wood'; } SOLIDS.push(m); });
   // centre: a square deck over the canal (only squids fit underneath), Zhenhai Tower on it — climb its inked walls to the 4 m terrace
-  SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'stone', 'flag', { navTop: true }), 'deck'));
-  [-1, 1].forEach(sg => SOLIDS.push(Object.assign(F(sg > 0 ? 6.7 : -7, sg > 0 ? 7 : -6.7, -3.5, 3.5, 0, 0.5, 'cstone', 'flag', ON), sg < 0 ? { team1: true } : {})));
-  SOLIDS.push(tag(F(-2.5, 2.5, -2.5, 2.5, 0, 4.0, 'redwall', 'tile', ON), 'tower'), tag(F(-1, 1, -1, 1, 0, 8.2, 'redwall', 'tile', ON), 'towerTop'));
-  // perimeter walls (only the inner face takes ink)
+  SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'dStone', 'paving', { navTop: true }), 'deck'));
+  SOLIDS.push(tag(F(-2.5, 2.5, -2.5, 2.5, 0, 4.0, 'dRedwall', 'tile', ON), 'tower'), Object.assign(tag(F(-1, 1, -1, 1, 0, 8.2, 'dRedwall', 'tile', ON), 'towerTop'), GH));
+  // perimeter: the house fronts stand right on the edge (collision only)
   const B = CL + 3.4;
-  SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'plaster'), { bound: '-x' }));
-  SOLIDS.push(Object.assign(box(-XH - 1.5, -XH, -ZH, ZH, B, 'plaster'), { bound: '+x' }));
-  SOLIDS.push(Object.assign(box(-XH, XH, ZH, ZH + 1.5, B, 'plaster'), { bound: '-z' }));
-  SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'plaster'), { bound: '+z' }));
+  SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'panel'), { bound: '-x' }, GH));
+  SOLIDS.push(Object.assign(box(-XH - 1.5, -XH, -ZH, ZH, B, 'panel'), { bound: '+x' }, GH));
+  SOLIDS.push(Object.assign(box(-XH, XH, ZH, ZH + 1.5, B, 'panel'), { bound: '-z' }, GH));
+  SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }, GH));
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
 // canal bed paint: darker wet stone, contact shadows along the banks and under the bridges
@@ -1542,10 +1543,10 @@ function initPaint() {
   // cells whose ground is the curved terrain itself (not a block top): splats may follow its slope
   Paint.onTerr = new Uint8Array(NX * NZ);
   if (TERR.on) for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH, k = j * NX + i; if (!terrOob(x, z) && Math.abs(Paint.hgt[k] - terrH(x, z)) < 0.02) Paint.onTerr[k] = 1; }
-  const OOB = SOLIDS.filter(s => s.oob);
+  const OOB = SOLIDS.filter(s => s.oob || (s.ghost && !s.bound));     // ghost = collision only: drawn by the map's own decor, takes no ink
   if (OOB.length || TERR.on) {           // out of bounds: never takes ink, doesn't count toward the turf total
     let n = 0;
-    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH; if (OOB.some(o => inRect(o, x, z)) || (TERR.on && terrOob(x, z))) Paint.hgt[j * NX + i] = 99; else n++; }
+    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH; const ob = OOB.find(o => inRect(o, x, z) && (o.oob || Math.abs(topAt(o, x, z) - Paint.hgt[j * NX + i]) < 0.01)); if (ob || (TERR.on && terrOob(x, z))) Paint.hgt[j * NX + i] = ob && !ob.oob ? 98 : 99; else n++; }
     Paint.total = n;
   }
   for (let k = 0; k < NX * NZ; k++) Paint.data[k * 4 + 3] = 255;
@@ -1566,7 +1567,7 @@ function initPaintLayer2() {
     const i0 = Math.max(0, Math.floor((f.x0 + XH) / CELL)), i1 = Math.min(NX - 1, Math.floor((f.x1 + XH) / CELL)), j0 = Math.max(0, Math.floor((f.z0 + ZH) / CELL)), j1 = Math.min(NZ - 1, Math.floor((f.z1 + ZH) / CELL));
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH, k = j * NX + i;
-      if (!inRect(f, x, z) || Paint.hgt[k] > 50 || Paint.hgt2[k] > -90) continue;
+      if (!inRect(f, x, z) || Paint.hgt[k] > 98.5 || Paint.hgt2[k] > -90) continue;       // (98 = a ghost block on top: the ground under it still takes ink)
       const low = groundBelow(x, z, f.y0 - 0.05, 0, true); if (low > f.y0 - 0.4) continue;      // something fills the gap: nothing to paint under here
       Paint.hgt2[k] = low; lay[k * 4] = Math.round(clamp((f.y0 - 0.05 + 8) / 32, 0, 1) * 255); lay[k * 4 + 3] = 255; Paint.total++;
     }
@@ -1586,6 +1587,7 @@ function resetPaint() {
 function buildWallAtlas() {
   const faces = [];
   for (const s of SOLIDS) {
+    if (s.ghost) { s.faces = {}; continue; }
     if (s.t === 'ramp') { if (s.float) s.faces = {}; else rampFaces(s, faces); continue; }
     if (s.t !== 'box') continue; s.faces = {};
     if (s.oob || (s.float && !s.walls)) continue;                        // out-of-bounds and floating blocks: sides not paintable, not climbable
@@ -1765,7 +1767,7 @@ const PU = {
   floorPaint2: { value: null }, layerMap: { value: null }
 };
 function paintMat(opts, mode, layout) {
-  const m = new THREE.MeshStandardMaterial(opts);
+  const m = new THREE.MeshStandardMaterial(opts); if (MAP_ID === 'canton') m.envMapIntensity = 0.25;
   const floor = mode === 'floor';
   m.onBeforeCompile = sh => {
     sh.uniforms.paintMap = floor ? PU.floorPaint : PU.wallPaint;
@@ -1946,6 +1948,11 @@ const WALL_STYLE = {
   stone: { tex: 'stone', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
   hedge: { tex: 'hedge', su: 2, vFull: false, color: 0xffffff, rough: 0.95 },
   brick: { tex: 'brick', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.9 },
+  dStone: { tex: 'd_stone', su: 2.4, sv: 2.4, color: 0xf4f0e8, rough: 0.85 }, dPlasterW: { tex: 'd_stone', su: 3, sv: 3, color: 0xf6f1e6, rough: 0.85 }, dPlaster: { tex: 'd_stone', su: 3, sv: 3, color: 0xf1e3c2, rough: 0.85 },
+  dBrick: { tex: 'd_brick', su: 2, sv: 2, color: 0xffffff, rough: 0.85 }, dCanal: { tex: 'd_canal', su: 6, vFull: true, color: 0xffffff, rough: 0.85 },
+  dRedwall: { tex: 'd_stone', su: 2.4, sv: 2.4, color: 0xb5503f, rough: 0.85 }, dRedstone: { tex: 'd_canal', su: 4, sv: 1.6, color: 0xc98a78, rough: 0.85 },
+  dFac2: { tex: 'd_fac2', su: 4, sv: 12.8, color: 0xffffff, rough: 0.85 }, dFac3: { tex: 'd_fac3', su: 4, sv: 12.8, color: 0xffffff, rough: 0.85 }, dFac6: { tex: 'd_fac6', su: 4, sv: 12.8, color: 0xffffff, rough: 0.85 },
+  dSteel: { tex: 'white', su: 3, color: 0xc9ced3, rough: 0.35, metal: 0.15 }, dTeal: { tex: 'white', su: 3, color: 0x2f7d6d, rough: 0.6 },
   canal: { tex: 'canal', su: 4, vFull: true, color: 0xffffff, rough: 0.95 },
   plaster: { tex: 'plaster', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
   cstone: { tex: 'cstone', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.85 },
@@ -1954,15 +1961,16 @@ const WALL_STYLE = {
   bamboo: { tex: 'bamboo', su: 1.2, sv: 0.72, vFull: false, color: 0xffffff, rough: 0.8 },
   cargo: { tex: 'plaster', su: 3, vFull: false, color: 0x4f7fd0, rough: 0.6 },
 };
-const TOP_STYLE = { paving: { tex: 'granite', s: 4, rough: 0.9 }, tile: { tex: 'terrace', s: 2.4, rough: 0.8 }, flag: { tex: 'cstone', s: 2, rough: 0.85 }, gtile: { tex: 'gtile', s: 2, rough: 0.7 }, stairZ: { tex: 'stairZ', s: 2, rough: 0.85 }, stairX: { tex: 'stairX', s: 2, rough: 0.85 }, bamboo: { tex: 'bamboo', s: 1.2, rough: 0.8 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
+const TOP_STYLE = { paving: { tex: 'd_granite', s: 4, rough: 0.85 }, tile: { tex: 'd_terrace', s: 2.4, rough: 0.85 }, flag: { tex: 'd_stone', s: 2.4, rough: 0.85, color: 0xf4f0e8 }, steel: { tex: 'white', s: 3, rough: 0.35, metal: 0.15, color: 0xc9ced3 }, dgrass: { tex: 'white', s: 3, rough: 1, color: 0x6e9b4a }, gtile: { tex: 'gtile', s: 2, rough: 0.7 }, stairZ: { tex: 'stairZ', s: 2, rough: 0.85 }, stairX: { tex: 'stairX', s: 2, rough: 0.85 }, bamboo: { tex: 'bamboo', s: 1.2, rough: 0.8 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
 let arenaGroup;
 function buildArena() {
+  if (MAP_ID === 'canton') cantonDesignTex();
   arenaGroup = new THREE.Group(); scene.add(arenaGroup);
   PU.noiseMap.value = TEX.noise; PU.floorPaint.value = Paint.tex; PU.floorPaint2.value = Paint.tex2; PU.layerMap.value = Paint.layTex; PU.wallPaint.value = Paint.wtex; PU.layoutMap.value = TEX.layout; PU.inkRelief.value = MAP_ID === 'canton' ? 0.8 : 0;   // 西關大屋: ink keeps the joints of the stone and brick it covers
   if (TERR.on) buildTerrainMesh(); else {
   // floor
   const fg = quadGeo([[-XH, 0, -ZH], [XH, 0, -ZH], [XH, 0, ZH], [-XH, 0, ZH]], [[-XH / 8, -ZH / 8], [XH / 8, -ZH / 8], [XH / 8, ZH / 8], [-XH / 8, ZH / 8]], null, null, [0, 1, 0]);
-  const floor = new THREE.Mesh(fg, paintMat({ map: TEX.concrete, roughness: 0.92, color: 0xffffff }, 'floor', true));
+  const floor = new THREE.Mesh(fg, paintMat(MAP_ID === 'canton' ? { map: TEX.d_granite, roughness: 0.9, color: 0x9a978c } : { map: TEX.concrete, roughness: 0.92, color: 0xffffff }, 'floor', true));
   floor.receiveShadow = true; arenaGroup.add(floor);
   }
   // a side of a floating block that sits against an ordinary block at least as tall (the canal bank): not drawn, it would flicker
@@ -1971,17 +1979,19 @@ function buildArena() {
   const tops = {}, walls = {}, sides = [], hedge = [], slabs = [];
   const PX = Paint.PX, W = Paint.W, H = Paint.H;
   // one wall quad (corners as [along, height]) with its slot in the paint atlas
+  const VY0 = MAP_ID === 'canton' ? CL : 0, RSIDE = MAP_ID === 'canton' ? 'dStone' : 'stone';
   const wallQuad = (style, f, corners) => {
     const st = WALL_STYLE[style], su = st.su || f.h, pts = [], uv = [], puv = [], nuv = [];
     for (const [a, y] of corners) {
       pts.push(f.ax ? [f.plane, y, a] : [a, y, f.plane]);
-      uv.push([(a - f.a0) / su, st.vFull ? y / f.h : y / (st.sv || 3)]);
+      uv.push([(a - f.a0) / su, st.vFull ? y / f.h : (y - VY0) / (st.sv || 3)]);
       puv.push([(f.rx + 1 + (a - f.a0) * PX) / W, (f.ry + 1 + y * PX) / H]);
       nuv.push([a * 1.0 + f.plane * 0.37, y]);
     }
     (walls[style] = walls[style] || []).push(quadGeo(pts, uv, puv, nuv, [f.nx, 0, f.nz]));
   };
   for (const s of SOLIDS) {
+    if (s.ghost) continue;
     if (s.bound) { /* inner faces + top cap */ }
     if (s.t === 'box') {
       const ts = TOP_STYLE[s.top] || TOP_STYLE.concrete, sc = ts.s;
@@ -2025,8 +2035,8 @@ function buildArena() {
       const hi = Math.max(s.h0, s.h1), lowAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z0 : s.z1) : (s.h0 < s.h1 ? s.x0 : s.x1), highAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z1 : s.z0) : (s.h0 < s.h1 ? s.x1 : s.x0);
       for (const d in s.faces) {
         const f = s.faces[d];
-        if (f.side) wallQuad('stone', f, [[lowAt, 0], [highAt, 0], [highAt, hi], [lowAt, Math.max(0.001, Math.min(s.h0, s.h1))]]);
-        else wallQuad('stone', f, [[f.a0, 0], [f.a1, 0], [f.a1, hi], [f.a0, hi]]);
+        if (f.side) wallQuad(RSIDE, f, [[lowAt, 0], [highAt, 0], [highAt, hi], [lowAt, Math.max(0.001, Math.min(s.h0, s.h1))]]);
+        else wallQuad(RSIDE, f, [[f.a0, 0], [f.a1, 0], [f.a1, hi], [f.a0, hi]]);
       }
       if (s.float) {                                       // floating ramp (z axis): plain sides, the tall end, the underside
         const y0 = s.y0, lo = s.h0 < s.h1 ? s.z0 : s.z1, hiZ = s.h0 < s.h1 ? s.z1 : s.z0, hl = Math.min(s.h0, s.h1);
@@ -2045,7 +2055,7 @@ function buildArena() {
     m.castShadow = m.receiveShadow = true; arenaGroup.add(m);
   }
   if (sides.length) { const sm = new THREE.Mesh(mergeGeos(sides), new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.85, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
-  if (slabs.length) { const sm = new THREE.Mesh(mergeGeos(slabs), new THREE.MeshStandardMaterial({ map: TEX.cstone, roughness: 0.85, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
+  if (slabs.length) { const sm = new THREE.Mesh(mergeGeos(slabs), new THREE.MeshStandardMaterial(MAP_ID === 'canton' ? { map: TEX.d_stone, color: 0xf4f0e8, roughness: 0.85, side: THREE.DoubleSide, envMapIntensity: 0 } : { map: TEX.cstone, roughness: 0.85, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
   if (hedge.length) { const hm = new THREE.Mesh(mergeGeos(hedge), new THREE.MeshStandardMaterial({ map: TEX.hedge, roughness: 0.95 })); hm.castShadow = hm.receiveShadow = true; arenaGroup.add(hm); }
   // see-through grate bridges and fences (yellow frames, like the park's rails)
   if (BRIDGES.length || FENCES.length) {
@@ -2228,19 +2238,22 @@ function buildSea() {
 // 西關大屋 has its own light: a soft warm day (grey shadows, a paler sky, warm reflections); the other maps keep the cool seaside light
 function applyMapLight() {
   if (!hemi || !hemi.color) return;
-  const c = MAP_ID === 'canton';
-  hemi.color.set(c ? 0xf6efe2 : 0xd6ecff); hemi.groundColor.set(c ? 0xb0a48e : 0x9b8a74); hemi.intensity = c ? 0.5 : 0.55;
-  if (sun && sun.color) { sun.color.set(c ? 0xffecd0 : 0xfff0d8); sun.intensity = c ? 3.5 : 3.4; }
-  if (fillLight && fillLight.color) { fillLight.color.set(c ? 0xefe2cc : 0xa9c8ff); fillLight.intensity = c ? 0.55 : 0.7; }
-  if (scene.fog && scene.fog.color) scene.fog.color.set(c ? 0xe6e4da : 0xc4e6ff);
+  const c = MAP_ID === 'canton';                       // the draft's light: one sun, a strong sky fill, no blue bounce
+  hemi.color.set(c ? 0xdfeaff : 0xd6ecff); hemi.groundColor.set(c ? 0xb9a284 : 0x9b8a74); hemi.intensity = c ? 1.05 : 0.55;
+  if (sun && sun.color) { sun.color.set(0xfff0d8); sun.intensity = c ? 2.6 : 3.4; if (c) sun.position.set(55, 62 + CL, -55); else sun.position.set(38, 70, 24); }
+  if (fillLight && fillLight.color) fillLight.intensity = c ? 0 : 0.7;
+  if (scene.fog && scene.fog.color) { scene.fog.color.set(c ? 0xe9dfcf : 0xc4e6ff); scene.fog.near = c ? 160 : 110; scene.fog.far = c ? 3400 : 520; }
+  if (renderer && 'toneMappingExposure' in renderer) renderer.toneMappingExposure = c ? 1.08 : 1.0;
+  if (camera && camera.updateProjectionMatrix) { camera.far = c ? 7000 : 1500; camera.updateProjectionMatrix(); }
   const sk = WORLD.sky && WORLD.sky.material && WORLD.sky.material.uniforms;
-  if (sk && sk.top) { sk.top.value.set(c ? '#6fa5de' : '#2a76f0'); sk.mid.value.set(c ? '#b9d6ee' : '#79c4ff'); sk.hor.value.set(c ? '#f2eee2' : '#e6f6ff'); }
-  if (scene.environment && typeof THREE.PMREMGenerator === 'function' && renderer && renderer.capabilities) {
+  if (sk && sk.top) { sk.top.value.set(c ? '#5c9fe0' : '#2a76f0'); sk.mid.value.set(c ? '#a9d0ee' : '#79c4ff'); sk.hor.value.set(c ? '#f1e6d2' : '#e6f6ff'); if (c) sk.sunDir.value.set(0.55, 0.62, -0.55).normalize(); else sk.sunDir.value.set(38, 70, 24).normalize(); WORLD.sky.scale.setScalar(c ? 6 : 1); }
+  // reflections (ink gloss, characters): a neutral warm sky here instead of the seaside blue
+  if (scene.environment && renderer && renderer.capabilities) {
     WORLD.envCool = WORLD.envCool || scene.environment;
     if (c && !WORLD.envWarm) { try {
-      const es = new THREE.Scene(), m = skyMaterial(); m.uniforms.top.value.set('#5f7f9c'); m.uniforms.mid.value.set('#9aa39f'); m.uniforms.hor.value.set('#c9bfa8'); m.uniforms.sunDir.value.set(0, -1, 0);
-      es.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), m)); const gd = new THREE.Mesh(new THREE.CircleGeometry(49, 32), new THREE.MeshBasicMaterial({ color: 0x8a8272 })); gd.rotation.x = -Math.PI / 2; gd.position.y = -3; es.add(gd);
-      const pm = new THREE.PMREMGenerator(renderer); WORLD.envWarm = pm.fromScene(es, 0.02).texture; pm.dispose(); } catch (e) { WORLD.envWarm = WORLD.envCool; } }
+      const es = new THREE.Scene(), m = skyMaterial(); m.uniforms.top.value.set('#8f9aa6'); m.uniforms.mid.value.set('#b9b6ad'); m.uniforms.hor.value.set('#d6cdbb'); m.uniforms.sunDir.value.set(0, -1, 0);
+      es.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), m)); const gd = new THREE.Mesh(new THREE.CircleGeometry(49, 32), new THREE.MeshBasicMaterial({ color: 0x9a927f })); gd.rotation.x = -Math.PI / 2; gd.position.y = -3; es.add(gd);
+      const pm = new THREE.PMREMGenerator(renderer); WORLD.envWarm = pm.fromScene(es, 0.02).texture || WORLD.envCool; pm.dispose(); } catch (e) { WORLD.envWarm = WORLD.envCool; } }
     scene.environment = c ? WORLD.envWarm : WORLD.envCool;
   }
 }
@@ -2499,53 +2512,315 @@ function buildCantonGround() {
   [[3.56, 400], [-400, -3.56]].forEach(([z0, z1]) => { const m = new THREE.Mesh(new THREE.BoxGeometry(800, 3, z1 - z0), pm); m.position.set(0, CL - 1.53, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m); });
   const bed = new THREE.Mesh(new THREE.PlaneGeometry(800, 7), new THREE.MeshStandardMaterial({ color: 0x6f766f, roughness: 1 })); bed.rotation.x = -Math.PI / 2; bed.position.y = -0.02; scene.add(bed);
 }
-function cantonSign(text, w, h, bg = '#141210', fg = '#e8c15a') {
-  const t = canvasTex(256, Math.round(256 * h / w), (g, cw, ch) => {
-    g.fillStyle = bg; g.fillRect(0, 0, cw, ch); g.strokeStyle = fg; g.lineWidth = 6; g.strokeRect(6, 6, cw - 12, ch - 12);
-    let px = ch * 0.62; g.font = `900 ${px}px "Songti TC","Songti SC","Noto Serif CJK TC","Noto Serif CJK SC",serif`;
-    while (((g.measureText(text) || {}).width || 0) > cw - 36 && px > 8) { px -= 2; g.font = `900 ${px}px "Songti TC","Songti SC","Noto Serif CJK TC","Noto Serif CJK SC",serif`; }
-    g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, cw / 2, ch / 2 + 2);
-  }, false);
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.6 }));
-  return m;
+// the draft's textures on the blocks the game draws itself (ground, walls)
+function cantonDesignTex() {
+  if (TEX.d_granite) return;
+  const T = cantonGZT().T;
+  Object.assign(TEX, { d_granite: T.granite, d_stone: T.stone, d_canal: T.canal, d_brick: T.brick, d_terrace: T.terrace, d_fac2: T.facade[2], d_fac3: T.facade[3], d_fac6: T.facade[6] });
+  TEX.white = canvasTex(8, 8, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); });
 }
-// decor textures of the 西關大屋 map, drawn the first time the map is built
-function cantonTex() {
-  if (TEX.manchu) return;
-  const rr = (a, b) => a + (b - a) * Math.random(), FONT = '"Songti TC","Songti SC","Noto Serif CJK TC","Noto Serif CJK SC",serif';
-  // 滿洲窗: coloured glass in a dark wood lattice
+function buildDecorCanton() {
+  const deco = new THREE.Group(); scene.add(deco);
+  // trees: trunk and crown stop shots, the trunk stops people (same rules as the skatepark's palms); the trees themselves come with the draft
+  CANTON_TREES.forEach(([tx, tz, ph, kind]) => [1, -1].forEach(sg => {
+    const x = tx * sg, z = tz * sg, y = CL + ph, ban = kind === 'banyan', hT = ban ? 4.4 : 6.6;
+    const tr = { t: 'box', tree: true, x, z, y0: y, yc: y + hT - 0.4, y1: y + hT + (ban ? 2.4 : 0.8), r: ban ? 0.75 : 0.32, rc: ban ? 3.6 : 1.5 };
+    Object.assign(tr, { x0: x - tr.rc, x1: x + tr.rc, z0: z - tr.rc, z1: z + tr.rc, h: tr.y1 }); TREES.push(tr); TREE_Y0 = Math.min(TREE_Y0, y);
+  }));
+  // everything else is the approved design draft itself (03b_canton_design.js), standing on the street
+  const d = cantonDesign(); d.root.position.y = CL; deco.add(d.root);
+  deco.updateMatrixWorld(true);
+}
+/* GENERATED by tools/gen-canton-design.py from the approved design draft (docs/design/src) — do not edit by hand.
+   西關大屋: every prop, sign, shop front, tree and the town outside is built by the draft's own code, so the game shows what was approved.
+   Left to the game: the blocks people stand on and ink (ground, walls, slopes) — it draws those with the draft's textures. */
+/* 西关骑楼街 · CANTON ARCADE — layout data (design draft v1)
+   Units: metres. x = across (±26), z = along (±52). Team 0 (orange) spawns at +z, team 1 at -z.
+   Only team 0's half is listed (plus pieces marked self:true that already sit on the centre);
+   the other half is the same list rotated 180° round the centre, like the skatepark.
+   Heights: canal bed -1.8 · street 0 · low cover 0.5 / 1.0–1.2 · shop 2.4 · spawn roof 2.0 ·
+   大屋 wings 2.6 · arcade roof 3.0 · ancestral hall roof 4.0
+   Engine mapping: box / ramp = existing solids; float = NEW "solid with an underside" (people walk
+   under it, bump their head on it); fence = existing grate fence (squids pass, people don't);
+   oob = existing out-of-bounds block; canal = existing height-field terrain (sunken band).      */
+const GZ = (() => {
+  const XH = 26, ZH = 52;
+  const CANAL = { z0: -3.5, z1: 3.5, bed: -2.2, shallow: -2.0, deep: -0.6 };
+  const B = (x0, x1, z0, z1, h, kind, o = {}) => Object.assign({ t: 'box', x0, x1, z0, z1, y0: 0, h, kind }, o);
+  const R = (x0, x1, z0, z1, axis, h0, h1, kind, o = {}) => Object.assign({ t: 'ramp', x0, x1, z0, z1, axis, h0, h1, y0: 0, kind }, o);
+  const F = (x0, x1, z0, z1, y0, h, kind, o = {}) => Object.assign({ t: 'box', x0, x1, z0, z1, y0, h, kind, float: true }, o);
+
+  const half = [
+    // ---- spawn: the tea house's roof terrace (red quarry tiles), stairs down to the street
+    B(-10, 10, 42, 52, 2.0, 'terrace', { zone: 'spawn', label: '茶楼天台（出生点）' }),
+    R(-3, 3, 36, 42, 'z', 0, 2.0, 'stair', { zone: 'spawn', label: '下街石阶' }),
+    B(10, 26, 42, 52, 2.0, 'terrace', { zone: 'spawn', label: '天台' }),
+    B(15, 17, 46, 48, 3.6, 'tank', { zone: 'spawn', label: '水箱' }),
+    B(-26, -10, 44, 52, 9.0, 'teahouse', { oob: true, zone: 'spawn', label: '茶樓（陶陶居 / 蓮香樓）' }),
+    R(20.3, 26, 36, 42, 'z', 3.8, 2.0, 'terrace', { zone: 'arcade', label: '上骑楼坡道' }),
+
+    // ---- qilou arcade along the +x wall: covered street below, walkable upper deck above
+    F(20.3, 26, 8, 36, 3.4, 3.8, 'arcade', { zone: 'arcade', label: '骑楼二层走廊', isNew: true }),
+    F(20.3, 20.6, 8, 36, 3.8, 4.7, 'balustrade', { zone: 'arcade' }),
+
+    // ---- Xiguan mansion along the -x wall: two flat-roof wings, a courtyard behind a tanglong gate
+    B(-26, -15, 12, 16, 2.6, 'brick', { zone: 'mansion', label: '大屋南翼（天台）' }),
+    B(-26, -15, 30, 34, 2.6, 'brick', { zone: 'mansion', label: '大屋北翼（天台）' }),
+    B(-26, -23, 16, 30, 4.4, 'hall', { oob: true, zone: 'mansion', label: '正厅' }),
+    B(-16, -15, 16, 21, 2.6, 'brick', { zone: 'mansion' }),
+    B(-16, -15, 25, 30, 2.6, 'brick', { zone: 'mansion' }),
+    // (v3: the gate is open — no tanglong fence; people walk in under the lintel)
+    F(-16, -15, 21, 25, 2.2, 2.6, 'lintel', { zone: 'mansion', label: '門楣（下面是敞開的大門）' }),
+    R(-15, -10, 30, 34, 'x', 2.6, 0, 'stair', { zone: 'mansion', label: '外楼梯' }),
+    B(-20.5, -18, 21, 25, 1.0, 'planterbox', { zone: 'mansion', label: '天井花台' }),
+    R(-15, -10, 12.4, 16, 'x', 2.6, 0, 'stair', { zone: 'mansion', label: '外楼梯' }),
+
+    // ---- the street between them
+    B(-11, -5, 18, 25, 2.4, 'shop', { zone: 'street', label: '小樓（吳系茶餐廳 / 廣州酒家）' }),
+    B(-5, -3.5, 18, 19.6, 1.2, 'steamer', { zone: 'street', label: '蒸笼堆' }),
+    B(-1, 0.6, 14, 15.6, 0.5, 'steamer', { zone: 'street' }),
+    B(5, 11, 13, 18, 0.5, 'planter', { zone: 'street', label: '榕树花基' }),
+    B(2, 5, 25, 26.6, 1.1, 'stall', { zone: 'street', label: '街邊檔' }),
+    B(13, 15, 24, 26.5, 1.2, 'trike', { zone: 'street', label: '三轮车' }),
+    B(14, 17, 16, 17, 1.0, 'planterwall', { zone: 'street', label: '花基矮墙' }),
+    B(-4.4, -3.6, 30.6, 31.4, 4.6, 'post', { zone: 'street' }),
+    B(3.6, 4.4, 30.6, 31.4, 4.6, 'post', { zone: 'street' }),
+    F(-5, 5, 30.5, 31.5, 3.4, 4.6, 'lintel', { zone: 'street', label: '獵德牌坊' }),
+
+    // ---- canal-side promenade: kapok trees, stone landing steps down into the canal
+    B(-7, -5, 6, 8, 0.5, 'planter', { zone: 'canal', label: '木棉' }),
+    B(10, 12, 5.5, 7.5, 0.5, 'planter', { zone: 'canal', label: '木棉' }),
+    B(-12, -11.2, 1.7, 3.5, -0.45, 'landing', { y0: -1.8, zone: 'canal', label: '埠头' }),
+    B(-11.2, -10.4, 1.7, 3.5, -0.9, 'landing', { y0: -1.8, zone: 'canal' }),
+    B(-10.4, -9.6, 1.7, 3.5, -1.35, 'landing', { y0: -1.8, zone: 'canal' }),
+    B(22.2, 23, 1.7, 3.5, -0.45, 'landing', { y0: -1.8, zone: 'canal', label: '埠头' }),
+    B(21.4, 22.2, 1.7, 3.5, -0.9, 'landing', { y0: -1.8, zone: 'canal' }),
+    B(20.6, 21.4, 1.7, 3.5, -1.35, 'landing', { y0: -1.8, zone: 'canal' }),
+    // stone arch bridge (one half of it; the rotated copy is the other side bridge)
+    R(14, 18, 0, 5.5, 'z', 0.8, 0, 'bridge', { float: true, thick: 0.5, zone: 'canal', label: '石拱桥', isNew: true }),
+    R(14, 18, -5.5, 0, 'z', 0, 0.8, 'bridge', { float: true, thick: 0.5, zone: 'canal' }),
+
+    // ---- centre: the ancestral hall stands on a square deck over the canal
+    B(2.5, 5, -2.5, 0, 2.0, 'citywall', { zone: 'centre', label: '城牆台（2 米）' }),
+    B(2.5, 5, -4.2, -2.5, 1.0, 'citywall', { zone: 'centre' }),
+    // dragon boat moored in the canal (walkable deck, a jump up from the canal bed)
+    B(8.5, 19, 0.2, 1.4, -1.5, 'boat', { y0: -2.2, zone: 'canal', label: '龍舟' }),
+  ];
+  // arcade columns: 8 per side, ~3.3 m between them
+  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(B(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'column', { zone: 'arcade' })); }
+
+  const centre = [
+    F(-7, 7, -3.5, 3.5, -0.8, 0, 'deck', { zone: 'centre', label: '中央广场桥（桥下只能鱿鱼过）', isNew: true }),
+    B(-2.5, 2.5, -2.5, 2.5, 4.0, 'zhl', { zone: 'centre', label: '鎮海樓（4 米平台）' }),
+    B(-1, 1, -1, 1, 8.2, 'zhltop', { zone: 'centre', label: '鎮海樓上層' }),
+  ];
+  const trees = [
+    { kind: 'banyan', x: 8, z: 15.5, y: 0.5, r: 0.7, k: 1.0 },
+    { kind: 'kapok', x: -6, z: 7, y: 0.5, r: 0.35, k: 1.0 },
+    { kind: 'kapok', x: 11, z: 6.5, y: 0.5, r: 0.35, k: 0.9 },
+  ];
+  const rot = s => {
+    const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0, team: 1 });
+    if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; }
+    return m;
+  };
+  const solids = [];
+  half.forEach(s => { solids.push(Object.assign({ team: 0 }, s)); solids.push(rot(s)); });
+  centre.forEach(s => solids.push(Object.assign({ self: true }, s)));
+  const allTrees = [];
+  trees.forEach(t => { allTrees.push(t); allTrees.push(Object.assign({}, t, { x: -t.x, z: -t.z })); });
+  const spawns = [{ x: 0, z: 47, y: 2, yaw: Math.PI, team: 0 }, { x: 0, z: -47, y: 2, yaw: 0, team: 1 }];
+  return { XH, ZH, CANAL, solids, trees: allTrees, spawns, BODY_H: 1.7, STEP: 0.55, JUMP_V: 8.3, GRAV: 24, RUN: 6.4 };
+})();
+
+
+let GZT_;
+function cantonGZT() { return GZT_ || (GZT_ = (() => {
+/* procedural textures for the Canton Arcade preview (all drawn in code, like the game) */
+return (() => {
+  let seed = 7;
+  const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const rr = (a, b) => a + (b - a) * rnd();
+  const shade = (hex, k) => { const c = new THREE.Color(hex); c.offsetHSL(0, 0, k); return '#' + c.getHexString(); };
+  function ctex(w, h, fn, srgb = true) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'); fn(g, w, h);
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; t.userData.canvas = c; return t;
+  }
+  const speckle = (g, w, h, n, a) => { for (let i = 0; i < n; i++) { g.fillStyle = `rgba(${rnd() < 0.5 ? '0,0,0' : '255,255,255'},${rr(0.02, a)})`; g.fillRect(rnd() * w, rnd() * h, rr(1, 3), rr(1, 3)); } };
+  const T = {};
+  // 麻石: long granite street slabs laid in running courses (one texture = 4 m)
+  T.granite = ctex(512, 512, (g, w, h) => {
+    g.fillStyle = '#b7b0a3'; g.fillRect(0, 0, w, h);
+    const rows = 8, rh = h / rows;
+    for (let r = 0; r < rows; r++) {
+      let x = -rr(0, 120);
+      while (x < w) { const L = rr(110, 220); g.fillStyle = shade('#b9b2a5', rr(-0.05, 0.04)); g.fillRect(x + 2, r * rh + 2, L - 4, rh - 4); x += L; }
+    }
+    speckle(g, w, h, 9000, 0.12);
+    g.strokeStyle = 'rgba(70,64,56,.55)'; g.lineWidth = 2.5;
+    for (let r = 0; r <= rows; r++) { g.beginPath(); g.moveTo(0, r * rh); g.lineTo(w, r * rh); g.stroke(); }
+  });
+  // lighter dressed granite for bridges, the paifang, plinths
+  T.stone = ctex(256, 256, (g, w, h) => {
+    g.fillStyle = '#d7d1c4'; g.fillRect(0, 0, w, h);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++) { g.fillStyle = shade('#d6d0c3', rr(-0.04, 0.03)); g.fillRect(c * 128 + (r % 2) * 64 - 64 + 2, r * 64 + 2, 124, 60); g.fillRect(c * 128 + (r % 2) * 64 + 192 + 2 - 256, r * 64 + 2, 124, 60); }
+    speckle(g, w, h, 4000, 0.1);
+    g.strokeStyle = 'rgba(90,84,76,.4)'; g.lineWidth = 2; for (let r = 0; r <= 4; r++) { g.beginPath(); g.moveTo(0, r * 64); g.lineTo(w, r * 64); g.stroke(); }
+  });
+  // canal wall: big rough granite blocks, damp and mossy toward the water
+  T.canal = ctex(512, 256, (g, w, h) => {
+    g.fillStyle = '#8a857a'; g.fillRect(0, 0, w, h);
+    for (let r = 0; r < 4; r++) { let x = -rr(0, 80); while (x < w) { const L = rr(70, 150); g.fillStyle = shade('#8b867b', rr(-0.06, 0.05)); g.fillRect(x + 3, r * 64 + 3, L - 6, 58); x += L; } }
+    speckle(g, w, h, 5000, 0.15);
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(0.55, 'rgba(40,60,40,.15)'); gr.addColorStop(1, 'rgba(40,70,45,.55)'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  });
+  // 青砖: grey-blue water-polished bricks with thin light mortar (texture = 2 m)
+  T.brick = ctex(512, 512, (g, w, h) => {
+    g.fillStyle = '#9b9d97'; g.fillRect(0, 0, w, h);
+    const bw = 64, bh = 20;
+    for (let r = 0; r < h / bh; r++) for (let c = -1; c < w / bw + 1; c++) {
+      const x = c * bw + (r % 2) * bw / 2; g.fillStyle = shade('#69737a', rr(-0.05, 0.05)); g.fillRect(x + 1.5, r * bh + 1.5, bw - 3, bh - 3);
+    }
+    speckle(g, w, h, 6000, 0.08);
+  });
+  // 阶砖: red quarry tiles on roof terraces (texture = 2.4 m, 30 cm tiles)
+  T.terrace = ctex(256, 256, (g, w, h) => {
+    g.fillStyle = '#c9b9a4'; g.fillRect(0, 0, w, h);
+    const n = 8, s = w / n;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { g.fillStyle = shade('#b4553c', rr(-0.06, 0.05)); g.fillRect(i * s + 1.5, j * s + 1.5, s - 3, s - 3); }
+    speckle(g, w, h, 3000, 0.1);
+  });
+  // 瓦: grey pan-and-roll roof tiles
+  T.tiles = ctex(256, 256, (g, w, h) => {
+    g.fillStyle = '#5d6266'; g.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 16) { const gr = g.createLinearGradient(x, 0, x + 16, 0); gr.addColorStop(0, '#4b5054'); gr.addColorStop(0.5, '#8a9095'); gr.addColorStop(1, '#4b5054'); g.fillStyle = gr; g.fillRect(x, 0, 16, h); }
+    for (let y = 0; y < h; y += 22) { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, y, w, 3); }
+  });
+  T.greenTiles = ctex(128, 128, (g, w, h) => {
+    for (let x = 0; x < w; x += 12) { const gr = g.createLinearGradient(x, 0, x + 12, 0); gr.addColorStop(0, '#1f6a4a'); gr.addColorStop(0.5, '#4fae7c'); gr.addColorStop(1, '#1f6a4a'); g.fillStyle = gr; g.fillRect(x, 0, 12, h); }
+    for (let y = 0; y < h; y += 16) { g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(0, y, w, 2); }
+  });
+  T.wood = ctex(128, 256, (g, w, h) => {
+    g.fillStyle = '#6e3220'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 70; i++) { g.strokeStyle = `rgba(${rnd() < 0.5 ? '30,10,5' : '150,80,50'},${rr(0.05, 0.25)})`; g.lineWidth = rr(1, 3); g.beginPath(); const x = rnd() * w; g.moveTo(x, 0); g.bezierCurveTo(x + rr(-8, 8), h / 3, x + rr(-8, 8), h * 2 / 3, x + rr(-6, 6), h); g.stroke(); }
+  });
+  T.bamboo = ctex(128, 64, (g, w, h) => { g.fillStyle = '#c9a463'; g.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 6) { g.fillStyle = `rgba(90,60,20,${rr(0.1, 0.3)})`; g.fillRect(x, 0, 1.5, h); } g.fillStyle = '#8e6a32'; g.fillRect(0, 0, w, 6); g.fillRect(0, h - 6, w, 6); });
+  // 满洲窗: coloured glass in a white lattice
+  const MANCHU = ['#d8432f', '#2f6fc0', '#f0c419', '#3f9b55', '#e9e4d8'];
   const manchu = (g, x0, y0, w, h, n = 4, m = 4) => {
     g.fillStyle = '#5a2f1c'; g.fillRect(x0, y0, w, h);
     const fr = Math.max(2, Math.min(w, h) * 0.03), cw = (w - fr) / n, ch = (h - fr) / m;
     for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
       const ex = i === 0 || i === n - 1, ey = j === 0 || j === m - 1;
       g.fillStyle = ex && ey ? '#c53a2b' : ex ? '#2f66b0' : ey ? '#3a8f55' : (i + j) % 2 ? '#dfe9e6' : '#e9c64a';
-      g.fillRect(x0 + fr + i * cw, y0 + fr + j * ch, cw - fr, ch - fr);
+      if (!ex && !ey && (i + j) % 2 === 0) g.globalAlpha = 0.85;
+      g.fillRect(x0 + fr + i * cw, y0 + fr + j * ch, cw - fr, ch - fr); g.globalAlpha = 1;
       if (!ex && !ey) { g.strokeStyle = 'rgba(90,47,28,.55)'; g.lineWidth = 1; g.beginPath(); const cx = x0 + fr + i * cw + (cw - fr) / 2, cy = y0 + fr + j * ch + (ch - fr) / 2; g.moveTo(cx, cy - (ch - fr) / 2); g.lineTo(cx + (cw - fr) / 2, cy); g.lineTo(cx, cy + (ch - fr) / 2); g.lineTo(cx - (cw - fr) / 2, cy); g.closePath(); g.stroke(); }
     }
+    g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(x0, y0, w, h * 0.3);
   };
-  TEX._manchu = manchu; TEX._font = FONT;
-  TEX.manchu = canvasTex(256, 256, (g, w, h) => manchu(g, 0, 0, w, h, 6, 6), false);
-  TEX.roofTile = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#5d6266'; g.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 16) { const gr = g.createLinearGradient(x, 0, x + 16, 0); gr.addColorStop(0, '#4b5054'); gr.addColorStop(0.5, '#8a9095'); gr.addColorStop(1, '#4b5054'); g.fillStyle = gr; g.fillRect(x, 0, 16, h); } for (let y = 0; y < h; y += 32) { g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(0, y, w, 3); } });
-  TEX.greenTile = canvasTex(128, 128, (g, w, h) => { for (let x = 0; x < w; x += 16) { const gr = g.createLinearGradient(x, 0, x + 16, 0); gr.addColorStop(0, '#1b5f42'); gr.addColorStop(0.5, '#46a474'); gr.addColorStop(1, '#1b5f42'); g.fillStyle = gr; g.fillRect(x, 0, 16, h); } for (let y = 0; y < h; y += 32) { g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(0, y, w, 3); } });
-  // a qilou bay: 4 m wide, 12.8 m tall — shopfront, two upper floors of shuttered windows with manchu fanlights, a parapet
-  const FAC = [['#ead7a6', '#fbf4e1', '#3d7f5a'], ['#e9b9ac', '#fff3ec', '#2f6b85'], ['#b9d9c2', '#f4fbf5', '#7a4a2a'], ['#efe7d6', '#ffffff', '#386e9a'], ['#bccfe1', '#f6fafd', '#3b6f4f'], ['#e4a670', '#fff1e2', '#2c5c74'], ['#b0604a', '#e9dcc8', '#2f5a43'], ['#d9d3c6', '#fbfaf6', '#8a3b2b']];
-  TEX.facade = FAC.map(([base, trim, shut], k) => canvasTex(256, 820, (g, w, h) => {
-    const px = w / 4, Y = m => h - m * px;
-    g.fillStyle = base; g.fillRect(0, 0, w, h); speckle(g, w, h, 1500, 0.06);
-    g.fillStyle = trim; g.fillRect(0, Y(12.2), 14, 7.8 * px); g.fillRect(w - 14, Y(12.2), 14, 7.8 * px);
-    [[4.4, 0.35], [7.8, 0.25], [11.2, 0.4]].forEach(([y, t]) => { g.fillStyle = trim; g.fillRect(0, Y(y + t), w, t * px); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, Y(y), w, 3); });
-    if (k % 2 === 0) { g.fillStyle = trim; g.beginPath(); g.moveTo(10, Y(11.6)); g.quadraticCurveTo(w / 2, Y(13.6), w - 10, Y(11.6)); g.lineTo(w - 10, Y(11.2)); g.lineTo(10, Y(11.2)); g.fill(); g.fillStyle = base; g.beginPath(); g.arc(w / 2, Y(11.75), 0.35 * px, 0, Math.PI * 2); g.fill(); }
-    else { g.fillStyle = trim; for (let x = 18; x < w - 18; x += 14) g.fillRect(x, Y(12.3), 8, 0.9 * px); g.fillRect(10, Y(12.5), w - 20, 6); }
+  T.manchu = ctex(256, 256, (g, w, h) => { manchu(g, 0, 0, w, h, 6, 6); });
+  // a qilou bay facade: 4 m wide, 12.8 m tall (shopfront, two upper floors with tall windows, decorated parapet)
+  const FAC = [
+    { base: '#ead7a6', trim: '#fbf4e1', shut: '#3d7f5a' },
+    { base: '#e9b9ac', trim: '#fff3ec', shut: '#2f6b85' },
+    { base: '#b9d9c2', trim: '#f4fbf5', shut: '#7a4a2a' },
+    { base: '#efe7d6', trim: '#ffffff', shut: '#386e9a' },
+    { base: '#bccfe1', trim: '#f6fafd', shut: '#3b6f4f' },
+    { base: '#e4a670', trim: '#fff1e2', shut: '#2c5c74' },
+    { base: '#a8573f', trim: '#e9dcc8', shut: '#2f5a43', brick: true },
+    { base: '#d9d3c6', trim: '#fbfaf6', shut: '#8a3b2b' },
+  ];
+  const SHOPS = ['藥材', '金舖', '打銅', '綢緞', '茶莊', '當舖', '鐘錶', '香燭', '玉器', '海味', '鞋莊', '書局'];
+  T.facade = FAC.map((f, k) => ctex(256, 820, (g, w, h) => {
+    const px = w / 4; // pixels per metre
+    const Y = m => h - m * px;
+    g.fillStyle = f.base; g.fillRect(0, 0, w, h);
+    if (f.brick) { for (let r = 0; r < h / 6; r++) for (let c = -1; c < w / 16 + 1; c++) { g.fillStyle = shade(f.base, rr(-0.06, 0.05)); g.fillRect(c * 16 + (r % 2) * 8 + 0.5, r * 6 + 0.5, 15, 5); } }
+    speckle(g, w, h, 2500, 0.07);
+    // pilasters
+    g.fillStyle = f.trim; g.fillRect(0, Y(12.2), 14, 12.2 * px - 4.4 * px); g.fillRect(w - 14, Y(12.2), 14, 12.2 * px - 4.4 * px);
+    // floor bands / cornices
+    [[4.4, 0.35], [7.8, 0.25], [11.2, 0.4]].forEach(([y, t]) => { g.fillStyle = f.trim; g.fillRect(0, Y(y + t), w, t * px); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, Y(y), w, 3); });
+    // parapet: baroque pediment or balustrade
+    if (k % 2 === 0) { g.fillStyle = f.trim; g.beginPath(); g.moveTo(10, Y(11.6)); g.quadraticCurveTo(w / 2, Y(13.6), w - 10, Y(11.6)); g.lineTo(w - 10, Y(11.2)); g.lineTo(10, Y(11.2)); g.fill(); g.fillStyle = f.base; g.beginPath(); g.arc(w / 2, Y(11.75), 0.35 * px, 0, Math.PI * 2); g.fill(); }
+    else { for (let x = 18; x < w - 18; x += 14) { g.fillStyle = f.trim; g.fillRect(x, Y(12.3), 8, 0.9 * px); } g.fillRect(10, Y(12.5), w - 20, 6); }
+    // upper windows with manchu fanlights and louvred shutters
     [4.9, 8.3].forEach(y0 => {
-      [0.55, 2.35].forEach(x0 => { const X = x0 * px, W = 1.1 * px, H = 2.5 * px, top = Y(y0 + 2.5);
-        g.fillStyle = trim; g.fillRect(X - 5, top - 5, W + 10, H + 10); g.fillStyle = '#26303a'; g.fillRect(X, top + 0.8 * px, W, H - 0.8 * px); manchu(g, X, top, W, 0.8 * px, 3, 2);
-        for (let s2 = 0; s2 < 2; s2++) { const sx = s2 ? X + W * 0.62 : X; g.fillStyle = shut; g.fillRect(sx, top + 0.85 * px, W * 0.38, H - 0.85 * px); g.fillStyle = 'rgba(0,0,0,.25)'; for (let l = 0; l < 14; l++) g.fillRect(sx, top + 0.95 * px + l * 6, W * 0.38, 1.5); } });
-      g.fillStyle = 'rgba(30,30,30,.85)'; for (let x = 0.4 * px; x < w - 0.4 * px; x += 7) g.fillRect(x, Y(y0 + 0.9), 2, 0.9 * px); g.fillRect(0.4 * px, Y(y0 + 0.95), w - 0.8 * px, 3); });
-    g.fillStyle = '#2a2622'; g.fillRect(16, Y(3.4), w - 32, 3.4 * px); g.fillStyle = 'rgba(255,214,140,.45)'; g.fillRect(24, Y(3.0), w - 48, 2.2 * px);
-    g.fillStyle = '#3a312a'; for (let x = 24; x < w - 24; x += 18) g.fillRect(x, Y(3.0), 3, 2.2 * px); g.fillStyle = '#1d2a22'; g.fillRect(16, Y(4.25), w - 32, 0.75 * px);
+      [0.55, 2.35].forEach(x0 => {
+        const X = x0 * px, W = 1.1 * px, H = 2.5 * px, top = Y(y0 + 2.5);
+        g.fillStyle = f.trim; g.fillRect(X - 5, top - 5, W + 10, H + 10);
+        g.fillStyle = '#26303a'; g.fillRect(X, top + 0.8 * px, W, H - 0.8 * px);
+        manchu(g, X, top, W, 0.8 * px, 3, 2);
+        g.fillStyle = f.shut; for (let s = 0; s < 2; s++) { const sx = s ? X + W * 0.62 : X; g.fillRect(sx, top + 0.85 * px, W * 0.38, H - 0.85 * px); g.fillStyle = 'rgba(0,0,0,.25)'; for (let l = 0; l < 14; l++) g.fillRect(sx, top + 0.95 * px + l * 6, W * 0.38, 1.5); g.fillStyle = f.shut; }
+      });
+      g.fillStyle = 'rgba(30,30,30,.85)'; for (let x = 0.4 * px; x < w - 0.4 * px; x += 7) g.fillRect(x, Y(y0 + 0.9), 2, 0.9 * px); g.fillRect(0.4 * px, Y(y0 + 0.95), w - 0.8 * px, 3);
+    });
+    // shopfront
+    g.fillStyle = '#2a2622'; g.fillRect(16, Y(3.4), w - 32, 3.4 * px);
+    g.fillStyle = 'rgba(255,214,140,.45)'; g.fillRect(24, Y(3.0), w - 48, 2.2 * px);
+    g.fillStyle = '#3a312a'; for (let x = 24; x < w - 24; x += 18) g.fillRect(x, Y(3.0), 3, 2.2 * px);
+    g.fillStyle = '#1d2a22'; g.fillRect(16, Y(4.25), w - 32, 0.75 * px);
+    g.fillStyle = '#f2d27a'; g.font = `900 ${0.5 * px}px "Noto Serif CJK TC","Noto Serif CJK SC","Songti TC","Songti SC","STSong",serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#c9b06a'; g.fillRect(w / 2 - 34, Y(3.9), 68, 3);
   }));
-  // ---- real shops, each with its own frontage (drawn 256 px tall, 96 px per metre wide)
+  // inner arcade wall: shopfronts under the colonnade (texture = 8 m wide, 2.6 m tall)
+  T.shopfront = ctex(1024, 340, (g, w, h) => {
+    g.fillStyle = '#e8dcc2'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 2; i++) {
+      const x = i * w / 2 + 30, W = w / 2 - 60;
+      g.fillStyle = '#2a2420'; g.fillRect(x, 70, W, h - 70);
+      g.fillStyle = 'rgba(255,205,120,.5)'; g.fillRect(x + 14, 90, W - 28, h - 110);
+      g.fillStyle = '#5b2d1e'; for (let b = 0; b < 9; b++) g.fillRect(x + 6, 100 + b * 26, W - 12, 7);
+      g.fillStyle = '#1e3326'; g.fillRect(x, 12, W, 52);
+      g.fillStyle = '#f4d27d'; g.font = '900 38px "Noto Serif CJK TC","Noto Serif CJK SC","Songti TC","Songti SC",serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(['泼泼凉茶', '飞溅糖水', '墨记云吞', '浪记烧腊'][i + (rnd() < 0.5 ? 0 : 2)], x + W / 2, 40);
+    }
+  });
+  // vertical shop sign
+  T.sign = (text, bg = '#1e3326', fg = '#f4d27d') => ctex(96, 96 * Math.max(3, text.length) * 0.9, (g, w, h) => {
+    g.fillStyle = bg; g.fillRect(0, 0, w, h); g.strokeStyle = fg; g.lineWidth = 5; g.strokeRect(6, 6, w - 12, h - 12);
+    g.fillStyle = fg; g.font = `900 ${w * 0.62}px "Noto Serif CJK TC","Noto Serif CJK SC","Songti TC","Songti SC","STSong",serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const n = text.length; [...text].forEach((ch, i) => g.fillText(ch, w / 2, (i + 0.5) * h / n));
+  });
+  T.plaque = (text, bg = '#1b1b1f', fg = '#e6bf5a') => ctex(512, 160, (g, w, h) => {
+    g.fillStyle = bg; g.fillRect(0, 0, w, h); g.strokeStyle = fg; g.lineWidth = 8; g.strokeRect(10, 10, w - 20, h - 20);
+    let px = 96; g.font = `900 ${px}px "Noto Serif CJK TC","Noto Serif CJK SC","Songti TC","Songti SC","STSong",serif`; while (((g.measureText(text) || {}).width || 0) > w - 70 && px > 20) { px -= 4; g.font = `900 ${px}px "Noto Serif CJK TC","Noto Serif CJK SC","Songti TC","Songti SC","STSong",serif`; }
+    g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2, h / 2 + 4);
+  });
+  // big tea-house facade at the spawn ends
+  T.teahouse = ctex(1024, 640, (g, w, h) => {
+    g.fillStyle = '#e9d9b4'; g.fillRect(0, 0, w, h); speckle(g, w, h, 6000, 0.06);
+    for (let fl = 0; fl < 3; fl++) for (let c = 0; c < 8; c++) {
+      const x = 40 + c * 120, y = 70 + fl * 150; g.fillStyle = '#f8f0dc'; g.fillRect(x - 6, y - 6, 92, 122);
+      manchu(g, x, y, 80, 110, 4, 5);
+    }
+    g.fillStyle = '#f8f0dc'; for (let y of [55, 205, 355, 505]) g.fillRect(0, y, w, 8);
+    g.fillStyle = '#8a1f1a'; g.fillRect(260, 0, 500, 52); g.fillStyle = '#f6d36b'; g.font = '900 42px "Noto Serif CJK TC","Noto Serif CJK SC","Songti TC","Songti SC",serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('浪 花 茶 楼', w / 2, 28);
+    g.fillStyle = '#2a2420'; g.fillRect(0, 520, w, 120); g.fillStyle = 'rgba(255,200,120,.5)'; for (let c = 0; c < 6; c++) g.fillRect(40 + c * 165, 545, 120, 80);
+  });
+  // ripple for the canal water
+  T.water = ctex(256, 256, (g, w, h) => {
+    g.fillStyle = '#4c8c84'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 260; i++) { g.strokeStyle = `rgba(${rnd() < 0.5 ? '210,240,230' : '20,60,60'},${rr(0.05, 0.22)})`; g.lineWidth = rr(1, 2.5); const x = rnd() * w, y = rnd() * h, L = rr(8, 40); g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + L / 2, y - rr(1, 4), x + L, y); g.stroke(); }
+  });
+  // ink splats for the paint-readability test (orange team 0 at +z, blue team 1 at -z), on a 52 x 104 canvas
+  T.ink = (XH, ZH, mask) => ctex(512, 1024, (g, w, h) => {
+    const toPx = (x, z) => [(x + XH) / (2 * XH) * w, (z + ZH) / (2 * ZH) * h];
+    const blob = (x, z, r, col) => {
+      const [px, pz] = toPx(x, z), pr = r / (2 * XH) * w; g.fillStyle = col; g.beginPath();
+      const n = 14; for (let i = 0; i <= n; i++) { const a = i / n * Math.PI * 2, rr2 = pr * (0.7 + rnd() * 0.5); g[i ? 'lineTo' : 'moveTo'](px + Math.cos(a) * rr2, pz + Math.sin(a) * rr2); } g.fill();
+      for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(px + (rnd() - 0.5) * pr * 3, pz + (rnd() - 0.5) * pr * 3, pr * rr(0.1, 0.25), 0, Math.PI * 2); g.fill(); }
+    };
+    for (let i = 0; i < 520; i++) {
+      const x = rr(-XH, XH), z = rr(-ZH, ZH); if (!mask(x, z)) continue;
+      const t0 = z > 0 ? 0.72 : 0.3; blob(x, z, rr(0.6, 1.8), rnd() < t0 ? '#ff7a00' : '#3346ff');
+    }
+  });
+
+  // ---------------- v2: real shops, each with its own frontage (texture = the whole shop, 2.6 m tall, 96 px per metre)
   const SERIF = '"Noto Serif CJK TC","Noto Serif CJK SC","Songti TC","Songti SC","STSong",serif';
   const SANS = '"Noto Sans CJK TC","Noto Sans CJK SC","PingFang TC","PingFang SC","Heiti TC",sans-serif';
   const txt = (g, t, x, y, px, col, font = SERIF, align = 'center', w = 900, maxW = 0) => { g.fillStyle = col; g.font = `${w} ${px}px ${font}`; if (maxW) { let k = 0; while (((g.measureText(t) || {}).width || 0) > maxW && k++ < 60) { px *= 0.95; g.font = `${w} ${px}px ${font}`; } } g.textAlign = align; g.textBaseline = 'middle'; g.fillText(t, x, y); };
@@ -2641,218 +2916,583 @@ function cantonTex() {
       g.fillStyle = '#7a1512'; g.fillRect(0, h - 26, w, 26); txt(g, '文昌雞　蝦餃　月餅　始創一九三五', w / 2, h - 12, 15, '#f3d98a', SANS, 'center', 700, w - 30);
     },
   };
-  TEX._shopFace = (key, wm, hm) => { const t = canvasTex(Math.round(wm * PXM), Math.round(hm * PXM), (g, w, h) => { g.save(); g.scale(1, h / 256); SHOPFACE[key](g, w, 256); g.restore(); }, false); return t; };
-  TEX._vsign = (text, bg, fg) => canvasTex(96, Math.round(96 * Math.max(3, text.length) * 0.92), (g, w, h) => { g.fillStyle = bg; g.fillRect(0, 0, w, h); g.strokeStyle = fg; g.lineWidth = 5; g.strokeRect(6, 6, w - 12, h - 12); const n = text.length; [...text].forEach((c, i) => txt(g, c, w / 2, 12 + (i + 0.5) * (h - 24) / n, w * 0.6, fg)); }, false);
-  // the stone arch under a bridge side (7 m span, CL tall): transparent opening, solid spandrels at the two top corners, a ring of voussoirs
-  TEX.archFace = canvasTex(512, 160, (g, w, h) => {
-    g.clearRect(0, 0, w, h); const px = w / 7;
-    g.fillStyle = '#7d7566'; g.beginPath(); g.moveTo(0, 0); g.lineTo(w, 0); g.lineTo(w, 0.95 * px); g.quadraticCurveTo(w / 2, -0.25 * px, 0, 0.95 * px); g.closePath(); g.fill();
-    g.strokeStyle = '#a2987f'; g.lineWidth = 0.2 * px; g.beginPath(); g.moveTo(0, 0.95 * px); g.quadraticCurveTo(w / 2, -0.25 * px, w, 0.95 * px); g.stroke();
-    g.fillStyle = '#7d7566'; g.fillRect(0, 0, w, 0.32 * px); g.fillStyle = '#a2987f'; g.fillRect(0, 0.26 * px, w, 0.07 * px);
-  }, false);
-}
-// the tea house facade (16 x 9 m): three floors of manchu windows over a row of shopfront doors
-function cantonTeaFace() {
-  return canvasTex(1024, 576, (g, w, h) => {
-    g.fillStyle = '#e9d9b4'; g.fillRect(0, 0, w, h); speckle(g, w, h, 5000, 0.05);
-    for (let fl = 0; fl < 2; fl++) for (let c = 0; c < 8; c++) { const x = 28 + c * 124, y = 70 + fl * 150; g.fillStyle = '#f8f0dc'; g.fillRect(x - 6, y - 6, 104, 122); TEX._manchu(g, x, y, 92, 110, 4, 5); g.fillStyle = '#2f6a48'; g.fillRect(x - 6, y + 118, 104, 14); g.fillStyle = '#f8f0dc'; for (let q = 0; q < 6; q++) g.fillRect(x + q * 17, y + 118, 6, 14); }
-    g.fillStyle = '#f8f0dc'; for (const y of [48, 206, 356]) g.fillRect(0, y, w, 8);
-    g.fillStyle = '#3a2a1e'; g.fillRect(0, 372, w, h - 372);
-    for (let c = 0; c < 6; c++) { const x = 20 + c * 168; g.fillStyle = '#7a5a34'; g.fillRect(x + 12, 392, 136, h - 392); g.fillStyle = '#f4ecd8'; g.fillRect(x, 372, 10, h - 372); g.fillStyle = '#b3201a'; g.fillRect(x - 6, 372, 5, h - 372); g.fillRect(x + 11, 372, 5, h - 372); }
-  }, false);
-}
-// the mansion's main hall front (14 x 4.4 m): grey brick, a stone base, the sliding-bar door in the middle, two manchu windows each side
-function cantonHallFace() {
-  return canvasTex(1024, 322, (g, w, h) => {
-    const px = w / 14; g.fillStyle = '#b4b6b0'; g.fillRect(0, 0, w, h);
-    for (let r = 0; r < h / 9; r++) for (let c = -1; c < w / 30 + 1; c++) { const k = 0.9 + Math.random() * 0.2; g.fillStyle = `rgb(${98 * k | 0},${112 * k | 0},${124 * k | 0})`; g.fillRect(c * 30 + (r % 2) * 15 + 1, r * 9 + 1, 28, 7); }
-    g.fillStyle = '#b9b09c'; g.fillRect(0, h - 0.5 * px, w, 0.5 * px); g.fillRect(0, 0, w, 0.3 * px);
-    [1.6, 4.0, 10.0, 12.4].forEach(c => { g.fillStyle = '#e4dccb'; g.fillRect((c - 0.75) * px, h - 3.3 * px, 1.5 * px, 2.3 * px); TEX._manchu(g, (c - 0.62) * px, h - 3.18 * px, 1.24 * px, 2.06 * px, 4, 6); });
-    g.fillStyle = '#d6cdb8'; g.fillRect(5.6 * px, h - 3.6 * px, 2.8 * px, 3.6 * px); g.fillStyle = '#1e1512'; g.fillRect(5.9 * px, h - 3.3 * px, 2.2 * px, 3.3 * px);
-    g.fillStyle = '#6e2f1c'; for (let b = 0; b < 11; b++) g.fillRect(5.9 * px, h - 3.2 * px + b * 0.3 * px, 2.2 * px, 0.11 * px);          // 趟櫳: the sliding bars
-    g.fillStyle = '#4a1f14'; g.fillRect(5.9 * px, h - 3.3 * px, 0.14 * px, 3.3 * px); g.fillRect(7.96 * px, h - 3.3 * px, 0.14 * px, 3.3 * px);
-  }, false);
-}
-function buildDecorCanton() {
-  const deco = new THREE.Group(); scene.add(deco);
-  const std = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.8 }, o || {}));
-  const M = { stone: std(0xe9e2d2, { map: TEX.stone }), green: std(0x2f8f62, { roughness: 0.5 }), red: std(0xb5503f), wood: std(0x6e3220), bark: std(0x857565, { roughness: 0.95 }), trunk: std(0x6b4c34, { roughness: 0.95 }), leaf: std(0x3f7a38, { flatShading: true }), leaf2: std(0x2f6630, { flatShading: true }), pot: std(0xa8402c), flower: std(0xe0281c, { emissive: 0x4a0a04, flatShading: true }), gold: std(0xd8a640, { metalness: 0.5, roughness: 0.4 }), white: std(0xf4f1e8), cstone: std(0xffffff, { map: TEX.cstone }), plaster: std(0xffffff, { map: TEX.plaster }) };
-  const add = (geo, mat, x, y, z, ry) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (ry) m.rotation.y = ry; m.castShadow = true; m.receiveShadow = true; deco.add(m); return m; };
-  const boxAt = (x0, x1, y0, y1, z0, z1, mat) => add(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
-  const sign = (text, w, h, x, y, z, ry, bg, fg, two) => { const m = cantonSign(text, w, h, bg, fg); m.position.set(x, y, z); m.rotation.y = ry; deco.add(m); if (two) { const b = m.clone(); b.rotation.y = ry + Math.PI; deco.add(b); } };
-  // ---- trees: trunk and crown stop shots, the trunk stops people (same rules as the skatepark's palms)
-  CANTON_TREES.forEach(([tx, tz, ph, kind]) => [1, -1].forEach(sg => {
-    const x = tx * sg, z = tz * sg, y = CL + ph, ban = kind === 'banyan', hT = ban ? 4.4 : 6.6;
-    const tr = { t: 'box', tree: true, x, z, y0: y, yc: y + hT - 0.4, y1: y + hT + (ban ? 2.4 : 0.8), r: ban ? 0.75 : 0.32, rc: ban ? 3.6 : 1.5 };
-    Object.assign(tr, { x0: x - tr.rc, x1: x + tr.rc, z0: z - tr.rc, z1: z + tr.rc, h: tr.y1 }); TREES.push(tr); TREE_Y0 = Math.min(TREE_Y0, y);
-    const limb = (ax, ay, az, bx2, by, bz, r0, r1, mat) => { const A = new THREE.Vector3(ax, ay, az), B = new THREE.Vector3(bx2, by, bz), m = add(new THREE.CylinderGeometry(r1, r0, A.distanceTo(B), 6), mat, (ax + bx2) / 2, (ay + by) / 2, (az + bz) / 2); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize()); return m; };
-    if (ban) {                                        // 榕樹: a stout trunk, a crown of several lobes, aerial roots hanging to the ground
-      add(new THREE.CylinderGeometry(tr.r * 0.7, tr.r * 1.15, hT, 10), M.trunk, x, y + hT / 2, z);
-      [[0, 0, 1.25, 2.5], [2.3, 0.4, 0.5, 2.1], [-2.1, 1.0, 0.6, 2.0], [0.6, 2.3, 0.4, 2.0], [-0.8, -2.3, 0.5, 2.1], [1.9, -1.6, 0.9, 1.7], [-2.0, -1.2, 1.0, 1.6]].forEach(([dx, dz, dy, r], i) => { const g = new THREE.IcosahedronGeometry(r, 1); g.scale(1, 0.72, 1); add(g, i % 2 ? M.leaf : M.leaf2, x + dx, y + hT + dy, z + dz); });
-      for (let i = 0; i < 9; i++) { const a = i * 0.7 + 0.3, r = 1.25 + (i % 3) * 0.45; limb(x + Math.cos(a) * r, y, z + Math.sin(a) * r, x + Math.cos(a) * r * 0.9, y + hT - 0.2 + (i % 2) * 0.4, z + Math.sin(a) * r * 0.9, 0.035, 0.05, M.trunk).castShadow = false; }
-    } else {                                          // 木棉: a straight trunk, tiers of bare branches, big red flowers along them and at the tips
-      add(new THREE.CylinderGeometry(tr.r * 0.45, tr.r, hT, 8), M.trunk, x, y + hT / 2, z);
-      let n = 0;
-      for (let tier = 0; tier < 4; tier++) for (let k = 0; k < 4; k++) {
-        const a = k * Math.PI / 2 + tier * 0.6, by = y + hT * (0.5 + tier * 0.13), L = 2.0 - tier * 0.32, ex = x + Math.cos(a) * L, ez = z + Math.sin(a) * L, ey = by + 0.55 + tier * 0.1;
-        limb(x, by, z, ex, ey, ez, 0.1 - tier * 0.015, 0.035, M.trunk);
-        for (const f of [0.55, 0.8, 1.02]) { const fl = add(new THREE.IcosahedronGeometry(0.3 - (n % 3) * 0.04, 0), M.flower, x + (ex - x) * f, by + (ey - by) * f + 0.16, z + (ez - z) * f); fl.rotation.set(n, n * 2, 0); n++; }
-      }
-      add(new THREE.IcosahedronGeometry(0.32, 0), M.flower, x, y + hT + 0.2, z);
+  T.shopFace = (key, wm, hm = 2.6) => { const t = ctex(Math.round(wm * PXM), Math.round(hm * PXM), (g, w, h) => { g.save(); g.scale(1, h / 256); SHOPFACE[key](g, w, 256); g.restore(); }); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t; };
+  // the two tea houses behind the spawns: 陶陶居 (black-lacquer board, gold characters) and 蓮香樓
+  T.teaFace = (name, wm, hm, o) => { const t = ctex(Math.round(wm * 28), Math.round(hm * 28), (g, w, h) => {
+    const P = 28, Y = m => h - m * P; g.fillStyle = o.wall; g.fillRect(0, 0, w, h); speckle(g, w, h, 5000, 0.05);
+    const bays = Math.round(wm / 4.5), bw = w / bays;
+    for (let b = 0; b < bays; b++) {
+      g.fillStyle = o.trim; g.fillRect(b * bw, Y(hm), 9, h); g.fillRect((b + 1) * bw - 9, Y(hm), 9, h);
+      for (let fl = 1; fl < Math.floor(hm / 3.6); fl++) { const y0 = fl * 3.6 + 0.9; g.fillStyle = o.trim; g.fillRect(b * bw + 14, Y(y0 + 2.2) - 4, bw - 28, 2.2 * P + 8); manchu(g, b * bw + 18, Y(y0 + 2.2), bw - 36, 2.2 * P, 6, 4); g.fillStyle = o.rail; g.fillRect(b * bw + 9, Y(y0 - 0.1), bw - 18, 0.75 * P); for (let k = 0; k < 9; k++) { g.fillStyle = o.trim; g.fillRect(b * bw + 16 + k * (bw - 32) / 8, Y(y0 - 0.15), 3, 0.6 * P); } }
+      g.fillStyle = '#241c16'; g.fillRect(b * bw + 14, Y(3.2), bw - 28, 3.2 * P); g.fillStyle = 'rgba(255,205,130,.42)'; g.fillRect(b * bw + 20, Y(3.0), bw - 40, 2.6 * P);
+      g.fillStyle = o.col; g.fillRect(b * bw + 9, Y(3.5), 7, 3.5 * P); g.fillRect((b + 1) * bw - 16, Y(3.5), 7, 3.5 * P);
     }
-  }));
-  // ---- landmarks and shops, different on the two halves (team 0 at +z, team 1 at -z)
-  const names = [
-    { tea: '陶陶居', house: '吳系茶餐廳', stall: '蘿蔔牛雜', mansion: '泰華樓', hk: 'wuxi', shops: [['黃振龍涼茶', 12, '#0f5a3a', '#f6d443', 'hzl'], ['源記腸粉', 21, '#fffdf4', '#c0261c', 'yuanji'], ['南信牛奶甜品', 31, '#a3171a', '#f1cf6b', 'nanxin']] },
-    { tea: '蓮香樓', house: '廣州酒家', stall: '雞公欖', mansion: '小畫舫齋', hk: 'gzjj', shops: [['明記腸粉', 12, '#f5c518', '#b3201a', 'mingji'], ['陳添記', 21, '#f7f1dc', '#b3201a', 'chentianji'], ['皇上皇臘味', 31, '#c11a1f', '#f6d24a', 'hsh']] },
-  ];
-  cantonTex();
-  const tx = (t, ru, rv) => { const c = t.clone(); c.repeat.set(ru, rv); c.needsUpdate = true; return c; };
-  Object.assign(M, { roof: std(0xffffff, { map: TEX.roofTile }), groof: std(0xffffff, { map: TEX.greenTile, roughness: 0.45 }), dwood: std(0x4a1f14, { roughness: 0.6 }), dark: std(0x1c1a1c, { roughness: 0.9 }), cream: std(0xe9dcc0), manchu: std(0xffffff, { map: TEX.manchu, emissive: 0x332a18, roughness: 0.35 }), redwall: std(0xffffff, { map: TEX.sandstone }), lantern: std(0xd8291c, { emissive: 0x5a0d06, roughness: 0.5 }), flat: std(0x8d857a, { roughness: 0.95 }) });
-  // a tiled roof skirt / hip roof: a frustum from the eave rectangle up to a smaller rectangle (inset 0 at the top = a ridge or a point)
-  const frustum = (grp, x0, x1, z0, z1, y0, y1, ix, iz, mat) => {
-    const A = [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], B = [[x0 + ix, y1, z0 + iz], [x1 - ix, y1, z0 + iz], [x1 - ix, y1, z1 - iz], [x0 + ix, y1, z1 - iz]], pos = [], uv = [];
-    for (let i = 0; i < 4; i++) { const j = (i + 1) % 4, L = Math.hypot(A[j][0] - A[i][0], A[j][2] - A[i][2]), sl = Math.hypot(y1 - y0, i % 2 ? ix : iz), d = (L - Math.hypot(B[j][0] - B[i][0], B[j][2] - B[i][2])) / 2;
-      [[A[j], [L, 0]], [A[i], [0, 0]], [B[i], [d, sl]], [A[j], [L, 0]], [B[i], [d, sl]], [B[j], [L - d, sl]]].forEach(([q, u]) => { pos.push(...q); uv.push(u[0] / 1.2, u[1] / 1.2); }); }
-    [B[0], B[3], B[2], B[0], B[2], B[1], A[0], A[1], A[2], A[0], A[2], A[3]].forEach(q => { pos.push(...q); uv.push(q[0] / 1.2, q[2] / 1.2); });   // top, and the soffit seen from the street
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals();
-    const m = new THREE.Mesh(g, mat); m.castShadow = m.receiveShadow = true; grp.add(m); return m;
+    for (let fl = 1; fl <= Math.floor(hm / 3.6); fl++) { g.fillStyle = o.trim; g.fillRect(0, Y(fl * 3.6 + 0.1), w, 7); }
+    const bwid = Math.min(w * 0.72, name.length * 96 + 70); g.fillStyle = o.board; g.fillRect(w / 2 - bwid / 2, Y(4.7), bwid, 1.3 * P + 22); g.strokeStyle = o.gold; g.lineWidth = 4; g.strokeRect(w / 2 - bwid / 2 + 5, Y(4.7) + 5, bwid - 10, 1.3 * P + 12);
+    txt(g, name.split('').join(' '), w / 2, Y(4.7) + 31, 46, o.gold, SERIF, 'center', 900, bwid - 34);
+    if (o.side) { [0.08, 0.92].forEach((u, i) => { g.fillStyle = o.board; g.fillRect(w * u - 16, Y(hm - 0.6), 32, o.side[i].length * 30 + 12); vtxt(g, o.side[i], w * u, Y(hm - 0.6) + 6, 25, o.gold); }); }
+  }); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t; };
+  // weathered granite boulders for the Five Rams mound
+  T.rock = ctex(512, 512, (g, w, h) => {
+    g.fillStyle = '#aaa59a'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 46; i++) { const x = rnd() * w, y = rnd() * h, r = rr(40, 110); const gr = g.createRadialGradient(x - r * 0.3, y - r * 0.3, 4, x, y, r); gr.addColorStop(0, shade('#c9c3b7', rr(-0.03, 0.04))); gr.addColorStop(1, shade('#a39d92', rr(-0.04, 0.03))); g.fillStyle = gr; g.beginPath(); const n = 9; for (let k = 0; k <= n; k++) { const a = k / n * 6.283, q = r * rr(0.75, 1.05); g[k ? 'lineTo' : 'moveTo'](x + Math.cos(a) * q, y + Math.sin(a) * q); } g.fill(); g.strokeStyle = 'rgba(70,64,56,.28)'; g.lineWidth = 2; g.stroke(); }
+    speckle(g, w, h, 7000, 0.1);
+  });
+  return { seed: v => { if (v !== undefined) seed = v; return seed; }, T, rnd, rr, shade, MANCHU, SHOPS };
+})();
+
+})()); }
+
+// builds the draft's scene; returns a group whose y = 0 is street level
+function cantonDesign() {
+  const GZT = cantonGZT(), M = GZ, { T, rnd, rr } = GZT;
+  if (cantonDesign.seed === undefined) cantonDesign.seed = GZT.seed(); else GZT.seed(cantonDesign.seed);     // same random scatter every time the map is built
+  const G = { map: new THREE.Group(), decor: new THREE.Group(), env: new THREE.Group() }, rootG = new THREE.Group(); rootG.add(G.map, G.decor, G.env);
+  let CUR = null;
+  // ---------------- materials (all UVs are in metres; a material's texture repeats every su × sv metres)
+  const mats = {};
+  function std(name, map, su, sv, o = {}) {
+    const p = Object.assign({ roughness: 0.85 }, o);
+    if (map) { const t = map.clone(); t.needsUpdate = true; t.repeat.set(1 / su, 1 / (sv || su)); p.map = t; }
+    const m = new THREE.MeshStandardMaterial(p); m.name = name; mats[name] = m; return m;
+  }
+  std('granite', T.granite, 4); std('stone', T.stone, 2.4, 2.4, { color: 0xf4f0e8 }); std('canal', T.canal, 6, 2.0);
+  std('bed', T.granite, 4, 4, { color: 0x9a978c }); std('brick', T.brick, 2); std('terrace', T.terrace, 2.4);
+  std('tiles', T.tiles, 2.0); std('greenTiles', T.greenTiles, 1.2); std('wood', T.wood, 1, 2); std('bamboo', T.bamboo, 1.4, 0.35);
+  std('plaster', T.stone, 3, 3, { color: 0xf1e3c2 }); std('plasterW', T.stone, 3, 3, { color: 0xf6f1e6 });
+  std('manchu', T.manchu, 1.2, 1.2, { emissive: 0x332211, roughness: 0.3 }); std('shopfront', T.shopfront, 8, 2.6);
+  std('teahouse', T.teahouse, 36, 12.6);
+  T.facade.forEach((t, i) => std('fac' + i, t, 4, 12.8));
+  std('gable', T.stone, 3, 3, { color: 0x8c9296 });
+  std('dark', null, 1, 1, { color: 0x2a2b30, roughness: 0.6, metalness: 0.4 });
+  std('iron', null, 1, 1, { color: 0x30343a, roughness: 0.45, metalness: 0.6 });
+  std('red', null, 1, 1, { color: 0xb3261e, roughness: 0.5 });
+  std('gold', null, 1, 1, { color: 0xd8a640, roughness: 0.35, metalness: 0.7 });
+  std('steel', null, 1, 1, { color: 0xc9ced3, roughness: 0.35, metalness: 0.15 });
+  std('teal', null, 1, 1, { color: 0x2f7d6d, roughness: 0.6 });
+  std('blue', null, 1, 1, { color: 0x2e5f9e, roughness: 0.55 });
+  std('leaf', null, 1, 1, { color: 0x3f6f38, roughness: 0.9, flatShading: true });
+  std('leafL', null, 1, 1, { color: 0x6c9a45, roughness: 0.9, flatShading: true });
+  std('bark', null, 1, 1, { color: 0x857565, roughness: 0.95 });
+  std('flower', null, 1, 1, { color: 0xe4402a, roughness: 0.6, emissive: 0x3a0800 });
+  std('lantern', null, 1, 1, { color: 0xc8291c, roughness: 0.45, emissive: 0x4a0a00 });
+  std('redwall', T.stone, 2.4, 2.4, { color: 0xb5503f }); std('redstone', T.canal, 4, 1.6, { color: 0xc98a78 });
+  std('rock', T.rock, 5, 5); std('statue', null, 1, 1, { color: 0xd9d4c8, roughness: 0.9, flatShading: true });
+  std('hull', null, 1, 1, { color: 0x4a2c1a, roughness: 0.7 }); std('sausage', null, 1, 1, { color: 0x9a2f24, roughness: 0.6 });
+  std('doorRed', null, 1, 1, { color: 0x5a1a14, roughness: 0.6, side: THREE.DoubleSide }); std('woodDS', T.wood, 1, 2, { side: THREE.DoubleSide });
+  std('yellow', null, 1, 1, { color: 0xf2c230, roughness: 0.6 }); std('white', null, 1, 1, { color: 0xf4f1e8, roughness: 0.7 });
+  std('grass', null, 1, 1, { color: 0x6e9b4a, roughness: 1 });
+
+  // ---------------- geometry helpers
+  function boxGeo(x0, x1, y0, y1, z0, z1) {
+    const w = x1 - x0, h = y1 - y0, d = z1 - z0, g = new THREE.BoxGeometry(w, h, d);
+    const uv = g.attributes.uv, dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+    for (let f = 0; f < 6; f++) for (let k = 0; k < 4; k++) { const i = f * 4 + k; uv.setXY(i, uv.getX(i) * dims[f][0], uv.getY(i) * dims[f][1]); }
+    g.translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); return g;
+  }
+  // m: one material or [side, top] or a 6-array (+x,-x,+y,-y,+z,-z)
+  function box(group, x0, x1, y0, y1, z0, z1, m, o = {}) {
+    let mm = m; if (Array.isArray(m) && m.length === 2) mm = [m[0], m[0], m[1], m[0], m[0], m[0]];
+    const mesh = new THREE.Mesh(boxGeo(x0, x1, y0, y1, z0, z1), mm);
+    mesh.castShadow = o.cast !== false; mesh.receiveShadow = true; Object.assign(mesh.userData, o.ud || {});
+    if (CUR && !CUR.oob && group === G.map && x0 === CUR.x0 && x1 === CUR.x1 && z0 === CUR.z0 && z1 === CUR.z1 && y1 === CUR.h && y0 === (CUR.float ? CUR.y0 : (CUR.y0 || 0))) return mesh;
+    group.add(mesh); return mesh;
+  }
+  // a prism along an axis from a 2D profile [[u, y]...]: axis 'z' → u is world z, extruded along x from a0 to a1
+  function prism(group, pts, axis, a0, a1, m, o = {}) {
+    const sh = new THREE.Shape(pts.map(([u, y]) => new THREE.Vector2(axis === 'z' ? -u : u, y)));
+    const g = new THREE.ExtrudeGeometry(sh, { depth: a1 - a0, bevelEnabled: false, curveSegments: 24 });
+    if (axis === 'z') { g.rotateY(Math.PI / 2); g.translate(a0, 0, 0); } else { g.translate(0, 0, a0); }
+    const mesh = new THREE.Mesh(g, m); mesh.castShadow = o.cast !== false; mesh.receiveShadow = true; Object.assign(mesh.userData, o.ud || {}); group.add(mesh); return mesh;
+  }
+  function cyl(group, x, y0, z, r0, r1, h, m, seg = 12) {
+    const g = new THREE.CylinderGeometry(r1, r0, h, seg); g.translate(x, y0 + h / 2, z);
+    const mesh = new THREE.Mesh(g, m); mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh); return mesh;
+  }
+  function between(group, a, b, r, m, seg = 6) {
+    const d = new THREE.Vector3().subVectors(b, a), L = d.length();
+    const g = new THREE.CylinderGeometry(r, r, L, seg); g.translate(0, L / 2, 0);
+    const mesh = new THREE.Mesh(g, m); mesh.position.copy(a); mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); mesh.castShadow = true; group.add(mesh); return mesh;
+  }
+  function plane(group, w, h, m, pos, rotY = 0, ds = false) {
+    const g = new THREE.PlaneGeometry(w, h); const uv = g.attributes.uv; if (!m.userData.unit) for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * w, uv.getY(i) * h);
+    const mesh = new THREE.Mesh(g, m); mesh.position.copy(pos); mesh.rotation.y = rotY; group.add(mesh); if (ds) { const back = new THREE.Mesh(g, m); back.position.copy(pos); back.rotation.y = rotY + Math.PI; back.castShadow = true; group.add(back); } return mesh;
+  }
+  const signMat = (txt, bg, fg) => { const m = new THREE.MeshStandardMaterial({ map: T.sign(txt, bg, fg), roughness: 0.6 }); m.userData.unit = true; return m; };
+  const plaqueMat = (txt) => { const m = new THREE.MeshStandardMaterial({ map: T.plaque(txt), roughness: 0.5 }); m.userData.unit = true; return m; };
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const H = s => ({ ud: { hy: s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h, solid: true } });
+
+  const { XH, ZH, CANAL } = M;
+  // ---------------- solids
+  const bridgesDone = new Set();
+  const stairs = (s, m) => {
+    const rise = Math.abs(s.h1 - s.h0), n = Math.max(2, Math.round(rise / 0.22)), up = s.h1 > s.h0;
+    for (let i = 0; i < n; i++) {
+      const t0 = i / n, t1 = (i + 1) / n, y = rise * (i + 1) / n;
+      if (s.axis === 'z') { const za = up ? s.z0 + (s.z1 - s.z0) * t0 : s.z0 + (s.z1 - s.z0) * (1 - t1), zb = up ? s.z1 : s.z0 + (s.z1 - s.z0) * (1 - t0); box(G.map, s.x0, s.x1, 0, y, up ? za : s.z0, up ? s.z1 : zb, [m, m], H(s)); }
+      else { const xa = up ? s.x0 + (s.x1 - s.x0) * t0 : s.x0, xb = up ? s.x1 : s.x0 + (s.x1 - s.x0) * (1 - t0); box(G.map, xa, xb, 0, y, s.z0, s.z1, [m, m], H(s)); }
+    }
   };
-  const face = (grp, tex, w, h, x, y, z, ry, o) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), std(0xffffff, Object.assign({ map: tex }, o || {}))); m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; grp.add(m); return m; };
-  names.forEach((n, t) => {
-    const sg = t ? -1 : 1, P = (x, z) => [x * sg, z * sg], ry = r => r + (t ? Math.PI : 0);
-    // everything below is written for team 0's half (+z); team 1's copy is the same group turned 180°
-    const G = new THREE.Group(); G.rotation.y = t ? Math.PI : 0; deco.add(G);
-    const bx = (x0, x1, y0, y1, z0, z1, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.castShadow = m.receiveShadow = true; G.add(m); return m; };
-    const tm = std(t ? 0x2f8f62 : 0xb5362a, { roughness: 0.5 });                       // the team half's accent colour (dragon boat)
-    let [x, z] = P(-18, 43.9); sign(n.tea, 9, 1.9, x, CL + 3.45, z, ry(Math.PI), t ? '#7a1512' : '#141210', t ? '#f3d98a' : '#e8c15a');
-    [x, z] = P(3.5, 26.65); sign(n.stall, 2.2, 0.6, x, CL + 0.7, z, ry(0), '#7a1d18', '#ffe39a');
-    [x, z] = P(-14.93, 23); sign(n.mansion, 2.6, 0.5, x, CL + 2.72, z, ry(Math.PI / 2));
-    // ---- shops under the arcade: each one's own frontage on the back wall (ink doesn't stick to it), its vertical sign on the facade above the deck
-    n.shops.forEach(([nm, zc, bg, fg, key]) => {
-      face(G, TEX._shopFace(key, 8, 3.0), 8, 3.0, 25.97, CL + 1.5, zc, -Math.PI / 2);
-      const L = nm.length * 0.8 + 0.3, vt = TEX._vsign(nm, bg, fg), vz = zc + 1.9; face(G, vt, 0.9, L, 19.72, CL + 5.0 + L / 2, vz + 0.03, 0).castShadow = true; face(G, vt, 0.9, L, 19.72, CL + 5.0 + L / 2, vz - 0.03, Math.PI); bx(20.2, 20.3, CL + 3.8, CL + 5.1 + L, vz - 0.05, vz + 0.05, M.dark); bx(19.25, 20.3, CL + 5.0 + L, CL + 5.06 + L, vz - 0.03, vz + 0.03, M.dark);
-    });
-    // ---- arcade colonnade: plinth and capital on every column, a beam with corner brackets between them, ceiling joists; a balustrade on the deck edge
-    for (let i = 0; i < 8; i++) {
-      const d = (35.7 - 8.3) / 7, c = 8.3 + i * d;
-      bx(20.18, 21.02, CL, CL + 0.32, c - 0.42, c + 0.42, M.cstone); bx(20.24, 20.96, CL + 0.32, CL + 0.4, c - 0.36, c + 0.36, M.cstone);
-      bx(20.22, 20.98, CL + 3.02, CL + 3.12, c - 0.38, c + 0.38, M.white); bx(20.16, 21.04, CL + 3.12, CL + 3.39, c - 0.44, c + 0.44, M.white);
-      bx(20.9, 26, CL + 3.22, CL + 3.39, c - 0.12, c + 0.12, M.plaster);
-      if (i < 7) {                                   // an arch from column to column
-        const W = d - 0.6, H = 0.95, sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0, H); sh.lineTo(W, H); sh.lineTo(W, 0); sh.quadraticCurveTo(W / 2, 1.42, 0, 0);
-        const ag = new THREE.ExtrudeGeometry(sh, { depth: 0.36, bevelEnabled: false, curveSegments: 10 }); const am = new THREE.Mesh(ag, M.cstone); am.rotation.y = -Math.PI / 2; am.position.set(20.78, CL + 2.44, c + 0.3); am.castShadow = true; G.add(am);
-      }
+  const ramp = (s, side, top) => {
+    const pts = s.axis === 'z' ? [[s.z0, 0], [s.z1, 0], [s.z1, s.h1], [s.z0, s.h0]] : [[s.x0, 0], [s.x1, 0], [s.x1, s.h1], [s.x0, s.h0]];
+    prism(G.map, pts, s.axis, s.axis === 'z' ? s.x0 : s.z0, s.axis === 'z' ? s.x1 : s.z1, [top, side], H(s));
+  };
+  const plinth = (s, h = 0.45) => box(G.map, s.x0 - 0.04, s.x1 + 0.04, s.y0 || 0, (s.y0 || 0) + h, s.z0 - 0.04, s.z1 + 0.04, mats.stone, { ud: { hy: s.h, solid: true } });
+  const shrubs = (x0, x1, z0, z1, y, n) => { for (let i = 0; i < n; i++) { const g = new THREE.IcosahedronGeometry(rr(0.35, 0.6), 0); g.scale(1, 0.75, 1); const m = new THREE.Mesh(g, rnd() < 0.5 ? mats.leaf : mats.leafL); m.position.set(rr(x0 + 0.3, x1 - 0.3), y + 0.25, rr(z0 + 0.3, z1 - 0.3)); m.castShadow = true; G.decor.add(m); } };
+  function steamerStack(x, z, y0, h) { const n = Math.max(1, Math.round(h / 0.22)); for (let i = 0; i < n; i++) cyl(G.decor, x, y0 + i * 0.22, z, 0.36, 0.36, 0.2, mats.bamboo, 14); cyl(G.decor, x, y0 + n * 0.22, z, 0.37, 0.3, 0.08, mats.bamboo, 14); }
+  function wokEar(x0, x1, z0, z1, y0, y1) { wokEarAx('z', z0, z1, x0, x1, y0, y1, G.map); }
+  // axis 'z': the gable spans z (a0..a1) and is t0..t1 thick in x; axis 'x': spans x, thick in z
+  function wokEarAx(axis, a0, a1, t0, t1, y0, y1, group) {
+    const L = a1 - a0, c = (a0 + a1) / 2, shoulder = y0 + (y1 - y0) * 0.45, pts = [];
+    pts.push([a0, y0], [a0 - 0.18, shoulder]);
+    for (let i = 0; i <= 24; i++) { const a = Math.PI - i / 24 * Math.PI; pts.push([c + Math.cos(a) * (L / 2 + 0.18), shoulder + Math.sin(a) * (y1 - shoulder)]); }
+    pts.push([a1, y0]);
+    prism(group, pts, axis, t0, t1, [mats.gable, mats.plasterW], { ud: { hy: y1, solid: true } });
+    const tm = (t0 + t1) / 2, curve = new THREE.CatmullRomCurve3(pts.slice(2, -1).map(([u, y]) => axis === 'z' ? V(tm, y + 0.05, u) : V(u, y + 0.05, tm)));
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.14, 6), mats.dark); tube.castShadow = true; group.add(tube);
+  }
+  for (const s of M.solids) {
+    const k = s.kind; CUR = s;
+    if (k === 'bridge') {
+      if (bridgesDone.has(s.x0)) continue; bridgesDone.add(s.x0);
+      const yb = z => 0.9 * Math.min(1, Math.max(0, (3.5 - Math.abs(z)) / 2.3));
+      [s.x0 + 0.15, s.x1 - 0.15].forEach(x => {
+        for (let z = -3.2; z <= 3.21; z += 0.8) { const y = yb(z); box(G.decor, x - 0.1, x + 0.1, y, y + 0.85, z - 0.1, z + 0.1, mats.stone); }
+        [[-3.5, -1.2], [-1.2, 1.2], [1.2, 3.5]].forEach(([za, zb]) => between(G.decor, V(x, yb(za) + 0.85, za), V(x, yb(zb) + 0.85, zb), 0.09, mats.stone, 6));
+      });
+      continue;
     }
-    // stone balustrade on the deck edge: a base, a handrail, vase-shaped balusters, a post at every column
-    bx(20.3, 20.6, CL + 3.8, CL + 3.9, 8, 36, M.cstone); bx(20.28, 20.62, CL + 4.58, CL + 4.72, 8, 36, M.cstone);
-    for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; bx(20.27, 20.63, CL + 3.8, CL + 4.82, c - 0.18, c + 0.18, M.cstone); }
-    { const prof = [[0.05, 0], [0.09, 0.05], [0.06, 0.12], [0.115, 0.3], [0.1, 0.42], [0.05, 0.56], [0.07, 0.64], [0.05, 0.68]].map(([r, y2]) => new THREE.Vector2(r, y2));
-      const bal = new THREE.InstancedMesh(new THREE.LatheGeometry(prof, 8), M.cstone, 68), mt = new THREE.Matrix4(); let n = 0;
-      for (let q = 0; q < 70 && n < 68; q++) { const bz = 8.5 + q * 0.4; if (bz > 35.6) break; const rel = (bz - 8.3) % ((35.7 - 8.3) / 7); if (rel < 0.3 || rel > (35.7 - 8.3) / 7 - 0.3) continue; mt.makeTranslation(20.45, CL + 3.9, bz); bal.setMatrixAt(n++, mt); }
-      bal.count = n; bal.castShadow = true; G.add(bal); }
-    // ---- the café on the street (吳系茶餐廳 / 廣州酒家): frontage toward the street centre, a parapet, the big board on the roof
-    face(G, TEX._shopFace(n.hk, 7, 2.4), 7, 2.4, -4.97, CL + 1.2, 21.5, Math.PI / 2);
-    bx(-5.25, -5, CL + 2.4, CL + 2.62, 18, 25, M.cream);
-    { const [sx, sz] = P(-5.12, 21.5); sign(n.house, 5.2, 1.15, sx + sg * 0.01, CL + 3.45, sz, ry(Math.PI / 2), t ? '#7a1512' : '#c8202a', t ? '#f3d98a' : '#ffffff'); sign(n.house, 5.2, 1.15, sx - sg * 0.01, CL + 3.45, sz, ry(-Math.PI / 2), t ? '#7a1512' : '#c8202a', t ? '#f3d98a' : '#ffffff'); }
-    [19.4, 23.6].forEach(pz => bx(-5.17, -5.07, CL + 2.62, CL + 2.9, pz - 0.05, pz + 0.05, M.dark));
-    // ---- street stall: four posts and a striped awning, the pot and its skewers; the cargo trike's wheels and handlebar; bamboo steamers by the café
-    [[2.1, 25.1], [4.9, 25.1], [2.1, 26.5], [4.9, 26.5]].forEach(([px, pz]) => bx(px - 0.04, px + 0.04, CL + 1.1, CL + 3.0, pz - 0.04, pz + 0.04, M.dark));
-    for (let i = 0; i < 6; i++) bx(1.8 + i * 0.57, 1.8 + (i + 1) * 0.57, CL + 3.0, CL + 3.07, 24.8, 26.8, i % 2 ? M.cream : M.red);
-    { const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.36, 0.34, 14), M.dark); pot.position.set(2.9, CL + 1.27, 25.8); G.add(pot); for (let i = 0; i < 7; i++) { const sk = bx(-0.015, 0.015, 0, 0.5, -0.015, 0.015, M.gold); sk.position.set(3.7 + i * 0.16, CL + 1.3, 25.8); sk.rotation.z = -0.35; } }
-    [[13.2, 24.25], [14.8, 24.25], [14, 26.75]].forEach(([wx, wz]) => { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.12, 16), M.dark); w.rotation.x = Math.PI / 2; w.position.set(wx, CL + 0.42, wz); G.add(w); });
-    bx(13.95, 14.05, CL + 0.5, CL + 1.55, 26.7, 26.8, M.dark); bx(13.6, 14.4, CL + 1.5, CL + 1.58, 26.72, 26.8, M.dark);
-    [[-4.3, 25.6, 5], [-3.5, 25.9, 7], [-4.0, 26.6, 4]].forEach(([sx, sz, nS]) => { for (let i = 0; i < nS; i++) { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.17, 14), std(i % 2 ? 0xc9a463 : 0xb89152)); st.position.set(sx, CL + 0.09 + i * 0.18, sz); st.castShadow = true; G.add(st); } });
-    // ---- lantern strings across the street
-    [[11, 5.4], [19, 5.9], [28.2, 5.9], [34, 5.6]].forEach(([lz, ly]) => { const line = bx(-15, 20.3, CL + ly, CL + ly + 0.025, lz - 0.012, lz + 0.012, M.dark); line.castShadow = false;
-      for (let i = 0; i < 12; i++) { const lx = -13 + i * 2.9; const l = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 8), M.lantern); l.scale.y = 0.82; l.position.set(lx, CL + ly - 0.4, lz); G.add(l); bx(lx - 0.1, lx + 0.1, CL + ly - 0.1, CL + ly - 0.06, lz - 0.1, lz + 0.1, M.gold); } });
+    if (k === 'stair' || s.t === 'ramp') continue;      // slopes are drawn (and inked) by the game
+    if (s.t === 'fence') {   // 趟栊: odd number of round timber bars across the doorway, with an open half-door
+      const n = 13; for (let i = 0; i < n; i++) { const y = 0.15 + i * (s.h - 0.3) / (n - 1); between(G.map, V((s.x0 + s.x1) / 2, y, s.z0), V((s.x0 + s.x1) / 2, y, s.z1), 0.05, mats.wood, 8).userData = { hy: s.h, solid: true }; }
+      box(G.map, s.x0, s.x1, 0, s.h, s.z0 - 0.12, s.z0, mats.wood, { ud: { hy: s.h, solid: true } }); box(G.map, s.x0, s.x1, 0, s.h, s.z1, s.z1 + 0.12, mats.wood, { ud: { hy: s.h, solid: true } });
+      continue;
+    }
+    const y0 = s.y0 || 0;
+    switch (k) {
+      case 'terrace': box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, [mats.fac3, mats.terrace], H(s)); break;
+      case 'tank': box(G.map, s.x0, s.x1, 2.0, 2.2, s.z0, s.z1, mats.dark, H(s)); cyl(G.map, (s.x0 + s.x1) / 2, 2.2, (s.z0 + s.z1) / 2, 0.95, 0.95, s.h - 2.2, mats.steel, 20).userData = { hy: s.h, solid: true }; break;
+      case 'teahouse': box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, [mats.plaster, mats.terrace], H(s)); break;
+      case 'arcade': {
+        box(G.map, s.x0, s.x1, y0, s.h, s.z0, s.z1, [mats.plaster, mats.terrace], H(s));
+        // segmental arches between the columns on the street side, cornice line
+        const ax = s.team ? s.x1 : s.x0;
+        for (let i = 0; i < 7; i++) {
+          const c0 = 8.6 + i * 3.914 + 0, c1 = c0 + 3.314; const za = s.team ? -c1 : c0, zb = s.team ? -c0 : c1;
+          const pts = [[za, y0], [zb, y0], [zb, y0 - 0.4]]; for (let j = 1; j < 16; j++) { const t = j / 16; pts.push([zb + (za - zb) * t, y0 - 0.4 + 0.32 * Math.sin(t * Math.PI)]); } pts.push([za, y0 - 0.4]);
+          prism(G.map, pts, 'z', ax - 0.15, ax + 0.15, mats.plasterW, { ud: { hy: 3, solid: true } });
+        }
+        box(G.map, ax - 0.2, ax + 0.2, s.h - 0.05, s.h + 0.05, s.z0, s.z1, mats.plasterW);
+        break;
+      }
+      case 'balustrade': {
+        const x = (s.x0 + s.x1) / 2;
+        box(G.map, s.x0, s.x1, s.h - 0.12, s.h, s.z0, s.z1, mats.plasterW, H(s)); box(G.map, s.x0, s.x1, y0, y0 + 0.12, s.z0, s.z1, mats.plasterW, H(s));
+        const vg = new THREE.LatheGeometry([[0.05, 0], [0.09, 0.1], [0.06, 0.25], [0.1, 0.45], [0.06, 0.62], [0.07, 0.66]].map(([r, y]) => new THREE.Vector2(r, y)), 8);
+        const n = Math.floor((s.z1 - s.z0) / 0.3), im = new THREE.InstancedMesh(vg, mats.plasterW, n), o = new THREE.Object3D();
+        for (let i = 0; i < n; i++) { o.position.set(x, y0 + 0.12, s.z0 + 0.15 + i * 0.3); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }
+        im.castShadow = true; im.userData = { hy: s.h, solid: true }; G.map.add(im);
+        break;
+      }
+      case 'column': {
+        box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, mats.plasterW, H(s));
+        box(G.map, s.x0 - 0.08, s.x1 + 0.08, 0, 0.35, s.z0 - 0.08, s.z1 + 0.08, mats.stone, H(s));
+        box(G.map, s.x0 - 0.1, s.x1 + 0.1, s.h - 0.3, s.h - 0.15, s.z0 - 0.1, s.z1 + 0.1, mats.plasterW, H(s));
+        break;
+      }
+      case 'brick': box(G.map, s.x0, s.x1, y0, s.h, s.z0, s.z1, [mats.brick, mats.terrace], H(s)); plinth(s, Math.min(0.5, s.h * 0.4)); break;
+      case 'hall': {   // 正廳: blue brick, pitched grey-tile roof between two wok-ear gables (the rest is dressed below)
+        box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, mats.brick, H(s)); plinth(s);
+        prism(G.map, [[s.x0 - 0.4, s.h], [s.x1 + 0.4, s.h], [(s.x0 + s.x1) / 2, s.h + 1.9]], 'x', s.z0 + 0.3, s.z1 - 0.3, [mats.tiles, mats.brick], H(s));
+        wokEarAx('x', s.x0 - 0.35, s.x1 + 0.35, s.z0 - 0.05, s.z0 + 0.4, s.h, s.h + 2.7, G.map); wokEarAx('x', s.x0 - 0.35, s.x1 + 0.35, s.z1 - 0.4, s.z1 + 0.05, s.h, s.h + 2.7, G.map);
+        break;
+      }
+      case 'lintel': {
+        if (s.zone === 'mansion') { box(G.map, s.x0, s.x1, y0, s.h, s.z0, s.z1, [mats.stone, mats.terrace], H(s)); const fx = s.team ? s.x0 - 0.01 : s.x1 + 0.01; plane(G.decor, 2.6, 0.38, plaqueMat(s.team ? '小畫舫齋' : '泰華樓'), V(fx, y0 + 0.2, (s.z0 + s.z1) / 2), s.team ? -Math.PI / 2 : Math.PI / 2); break; }
+        // 獵德牌坊: granite beam, the name on both faces, two tiers of glazed green roof with upturned ends
+        box(G.map, s.x0, s.x1, y0, s.h, s.z0, s.z1, mats.stone, H(s));
+        [[s.z1 + 0.01, 0], [s.z0 - 0.01, Math.PI]].forEach(([z, ry]) => plane(G.decor, 3.4, 0.95, plaqueMat('獵德'), V(0, (y0 + s.h) / 2, z), ry));
+        const zc = (s.z0 + s.z1) / 2;
+        prism(G.map, [[s.z0 - 0.7, s.h], [s.z1 + 0.7, s.h], [zc, s.h + 0.8]], 'z', s.x0 - 0.6, s.x1 + 0.6, mats.greenTiles, H(s));
+        box(G.map, -2.3, 2.3, s.h + 0.3, s.h + 1.0, s.z0 + 0.15, s.z1 - 0.15, mats.stone, H(s));
+        prism(G.map, [[s.z0 - 0.6, s.h + 1.0], [s.z1 + 0.6, s.h + 1.0], [zc, s.h + 1.75]], 'z', -2.9, 2.9, mats.greenTiles, H(s));
+        [[s.x0 - 0.6, s.h + 0.85], [s.x1 + 0.6, s.h + 0.85], [-2.9, s.h + 1.8], [2.9, s.h + 1.8]].forEach(([x, y]) => { const m = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.65, 6), mats.greenTiles); m.position.set(x, y, zc); m.rotation.z = x < 0 ? 0.6 : -0.6; G.map.add(m); });
+        break;
+      }
+      case 'post': {
+        box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, mats.stone, H(s)); box(G.map, s.x0 - 0.15, s.x1 + 0.15, 0, 0.6, s.z0 - 0.15, s.z1 + 0.15, mats.stone, H(s));
+        [s.z0 - 0.3, s.z1 + 0.3].forEach(z => { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.22, 16), mats.stone); d.rotation.z = Math.PI / 2; d.position.set((s.x0 + s.x1) / 2, 0.85, z); d.castShadow = true; G.decor.add(d); });   // drum stones
+        break;
+      }
+      case 'planterbox': box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, [mats.stone, mats.grass], H(s)); shrubs(s.x0, s.x1, s.z0, s.z1, s.h, 6); break;
+      case 'planter': box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, [mats.stone, mats.grass], H(s)); break;
+      case 'planterwall': box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, [mats.stone, mats.grass], H(s)); shrubs(s.x0, s.x1, s.z0, s.z1, s.h, 5); break;
+      case 'shop': {
+        box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, [s.team ? mats.fac2 : mats.fac6, mats.terrace], H(s));
+        box(G.map, s.x0 - 0.1, s.x1 + 0.1, s.h - 0.15, s.h + 0.35, s.z0 - 0.1, s.z1 + 0.1, mats.plasterW, H(s));
+        break;
+      }
+      case 'steamer': {
+        box(G.map, s.x0, s.x1, 0, 0.02, s.z0, s.z1, mats.stone, H(s));
+        if (s.team && s.h > 1) { box(G.decor, s.x0 + 0.05, s.x1 - 0.05, 0, 0.45, s.z0 + 0.05, s.z1 - 0.05, [mats.red, mats.gold]); box(G.decor, s.x0 + 0.15, s.x1 - 0.15, 0.45, 0.85, s.z0 + 0.15, s.z1 - 0.15, [mats.red, mats.gold]); box(G.decor, s.x0 + 0.3, s.x1 - 0.3, 0.85, s.h, s.z0 + 0.3, s.z1 - 0.3, [mats.red, mats.gold]); }   // stacked mooncake gift boxes
+        else for (let x = s.x0 + 0.4; x < s.x1; x += 0.78) for (let z = s.z0 + 0.4; z < s.z1; z += 0.78) steamerStack(x, z, 0, s.h - 0.08);
+        const m = new THREE.Mesh(boxGeo(s.x0, s.x1, 0, s.h, s.z0, s.z1), mats.bamboo); m.visible = false; m.userData = { hy: s.h, solid: true, proxy: true }; G.map.add(m);
+        break;
+      }
+      case 'stall': {
+        const zc = (s.z0 + s.z1) / 2;
+        if (!s.team) {   // 牛雜檔: steel cart, a big simmering pot, skewers, red-and-white canopy
+          box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, [mats.steel, mats.steel], H(s));
+          cyl(G.decor, s.x0 + 0.8, s.h, zc, 0.45, 0.45, 0.35, mats.dark, 16); cyl(G.decor, s.x0 + 0.8, s.h + 0.3, zc, 0.4, 0.4, 0.06, mats.sausage, 16);
+          for (let i = 0; i < 9; i++) between(G.decor, V(s.x0 + 1.7 + i * 0.12, s.h, zc - 0.2), V(s.x0 + 1.75 + i * 0.12, s.h + 0.42, zc + 0.15), 0.012, mats.bamboo, 4);
+          [[s.x0, s.z0], [s.x1, s.z0], [s.x0, s.z1], [s.x1, s.z1]].forEach(([x, z]) => cyl(G.decor, x, 0, z, 0.04, 0.04, 2.4, mats.iron, 6));
+          for (let i = 0; i < 6; i++) box(G.decor, s.x0 - 0.3 + i * 0.6, s.x0 + 0.3 + i * 0.6, 2.4, 2.48, s.z0 - 0.4, s.z1 + 0.4, i % 2 ? mats.white : mats.red);
+          plane(G.decor, 0.6, 1.9, signMat('蘿蔔牛雜', '#7a1d18', '#ffe39a'), V(s.x1 + 0.35, 1.6, zc), Math.PI / 2, true);
+        } else {         // 雞公欖: the olive seller's counter with the paper rooster and a pole of streamers
+          box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, [mats.teal, mats.wood], H(s));
+          for (let i = 0; i < 4; i++) { cyl(G.decor, s.x0 + 0.5 + i * 0.45, s.h, zc, 0.14, 0.14, 0.3, mats.leafL, 10); cyl(G.decor, s.x0 + 0.5 + i * 0.45, s.h + 0.3, zc, 0.15, 0.15, 0.04, mats.red, 10); }
+          const rx = s.x1 - 0.6, ry = s.h, bm = new THREE.MeshStandardMaterial({ color: 0xe0562c, roughness: 0.7, flatShading: true });
+          const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8), bm); body.scale.set(1.3, 0.95, 0.85); body.position.set(rx, ry + 0.55, zc); body.castShadow = true; G.decor.add(body);
+          const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), mats.yellow); head.position.set(rx - 0.55, ry + 1.05, zc); G.decor.add(head); between(G.decor, V(rx - 0.4, ry + 0.7, zc), V(rx - 0.55, ry + 1.0, zc), 0.1, mats.yellow, 6);
+          const comb = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.22, 4), mats.red); comb.position.set(rx - 0.55, ry + 1.3, zc); G.decor.add(comb); const beak = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.16, 4), mats.gold); beak.rotation.z = Math.PI / 2; beak.position.set(rx - 0.78, ry + 1.05, zc); G.decor.add(beak);
+          [mats.blue, mats.leafL, mats.red, mats.yellow, mats.dark].forEach((m, i) => { const f = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.75, 4), m); f.position.set(rx + 0.6, ry + 0.85 + i * 0.04, zc - 0.2 + i * 0.1); f.rotation.z = -0.9 + i * 0.12; G.decor.add(f); });
+          between(G.decor, V(s.x0 + 0.1, 0, s.z1), V(s.x0 + 0.1, 2.9, s.z1), 0.03, mats.bamboo); [mats.red, mats.yellow, mats.leafL, mats.blue].forEach((m, i) => box(G.decor, s.x0 + 0.12, s.x0 + 0.16, 2.1 + i * 0.18, 2.24 + i * 0.18, s.z1 + 0.02, s.z1 + 0.5, m));
+          plane(G.decor, 0.6, 1.5, signMat('雞公欖', '#1e3326', '#ffe39a'), V(s.x0 - 0.35, 1.5, zc), Math.PI / 2, true);
+        }
+        break;
+      }
+      case 'trike': {
+        box(G.map, s.x0 + 0.1, s.x1 - 0.1, 0.5, s.h, s.z0, s.z0 + 1.6, [s.team ? mats.red : mats.blue, mats.wood], H(s));
+        box(G.map, s.x0 + 0.1, s.x1 - 0.1, 0, 0.5, s.z0 + 0.2, s.z0 + 1.4, mats.dark, H(s));
+        const wg = new THREE.TorusGeometry(0.32, 0.07, 8, 16);
+        [[s.x0 + 0.05, s.z0 + 0.8], [s.x1 - 0.05, s.z0 + 0.8], [(s.x0 + s.x1) / 2, s.z1 - 0.3]].forEach(([x, z]) => { const w = new THREE.Mesh(wg, mats.dark); w.position.set(x, 0.38, z); w.rotation.y = Math.PI / 2; G.decor.add(w); });
+        between(G.decor, V((s.x0 + s.x1) / 2, 0.4, s.z1 - 0.3), V((s.x0 + s.x1) / 2, 1.0, s.z0 + 1.7), 0.04, mats.iron);
+        const hb = new THREE.Mesh(boxGeo(s.x0 + 0.4, s.x1 - 0.4, 1.0, 1.06, s.z0 + 1.68, s.z0 + 1.74), mats.iron); G.decor.add(hb);
+        const m = new THREE.Mesh(boxGeo(s.x0, s.x1, 0, s.h, s.z0, s.z1), mats.dark); m.visible = false; m.userData = { hy: s.h, solid: true, proxy: true }; G.map.add(m);
+        if (!s.team) steamerStack((s.x0 + s.x1) / 2, s.z0 + 0.8, s.h, 0.5);
+        else for (let i = 0; i < 14; i++) { const f = new THREE.Mesh(new THREE.IcosahedronGeometry(rr(0.14, 0.22), 0), [mats.flower, mats.yellow, mats.white, mats.leafL][i % 4]); f.position.set(rr(s.x0 + 0.3, s.x1 - 0.3), s.h + rr(0.1, 0.4), rr(s.z0 + 0.2, s.z0 + 1.4)); G.decor.add(f); }   // flower-market trike
+        break;
+      }
+      case 'landing': box(G.map, s.x0, s.x1, y0, s.h, s.z0, s.z1, mats.stone, H(s)); break;
+      case 'deck': {
+        box(G.map, s.x0, s.x1, y0, s.h, s.z0, s.z1, [mats.stone, mats.granite], H(s));
+        [s.x0, s.x1].forEach(x => { for (let i = 0; i < 3; i++) { const z0 = -3.5 + i * 7 / 3 + 0.25, z1 = z0 + 7 / 3 - 0.5; prism(G.map, [[z0, y0], [z1, y0], [z1, y0 - 0.25], [(z0 + z1) / 2, y0 - 0.05], [z0, y0 - 0.25]], 'z', x - 0.12, x + 0.12, mats.stone); } });
+        break;
+      }
+      case 'hall2': {   // the ancestral hall: blue-brick walls, granite base, red doors, a flat roof terrace with a glazed ridge parapet
+        box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, [mats.brick, mats.terrace], H(s)); plinth(s, 0.9);
+        box(G.map, s.x0 - 0.12, s.x1 + 0.12, s.h - 0.35, s.h - 0.1, s.z0 - 0.12, s.z1 + 0.12, mats.plasterW, H(s));
+        [[s.z1 + 0.03, 0], [s.z0 - 0.03, Math.PI]].forEach(([z, ry], i) => {
+          plane(G.map, 1.8, 2.6, mats.red, V(0, 1.3 + 0.9 - 0.9, z), ry).position.y = 1.3 + 0.0;
+          plane(G.map, 2.2, 0.55, plaqueMat(i ? '浪氏书院' : '墨浪祠'), V(0, 3.15, z + (i ? -0.01 : 0.01)), ry);
+          // a green-tiled eave over the door
+          const zz = i ? s.z0 : s.z1, sg = i ? -1 : 1;
+          prism(G.map, [[zz, 3.45], [zz + sg * 0.9, 3.05], [zz + sg * 0.9, 2.95], [zz, 3.3]].map(([z, y]) => [z, y]), 'z', -1.6, 1.6, mats.greenTiles);
+          [-1.25, 1.25].forEach(x => box(G.map, x - 0.16, x + 0.16, 0, 3.05, zz + sg * 0.62 - 0.16, zz + sg * 0.62 + 0.16, mats.stone));
+          box(G.map, s.x0, s.x1, s.h, s.h + 0.12, i ? s.z0 : s.z1 - 0.24, i ? s.z0 + 0.24 : s.z1, mats.greenTiles, H(s));
+        });
+        break;
+      }
+      case 'gable': wokEar(s.x0, s.x1, s.z0, s.z1, s.y0, s.h); break;
+      case 'ridge': {   // glazed ridge across the roof terrace: green-tile base, a crest of coloured ceramic figures, curled fish at both ends
+        box(G.map, s.x0, s.x1, y0, s.h, s.z0, s.z1, [mats.greenTiles, mats.greenTiles], H(s));
+        box(G.map, s.x0, s.x1, y0, y0 + 0.18, s.z0 - 0.06, s.z1 + 0.06, mats.plasterW, H(s));
+        const cols = [mats.flower, mats.gold, mats.blue, mats.greenTiles, mats.plasterW];
+        for (let j = 0; j < 14; j++) { const x = s.x0 + 0.25 + j * (s.x1 - s.x0 - 0.5) / 13; const g = new THREE.CylinderGeometry(0.07, 0.1, rr(0.28, 0.45), 6); g.translate(0, 0.18, 0); const m = new THREE.Mesh(g, cols[j % 5]); m.position.set(x, s.h, 0); m.castShadow = true; G.map.add(m); const hd = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), cols[(j + 2) % 5]); hd.position.set(x, s.h + 0.42, 0); G.map.add(hd); }
+        [s.x0 + 0.1, s.x1 - 0.1].forEach((x, i) => { const t = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.09, 8, 16, Math.PI * 1.4), mats.blue); t.position.set(x, s.h + 0.35, 0); t.rotation.set(0, Math.PI / 2, i ? 0.3 : Math.PI - 0.3); G.map.add(t); });
+        break;
+      }
+      case 'zhl': {   // 鎮海樓 (the "five-storey tower"): red walls, a green glazed eave round every storey; the 4 m terrace is the high point
+        box(G.map, s.x0, s.x1, 0, s.h, s.z0, s.z1, [mats.redwall, mats.terrace], H(s)); box(G.map, s.x0 - 0.06, s.x1 + 0.06, 0, 0.7, s.z0 - 0.06, s.z1 + 0.06, mats.redstone, H(s));
+        [1.95, 3.8].forEach(y => { box(G.decor, s.x0 - 0.38, s.x1 + 0.38, y, y + 0.1, s.z0 - 0.38, s.z1 + 0.38, mats.greenTiles); box(G.decor, s.x0 - 0.12, s.x1 + 0.12, y - 0.14, y, s.z0 - 0.12, s.z1 + 0.12, mats.plasterW); });
+        [[s.z1 + 0.02, 0, 'z'], [s.z0 - 0.02, Math.PI, 'z'], [s.x1 + 0.02, Math.PI / 2, 'x'], [s.x0 - 0.02, -Math.PI / 2, 'x']].forEach(([c, ry, ax]) => {
+          [-1.5, 0, 1.5].forEach(d => { const p0 = ax === 'z' ? V(d, 2.95, c) : V(c, 2.95, d); plane(G.decor, 0.7, 1.1, mats.dark, p0, ry); if (d) { const p1 = ax === 'z' ? V(d, 1.2, c) : V(c, 1.2, d); plane(G.decor, 0.7, 1.1, mats.dark, p1, ry); } });
+          const pd = ax === 'z' ? V(0, 0.95, c) : V(c, 0.95, 0); plane(G.decor, 1.3, 1.9, mats.doorRed, pd, ry);
+        });
+        break;
+      }
+      case 'citywall': {   // a stretch of the old city wall the tower stands on: big stone blocks, low battlements
+        box(G.map, s.x0, s.x1, y0, s.h, s.z0, s.z1, [mats.redstone, mats.granite], H(s));
+        break;
+      }
+      case 'zhltop': {   // the upper storeys and the hip roof (collision is the plain 2 x 2 box)
+        const m = new THREE.Mesh(boxGeo(s.x0, s.x1, y0, s.h, s.z0, s.z1), mats.rock); m.visible = false; m.userData = { hy: s.h, solid: true, proxy: true }; G.map.add(m);
+        box(G.decor, -1, 1, 4.0, 5.6, -1, 1, mats.redwall); box(G.decor, -1.42, 1.42, 5.55, 5.66, -1.42, 1.42, mats.greenTiles);
+        box(G.decor, -0.85, 0.85, 5.66, 7.0, -0.85, 0.85, mats.redwall); box(G.decor, -1.25, 1.25, 6.95, 7.05, -1.25, 1.25, mats.greenTiles);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(1.75, 1.15, 4), mats.greenTiles); roof.rotation.y = Math.PI / 4; roof.position.set(0, 7.05 + 0.57, 0); roof.castShadow = true; G.decor.add(roof);
+        box(G.decor, -0.5, 0.5, 8.1, 8.22, -0.07, 0.07, mats.greenTiles);
+        [[1.01, 0], [-1.01, Math.PI]].forEach(([z, ry]) => { plane(G.decor, 1.5, 0.5, plaqueMat('鎮海樓'), V(0, 5.05, z), ry); [-0.5, 0.5].forEach(x => plane(G.decor, 0.4, 0.7, mats.dark, V(x, 4.45, z), ry)); [-0.4, 0.4].forEach(x => plane(G.decor, 0.35, 0.6, mats.dark, V(x, 6.3, z * 0.86), ry)); });
+        [[1.01, Math.PI / 2], [-1.01, -Math.PI / 2]].forEach(([x, ry]) => { [-0.5, 0.5].forEach(z => plane(G.decor, 0.4, 0.7, mats.dark, V(x, 4.6, z), ry)); });
+        break;
+      }
+      case 'boat': { const m = new THREE.Mesh(boxGeo(s.x0, s.x1, y0, s.h, s.z0, s.z1), mats.rock); m.visible = false; m.userData = { hy: s.h, solid: true, proxy: true }; G.map.add(m); break; }
+      default: box(G.map, s.x0, s.x1, y0, s.h, s.z0, s.z1, mats.plaster, H(s));
+    }
+  }
+  CUR = null;
+  // canal landing-step side walls are plain granite; railings of the canal exits (outside) are iron grilles
+  [-XH, XH].forEach(x => { for (let z = CANAL.z0 + 0.3; z < CANAL.z1; z += 0.35) between(G.map, V(x, CANAL.bed, z), V(x, 0.2, z), 0.04, mats.iron, 5); });
 
-    // ---- tea house at the spawn end (out of bounds block): manchu-window facades on its two open sides, a parapet, a green pavilion on the roof
-    const tf = cantonTeaFace();
-    face(G, tx(tf, 1, 1), 16, 9, -18, CL + 4.5, 43.98, Math.PI); face(G, tx(tf, 0.5, 1), 8, 9, -9.98, CL + 4.5, 48, Math.PI / 2);
-    bx(-26, -9.8, CL + 9, CL + 9.5, 43.8, 52, M.cream);
-    bx(-20, -16, CL + 9.5, CL + 11.2, 46, 50, M.cream); frustum(G, -21, -15, 45, 51, CL + 10.6, CL + 11.3, 1.4, 1.4, M.groof); bx(-19.2, -16.8, CL + 11.3, CL + 12.3, 46.8, 49.2, M.cream); frustum(G, -20.3, -15.7, 45.7, 50.3, CL + 12.3, CL + 13.9, 2.3, 2.3, M.groof);
-    { const b = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), M.gold); b.position.set(-18, CL + 14.05, 48); G.add(b); }
+  // ================= v2 dressing: real shops and landmarks. Visual only (collision comes from the solids above).
+  // Everything is written in team-0 coordinates and placed for both halves; the two halves get DIFFERENT shops.
+  const W2 = (t, x, y, z) => V(t ? -x : x, y, t ? -z : z);
+  const RY = (t, r) => r + (t ? Math.PI : 0);
+  const bx = (t, g, x0, x1, y0, y1, z0, z1, m, o) => t ? box(g, -x1, -x0, y0, y1, -z1, -z0, m, o) : box(g, x0, x1, y0, y1, z0, z1, m, o);
+  const prismT = (t, g, pts, axis, a0, a1, m) => t ? prism(g, pts.map(([u, y]) => [-u, y]).reverse(), axis, -a1, -a0, m) : prism(g, pts, axis, a0, a1, m);
+  const face = (tex, w, h, pos, ry, o = {}) => { const m = new THREE.MeshStandardMaterial(Object.assign({ map: tex, roughness: 0.8 }, o)); m.userData.unit = true; const p = plane(G.decor, w, h, m, pos, ry); p.receiveShadow = true; return p; };
+  const nrm = (ry, d) => V(Math.sin(ry) * d, 0, Math.cos(ry) * d);
+  const manchuWin = (t, x, y, z, ry, w = 1.4, h = 1.5) => { const r = RY(t, ry), p = W2(t, x, y, z); plane(G.decor, w + 0.28, h + 0.28, mats.stone, p, r); plane(G.decor, w, h, mats.manchu, p.clone().add(nrm(r, 0.02)), r); };
 
-    // ---- 獵德 paifang: three tiled roofs (the middle one higher), brackets under the beam, drum stones at the posts
-    [x, z] = P(0, 31.52); sign('獵德', 3.4, 0.95, x, CL + 4.0, z, ry(0)); [x, z] = P(0, 30.48); sign('獵德', 3.4, 0.95, x, CL + 4.0, z, ry(Math.PI));
-    frustum(G, -6.0, -2.2, 29.9, 32.1, CL + 4.62, CL + 5.25, 0.5, 0.95, M.groof); frustum(G, 2.2, 6.0, 29.9, 32.1, CL + 4.62, CL + 5.25, 0.5, 0.95, M.groof);
-    bx(-2.3, 2.3, CL + 4.6, CL + 5.45, 30.6, 31.4, M.cstone); frustum(G, -3.2, 3.2, 29.8, 32.2, CL + 5.45, CL + 6.3, 0.7, 1.05, M.groof);
-    [[-2.2, CL + 5.25], [2.2, CL + 5.25], [0, CL + 6.3]].forEach(([rx, ry2], i) => bx(rx - (i < 2 ? 1.5 : 2.5), rx + (i < 2 ? 1.5 : 2.5), ry2, ry2 + 0.16, 30.9, 31.1, M.groof));
-    [[-6.0, 29.9, CL + 4.62], [-6.0, 32.1, CL + 4.62], [6.0, 29.9, CL + 4.62], [6.0, 32.1, CL + 4.62], [-3.2, 29.8, CL + 5.45], [-3.2, 32.2, CL + 5.45], [3.2, 29.8, CL + 5.45], [3.2, 32.2, CL + 5.45]].forEach(([ex, ez, ey]) => { const h = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.7, 5), M.groof); h.position.set(ex + Math.sign(ex) * 0.12, ey + 0.2, ez + (ez > 31 ? 0.1 : -0.1)); h.rotation.set((ez > 31 ? 1 : -1) * 0.75, 0, -Math.sign(ex) * 0.75); G.add(h); });
-    [-4, 4].forEach(px => { bx(px - 0.5, px + 0.5, CL, CL + 0.28, 30.2, 31.8, M.cstone); [30.3, 31.7].forEach(dz => { const dr = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.26, 18), M.cstone); dr.rotation.z = Math.PI / 2; dr.position.set(px, CL + 0.7, dz + (dz > 31 ? 0.14 : -0.14)); dr.castShadow = true; G.add(dr); }); [-1, 1].forEach(e => bx(px + e * 0.9 - 0.45, px + e * 0.9 + 0.45, CL + 3.0, CL + 3.4, 30.8, 31.2, M.cstone)); });
+  // ---- shops under the arcade: three per side, six different ones in all
+  const ARC = [
+    [['hzl', 8, 16, '黃振龍涼茶', '#0f5a3a', '#f6d443'], ['yuanji', 16, 26, '源記腸粉', '#fffdf4', '#c0261c'], ['nanxin', 26, 36, '南信甜品', '#a3171a', '#f1cf6b']],
+    [['mingji', 8, 18, '明記腸粉', '#f5c518', '#b3201a'], ['chentianji', 18, 26, '陳添記魚皮', '#f7f1dc', '#b3201a'], ['hsh', 26, 36, '皇上皇臘味', '#c11a1f', '#f6d24a']],
+  ];
+  const PROP = {
+    hzl: t => [10.5, 13.5].forEach(z => { const p = W2(t, 25.55, 0, z); cyl(G.decor, p.x, 0, p.z, 0.3, 0.3, 0.95, mats.teal, 10); [[0.3, 1.25], [0.19, 1.66]].forEach(([r, y]) => { const a = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), mats.gold); a.position.set(p.x, y, p.z); a.castShadow = true; G.decor.add(a); }); cyl(G.decor, p.x, 1.8, p.z, 0.05, 0.07, 0.14, mats.gold, 8); }),
+    yuanji: t => { bx(t, G.decor, 25.45, 25.95, 0, 1.15, 17.2, 18.8, mats.steel); [0, 1, 2].forEach(i => { const p = W2(t, 25.7, 1.15 + i * 0.12, 18); cyl(G.decor, p.x, p.y, p.z, 0.3, 0.3, 0.1, mats.bamboo, 12); }); },
+    nanxin: t => { bx(t, G.decor, 25.5, 25.95, 0, 0.9, 27, 30, mats.red); const gm = new THREE.MeshStandardMaterial({ color: 0xcfe8ee, transparent: true, opacity: 0.35, roughness: 0.1 }); bx(t, G.decor, 25.5, 25.95, 0.9, 1.45, 27, 30, gm, { cast: false }); for (let i = 0; i < 6; i++) { const p = W2(t, 25.72, 0.92, 27.3 + i * 0.48); cyl(G.decor, p.x, p.y, p.z, 0.1, 0.15, 0.1, mats.plasterW, 10); } },
+    mingji: t => [11, 15].forEach(z => { const p = W2(t, 25.3, 0, z); cyl(G.decor, p.x, 0, p.z, 0.05, 0.05, 0.72, mats.iron, 6); cyl(G.decor, p.x, 0.72, p.z, 0.45, 0.45, 0.05, mats.plasterW, 16); [-0.7, 0.7].forEach(d => { const q = W2(t, 25.3, 0, z + d); cyl(G.decor, q.x, 0, q.z, 0.16, 0.16, 0.45, mats.red, 10); }); }),
+    chentianji: t => { bx(t, G.decor, 25.5, 25.95, 0, 1.0, 20.5, 23.5, mats.steel); for (let i = 0; i < 4; i++) { const p = W2(t, 25.72, 1.0, 20.9 + i * 0.7); cyl(G.decor, p.x, p.y, p.z, 0.22, 0.22, 0.04, mats.plasterW, 14); } },
+    hsh: t => { between(G.decor, W2(t, 25.6, 1.72, 27), W2(t, 25.6, 1.72, 35), 0.025, mats.wood, 5); const im = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.035, 0.035, 0.55, 5), mats.sausage, 40), o = new THREE.Object3D(); for (let i = 0; i < 40; i++) { o.position.copy(W2(t, 25.6, 1.42 - (i % 3) * 0.03, 27.2 + i * 0.195)); o.updateMatrix(); im.setMatrixAt(i, o.matrix); } G.decor.add(im); },
+  };
+  [0, 1].forEach(t => ARC[t].forEach(([key, z0, z1, name, bg, fg]) => {
+    const zc = (z0 + z1) / 2;
+    face(T.shopFace(key, z1 - z0), z1 - z0, 2.6, W2(t, 25.97, 1.3, zc), RY(t, -Math.PI / 2));
+    bx(t, G.decor, 25.6, 26, 0, 3.4, z1 - 0.12, z1 + 0.12, mats.plasterW); bx(t, G.decor, 25.9, 26, 2.6, 3.4, z0, z1, mats.plasterW, { cast: false });
+    const sg = plane(G.decor, 0.8, Math.min(2.5, name.length * 0.5), signMat(name, bg, fg), W2(t, 19.9, 5.1, zc), 0, true); sg.castShadow = true;
+    bx(t, G.decor, 20.21, 20.29, 3.8, 6.4, zc - 0.04, zc + 0.04, mats.iron);
+    PROP[key](t);
+  }));
 
-    // ---- stone bridge: posts on the parapets, an arch under each side, a string course
-    [14.15, 17.85].forEach(px => { for (let i = 0; i < 5; i++) { const pz = -3.3 + i * 1.65, py = CL + 0.5 + 0.9 * clamp((3.5 - Math.abs(pz)) / 2.3, 0, 1) - 0.06; bx(px - 0.2, px + 0.2, py, py + 0.34, pz - 0.2, pz + 0.2, M.cstone); bx(px - 0.13, px + 0.13, py + 0.34, py + 0.46, pz - 0.13, pz + 0.13, M.cstone); } });
-    [14.15, 17.85].forEach(px => { for (let i = 0; i < 4; i++) { const z0 = -3.3 + i * 1.65, z1 = z0 + 1.65, yy = pz => CL + 0.5 + 0.9 * clamp((3.5 - Math.abs(pz)) / 2.3, 0, 1) + 0.3, r = bx(-0.09, 0.09, -0.06, 0.06, -0.86, 0.86, M.cstone); r.position.set(px, (yy(z0) + yy(z1)) / 2, (z0 + z1) / 2); r.rotation.x = -Math.atan2(yy(z1) - yy(z0), 1.65); } });
-    [[13.99, -Math.PI / 2], [18.01, Math.PI / 2]].forEach(([px, r]) => face(G, TEX.archFace, 7, CL, px, CL / 2, 0, r, { transparent: true, alphaTest: 0.5, side: THREE.DoubleSide }));
-
-    // ---- dragon boat (head toward the tower): neck and head, horns, eyes, a curled tail, the drum, a red parasol, flags
-    { const neck = bx(-0.2, 0.2, 0, 1.25, -0.2, 0.2, tm); neck.position.set(8.25, 1.1, 0.8); neck.rotation.z = 0.55;
-      bx(7.25, 8.2, 1.45, 1.95, 0.55, 1.05, tm); bx(7.06, 7.3, 1.45, 1.72, 0.62, 0.98, M.gold);
-      [0.6, 1.0].forEach(hz => { const h = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.5, 6), M.gold); h.position.set(7.95, 2.15, hz); h.rotation.z = -0.35; G.add(h); });
-      [0.54, 1.06].forEach(ez => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), M.white); e.position.set(7.6, 1.78, ez); G.add(e); });
-      const tail = bx(-0.14, 0.14, 0, 1.3, -0.16, 0.16, tm); tail.position.set(18.15, 1.15, 0.8); tail.rotation.z = -0.5; bx(18.4, 18.6, 1.6, 2.1, 0.55, 1.05, M.gold);
-      bx(8.5, 18, 0.7, 0.76, 0.2, 0.3, M.gold); bx(8.5, 18, 0.7, 0.76, 1.3, 1.4, M.gold);
-      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.5, 14), M.red); drum.position.set(12, 0.95, 0.8); drum.castShadow = true; G.add(drum);
-      const skin = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.03, 14), M.white); skin.position.set(12, 1.21, 0.8); G.add(skin);
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.3, 6), M.gold); pole.position.set(10.3, 1.85, 0.8); G.add(pole);
-      const par = new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.5, 14), std(0xe9c64a, { side: THREE.DoubleSide })); par.position.set(10.3, 3.1, 0.8); par.castShadow = true; G.add(par);
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.22, 14, 1, true), std(0xb5362a, { side: THREE.DoubleSide })); rim.position.set(10.3, 2.75, 0.8); G.add(rim);
-      [9.2, 13.6, 15.4].forEach((fx, i) => { const p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.7, 5), M.gold); p2.position.set(fx, 1.55, 0.8); G.add(p2); bx(fx, fx + 0.6, 1.95, 2.4, 0.78, 0.82, i % 2 ? M.gold : M.red); }); }
-
-    // ---- Xiguan mansion: the hall at the back (out of bounds) with manchu windows and a sliding-bar door, a grey tiled roof between two wok-ear gables;
-    //      the open gate with its two door leaves swung back, manchu windows on the street wall
-    face(G, cantonHallFace(), 14, 4.4, -22.98, CL + 2.2, 23, Math.PI / 2);
-    { const sh = new THREE.Shape(); sh.moveTo(-2.3, 0); sh.lineTo(0, 1.5); sh.lineTo(2.3, 0); sh.lineTo(-2.3, 0);
-      const rg = new THREE.ExtrudeGeometry(sh, { depth: 13.4, bevelEnabled: false }); const uvr = rg.attributes.uv; for (let i = 0; i < uvr.count; i++) uvr.setXY(i, uvr.getX(i) / 1.2, uvr.getY(i) / 1.2);
-      const r = new THREE.Mesh(rg, M.roof); r.position.set(-24.3, CL + 4.4, 16.3); r.castShadow = true; G.add(r);
-      bx(-24.45, -24.15, CL + 5.85, CL + 6.05, 16.2, 29.8, std(0x4d5357));
-      const wk = new THREE.Shape(); wk.moveTo(-2.4, 0); wk.lineTo(-2.4, 2.3); wk.quadraticCurveTo(-1.5, 2.3, -1.25, 3.0); wk.absarc(0, 3.0, 1.25, Math.PI, 0, true); wk.quadraticCurveTo(1.5, 2.3, 2.4, 2.3); wk.lineTo(2.4, 0); wk.lineTo(-2.4, 0);
-      [15.95, 29.75].forEach(gz => { const w = new THREE.Mesh(new THREE.ExtrudeGeometry(wk, { depth: 0.3, bevelEnabled: false }), std(0x5d666c)); w.position.set(-24.4, CL + 2.6, gz); w.castShadow = true; G.add(w);
-        const cap = new THREE.Mesh(new THREE.ExtrudeGeometry(wk, { depth: 0.42, bevelEnabled: false }), std(0x2c2f33)); cap.scale.set(1.04, 1.03, 1); cap.position.set(-24.4, CL + 2.6, gz - 0.06); cap.renderOrder = -1; G.add(cap); w.position.z = gz - 0.07; w.scale.z = 1.5; }); }
-    bx(-16.12, -14.88, CL, CL + 2.19, 20.7, 21.05, M.cstone); bx(-16.12, -14.88, CL, CL + 2.19, 24.95, 25.3, M.cstone);                // gate jambs
-    bx(-17.9, -16.05, CL + 0.05, CL + 2.1, 20.82, 20.94, M.dwood); bx(-17.9, -16.05, CL + 0.05, CL + 2.1, 25.06, 25.18, M.dwood);  // door leaves, open
-    // 趟櫳 slid open beside the gate; the hall's verandah (two columns, a tiled eave) and its 「積厚流光」 board; manchu windows round the courtyard; a bonsai and shrubs in the planter
-    for (let b = 0; b < 9; b++) bx(-14.98, -14.9, CL + 0.25 + b * 0.22, CL + 0.34 + b * 0.22, 19.15, 20.65, M.dwood); bx(-14.99, -14.89, CL + 0.1, CL + 2.2, 19.1, 19.2, M.dwood); bx(-14.99, -14.89, CL + 0.1, CL + 2.2, 20.6, 20.7, M.dwood);
-    [19.2, 26.8].forEach(cz => { const col = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 3.3, 10), M.cream); col.position.set(-21.8, CL + 1.65, cz); col.castShadow = true; G.add(col); bx(-22.05, -21.55, CL, CL + 0.18, cz - 0.25, cz + 0.25, M.cstone); });
-    frustum(G, -23, -21.4, 16.05, 29.95, CL + 3.3, CL + 3.95, 1.55, 0.01, M.roof);
-    { const [px2, pz2] = P(-22.95, 23); sign('積厚流光', 2.6, 0.62, px2, CL + 3.72, pz2, ry(Math.PI / 2), '#6a1410', '#f0cf7a'); }
-    [[16.03, 0], [29.97, Math.PI]].forEach(([wz, r]) => [-21.3, -19.4, -17.5].forEach(wx => { const w = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.7), M.manchu); w.position.set(wx, CL + 1.5, wz); w.rotation.y = r; G.add(w); const fr = bx(wx - 0.82, wx + 0.82, CL + 0.58, CL + 2.42, wz - 0.012, wz + 0.012, M.cream); fr.position.z = wz + (r ? 0.008 : -0.008); }));
-    { const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.24, 0.42, 10), M.pot); pot.position.set(-19.25, CL + 1.21, 23); pot.castShadow = true; G.add(pot);
-      const tk = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 6), M.trunk); tk.position.set(-19.25, CL + 1.85, 23); G.add(tk);
-      [[0, 2.35, 0, 0.5], [0.42, 2.05, 0.2, 0.36], [-0.4, 1.95, -0.15, 0.34], [0.1, 2.0, -0.42, 0.3]].forEach(([dx, dy, dz, r2]) => { const g2 = new THREE.IcosahedronGeometry(r2, 0); g2.scale(1, 0.4, 1); const m2 = new THREE.Mesh(g2, M.leaf); m2.position.set(-19.25 + dx, CL + dy, 23 + dz); m2.castShadow = true; G.add(m2); });
-      [[-19.9, 21.6, 0.42], [-18.6, 21.9, 0.36], [-19.6, 24.4, 0.4], [-18.7, 24.2, 0.34]].forEach(([sx2, sz2, r2], i) => { const m2 = new THREE.Mesh(new THREE.IcosahedronGeometry(r2, 0), i % 2 ? M.leaf : M.leaf2); m2.position.set(sx2, CL + 1.0 + r2 * 0.7, sz2); m2.castShadow = true; G.add(m2); }); }
-    // shrubs in the stone planter by the arcade; bamboo steamers on the cargo trike
-    [[14.6, 16.5, 0.42], [15.5, 16.45, 0.36], [16.4, 16.55, 0.4]].forEach(([sx2, sz2, r2], i) => { const m2 = new THREE.Mesh(new THREE.IcosahedronGeometry(r2, 0), i % 2 ? M.leaf2 : M.leaf); m2.position.set(sx2, CL + 1.0 + r2 * 0.7, sz2); m2.castShadow = true; G.add(m2); });
-    for (let i = 0; i < 4; i++) { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.17, 14), std(i % 2 ? 0xc9a463 : 0xb89152)); st.position.set(13.5, CL + 1.29 + i * 0.18, 24.6); st.castShadow = true; G.add(st); }
-    // the tea house's two hanging banners
-    [['正宗粵菜', -24.6], ['星期美點', -11.4]].forEach(([tx2, bx2]) => face(G, TEX._vsign(tx2, '#141210', '#e8c15a'), 1.0, 3.5, bx2, CL + 6.3, 43.94, Math.PI));
-    // bunting between the café and the arcade
-    { const cols = [0xd8291c, 0xe9c64a, 0x2f8f62, 0x2f66b0, 0xf4f1e8]; bx(-5, 20.3, CL + 4.6, CL + 4.62, 21.99, 22.01, M.dark).castShadow = false; for (let i = 0; i < 30; i++) { const f = bx(-4.6 + i * 0.82, -4.6 + i * 0.82 + 0.34, CL + 4.18, CL + 4.6, 21.995, 22.005, std(cols[i % 5], { side: THREE.DoubleSide })); f.castShadow = false; } }
-    [18.5, 27.5].forEach(wz => { bx(-14.99, -14.93, CL + 0.75, CL + 2.25, wz - 0.75, wz + 0.75, M.cream); const w = new THREE.Mesh(new THREE.PlaneGeometry(1.26, 1.26), M.manchu); w.position.set(-14.92, CL + 1.5, wz); w.rotation.y = Math.PI / 2; G.add(w); });
+  // ---- the small house in the middle street: 吳財記麵家 on one half, 順記冰室 on the other
+  [['wuxi', '吳系茶餐廳', '#c8202a', '#ffffff'], ['gzjj', '廣州酒家', '#7a1512', '#f3d98a']].forEach(([key, name, bg, fg], t) => {
+    face(T.shopFace(key, 7, 2.4), 7, 2.4, W2(t, -4.97, 1.2, 21.5), RY(t, Math.PI / 2));
+    const m = new THREE.MeshStandardMaterial({ map: T.plaque(name, bg, fg), roughness: 0.6 }); m.userData.unit = true;
+    plane(G.decor, 3.6, 0.9, m, W2(t, -5.0, 3.25, 21.5), RY(t, Math.PI / 2), true).castShadow = true;
+    [20.2, 22.8].forEach(z => bx(t, G.decor, -5.06, -4.98, 2.75, 3.3, z - 0.03, z + 0.03, mats.iron));
   });
 
-  // ---- 鎮海樓: red walls on the old city wall, green tiled eaves round every storey, dark window openings, a hip roof, the name board
-  [[2.5, 2.0, 0.75], [2.5, 4.0, 0.75], [1.0, 6.0, 0.6]].forEach(([r, y, o]) => { frustum(deco, -r - o, r + o, -r - o, r + o, CL + y - 0.28, CL + y + 0.12, o + 0.02, o + 0.02, M.groof); boxAt(-r - 0.06, r + 0.06, CL + y - 0.5, CL + y - 0.28, -r - 0.06, r + 0.06, M.cream); });
-  frustum(deco, -1.75, 1.75, -1.75, 1.75, CL + 8.2, CL + 9.5, 1.55, 1.75, M.groof); boxAt(-0.3, 0.3, CL + 9.45, CL + 9.62, -0.09, 0.09, M.groof); boxAt(-1.06, 1.06, CL + 7.9, CL + 8.2, -1.06, 1.06, M.cream);
-  [[2.51, 0], [-2.51, Math.PI], [0, -1], [0, 1]].forEach(([px, r], i) => { for (const st of [[2.35, 3.35], [0, 0]]) for (const off of [-1.5, 0, 1.5]) { if (!st[1]) continue; const m = new THREE.Mesh(new THREE.PlaneGeometry(0.9, st[1] - st[0]), M.dark); if (i < 2) { m.position.set(px, CL + (st[0] + st[1]) / 2, off); m.rotation.y = r ? -Math.PI / 2 : Math.PI / 2; } else { m.position.set(off, CL + (st[0] + st[1]) / 2, r * 2.51); m.rotation.y = r > 0 ? 0 : Math.PI; } deco.add(m); }
-    for (const off of [-0.45, 0.45]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.8), M.dark); if (i < 2) { m.position.set(px > 0 ? 1.01 : -1.01, CL + 6.9, off); m.rotation.y = px > 0 ? Math.PI / 2 : -Math.PI / 2; } else { m.position.set(off, CL + 6.9, r * 1.01); m.rotation.y = r > 0 ? 0 : Math.PI; } deco.add(m); } });
-  sign('鎮海樓', 1.7, 0.55, 0, CL + 5.0, 1.02, 0); sign('鎮海樓', 1.7, 0.55, 0, CL + 5.0, -1.02, Math.PI);
-  // centre deck: posts on its two parapets
-  [-6.85, 6.85].forEach(px => { for (let i = 0; i < 5; i++) { const pz = -3.3 + i * 1.65; boxAt(px - 0.2, px + 0.2, CL + 0.5, CL + 0.78, pz - 0.2, pz + 0.2, M.cstone); boxAt(px - 0.13, px + 0.13, CL + 0.78, CL + 0.9, pz - 0.13, pz + 0.13, M.cstone); } });
+  // ---- tea houses behind the spawns: 陶陶居 (black-lacquer board, gold characters, the hexagonal 可觀亭 on the roof) and 蓮香樓
+  const TEA = [
+    { name: '陶陶居', o: { wall: '#e7dcc0', trim: '#f8f2e3', col: '#8e1f1a', board: '#141210', gold: '#e8c15a', rail: '#2a5a44', side: ['正宗粵菜', '星期美點'] } },
+    { name: '蓮香樓', o: { wall: '#dcc9a6', trim: '#fff6e6', col: '#4a2416', board: '#7a1512', gold: '#f3d98a', rail: '#7a1512', side: ['蓮蓉月餅', '龍鳳禮餅'] } },
+  ];
+  TEA.forEach((c, t) => {
+    face(T.teaFace(c.name, 16, 9, c.o), 16, 9, W2(t, -18, 4.5, 43.97), RY(t, Math.PI));
+    face(T.teaFace(c.name, 8, 7, Object.assign({}, c.o, { side: null })), 8, 7, W2(t, -9.97, 5.5, 48), RY(t, Math.PI / 2));
+    face(T.teaFace(c.name, 36, 12.6, c.o), 36, 12.6, W2(t, 8, 8.3, 51.97), RY(t, Math.PI));
+    const p = W2(t, -18, 9, 48);
+    if (!t) {   // 可觀亭: three tiers, six sides, green glazed tiles
+      for (let i = 0; i < 3; i++) { const r = 2.7 - i * 0.65, y = p.y + i * 1.55; cyl(G.decor, p.x, y, p.z, r * 0.6, r * 0.6, 1.15, mats.plasterW, 6); for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; cyl(G.decor, p.x + Math.cos(a) * r * 0.6, y, p.z + Math.sin(a) * r * 0.6, 0.07, 0.07, 1.15, mats.red, 6); } const roof = new THREE.Mesh(new THREE.ConeGeometry(r, 0.8, 6), mats.greenTiles); roof.position.set(p.x, y + 1.15 + 0.4, p.z); roof.castShadow = true; G.decor.add(roof); }
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 6), mats.gold); tip.position.set(p.x, p.y + 5.05, p.z); G.decor.add(tip);
+    } else {    // 蓮香樓: a curved parapet with the name over the corner
+      const q = W2(t, -18, 9, 44.3); const pts = [[-4, 9], [4, 9], [4, 9.6]]; for (let j = 1; j < 12; j++) { const u = j / 12; pts.push([4 - 8 * u, 9.6 + 1.5 * Math.sin(u * Math.PI)]); } pts.push([-4, 9.6]);
+      prism(G.decor, pts.map(([x, y]) => [x + q.x, y]), 'x', q.z - 0.2, q.z + 0.2, mats.plasterW);
+      const m = new THREE.MeshStandardMaterial({ map: T.plaque('蓮香樓', '#7a1512', '#f3d98a'), roughness: 0.6 }); m.userData.unit = true; plane(G.decor, 4.2, 1.2, m, V(q.x, 10.0, q.z + 0.22), 0);
+    }
+  });
 
-  // ---- rows of qilou shop-houses outside the walls (a facade texture per 4 m bay), plain towers further off
-  let k = 0;
-  for (let z = -ZH - 10; z < ZH + 10; z += 8) for (const sx of [-1, 1]) {
-    if (z + 8 > -3.5 && z < 3.5) continue;
-    const f = TEX.facade[k++ % TEX.facade.length];
-    { const fm = std(0xffffff, { map: tx(f, 2, 1) }); boxAt(sx > 0 ? XH + 1.5 : -XH - 11.5, sx > 0 ? XH + 11.5 : -XH - 1.5, CL, CL + 12.8, z, z + 7.9, [fm, fm, M.flat, M.flat, fm, fm]); }
+  // ---- 西關大屋, dressed after the real thing: granite footing + blue brick (solids), then
+  //      腳門 / 趟櫳 / 大門 at the gate, 滿洲窗, 青雲巷 gateways, a paved 天井 with side eaves, the 正廳 with its screen doors
+  [0, 1].forEach(t => {
+    [18.5, 27.5].forEach(z => manchuWin(t, -14.97, 1.55, z, Math.PI / 2));                       // street wall, either side of the gate
+    [[11.97, Math.PI], [34.03, 0]].forEach(([z, ry]) => {                                        // the two wing ends
+      [-18, -21.3].forEach(x => manchuWin(t, x, 1.55, z, ry, 1.2, 1.4));
+      const r = RY(t, ry), p = W2(t, -24.4, 1.1, z); plane(G.decor, 1.5, 2.3, mats.stone, p.clone().add(V(0, 0.05, 0)), r); plane(G.decor, 1.1, 2.1, mats.dark, p.clone().add(nrm(r, 0.02)), r);
+      const m = new THREE.MeshStandardMaterial({ map: T.plaque('青雲巷', '#d7d1c4', '#3a3a3a'), roughness: 0.8 }); m.userData.unit = true; plane(G.decor, 1.2, 0.36, m, W2(t, -24.4, 2.38, z).add(nrm(r, 0.03)), r);
+    });
+    // gate: granite jambs, four half-height 腳門 leaves folded outward, two big 大門 leaves swung into the yard
+    bx(t, G.decor, -16.06, -14.94, 0, 2.2, 20.8, 21.0, mats.stone); bx(t, G.decor, -16.06, -14.94, 0, 2.2, 25.0, 25.2, mats.stone);
+    [[21.05, -1], [24.95, 1]].forEach(([z, sgn]) => {
+      [0, 1].forEach(i => plane(G.decor, 0.5, 1.25, mats.woodDS, W2(t, -14.72 + i * 0.36, 1.05, z + sgn * (-0.12 - i * 0.02)), RY(t, Math.PI / 2 + sgn * (i ? 0.25 : 1.25))));
+      plane(G.decor, 1.9, 2.15, mats.doorRed, W2(t, -17.0, 1.08, z - sgn * 0.18), RY(t, 0));
+      [0.55, 1.5].forEach(y => bx(t, G.decor, -17.9, -16.1, y, y + 0.06, z - sgn * 0.18 - 0.03, z - sgn * 0.18 + 0.03, mats.gold));
+    });
+    for (let i = 0; i < 13; i++) between(G.decor, W2(t, -15.5, 0.15 + i * 0.16, 24.35), W2(t, -15.5, 0.15 + i * 0.16, 24.98), 0.045, mats.wood, 6);   // 趟櫳 pushed open
+    bx(t, G.decor, -15.6, -15.4, 0, 2.2, 24.3, 24.4, mats.wood);
+    // 天井: darker paving, the fish vat and potted trees on the 花台
+    bx(t, G.decor, -23, -16, 0.0, 0.025, 16, 30, mats.bed, { cast: false });
+    { const p = W2(t, -19.2, 1.0, 22); cyl(G.decor, p.x, p.y, p.z, 0.42, 0.5, 0.55, mats.blue, 14); cyl(G.decor, p.x, p.y + 0.5, p.z, 0.47, 0.47, 0.06, mats.white, 14);
+      [23.4, 24.3].forEach(z => { const q = W2(t, -19.3, 1.0, z); cyl(G.decor, q.x, q.y, q.z, 0.16, 0.22, 0.25, mats.sausage, 10); cyl(G.decor, q.x, q.y + 0.25, q.z, 0.04, 0.05, 0.5, mats.bark, 5); [[0.2, 0.75], [-0.18, 0.9], [0.05, 1.05]].forEach(([d, y]) => { const l = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 0), mats.leaf); l.scale.set(1.3, 0.5, 1.3); l.position.set(q.x + d, q.y + y, q.z + d * 0.5); G.decor.add(l); }); }); }
+    // side eaves (廊) along both wings, on thin timber posts
+    prismT(t, G.decor, [[16, 2.5], [17.15, 2.2], [17.15, 2.12], [16, 2.38]], 'z', -23, -16, mats.tiles);
+    prismT(t, G.decor, [[30, 2.38], [28.85, 2.12], [28.85, 2.2], [30, 2.5]], 'z', -23, -16, mats.tiles);
+    [[-22.3, 17.05], [-19.5, 17.05], [-16.7, 17.05], [-22.3, 28.95], [-19.5, 28.95], [-16.7, 28.95]].forEach(([x, z]) => { const p = W2(t, x, 0, z); cyl(G.decor, p.x, 0, p.z, 0.06, 0.06, 2.14, mats.wood, 6); });
+    // 正廳 front: a row of manchu-glass screen doors, the open middle bay with the hall board, eave on two granite columns
+    for (let i = 0; i < 10; i++) { const z = 16.9 + i * 1.3 + 0.2; if (z > 20.9 && z < 25.1) continue; plane(G.decor, 1.16, 2.5, mats.manchu, W2(t, -22.96, 1.3, z), RY(t, Math.PI / 2)); }
+    plane(G.decor, 4.2, 2.7, mats.dark, W2(t, -22.96, 1.35, 23), RY(t, Math.PI / 2));
+    { const m = new THREE.MeshStandardMaterial({ map: T.plaque('積厚流光', '#5a1512', '#e8c15a'), roughness: 0.6 }); m.userData.unit = true; plane(G.decor, 3.0, 0.75, m, W2(t, -22.93, 2.25, 23), RY(t, Math.PI / 2)); }
+    plane(G.decor, 13.4, 0.5, mats.manchu, W2(t, -22.96, 3.0, 23), RY(t, Math.PI / 2));
+    prismT(t, G.decor, [[-23, 3.75], [-21.85, 3.4], [-21.85, 3.32], [-23, 3.62]], 'x', 16.2, 29.8, mats.tiles);
+    [20.6, 25.4].forEach(z => { const p = W2(t, -22.0, 0, z); cyl(G.decor, p.x, 0, p.z, 0.14, 0.16, 3.32, mats.stone, 10); });
+  });
+
+  // ---- 龍舟 moored in the canal: long narrow hull (the real ones are ~38 m × 1.2 m; this one is 10.5 m), dragon head and tail,
+  //      drum, the ceremonial umbrella and flags. One red boat, one green boat.
+  [0, 1].forEach(t => {
+    const tm = t ? mats.greenTiles : mats.red, z = 0.8, y = -1.5;
+    const pts = [[8.5, 0.8], [9.7, 0.26], [17.8, 0.26], [19, 0.8], [17.8, 1.34], [9.7, 1.34]].map(([x, zz]) => t ? [-x, -zz] : [x, zz]);
+    const g = new THREE.ExtrudeGeometry(new THREE.Shape(pts.map(([x, zz]) => new THREE.Vector2(x, zz))), { depth: 0.6, bevelEnabled: false }); g.rotateX(Math.PI / 2); g.translate(0, y, 0);
+    const hull = new THREE.Mesh(g, [mats.wood, mats.hull]); hull.castShadow = true; hull.receiveShadow = true; G.decor.add(hull);
+    bx(t, G.decor, 9.6, 17.9, y - 0.12, y - 0.04, 0.22, 0.28, tm); bx(t, G.decor, 9.6, 17.9, y - 0.12, y - 0.04, 1.32, 1.38, tm);
+    for (let x = 10; x < 17.8; x += 0.95) bx(t, G.decor, x, x + 0.14, y, y + 0.1, 0.34, 1.26, mats.wood);
+    // head at the inner end (toward the Five Rams), tail at the outer end
+    between(G.decor, W2(t, 9.1, y, z), W2(t, 8.2, y + 0.95, z), 0.17, tm, 8);
+    bx(t, G.decor, 7.55, 8.4, y + 0.8, y + 1.2, z - 0.2, z + 0.2, tm); bx(t, G.decor, 7.4, 7.75, y + 0.82, y + 0.98, z - 0.16, z + 0.16, mats.gold);
+    [-0.14, 0.14].forEach(d => { const h = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.42, 5), mats.gold); h.position.copy(W2(t, 8.3, y + 1.38, z + d)); h.rotation.z = t ? 0.5 : -0.5; G.decor.add(h); const ey = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), mats.white); ey.position.copy(W2(t, 7.8, y + 1.1, z + d * 1.45)); G.decor.add(ey); });
+    for (let i = 0; i < 5; i++) { const f = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.3, 4), mats.yellow); f.position.copy(W2(t, 8.5 + i * 0.13, y + 0.75 - i * 0.14, z)); G.decor.add(f); }
+    between(G.decor, W2(t, 18.3, y, z), W2(t, 19.1, y + 0.8, z), 0.1, tm, 6);
+    // drum, umbrella, flags (kept clear of the stone bridge above the outer half of the boat)
+    { const p = W2(t, 12.4, y, z); cyl(G.decor, p.x, y + 0.1, p.z, 0.36, 0.36, 0.5, mats.red, 14); cyl(G.decor, p.x, y + 0.6, p.z, 0.37, 0.37, 0.03, mats.white, 14); }
+    { const p = W2(t, 11.2, y, z); cyl(G.decor, p.x, y, p.z, 0.03, 0.03, 2.5, mats.bamboo, 6); const c = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.45, 12), mats.yellow); c.position.set(p.x, y + 2.5, p.z); G.decor.add(c); cyl(G.decor, p.x, y + 2.0, p.z, 0.75, 0.75, 0.28, tm, 12); }
+    [9.9, 10.5, 13.2].forEach((x, i) => { const p = W2(t, x, y, z); cyl(G.decor, p.x, y, p.z, 0.02, 0.02, 1.9, mats.bamboo, 5); const f = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.45), new THREE.MeshStandardMaterial({ color: i % 2 ? 0xf2c230 : (t ? 0x2f9b62 : 0xc8291c), side: THREE.DoubleSide })); f.position.set(p.x + (t ? -0.36 : 0.36), y + 1.65, p.z); G.decor.add(f); });
+  });
+
+  // ---------------- trees
+  function kapok(x, y, z, k) {
+    const h = 6.8 * k; cyl(G.decor, x, y, z, 0.32 * k, 0.16 * k, h, mats.bark, 9);
+    const fl = new THREE.IcosahedronGeometry(0.17, 0); const pos = [];
+    [3.2, 4.4, 5.5].forEach((hy, tier) => { for (let b = 0; b < 5; b++) { const a = b / 5 * Math.PI * 2 + tier * 0.7, L = (2.3 - tier * 0.45) * k; const p0 = V(x, y + hy * k, z), p1 = V(x + Math.cos(a) * L, y + (hy + 0.5) * k, z + Math.sin(a) * L); between(G.decor, p0, p1, 0.07 * k, mats.bark, 5); for (let f = 0; f < 6; f++) { const t = rr(0.35, 1.05); pos.push(V(p0.x + (p1.x - p0.x) * t + rr(-0.25, 0.25), p0.y + (p1.y - p0.y) * t + rr(0, 0.35), p0.z + (p1.z - p0.z) * t + rr(-0.25, 0.25))); } } });
+    for (let f = 0; f < 10; f++) pos.push(V(x + rr(-0.5, 0.5), y + h + rr(-0.2, 0.3), z + rr(-0.5, 0.5)));
+    const im = new THREE.InstancedMesh(fl, mats.flower, pos.length), o = new THREE.Object3D();
+    pos.forEach((p, i) => { o.position.copy(p); o.rotation.set(rnd() * 3, rnd() * 3, 0); o.scale.setScalar(rr(0.8, 1.4)); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }); im.castShadow = true; G.decor.add(im);
   }
-  for (const sz of [-1, 1]) for (let i = 0; i < 8; i++) { const x0 = -XH - 11.5 + i * (XH * 2 + 23) / 8; const fm = std(0xffffff, { map: tx(TEX.facade[(i * 3 + (sz > 0 ? 1 : 4)) % TEX.facade.length], 2, 1) }); boxAt(x0, x0 + (XH * 2 + 23) / 8 - 0.1, CL, CL + 12.8, sz > 0 ? ZH + 1.5 : -ZH - 11.5, sz > 0 ? ZH + 11.5 : -ZH - 1.5, [fm, fm, M.flat, M.flat, fm, fm]); }
-  const wt = TEX.windows, pal = [0xead7a6, 0xe9b9ac, 0xb9d9c2, 0xefe7d6, 0xbccfe1];
-  for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283 + 0.3, r = 95 + (i % 3) * 18, h = 26 + (i * 7 % 5) * 7; boxAt(Math.cos(a) * r - 7, Math.cos(a) * r + 7, CL, CL + h, Math.sin(a) * r * 1.3 - 7, Math.sin(a) * r * 1.3 + 7, std(pal[i % 5], { map: tx(wt, 3, 6) })); }
-  deco.updateMatrixWorld(true);
+  function banyan(x, y, z, k) {
+    cyl(G.decor, x, y, z, 0.9, 0.55, 4.2, mats.bark, 10);
+    for (let b = 0; b < 5; b++) { const a = b / 5 * Math.PI * 2; between(G.decor, V(x, y + 3.4, z), V(x + Math.cos(a) * 2.6, y + 4.8, z + Math.sin(a) * 2.6), 0.22, mats.bark, 6); }
+    for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2, r = i ? rr(2.0, 3.4) : 0; const g = new THREE.IcosahedronGeometry(rr(2.0, 2.8), 1); g.scale(1, 0.62, 1); const m = new THREE.Mesh(g, i % 3 ? mats.leaf : mats.leafL); m.position.set(x + Math.cos(a) * r, y + rr(5.0, 6.2), z + Math.sin(a) * r); m.castShadow = true; m.receiveShadow = true; G.decor.add(m); }
+    for (let i = 0; i < 26; i++) { const a = rnd() * Math.PI * 2, r = rr(1.0, 2.3), top = y + rr(4.0, 4.6); between(G.decor, V(x + Math.cos(a) * r, y, z + Math.sin(a) * r), V(x + Math.cos(a) * r * 1.1, top, z + Math.sin(a) * r * 1.1), rr(0.025, 0.06), mats.bark, 4); }
+  }
+  M.trees.forEach(t => t.kind === 'kapok' ? kapok(t.x, t.y, t.z, t.k) : banyan(t.x, t.y, t.z, t.k));
+
+  // ---------------- street dressing: lantern strings, signs on the arcade, laundry on roofs, water tank stands
+  const lanternG = new THREE.SphereGeometry(0.17, 12, 8); lanternG.scale(1, 1.25, 1);
+  function lanterns(a, b, sag, n) {
+    const pts = []; for (let i = 0; i <= 20; i++) { const t = i / 20; pts.push(V(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t - Math.sin(t * Math.PI) * sag, a.z + (b.z - a.z) * t)); }
+    const c = new THREE.CatmullRomCurve3(pts); G.decor.add(new THREE.Mesh(new THREE.TubeGeometry(c, 40, 0.015, 4), mats.iron));
+    for (let i = 1; i < n; i++) { const p = c.getPoint(i / n); const m = new THREE.Mesh(lanternG, mats.lantern); m.position.set(p.x, p.y - 0.25, p.z); G.decor.add(m); }
+  }
+  function laundry(a, b) {
+    between(G.decor, V(a.x, a.y, a.z), V(a.x, a.y + 1.9, a.z), 0.04, mats.bamboo); between(G.decor, V(b.x, b.y, b.z), V(b.x, b.y + 1.9, b.z), 0.04, mats.bamboo);
+    between(G.decor, V(a.x, a.y + 1.85, a.z), V(b.x, b.y + 1.85, b.z), 0.025, mats.bamboo);
+    const cols = [0xe8d9b5, 0x4a7fc1, 0xd85a4a, 0xf2f2f0, 0x6fae6a, 0xf0c64a]; const n = 5;
+    for (let i = 1; i <= n; i++) { const t = i / (n + 1), w = rr(0.4, 0.75), h = rr(0.6, 1.0); const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ color: cols[((i * 3 + Math.floor(a.x)) % cols.length + cols.length) % cols.length], side: THREE.DoubleSide, roughness: 0.9 })); m.position.set(a.x + (b.x - a.x) * t, a.y + 1.82 - h / 2, a.z + (b.z - a.z) * t); m.rotation.y = Math.atan2(b.x - a.x, b.z - a.z) + Math.PI / 2; m.castShadow = true; G.decor.add(m); }
+  }
+  [1, -1].forEach(sg => {
+    const P = (x, y, z) => V(sg * x, y, sg * z);
+    lanterns(P(20.3, 5.2, 27.8), P(-5, 3.0, 24.5), 0.6, 8);
+    lanterns(P(-4, 4.6, 31), P(-15.5, 3.2, 31), 0.4, 5);
+    laundry(P(-24.5, 2.6, 31), P(-17, 2.6, 33));
+    laundry(P(-24.5, 2.6, 13), P(-18, 2.6, 15));
+    laundry(P(-8, 2.0, 50), P(-2, 2.0, 51));
+    laundry(P(19, 2.0, 50.5), P(25, 2.0, 49));
+  });
+
+  // ---------------- surroundings: building rows round the park, the tea house behind each spawn, canal continuing outside
+  function building(x0, x1, z0, z1, h, face, variant) {
+    const len = face === 'x' ? z1 - z0 : x1 - x0;
+    const sideMat = mats['fac' + variant];
+    const fm = [mats.plaster, mats.plaster, mats.terrace, mats.plaster, mats.plaster, mats.plaster];
+    const idx = { '+x': 0, '-x': 1, '+z': 4, '-z': 5 };
+    face.split(',').forEach(f => fm[idx[f]] = sideMat);
+    const b = box(G.env, x0, x1, 0, h, z0, z1, fm); b.castShadow = h < 20;
+    // AC units and a water tank on some roofs
+    if (rnd() < 0.5) cyl(G.env, (x0 + x1) / 2 + rr(-1, 1), h, (z0 + z1) / 2 + rr(-1, 1), 0.7, 0.7, 1.4, mats.steel, 12);
+  }
+  const ring = [];
+  for (let z = -ZH; z < ZH; z += 8) { if (z + 8 > CANAL.z0 && z < CANAL.z1) continue; ring.push(['+x', z]); ring.push(['-x', z]); }
+  ring.forEach(([side, z], i) => {
+    const za = Math.max(z, -ZH), zb = Math.min(z + 8, ZH); if (zb - za < 2) return;
+    const v = (i * 5 + (side === '+x' ? 1 : 3)) % 8, h = 12.8 + (i % 3 === 0 ? 3.2 : 0);
+    if (side === '+x') building(XH, XH + 10, za, zb, h, '-x', v); else building(-XH - 10, -XH, za, zb, h, '+x', v);
+  });
+  // the canal gaps in the rows: an outside street bridge across each exit
+  [[1], [-1]].forEach(([sx]) => {
+    const pts = [[4.5, 0], [0, 0.7], [-4.5, 0], [-3.5, 0], [-3.5, -1.8]];
+    for (let i = 1; i < 20; i++) { const z = -3.5 + 7 * i / 20, u = z / 3.5; pts.push([z, -1.8 + 2.4 * Math.sqrt(1 - u * u)]); }
+    pts.push([3.5, -1.8], [3.5, 0]);
+    prism(G.env, pts, 'z', sx > 0 ? XH + 4 : -XH - 9, sx > 0 ? XH + 9 : -XH - 4, mats.stone);
+    building(sx > 0 ? XH + 12 : -XH - 22, sx > 0 ? XH + 22 : -XH - 12, -12, -4.5, 9.6, sx > 0 ? '-x' : '+x', 2);
+    building(sx > 0 ? XH + 12 : -XH - 22, sx > 0 ? XH + 22 : -XH - 12, 4.5, 12, 12.8, sx > 0 ? '-x' : '+x', 5);
+  });
+  // tea houses behind the spawn terraces, rows at the far ends
+  [[1], [-1]].forEach(([s]) => {
+    const z0 = s > 0 ? ZH : -ZH - 10, z1 = s > 0 ? ZH + 10 : -ZH;
+    const b = box(G.env, -XH - 10, XH + 10, 0, 14, z0, z1, mats.plaster); b.castShadow = false;
+    plane(G.env, 18, 12.8, mats.fac4, V(-s * 17, 6.4, s > 0 ? ZH - 0.02 : -ZH + 0.02), s > 0 ? Math.PI : 0);
+    box(G.env, -XH - 10, XH + 10, 14, 14.4, z0 - 0.3, z1 + 0.3, mats.plasterW);
+  });
+
+  // old-town roofscape (instanced low houses, mostly pitched grey-tile roofs), thinning out with distance; the river side stays open
+  {
+    const houses = [], roofs = [], RIVER_X = 150, C = 11;
+    for (let gx = -40; gx < 14; gx++) for (let gz = -40; gz < 40; gz++) {
+      const x = gx * C + C / 2, z = gz * C + C / 2;
+      if (x > RIVER_X - 14) continue;
+      if (Math.abs(x) < XH + 24 && Math.abs(z) < ZH + 22) continue;
+      if (Math.abs(z) < 9) continue;                                   // the canal keeps running out to the river
+      if (gx % 6 === 0 || gz % 7 === 0) continue;                      // streets
+      const d = Math.hypot(x, z); if (d > 430 || rnd() < 0.08 + d / 900) continue;
+      const w = rr(7.5, 10.5), dd = rr(8.5, 10.5), h = rnd() < 0.86 ? rr(5, 11) : rr(14, 24);
+      const px = x + rr(-0.6, 0.6), pz = z + rr(-0.6, 0.6);
+      houses.push([px, pz, w, dd, h]); if (h < 13 && rnd() < 0.72) roofs.push([px, pz, w, dd, h]);
+    }
+    const hg = new THREE.BoxGeometry(1, 1, 1); hg.translate(0, 0.5, 0);
+    const him = new THREE.InstancedMesh(hg, new THREE.MeshStandardMaterial({ roughness: 0.92 }), houses.length), o = new THREE.Object3D(), c = new THREE.Color();
+    const pal = ['#e3d6b8', '#e2c4b9', '#e9e4d8', '#d4cfc4', '#c6d1d8', '#c7d8c9', '#c9c3b8', '#a96a55', '#d8cdb6'];
+    houses.forEach(([x, z, w, d, h], i) => { o.position.set(x, 0, z); o.scale.set(w, h, d); o.rotation.set(0, 0, 0); o.updateMatrix(); him.setMatrixAt(i, o.matrix); him.setColorAt(i, c.set(pal[i % pal.length])); });
+    him.receiveShadow = true; G.env.add(him);
+    const rg = new THREE.ExtrudeGeometry(new THREE.Shape([new THREE.Vector2(-0.56, 0), new THREE.Vector2(0.56, 0), new THREE.Vector2(0, 0.4)]), { depth: 1, bevelEnabled: false }); rg.translate(0, 0, -0.5);
+    const rim = new THREE.InstancedMesh(rg, new THREE.MeshStandardMaterial({ color: 0x666b70, roughness: 0.8 }), roofs.length);
+    roofs.forEach(([x, z, w, d, h], i) => { o.position.set(x, h, z); o.scale.set(w, Math.min(w, 7) * 0.85, d + 0.6); o.updateMatrix(); rim.setMatrixAt(i, o.matrix); });
+    G.env.add(rim);
+    // a few wok-ear gables poking out of the roofscape
+    const eg = new THREE.ExtrudeGeometry(new THREE.Shape([[-0.5, 0], [-0.55, 0.45], ...Array.from({ length: 13 }, (_, k) => { const a = Math.PI - k / 12 * Math.PI; return [Math.cos(a) * 0.55, 0.45 + Math.sin(a) * 0.55]; }), [0.5, 0]].map(([x, y]) => new THREE.Vector2(x, y))), { depth: 0.04, bevelEnabled: false });
+    const ears = roofs.filter((_, i) => i % 9 === 0), eim = new THREE.InstancedMesh(eg, new THREE.MeshStandardMaterial({ color: 0x5b6166, roughness: 0.8 }), ears.length * 2);
+    ears.forEach(([x, z, w, d, h], i) => [-1, 1].forEach((s, j) => { o.position.set(x, h, z + s * d / 2); o.scale.set(w, w * 0.55, w); o.updateMatrix(); eim.setMatrixAt(i * 2 + j, o.matrix); }));
+    G.env.add(eim);
+  }
+  // the Pearl River to the east, the new-town skyline and the tower on the far bank, Baiyun hills to the north-west
+  {
+    const river = new THREE.Mesh(new THREE.PlaneGeometry(520, 9000), new THREE.MeshStandardMaterial({ color: 0x7d9f9b, roughness: 0.15, metalness: 0.25 }));
+    river.rotation.x = -Math.PI / 2; river.position.set(150 + 260, -1.2, 0); G.env.add(river);
+    box(G.env, 140, 152, -1.2, 0.3, -4500, 4500, mats.stone, { cast: false }); box(G.env, 668, 690, -1.2, 0.3, -4500, 4500, mats.stone, { cast: false });
+    const far = new THREE.Mesh(new THREE.PlaneGeometry(4000, 9000), new THREE.MeshStandardMaterial({ color: 0xcfc9bd, roughness: 1 })); far.rotation.x = -Math.PI / 2; far.position.set(690 + 2000, 0, 0); G.env.add(far);
+    const sky = [], o = new THREE.Object3D(), c = new THREE.Color();
+    for (let i = 0; i < 240; i++) {
+      const x = rr(760, 1900), z = rr(-3600, 600), dc = Math.hypot(x - 1000, (z + 1700) * 0.7);
+      const h = Math.max(40, rr(60, 330) * Math.max(0.35, 1.3 - dc / 1400)); sky.push([x, z, rr(28, 60), rr(28, 60), h]);
+    }
+    const sim = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0.55 }), sky.length);
+    sky.forEach(([x, z, w, d, h], i) => { o.position.set(x, 0, z); o.scale.set(w, h, d); o.rotation.y = rr(-0.2, 0.2); o.updateMatrix(); sim.setMatrixAt(i, o.matrix); sim.setColorAt(i, c.set(['#a6b7c6', '#bfcad2', '#93a7b8', '#cfd3d4', '#b3bcc0'][i % 5])); });
+    G.env.add(sim);
+    // the tower: a twisted hyperboloid lattice round a core, mast on top (≈600 m)
+    const tw = new THREE.Group(); tw.position.set(980, 0, -1900); G.env.add(tw);
+    const tm = new THREE.MeshStandardMaterial({ color: 0xece8e0, roughness: 0.45, metalness: 0.35 });
+    const N = 24, sm = new THREE.InstancedMesh(new THREE.CylinderGeometry(1.8, 1.8, 1, 5).translate(0, 0.5, 0), tm, N * 2);
+    for (let i = 0; i < N * 2; i++) {
+      const a0 = i % N / N * Math.PI * 2, tw2 = i < N ? 1.7 : -1.7;
+      const p0 = V(Math.cos(a0) * 80, 0, Math.sin(a0) * 55), p1 = V(Math.cos(a0 + tw2) * 27, 454, Math.sin(a0 + tw2) * 20);
+      const d = p1.clone().sub(p0); o.position.copy(p0); o.quaternion.setFromUnitVectors(V(0, 1, 0), d.clone().normalize()); o.scale.set(1, d.length(), 1); o.updateMatrix(); sm.setMatrixAt(i, o.matrix);
+    }
+    tw.add(sm);
+    tw.add(new THREE.Mesh(new THREE.CylinderGeometry(15, 18, 454, 18).translate(0, 227, 0), tm));
+    // waist rings follow the narrowing lattice
+    for (let k = 1; k <= 9; k++) {
+      const y = k * 45.4, t = y / 454; let ra = 0, rb = 0;
+      for (let j = 0; j < 64; j++) { const a0 = j / 64 * Math.PI * 2; const px = Math.cos(a0) * 80 * (1 - t) + Math.cos(a0 + 1.7) * 27 * t, pz = Math.sin(a0) * 55 * (1 - t) + Math.sin(a0 + 1.7) * 20 * t; ra = Math.max(ra, Math.abs(px)); rb = Math.max(rb, Math.abs(pz)); }
+      const r = new THREE.Mesh(new THREE.TorusGeometry(1, 0.03, 4, 48), tm); r.scale.set(ra, rb, 60); r.rotation.x = Math.PI / 2; r.position.y = y; tw.add(r);
+    }
+    tw.add(new THREE.Mesh(new THREE.CylinderGeometry(1.5, 8, 146, 8).translate(0, 454 + 73, 0), tm));
+    tw.rotation.y = 0.5;
+    // hills
+    const hm = new THREE.MeshStandardMaterial({ color: 0x86a08e, roughness: 1, flatShading: true });
+    [[-1900, -1500, 650, 300], [-2400, -500, 850, 360], [-2300, 700, 700, 240], [-1500, -2500, 600, 220], [-900, 2400, 700, 200]].forEach(([x, z, r, h]) => { const g = new THREE.IcosahedronGeometry(1, 2); g.scale(r, h, r * 0.8); const m = new THREE.Mesh(g, hm); m.position.set(x, -30, z); G.env.add(m); });
+  }
+  rootG.traverse(o => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m && 'envMapIntensity' in m) m.envMapIntensity = 0; }); });
+  return { root: rootG, G, mats };
 }
 /* ======================================================= GAME DATA
    Weapons / subs / specials are pure data. Characters read their

@@ -122,3 +122,9 @@ git switch --detach v0.3.0      # 看完用 git switch main 回来
 2. 每轮交付时同时附上重新打包好的 `index.html`，并确认 `smoke-test` 通过。
 3. 你试玩确认后，再合并进 `main`、打版本标签。
 4. 试玩不满意，就继续在同一个分支上改，main 不受影响。
+
+
+## 西關大屋的装饰来自设计稿源码
+
+`src/js/03b_canton_design.js` 是**生成文件**，不要手改。它由 `python3 tools/gen-canton-design.py` 从 `docs/design/src/`（通过验收的设计稿源码：`map-data.js`、`preview-tex.js`、`preview-scene.js`）生成，所以游戏里的物件、招牌、店面、树和场外街区就是设计稿本身。要改物件，改 `docs/design/src/` 或生成脚本里的改写规则，再重新生成并 `./tools/build.sh`。
+游戏自己画的只有能站、能涂墨的方块（地面、墙、斜坡），用的是设计稿同一套贴图。标了 `ghost` 的方块只有碰撞：外观由设计稿模型负责，不沾墨。
