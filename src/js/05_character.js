@@ -12,6 +12,7 @@ function initGeo() {
   GEO.sphereLo = new THREE.IcosahedronGeometry(1, 1);
   GEO.cap = (r, l) => new THREE.CapsuleGeometry(r, l, 6, 12);
   GEO.cyl = new THREE.CylinderGeometry(1, 1, 1, 16);
+  GEO.cone = new THREE.ConeGeometry(1, 1, 14);
   GEO.beam = new THREE.CylinderGeometry(1, 1, 1, 8, 1, true).rotateX(Math.PI / 2).translate(0, 0, 0.5);
 }
 function buildWeaponModel(id, T, trimHex) {
@@ -200,10 +201,21 @@ class Character {
     // blob (swim form)
     const blob = new THREE.Group(); root.add(blob); blob.visible = false; this.blob = blob;
     this.blobBody = new THREE.Group(); blob.add(this.blobBody);
-    this.blobBody.add(mesh(GEO.sphere, T, 0, 0.26, 0, 0.42, 0.28, 0.46));
-    this.blobBody.add(mesh(GEO.sphere, T, 0, 0.42, -0.14, 0.2, 0.18, 0.22));
-    this.blobBody.add(mesh(GEO.sphere, T, 0, 0.55, -0.24, 0.08, 0.1, 0.08));
-    [-1, 1].forEach(s => { this.blobBody.add(mesh(GEO.sphere, eyeM, s * 0.14, 0.38, 0.34, 0.085, 0.1, 0.06)); this.blobBody.add(mesh(GEO.sphere, dark, s * 0.14, 0.38, 0.39, 0.04, 0.055, 0.03)); });
+    // a little squid, nose (+z) first: mantle with a pointed tip and two fins, eyes on top, tentacles trailing behind
+    const sq = this.blobBody;
+    sq.add(mesh(GEO.sphere, T, 0, 0.2, 0.02, 0.27, 0.19, 0.4));
+    const tip = mesh(GEO.cone, T, 0, 0.2, 0.47, 0.2, 0.36, 0.15); tip.rotation.x = Math.PI / 2; sq.add(tip);
+    this.fins = [-1, 1].map(sd => { const f = mesh(GEO.sphere, T, sd * 0.21, 0.2, 0.34, 0.17, 0.035, 0.15); f.rotation.y = -sd * 0.55; sq.add(f); return f; });
+    sq.add(mesh(GEO.sphere, dark, 0, 0.275, -0.15, 0.23, 0.075, 0.1));                                        // the dark mask across the eyes
+    [-1, 1].forEach(sd => { sq.add(mesh(GEO.sphere, eyeM, sd * 0.115, 0.31, -0.15, 0.092, 0.085, 0.105)); sq.add(mesh(GEO.sphere, dark, sd * 0.115, 0.36, -0.13, 0.045, 0.045, 0.06)); });
+    [-0.17, 0, 0.17].forEach(x => sq.add(mesh(GEO.sphere, T, x, 0.13, -0.36, 0.06, 0.055, 0.13)));           // short arms
+    this.tent = [-1, 1].map(sd => [0, 1, 2, 3].map(k => {
+      const r = 0.075 - k * 0.011, m = k === 3 ? mesh(GEO.sphere, T, sd * 0.1, 0.15, -0.86, 0.1, 0.035, 0.13) : mesh(GEO.sphere, T, sd * 0.1, 0.15, -0.4 - k * 0.15, r, r * 0.8, 0.11);
+      m.userData.x0 = sd * 0.1; sq.add(m); return m;
+    }));
+    // a low mound of ink pushed up by a swimmer under the surface (all you see of a submerged enemy)
+    this.bow = mesh(GEO.sphere, T, 0, 0, 0, 0.3, 0.06, 0.4); this.bow.castShadow = false; this.bow.visible = false; blob.add(this.bow);
+    this.matBase = [skin, cloth, cloth2, pants].map(m => m.color.clone()); this.morph = 0; this.sink = 0;
     this.blobGhost = mesh(GEO.sphere, TEAMGHOST[this.team], 0, 0.12, 0, 0.45, 0.14, 0.5); this.blobGhost.castShadow = false; blob.add(this.blobGhost);
     // death ghost
     const ghost = new THREE.Group(); this.ghost = ghost; ghost.visible = false;
@@ -350,10 +362,61 @@ class Character {
   }
   setSwim(on) {
     if (on === this.swim) return;
-    this.swim = on; this.swimPop = 1;
-    this.human.visible = !on; this.blob.visible = on;
-    if (on) Fx.burst(this.pos.x, this.pos.y + 0.3, this.pos.z, TEAM_HEX[this.team], 10, 3, 0.1);
+    this.swim = on; this.swimPop = on ? 1 : 0;                              // the look follows in syncModel (morph); the controls switch at once
+    this.swimSplash(on);
     if (this.isPlayer) on ? Sfx.swimIn() : Sfx.swimOut();
+  }
+  // going under / coming up: a crown of drops and a ripple on the ink
+  swimSplash(on) {
+    if (this.state !== 'play' || !this.root.visible) return;
+    const col = TEAM_HEX[this.team], p = this.pos, own = this.grounded && ownerAt(p.x, p.y, p.z) === this.team;
+    if (on) {
+      if (!own) { Fx.burst(p.x, p.y + 0.3, p.z, col, 8, 2.6, 0.09); return; }
+      for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283 + rand(-0.2, 0.2), sp = rand(1.6, 2.6); Fx.add(p.x + Math.cos(a) * 0.3, p.y + 0.08, p.z + Math.sin(a) * 0.3, Math.cos(a) * sp, rand(3, 4.6), Math.sin(a) * sp, rand(0.06, 0.11), rand(0.4, 0.6), col, 22); }
+      Wake.ring(p.x, p.y + 0.04, p.z, surfNormal(p.x, p.y, p.z), col, 0.28, 1.5, 0.5, 0.95);
+    } else if (this.submerged) {
+      Fx.burstDir(p.x, p.y + 0.15, p.z, col, 9, 5.2, 0.1, 0, 1, 0, 0.35);
+      Wake.ring(p.x, p.y + 0.04, p.z, surfNormal(p.x, p.y, p.z), col, 0.2, 1.3, 0.45, 0.8);
+    }
+  }
+  // what a swimmer does to the ink surface: a V of bow waves and a trail of ripples when moving, a slow faint ripple when still
+  swimWake(dt) {
+    const col = TEAM_HEX[this.team], p = this.pos, v = this.vel, W = this.wk || (this.wk = { d: 0, r: 0, still: rand(0, 1.2), hx: 0, hz: 1, turn: 0 });
+    let n, bx, by, bz, dx, dy, dz, sp;
+    if (this.climbing && this.wall) {                                       // on a wall: everything lies on the wall, the wave runs along the climb
+      n = { x: this.wall.nx, y: 0, z: this.wall.nz }; const tx = -n.z, tz = n.x, lat = v.x * tx + v.z * tz;
+      sp = Math.hypot(lat, v.y); dx = tx * lat; dy = v.y; dz = tz * lat;
+      bx = p.x - n.x * 0.36; by = p.y + 0.35; bz = p.z - n.z * 0.36;
+    } else {
+      n = surfNormal(p.x, p.y, p.z); sp = Math.hypot(v.x, v.z); dx = v.x; dy = 0; dz = v.z;
+      bx = p.x; by = p.y + 0.04; bz = p.z;
+    }
+    if (sp < 1.2) {                                                         // lying still: barely there
+      W.still -= dt;
+      if (W.still <= 0) { W.still = rand(1.2, 1.7); Wake.ring(bx, by, bz, n, col, 0.14, 0.34, 1.15, 0.42); if (Math.random() < 0.4) Fx.add(bx + rand(-0.15, 0.15), by + 0.02, bz + rand(-0.15, 0.15), 0, rand(0.9, 1.5), 0, rand(0.03, 0.05), 0.35, col, 3); }
+      W.d = 0; return;
+    }
+    dx /= sp; dy /= sp; dz /= sp;
+    const px = n.y * dz - n.z * dy, py = n.z * dx - n.x * dz, pz = n.x * dy - n.y * dx;      // sideways on the surface
+    const k = clamp(sp / 12, 0, 1);
+    W.d += sp * dt; W.r += sp * dt;
+    while (W.d > 0.28) {                                                    // bow waves: two arms peeling off the nose and drifting outwards -> a V that gets longer the faster you go
+      W.d -= 0.28;
+      for (const sd of [-1, 1]) {
+        const out = 1.5 + k * 1.3, q = out / sp * 0.8, fx = dx - px * sd * q, fy = dy - py * sd * q, fz = dz - pz * sd * q;      // lie along the arm, not along the swimmer
+        Wake.add({ x: bx + dx * 0.42 + px * sd * 0.1, y: by + dy * 0.42 + py * sd * 0.1, z: bz + dz * 0.42 + pz * sd * 0.1, n, f: { x: fx, y: fy, z: fz },
+          v: { x: px * sd * out + dx * sp * 0.1, y: py * sd * out + dy * sp * 0.1, z: pz * sd * out + dz * sp * 0.1 }, w: 0.04 + k * 0.025, l: 0.26, grow: 0.05, life: 0.6 + k * 0.5, col, a: 0.6 + k * 0.4 });
+      }
+      if (W.c = !W.c) {                                                     // the churned track settling behind
+        Wake.add({ x: bx - dx * 0.2, y: by - dy * 0.2, z: bz - dz * 0.2, n, f: { x: dx, y: dy, z: dz }, v: null, w: 0.13 + k * 0.05, l: 0.34, grow: 0.12, life: 0.75 + k * 0.3, col, a: 0.14 + k * 0.08 });
+      }
+    }
+    if (W.r > 1.5) { W.r = 0; Wake.ring(bx - dx * 0.25, by - dy * 0.25, bz - dz * 0.25, n, col, 0.18, 0.5 + k * 0.3, 0.9, 0.3 + k * 0.2); }
+    if (Math.random() < dt * (3 + k * 14)) Fx.add(bx - dx * rand(0.2, 0.8) + px * rand(-0.25, 0.25), by + 0.03, bz - dz * rand(0.2, 0.8) + pz * rand(-0.25, 0.25), 0, rand(1.2, 2.4), 0, rand(0.035, 0.07), 0.32, col, 10);   // bubbles
+    // a hard turn at speed throws ink off the outside of the bend
+    const dot = W.hx * dx + W.hz * dz; W.turn -= dt;
+    if (!this.climbing && sp > 6 && dot < 0.9 && W.turn <= 0) { W.turn = 0.22; Fx.burstDir(bx, by + 0.1, bz, col, 6, 3.2 + k * 2, 0.08, W.hx, 0.55, W.hz, 0.35); Wake.ring(bx, by, bz, n, col, 0.2, 1.0, 0.4, 0.6); }
+    const hk = Math.min(1, dt * 14); W.hx += (dx - W.hx) * hk; W.hz += (dz - W.hz) * hk; const hl = Math.hypot(W.hx, W.hz) || 1; W.hx /= hl; W.hz /= hl;
   }
   damage(amount, src, via) {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
@@ -394,7 +457,7 @@ class Character {
     this.pos.set(sp.x + rand(-2.5, 2.5), sp.y + 24, sp.z + rand(-1.5, 1.5)); this.dropY = sp.y; this.dropSJ = false;
     this.vel.set(0, -30, 0);
     this.aimYaw = this.yaw = this.bodyYaw = sp.yaw; this.aimPitch = 0;
-    this.root.visible = true; this.ghost.visible = false; this.human.visible = true; this.blob.visible = false; this.swim = false;
+    this.root.visible = true; this.ghost.visible = false; this.human.visible = true; this.blob.visible = false; this.swim = false; this.morph = 0;
     if (this.isPlayer) { Sfx.superJump(); HUD.respawned(); Cam.yaw = sp.yaw; Cam.pitch = -0.1; }
     if (tgt) { this.pos.set(sp.x, sp.y, sp.z); this.beginFlight(tgt); }
   }
@@ -435,7 +498,7 @@ class Character {
       this.showSJMarker(f.tp); this.pulseSJMarker(u);
       if (u >= 1) {
         this.pos.set(f.tp.x, ly, f.tp.z); this.vel.set(0, 0, 0); this.state = 'play'; this.grounded = true; this.invulnT = 0.4; this.fly = null; this.landSquash = 1;
-        this.hideSJMarker(); this.human.visible = true; this.blob.visible = false;
+        this.hideSJMarker(); this.human.visible = true; this.blob.visible = false; this.morph = 0;
         // landing splash: a big blot plus ink flung out all around the teammate
         const col = TEAM_HEX[this.team], lp = this.pos;
         this.addPaint(splatFloor(lp.x, ly, lp.z, 2.4, this.team, 0.7, true), false);
@@ -811,7 +874,8 @@ class Character {
     this.root.position.copy(this.pos);
     if (this.state === 'sjfly') {       // flying ink blob, nose along the velocity
       const v = this.vel, hs = Math.hypot(v.x, v.z);
-      this.human.visible = false; this.blob.visible = true; this.blobBody.visible = true; this.blobGhost.visible = false;
+      this.human.visible = false; this.blob.visible = true; this.blobBody.visible = true; this.blobGhost.visible = false; this.bow.visible = false;
+      this.blobBody.position.set(0, 0, 0); this.morph = 1; this.sink = 0;
       if (hs > 0.1) this.root.rotation.y = Math.atan2(v.x, v.z);
       this.blobBody.rotation.x = -Math.atan2(v.y, Math.max(hs, 0.1)) * 0.8; this.blobBody.scale.set(0.8, 0.8, 1.45);
       if (this.tag) this.tag.visible = this.team === PLAYER.team; this.updateInkSpots(); return;
@@ -821,7 +885,13 @@ class Character {
     const run = clamp(hs / 6, 0, 1);
     this.phase += hs * dt * 2.3;
     this.swimPop = Math.max(0, this.swimPop - dt * 4);
-    if (!this.swim) {
+    // human <-> squid: a quick squash into a blob of ink and back (looks only: the controls switched the moment the key went down)
+    const m0 = this.morph; this.morph = this.swim ? Math.min(1, m0 + dt / 0.24) : Math.max(0, m0 - dt / 0.2);
+    const mo = this.morph, asHuman = mo < 0.55, he = asHuman ? mo / 0.55 : 1, se = asHuman ? 0 : (mo - 0.55) / 0.45;
+    if (!this.swim && m0 > 0 && mo === 0) this.swimPop = 0.7;               // popped back out: a little landing bounce
+    this.human.visible = asHuman; this.blob.visible = !asHuman;
+    if (he !== this._he) { this._he = he; const tc = TEAMMAT[this.team].color, e = he * he; [this.mats.skin, this.mats.cloth, this.mats.cloth2, this.mats.pants].forEach((m, i) => m.color.copy(this.matBase[i]).lerp(tc, e)); }
+    if (asHuman) {
       const air = !this.grounded;
       const sw = Math.sin(this.phase);
       const stride = this.inEnemy ? 0.5 : 0.9;
@@ -850,19 +920,34 @@ class Character {
       this.landSquash = Math.max(0, (this.landSquash || 0) - dt * 5);
       let k = 1 + this.swimPop * 0.25 + this.landSquash * 0.3; if (this.sj) k = 1 + Math.min(this.sj.t, 0.6) * 0.35;
       this.human.scale.set(k, 2 - k, k);
+      if (he > 0) {                                                         // melting down into the ink / stretching back up out of it
+        const up = !this.swim, w = up ? 1 - 0.45 * he : (1 + 0.5 * he) * (1 - 0.5 * he * he), h = up ? 1.16 - 0.9 * he * he : 1 - 0.78 * he;
+        this.human.scale.x *= w; this.human.scale.z *= w; this.human.scale.y *= h;
+      }
       this.tankInk.scale.y = 0.32 * clamp(this.ink / 100, 0.02, 1); this.tankInk.position.y = -0.16 + this.tankInk.scale.y / 2;
       const fl = this.hurtFlash > 0.07 ? 0.9 : this.hurtFlash > 0 ? 0.35 : 0; this.mats.cloth.emissive.setRGB(fl, fl, fl); this.mats.skin.emissive.setRGB(fl, fl, fl);
       // flinch: lean away from the hit for a moment
       this.flinch = Math.max(0, (this.flinch || 0) - dt * 7);
       if (this.flinch > 0 && this.flinchDir) { const f = this.flinch; this.torso.rotation.x -= f * 0.22; this.head.rotation.x -= f * 0.18; this.human.position.y -= f * 0.03; }
     } else {
-      const sub = this.submerged;
-      const showBody = !sub;
-      this.blobBody.visible = showBody;
-      this.blobGhost.visible = sub && this.isPlayer;
-      const wob = Math.sin(T * 14) * 0.08 * run;
-      const pop = 1 + this.swimPop * 0.5;
-      this.blobBody.scale.set((1 + wob) * pop, (1 - wob) / pop, (1 + run * 0.18) * pop);
+      const sub = this.submerged, mine = this.team === PLAYER.team, moving = hs > 1.2 || (this.climbing && Math.abs(this.vel.y) > 1.2);
+      // in own ink: an enemy is fully under (only the surface gives it away); you and your mates ride half out while moving and sink when still
+      this.sink = damp(this.sink, !sub || !this.swim ? 0 : !mine ? 1 : moving ? 0.5 : 1, this.swim ? 13 : 30, dt);
+      const sk = this.sink, B = this.blobBody;
+      B.visible = sk < 0.94; this.blobGhost.visible = sub && this.isPlayer && sk > 0.6;
+      const crawl = sub ? 0 : run, hop = Math.abs(Math.sin(this.phase * 1.3)) * crawl;          // out of ink: an inchworm shuffle
+      const wob = Math.sin(T * 14) * 0.07 * run, pop = 1 + this.swimPop * 0.3 + (this.swim ? (1 - se) * 0.35 : (1 - se) * -0.3);
+      const tall = this.swim ? 1 : 1 + (1 - se) * 0.7;                                          // surfacing: the ink bulges upwards first
+      B.scale.set((1 + wob) * pop, (1 - wob) / pop * tall * (1 - hop * 0.18), (1 + run * 0.16 + hop * 0.14) * pop);
+      B.position.set(0, -sk * 0.3 + hop * 0.05 + (sub ? Math.sin(T * 9 + this.id) * 0.012 : 0), 0);
+      B.rotation.set(sub ? -0.1 * run * (1 - sk) : 0, 0, Math.sin(T * 14) * 0.05 * run);
+      const lag = clamp(angDiff(this._ty ?? this.bodyYaw, this.bodyYaw) / Math.max(dt, 1e-3) * 0.02, -0.35, 0.35); this._ty = this.bodyYaw;
+      this.tailLag = damp(this.tailLag || 0, lag, 10, dt);
+      this.tent.forEach((ch, s) => ch.forEach((seg, i) => { const j = i + 1; seg.position.x = seg.userData.x0 + Math.sin(T * (5 + run * 9) - j * 0.9 + s * 0.6) * (0.012 + 0.03 * run) * j + this.tailLag * j * 0.07; }));
+      this.fins.forEach((f, s) => f.rotation.z = Math.sin(T * (6 + run * 8) + s * Math.PI) * (0.12 + 0.2 * run));
+      // the mound of ink over a swimmer: bigger and stretched the faster it goes, almost nothing when it lies still
+      const bw = this.bow; bw.visible = sub && this.swim && sk > 0.3;
+      if (bw.visible) { const bk = moving ? clamp(hs / 12, 0.25, 1) : 0.12 + Math.sin(T * 2.2 + this.id) * 0.04, f = clamp((sk - 0.3) / 0.4, 0, 1) * (mine ? 0.75 : 1); bw.scale.set((0.2 + bk * 0.14) * f, (0.025 + bk * 0.075) * f, (0.26 + bk * 0.3) * f); bw.position.set(0, 0.015, moving ? 0.12 : 0); }
       // on a wall: the squid (and your own see-through outline) lies flat against it, head up
       this.wallK = damp(this.wallK || 0, this.climbing ? 1 : 0, 16, dt); const wk = this.wallK;
       if (wk > 0.001 || this.wallN) {
@@ -873,7 +958,7 @@ class Character {
         const gp = 1 + this.swimPop * 0.35; this.blobGhost.scale.set(0.45 * gp, 0.14, 0.5 * gp);
         if (wk <= 0.001) { this.wallN = null; this.blob.rotation.set(0, 0, 0); this.blob.position.set(0, 0, 0); }
       }
-      if (sub && hs > 3 && Math.random() < 0.35) Fx.wake(this.pos.x, this.pos.y + 0.05, this.pos.z, TEAM_HEX[this.team]);
+      if (sub && this.swim && this.state === 'play') this.swimWake(dt);
     }
     if (this.tag) this.tag.visible = this.team === PLAYER.team && this.alive;
     this.updateLaser(); this.updateInkSpots();

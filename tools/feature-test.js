@@ -118,6 +118,26 @@ vm.runInContext(`(() => {
   Input.jumpQ = true; loop(); let air = 0; while (!P.grounded && air < 90) { loop(); air++; } const jd = Math.abs(P.pos.z - z0);
   ok(vx > 11 && jd > 7, 'swim-jump keeps speed (run-up ' + vx.toFixed(1) + ' m/s, jump distance ' + jd.toFixed(1) + ' m)');
   Input.keys = {};
+  // squid form: the look morphs over ~0.25 s while the controls switch at once; a swimmer leaves a wake on the ink, a still one almost nothing
+  {
+    while (!P.grounded) loop(); for (let i = 0; i < 20; i++) loop();
+    const E1 = CHARS.find(c => c.team === 1);
+    P.pos.set(-9, 0, 20); P.vel.set(0, 0, 0); for (let i = 0; i < 20; i++) loop(); Wake.clear();
+    const h0 = P.human.visible && !P.blob.visible && P.morph === 0;
+    Input.keys = { ShiftLeft: true }; loop(); const inst = P.swim && P.submerged, mid = P.morph > 0 && P.morph < 1 && P.human.visible;
+    for (let i = 0; i < 20; i++) loop(); const squid = P.morph === 1 && !P.human.visible && P.blob.visible, sunk = P.sink > 0.9 && !P.blobBody.visible && P.blobGhost.visible;
+    for (let i = 0; i < 100; i++) loop(); const stillN = Wake.list.length;
+    Input.keys = { KeyW: true, ShiftLeft: true }; for (let i = 0; i < 30; i++) loop(); const moveN = Wake.list.length, half = P.blobBody.visible && P.sink > 0.3 && P.sink < 0.7;
+    Input.keys = {}; loop(); const out = !P.swim; for (let i = 0; i < 16; i++) loop(); const back = P.morph === 0 && P.human.visible && !P.blob.visible && P.mats.skin.color.equals(P.matBase[0]);
+    // an enemy in its own ink: the body is under, only the surface shows
+    for (let z = 20; z >= 8; z -= 2) splatFloor(9, 0, z, 2.4, 1, 1, false);
+    E1.state = 'play'; E1.alive = true; E1.root.visible = true; E1.pos.set(9, 0, 20); E1.vel.set(0, 0, 0); E1.yaw = E1.aimYaw = Math.PI; Wake.clear();
+    const eb = G.bots.find(b => b.c === E1), eu = eb && eb.update; if (eb) eb.update = () => { E1.intent.swim = true; E1.intent.mx = 0; E1.intent.mz = -1; E1.intent.fire = false; };
+    for (let i = 0; i < 30; i++) loop();
+    const eHid = E1.submerged && !E1.blobBody.visible && E1.bow.visible && Wake.list.length > 20; if (eb) eb.update = eu;
+    ok(h0 && inst && mid && squid && sunk && out && back, 'squid form: swim state flips on the key, the look morphs human -> squid (and back, colours restored) in ~0.25 s, a still squid sinks out of sight');
+    ok(moveN > stillN + 25 && stillN <= 4 && half && eHid, 'ink wake: ' + moveN + ' marks behind a swimmer vs ' + stillN + ' when still, your squid rides half out, a submerged enemy shows only its wake');
+  }
   // super jump while alive (from the map)
   const ally = CHARS.find(c => c.team === 0 && !c.isPlayer && c.alive);
   ally.pos.set(-12, 0, -8); ally.state = 'play'; P.pos.set(10, 0, 20); P.vel.set(0, 0, 0); loop();
