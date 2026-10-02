@@ -19,10 +19,20 @@ const PALETTES = [
   ['#00cfff', '#ff3b30'], ['#b7f500', '#b43cff'], ['#ffc400', '#1b6bff']
 ];
 const GAME = { pal: 0, diff: 1, dur: 180, name: '新人墨仔', uniformChars: false };   // uniformChars: tests give everyone the same character
+// bot difficulty.  The first five numbers are marksmanship; the rest say what a team's bots know how to do:
+//   retreat  break off below this share of health and hide in own ink (0 = fight to the end)
+//   team     0 every bot for itself · 1 a simple split (front / home / sniper) · 2 full calls (flank, regroup, play the score)
+//   focus    everyone shoots the same target     ambush  chance to lie in wait at a choke point
+//   combo    dive under fire / ink the feet first   bombSmart  bombs go where enemies were seen
+//   sjump    super-jump back to the front        climb   1 snipers ink walls to reach high ground · 2 anyone does
+//   endgame  all paint in the last 30 s          share   tell teammates who was seen, turn on an unseen shooter
+//   inkCare  top up ink between fights   dawdle  chance to stop and look about between jobs   swimK  how readily it swims through own ink to travel
 const DIFF = [
-  { err: 0.13, react: 0.75, fireHold: 0.55, turn: 5, dodge: 0.2 },
-  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45 },
-  { err: 0.04, react: 0.2, fireHold: 0.95, turn: 13, dodge: 0.8 }
+  { err: 0.13, react: 0.75, fireHold: 0.55, turn: 5, dodge: 0.2, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0, dawdle: 0.3, swimK: 0.7 },
+  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0.4, team: 1, focus: 0, ambush: 0.25, combo: 0, bombSmart: 1, sjump: 1, climb: 1, endgame: 1, share: 1, inkCare: 1 },
+  { err: 0.04, react: 0.2, fireHold: 0.95, turn: 13, dodge: 0.8, retreat: 0.55, team: 2, focus: 1, ambush: 0.7, combo: 0.8, bombSmart: 1, sjump: 1, climb: 2, endgame: 1, share: 1, inkCare: 1, swimK: 0.97 },
+  // (index 3, tests only: the pre-v0.11 "normal" bot - same aim as normal, none of the new know-how - as a yardstick)
+  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0 }
 ];
 
 /* --------------------------------------------------------------- audio */
@@ -168,6 +178,11 @@ const Sfx = (() => {
       noise(0.25, 0.25 * v, 'bandpass', 900, 1.5, 300, d, t + 0.05); tone('triangle', 70, 40, 1.2, 0.12 * v, d, t + 0.1);
     },
     cannon(v, c) { noise(0.35 + c * 0.3, (0.25 + c * 0.35) * v, 'lowpass', 2400, 0.9, 120); tone('square', 520, 60, 0.25, 0.12 * v); tone('sine', 150, 40, 0.4 + c * 0.2, (0.3 + c * 0.3) * v); noise(0.06, 0.25 * v, 'highpass', 3000, 1); },
+    // the secret name: a run of bright notes climbing (on), or tumbling back down (off)
+    cheat(on) { if (!ctx) return; const t = ctx.currentTime, n = on ? [72, 76, 79, 84, 88, 91, 96] : [84, 79, 76, 72, 67]; n.forEach((m, k) => { tone('square', mtof(m), null, 0.11, 0.07, null, t + k * 0.065); tone('triangle', mtof(m - 12), null, 0.14, 0.06, null, t + k * 0.065); }); if (on) { noise(0.5, 0.16, 'bandpass', 500, 2, 4200, null, t); tone('sine', 1760, 3520, 0.5, 0.06, null, t + 0.46); } },
+    // Karita's welcome: a soft tick as each letter turns over, then a little music-box tune with an echo
+    tick(i = 0) { tone('sine', mtof(76 + i * 2), null, 0.07, 0.09); tone('triangle', mtof(88 + i * 2), null, 0.05, 0.04); },
+    welcome() { if (!ctx) return; const t = ctx.currentTime, n = [76, 79, 84, 83, 79, 84, 88, 91, 88, 96]; n.forEach((m, k) => { const at = t + k * 0.17; tone('sine', mtof(m), null, 0.42, 0.11, null, at); tone('triangle', mtof(m + 12), null, 0.2, 0.035, null, at); tone('sine', mtof(m), null, 0.3, 0.035, null, at + 0.26); }); [60, 67, 72].forEach(m => tone('sine', mtof(m), null, 1.9, 0.05, null, t)); },
     // SMG: a light, short, high "pip-tsk" (fires twice as often as the rifle, so it stays quiet)
     smg(v, pan = 0) {
       if (!ctx) return; const d = panNode(pan), k = rand(0.92, 1.08);

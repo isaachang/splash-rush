@@ -305,7 +305,7 @@ function applyPalette() {
   setTeamColors(p[0], p[1]); setTeamMats(p[0], p[1]);
 }
 function clearChars() {
-  CHARS.forEach(c => { scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot); if (c.sjMarker) scene.remove(c.sjMarker); }); CHARS.length = 0; G.bots = []; PLAYER = null;
+  CHARS.forEach(c => { scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot); if (c.sjMarker) scene.remove(c.sjMarker); }); CHARS.length = 0; G.bots = []; G.squads = [new Squad(0), new Squad(1)]; G.pilot = null; PLAYER = null;
 }
 // roster = who plays with what; rolled when entering the lobby so it can be shown before the match
 function rollRoster() {
@@ -328,7 +328,7 @@ function enforceRoster() {
   for (const w of ['charger', 'splatling']) G.roster.forEach(team => { let seen = team.some(m => m.isPlayer && m.weapon === w); team.forEach(m => { if (m.isPlayer) return; if (m.weapon === w) { if (seen) { m.weapon = 'rifle'; if (!CHARACTERS[m.char].weapons.includes('rifle')) m.char = 'sa'; } seen = true; } }); });
 }
 function spawnTeams() {
-  clearChars();
+  clearChars(); navEnsure();
   if (!G.roster) rollRoster();
   // where the four stand on the spawn pad: [sideways, back] from its centre (a narrow pad gets a tight 2 x 2)
   const slots = MAP.spawnSlots || [[-4.5, -0.4], [-1.5, 0.8], [1.5, -0.4], [4.5, 0.8]];
@@ -617,6 +617,77 @@ function buildWorld() {
   const before = new Set(scene.children);
   buildSea(); buildArena(); buildDecor();
   WORLD.objs = scene.children.filter(o => !before.has(o));
+}
+// feedback for pressing Enter in the name box.  One special name switches mode A on: the box fills with running ink, a
+// stamp slams onto it, splats fly out across the screen, the park behind gets drenched in both colours, and a rising jingle plays.
+// Changing it back makes the stamp fall off.  Any other name just gets a small "saved" pulse.
+function nameConfirm() {
+  const w = $('pnameWrap'), inp = $('pname'); Sfx.init();
+  const cls = (...c) => { w.classList.remove('shake', 'slam', 'drop', 'ok'); void w.offsetWidth; c.forEach(k => w.classList.add(k)); };
+  // her code: the letters turn into her name one by one, then the welcome plays
+  if (isVipCode(GAME.name)) { vipWelcome(); return; }
+  if (Profile.data.vip && GAME.name !== VIP_NAME) { Profile.data.vip = null; Profile.save(); }
+  const on = devGod(), vip = vipOn(), was = G.modeWas || '', now = on ? 'dev' : vip ? 'vip' : ''; G.modeWas = now;
+  w.classList.toggle('dev', on); w.classList.toggle('vip', vip);
+  if (vip) { vipWelcome(); return; }                                     // Enter again on her name: play it again
+  if (!now && !was) { cls('ok'); Sfx.click(); return; }
+  if (!now) { w.classList.add(was === 'vip' ? 'wasVip' : 'wasDev'); cls('drop'); Sfx.cheat(false); setTimeout(() => w.classList.remove('drop', 'wasVip', 'wasDev'), 750); return; }
+  cls('shake', 'slam'); Sfx.cheat(true); flash(0.55);
+  // ink splats bursting out from the name box, and the words
+  try {
+    const fx = $('devFx'), r = $('pname').getBoundingClientRect(), ox = r.left + r.width / 2, oy = r.top + r.height / 2; fx.innerHTML = ''; fx.className = '';
+    const cols = [TEAM_HEX[0], TEAM_HEX[1], '#ffe45c'];
+    for (let i = 0; i < 14; i++) {
+      const x = rand(0.04, 0.9) * innerWidth, y = rand(0.04, 0.86) * innerHeight, sz = rand(90, 260), c = cols[i % 3];
+      let d = ''; for (let a = 0; a < 6.28; a += 0.16) { const rr = 36 * (1 + 0.22 * Math.sin(a * 3 + i) + 0.13 * Math.sin(a * 7 + i * 2) + 0.06 * Math.sin(a * 13 + i)); d += (a ? 'L' : 'M') + (50 + Math.cos(a) * rr).toFixed(1) + ' ' + (50 + Math.sin(a) * rr).toFixed(1); }
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); el.setAttribute('viewBox', '0 0 100 100'); el.setAttribute('width', sz); el.setAttribute('height', sz);
+      el.innerHTML = `<path d="${d}Z" fill="${c}" stroke="#111" stroke-width="3" stroke-linejoin="round"/><circle cx="${rand(8, 22).toFixed(0)}" cy="${rand(12, 30).toFixed(0)}" r="${rand(3, 7).toFixed(0)}" fill="${c}" stroke="#111" stroke-width="2.5"/><circle cx="${rand(80, 92).toFixed(0)}" cy="${rand(70, 88).toFixed(0)}" r="${rand(2, 5).toFixed(0)}" fill="${c}" stroke="#111" stroke-width="2.5"/>`;
+      el.style.left = x - sz / 2 + 'px'; el.style.top = y - sz / 2 + 'px'; el.style.setProperty('--fx', (ox - x).toFixed(0) + 'px'); el.style.setProperty('--fy', (oy - y).toFixed(0) + 'px'); el.style.setProperty('--fr', rand(-40, 40).toFixed(0) + 'deg'); el.style.animationDelay = (i * 0.035).toFixed(2) + 's';
+      fx.appendChild(el);
+    }
+    const word = document.createElement('div'); word.className = 'devWord'; word.innerHTML = '墨水管够！<small>开发者模式 · 不掉血 · 墨水无限</small>'; fx.appendChild(word);
+    clearTimeout(nameConfirm.t); nameConfirm.t = setTimeout(() => { fx.innerHTML = ''; }, 2200);
+  } catch (e) { }
+  // and the park behind the menu takes a soaking
+  if (G.state === 'title') for (let i = 0; i < 46; i++) setTimeout(() => { if (G.state !== 'title') return; const x = rand(-XH + 1, XH - 1), z = rand(-ZH + 1, ZH - 1), tm = i % 2, y = groundAt(x, z); splatFloor(x, y, z, rand(2.2, 4.6), tm, 0.5, true); Fx.burst(x, y + 0.3, z, TEAM_HEX[tm], 14, 7, 0.22); }, i * 22);
+}
+// Karita's welcome.  Her code in the name box: the letters flip into "Karita" one at a time (a soft tick each), the box turns rose,
+// a heart stamp lands on it; then hearts of ink float up the screen, "欢迎回来，Karita" writes itself across the middle with what the
+// mode gives her underneath, a music-box tune plays, and on the park behind the menu a big heart is painted splat by splat.
+function vipWelcome() {
+  const w = $('pnameWrap'), inp = $('pname'), from = String(inp.value || ''), flip = isVipCode(from);
+  GAME.name = VIP_NAME; Profile.data.vip = VIP_NAME; Profile.save(); G.modeWas = 'vip'; Sfx.init();
+  w.classList.remove('dev', 'shake', 'slam', 'drop', 'ok'); void w.offsetWidth;
+  const show = () => {
+    inp.value = VIP_NAME; w.classList.add('vip', 'slam'); Sfx.welcome(); flash(0.35);
+    try {
+      const fx = $('devFx'); fx.innerHTML = ''; fx.className = 'vipFx';
+      const heart = 'M50 86 C20 62 6 44 6 28 C6 14 17 6 28 6 C38 6 46 12 50 21 C54 12 62 6 72 6 C83 6 94 14 94 28 C94 44 80 62 50 86Z', cols = ['#ff5a8a', '#ff8fb1', TEAM_HEX[0], '#ffe45c', '#ffffff'];
+      for (let i = 0; i < 26; i++) {
+        const sz = rand(34, 120), el = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); el.setAttribute('viewBox', '0 0 100 100'); el.setAttribute('width', sz); el.setAttribute('height', sz);
+        el.innerHTML = `<path d="${heart}" fill="${cols[i % cols.length]}" stroke="#111" stroke-width="5" stroke-linejoin="round"/><ellipse cx="30" cy="26" rx="9" ry="6" fill="rgba(255,255,255,.7)" transform="rotate(-30 30 26)"/>`;
+        el.style.left = rand(2, 94) + 'vw'; el.style.setProperty('--sw', rand(-40, 40).toFixed(0) + 'px'); el.style.setProperty('--fr', rand(-25, 25).toFixed(0) + 'deg'); el.style.animationDelay = (i * 0.07).toFixed(2) + 's'; el.style.animationDuration = rand(2.4, 3.6).toFixed(2) + 's';
+        fx.appendChild(el);
+      }
+      const word = document.createElement('div'); word.className = 'vipWord';
+      word.innerHTML = '<i>欢迎回来</i><b>' + VIP_NAME.split('').map((ch, i) => `<span style="animation-delay:${(0.35 + i * 0.09).toFixed(2)}s">${ch}</span>`).join('') + '<em>♥</em></b><small>专属模式已开启 · 血量 ×' + VIP_HP + ' · 墨水 ×' + VIP_INK + '</small><u>这片场地，今天都是你的颜色</u>';
+      fx.appendChild(word);
+      clearTimeout(nameConfirm.t); nameConfirm.t = setTimeout(() => { fx.innerHTML = ''; fx.className = ''; }, 4200);
+    } catch (e) { }
+    // a heart painted on the park, one splat after another (outline first, then filled in)
+    if (G.state === 'title') {
+      resetPaint(); const R = Math.min(XH, ZH) * 0.5, pts = [];
+      for (let k = 0; k < 44; k++) { const t = k / 44 * Math.PI * 2; pts.push([16 * Math.pow(Math.sin(t), 3) / 17, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 17, 2.6]); }
+      for (let k = 0; k < 40; k++) { const t = rand(0, Math.PI * 2), q = Math.sqrt(rand(0, 1)) * 0.85; pts.push([16 * Math.pow(Math.sin(t), 3) / 17 * q, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 17 * q, 3.4]); }
+      pts.forEach(([hx, hz, r], i) => setTimeout(() => { if (G.state !== 'title') return; const x = hx * R, z = hz * R * 1.05, y = groundAt(x, z); if (Math.abs(x) > XH - 1 || Math.abs(z) > ZH - 1) return; splatFloor(x, y, z, r, 0, 0.5, true); if (i % 3 === 0) Fx.burst(x, y + 0.3, z, '#ff8fb1', 8, 5, 0.2); }, 500 + i * 28));
+    }
+  };
+  if (!flip) { show(); return; }
+  // the typed letters turn into the name, one at a time
+  let i = 0; const step = () => { i++; inp.value = VIP_NAME.slice(0, i) + from.slice(i); Sfx.tick(i); w.classList.remove('ok'); void w.offsetWidth; w.classList.add('ok'); if (i < VIP_NAME.length) vipWelcome.t = setTimeout(step, 110); else vipWelcome.t = setTimeout(show, 260); };
+  inp.value = from; clearTimeout(vipWelcome.t);
+  if (typeof setTimeout !== 'function') { show(); return; }
+  vipWelcome.t = setTimeout(step, 120);
 }
 // replay the entrance animations of the visible page (bars fill, numbers count up)
 function lobbyAnimate() {
@@ -981,7 +1052,8 @@ function updatePlay(dt) {
   if (G.left <= 10 && Math.ceil(G.left) !== Math.ceil(prev) && G.left > 0) { HUD.center(String(Math.ceil(G.left)), '', 700); Sfx.beep(G.left < 1); }
   if (G.left <= 0) { G.left = 0; endMatch(); return; }
   if (G.time > 8) $('hint').style.display = 'none';
-  playerControl(dt);
+  if (!G.pilot) playerControl(dt);                // (G.pilot: an all-bot match for the AI benchmark; the player is driven by a Bot in G.bots)
+  if (G.squads) for (const q of G.squads) q.update(dt);
   for (const b of G.bots) b.update(dt);
 }
 function updateTitle(dt) {
@@ -1056,6 +1128,10 @@ function initUI() {
   $('minimap').addEventListener('mousedown', e => { e.stopPropagation(); HUD.mapClick(e); });
   $('pname').value = GAME.name;
   $('pname').oninput = e => { GAME.name = e.target.value.trim().slice(0, 8); Profile.save(); };
+  // Enter confirms the name; the secret name gets a proper fanfare
+  $('pname').addEventListener('keydown', e => { if (e.key !== 'Enter') return; e.preventDefault(); e.stopPropagation(); e.target.blur(); nameConfirm(); });
+  $('pname').addEventListener('input', () => { if (Profile.data.vip && GAME.name !== VIP_NAME) { Profile.data.vip = null; Profile.save(); $('pnameWrap').classList.remove('vip'); } });
+  $('pnameWrap').classList.toggle('dev', devGod()); $('pnameWrap').classList.toggle('vip', vipOn()); G.modeWas = devGod() ? 'dev' : vipOn() ? 'vip' : '';
   $('btnStart').onclick = () => { Sfx.init(); Sfx.click(); openMapSel(); };
   $('titleMap').onclick = () => { Sfx.init(); Sfx.click(); openMapSel(); };
   $('btnMsBack').onclick = () => { Sfx.click(); show('mapsel', false); show('title', true); renderLoadCard(); };

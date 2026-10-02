@@ -146,6 +146,15 @@ function randomLook() {
 const SKIN_TONES = ['#ffdcc0', '#f3c39b', '#dba577', '#b07650', '#7d4d31'];
 const CLOTH_COLS = ['#f5f5f2', '#2a2b35', '#697386', '#eadcc2', '#5c7a3a', '#274b8f', '#8f3434', '#ffcf3f', '#ff8fb1', '#40c0b0'];
 
+// two names typed on the title screen (then Enter) switch on special modes.  Only their fingerprints are kept here, not the names.
+const nameKey = s => { let x = 0x811c9dc5; s = String(s || '').trim().toLowerCase(); for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 0x01000193) >>> 0; } return x >>> 0; };
+// mode A: the player takes no damage and never runs out of ink (for looking round a match in peace)
+function devGod() { const n = GAME.name; if (devGod.n !== n) { devGod.n = n; devGod.v = nameKey(n) === 209735637; } return devGod.v; }
+// mode B: renames the player and gives a very thick health bar and a big ink tank.  It stays on (saved with the profile) for as long as
+// the name stays; typing the name itself by hand does not switch it on.
+const VIP_NAME = 'Karita', VIP_HP = 4, VIP_INK = 3;
+const isVipCode = s => nameKey(s) === 2341408447;
+function vipOn() { return Profile.data.vip === VIP_NAME && GAME.name === VIP_NAME; }
 /* --------------------------------------------------------- profile */
 const PROFILE_KEY = 'splashrush.profile';
 const Profile = {
@@ -168,6 +177,12 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.11.0', date: '2026-10-03', time: '01:45', title: '底层能力升级', items: [
+    '对齐了人机协同的底层逻辑，打通了寻路链路：机器人不再在河涌里"沉淀"，也不会打完架原地复盘半天',
+    '三档难度完成差异化分层，各自形成了自己的打法心智：轻松各玩各的，普通会撤退和分工，地狱会集火、埋伏、绕后',
+    '机器人侧拉通了团队协同机制：互相报点、分工补位，最后 30 秒全员冲刺抢地',
+    '赋能了入场环节的体验触点，为特定用户心智打造了专属闭环（颗粒度较细，不在此展开）'
+  ] },
   { v: 'v0.10.1', date: '2026-10-02', time: '23:05', title: '西關大屋开场动画', items: [
     '西關大屋有了电影感的开场：依次看过鎮海樓、廣州酒家、腸粉街，再穿过獵德牌坊落到你身后',
     '开场时上下有黑边，每个镜头左下角有地名',

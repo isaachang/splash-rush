@@ -19,7 +19,7 @@
   </div>
   <div class="panel">
     <h3>你的名字</h3>
-    <input type="text" id="pname" maxlength="8" value="新人墨仔">
+    <div class="pnameWrap" id="pnameWrap"><input type="text" id="pname" maxlength="8" value="新人墨仔"><span class="devStamp" id="devStamp"><b>∞</b>开发者模式<small>不掉血 · 墨水无限</small></span><span class="vipStamp" id="vipStamp"><b>♥</b>Karita 专属<small>血量 ×4 · 墨水 ×3</small></span></div>
     <h3>当前出战</h3>
     <div class="loadcard" id="loadCard">
       <div class="lc-icon" id="lcIcon"></div>
@@ -66,6 +66,7 @@
 </div>
 
 
+<div id="devFx"></div>
 <div id="hud" class="screen">
   <div id="vignette"></div>
   <canvas id="inkCanvas"></canvas>
