@@ -1,6 +1,8 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:"Arial Rounded MT Bold","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
 canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+/* a snapshot of the old map laid over the 3D view while the new one fades in underneath (map select) */
+canvas#glFade{position:fixed;inset:0;width:100%;height:100%;display:none;z-index:1;pointer-events:none;opacity:0;transform-origin:50% 55%}
 :root{--c0:#ff7a00;--c1:#3346ff;--ink:#111}
 .screen{position:fixed;inset:0;display:none;z-index:10}
 .screen.show{display:block}

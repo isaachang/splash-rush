@@ -570,7 +570,23 @@ function mapSelNext() { Sfx.init(); Sfx.click(); show('mapsel', false); openLobb
 function switchMap(id) {
   if (!MAP_LIST[id] || id === MAP_ID) return;
   try { localStorage.setItem(MAP_KEY, id); } catch (e) { }
+  const fade = mapFadeHold();
   loadMap(id); renderMaps();
+  fade();
+}
+// cross-fade between maps: freeze the current view on an overlay, build the new map under it, then let the overlay dissolve
+function mapFadeHold() {
+  const f = $('glFade'), gl = renderer.domElement; let ok = false;
+  try { renderer.render(scene, camera); f.width = gl.width; f.height = gl.height; f.getContext('2d').drawImage(gl, 0, 0); ok = true; } catch (e) { }
+  if (!ok) return () => { };
+  clearTimeout(mapFadeHold.t); f.style.transition = 'none'; f.style.display = 'block'; f.style.opacity = 1; f.style.transform = 'scale(1)';
+  return () => {
+    const go = () => {
+      f.style.transition = 'opacity .75s cubic-bezier(.4,0,.2,1), transform 1s cubic-bezier(.2,.7,.2,1)'; f.style.opacity = 0; f.style.transform = 'scale(1.06)';
+      clearTimeout(mapFadeHold.t); mapFadeHold.t = setTimeout(() => { f.style.display = 'none'; }, 1100);
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(go)); else go();   // two frames: the new map is on screen under the overlay before it starts to fade
+  };
 }
 // tear down the map-specific scene (arena, sea / plaza, decor) and build the chosen map's
 function loadMap(id) {
@@ -592,7 +608,7 @@ function loadMap(id) {
   buildWorld();
   initNav(); HUD.init();
   Barrier.meshes.forEach((m, t) => m.position.set(SPAWN[t].x, BARRIER_H / 2 - 0.05, SPAWN[t].z));
-  G.roster = null; G.titleT = 0;
+  G.roster = null;                // (the title camera keeps orbiting where it was, so the two maps line up through the cross-fade)
   applyPalette(); resetPaint();
   renderer.compile(scene, camera);
 }

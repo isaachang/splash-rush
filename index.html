@@ -2,6 +2,8 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:"Arial Rounded MT Bold","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
 canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+/* a snapshot of the old map laid over the 3D view while the new one fades in underneath (map select) */
+canvas#glFade{position:fixed;inset:0;width:100%;height:100%;display:none;z-index:1;pointer-events:none;opacity:0;transform-origin:50% 55%}
 :root{--c0:#ff7a00;--c1:#3346ff;--ink:#111}
 .screen{position:fixed;inset:0;display:none;z-index:10}
 .screen.show{display:block}
@@ -509,6 +511,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .rcol h3 small{font-size:11px;color:#fff;opacity:.5;letter-spacing:1px;margin-left:8px}
 </style></head><body>
 <canvas id="gl"></canvas>
+<canvas id="glFade"></canvas>
 
 <div id="loading" class="screen show"><div class="drop"></div><p>正在搅拌墨水…</p></div>
 
@@ -2399,7 +2402,7 @@ const RELEASES = [
     '石墩削弱：走路速度和潜墨速度都慢 5%',
     '重型加特林要先转约 0.3 秒才开始连射，按住一直打、松手就停，再按要重新转；有专属的转动音效',
     '阿飒新增第二把主武器「疾风冲锋枪」：射速极快、单发很弱，很费墨但回墨快',
-    '选场地时背景直接切换成那张场地，不用再重新载入'
+    '选场地时背景会淡入淡出切换成那张场地，不用再重新载入'
   ] },
   { v: 'v0.9.0', date: '2026-10-02', time: '01:50', title: '新地图：墨浪滑板场', items: [
     '新地图「墨浪滑板场」：S 形下沉泳池、波浪外墙、中央高塔和铁网走道',
@@ -5062,7 +5065,23 @@ function mapSelNext() { Sfx.init(); Sfx.click(); show('mapsel', false); openLobb
 function switchMap(id) {
   if (!MAP_LIST[id] || id === MAP_ID) return;
   try { localStorage.setItem(MAP_KEY, id); } catch (e) { }
+  const fade = mapFadeHold();
   loadMap(id); renderMaps();
+  fade();
+}
+// cross-fade between maps: freeze the current view on an overlay, build the new map under it, then let the overlay dissolve
+function mapFadeHold() {
+  const f = $('glFade'), gl = renderer.domElement; let ok = false;
+  try { renderer.render(scene, camera); f.width = gl.width; f.height = gl.height; f.getContext('2d').drawImage(gl, 0, 0); ok = true; } catch (e) { }
+  if (!ok) return () => { };
+  clearTimeout(mapFadeHold.t); f.style.transition = 'none'; f.style.display = 'block'; f.style.opacity = 1; f.style.transform = 'scale(1)';
+  return () => {
+    const go = () => {
+      f.style.transition = 'opacity .75s cubic-bezier(.4,0,.2,1), transform 1s cubic-bezier(.2,.7,.2,1)'; f.style.opacity = 0; f.style.transform = 'scale(1.06)';
+      clearTimeout(mapFadeHold.t); mapFadeHold.t = setTimeout(() => { f.style.display = 'none'; }, 1100);
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(go)); else go();   // two frames: the new map is on screen under the overlay before it starts to fade
+  };
 }
 // tear down the map-specific scene (arena, sea / plaza, decor) and build the chosen map's
 function loadMap(id) {
@@ -5084,7 +5103,7 @@ function loadMap(id) {
   buildWorld();
   initNav(); HUD.init();
   Barrier.meshes.forEach((m, t) => m.position.set(SPAWN[t].x, BARRIER_H / 2 - 0.05, SPAWN[t].z));
-  G.roster = null; G.titleT = 0;
+  G.roster = null;                // (the title camera keeps orbiting where it was, so the two maps line up through the cross-fade)
   applyPalette(); resetPaint();
   renderer.compile(scene, camera);
 }
