@@ -44,7 +44,7 @@ const tests = function () {
   const from = navIdx(SPAWN[0].x, SPAWN[0].z), spots = { 'enemy spawn': [SPAWN[1].x, SPAWN[1].z], 'under own arcade': [23.5, 20.5], 'under enemy arcade': [-23.5, -20.5], 'mansion courtyard': [-19.5, 18.5], 'enemy courtyard': [19.5, -18.5], 'through the paifang': [0.5, 31.5], 'tower foot': [0.5, 5.5], 'canal bed': [-14.5, 0.5], 'side bridge': [16.5, 0.5], 'mansion roof': [-20.5, 13.5] };
   const miss = Object.keys(spots).filter(k => !astar(from, navIdx(...spots[k])));
   ok(!miss.length, 'AI can walk from the spawn to every area' + (miss.length ? ' (missing: ' + miss.join(', ') + ')' : ''));
-  ok(near(NAV.h[navIdx(23.5, 20.5)], CL) && near(NAV.h[navIdx(16.5, 0.5)], CL) && near(NAV.h[navIdx(0.5, 31.5)], CL), 'AI walks under the arcade and the paifang, and over the bridges');
+  ok(near(NAV.h[navIdx(23.5, 20.5)], CL) && near(NAV.h[navIdx(16.5, 0.5)], CL + 0.9) && near(NAV.h[navIdx(0.5, 31.5)], CL), 'AI walks under the arcade and the paifang, and over the bridges');
   // ---- walking
   GAME.uniformChars = true; Profile.data.char = 'std'; Profile.data.weapon = 'rifle'; openLobby(); startMatch(); Input.locked = true; while (G.state !== 'play') loop();
   G.bots.forEach(b => b.update = () => { }); CHARS.forEach(c => { if (c !== PLAYER) { c.pos.set(-8 + c.id * 2, CL + 2, c.team ? -50 : 50); c.intent.mx = c.intent.mz = 0; c.intent.fire = false; } });
@@ -67,7 +67,9 @@ const tests = function () {
   put(0, 0, 0.5); Input.keys = { ShiftLeft: true }; for (let i = 0; i < 6; i++) loop(); Input.keys = {}; for (let i = 0; i < 10; i++) loop();
   ok(P.swim && near(P.pos.y, 0), 'under the centre deck there is no room to stand up: you stay a squid');
   put(10, 0, -1.6); walk(E, 80); ok(P.pos.x > 19 && near(P.pos.y, 0), 'a person can walk under the side bridge (x ' + P.pos.x.toFixed(1) + ')');
-  put(16, CL, 8); walk(N, 60); ok(P.pos.z < -4 && near(P.pos.y, CL), 'and over it');
+  put(16, CL, 8); let crown = 0; walk(N, 60, {}, () => { crown = Math.max(crown, P.pos.y); }); ok(P.pos.z < -4 && near(P.pos.y, CL) && near(crown, CL + 0.9, 0.1), 'and over its arch (crown ' + (crown - CL).toFixed(2) + ' m above the street)');
+  ok(near(groundAt(16, 0), CL + 0.9) && near(groundAt(16, -2.35), CL + 0.45, 0.03) && !solidAt(16, 2.6, 0.8) && !!solidAt(16, CL + 0.7, 0) && near(groundAt(14.15, 0), CL + 1.4), 'the bridge is arched: the crown clears the dragon boat\'s flags, the parapets follow the arch');
+  put(14.6, CL + 0.9, 0); walk(-E, 25); ok(P.pos.x < 13.9 && P.pos.y < CL, 'stepping over the parapet drops you into the canal (x ' + P.pos.x.toFixed(1) + ', y ' + P.pos.y.toFixed(2) + ')');
   put(-10.5, 0, 0); let upSteps = 0; walk(0, 34, {}, () => { if (P.pos.z < 3.4) upSteps = Math.max(upSteps, P.pos.y); });
   ok(upSteps > CL - 0.5 && near(P.pos.y, CL) && P.pos.z > 3.6, 'out of the canal up the landing steps (top step ' + upSteps.toFixed(2) + ', then the street)');
   put(13, 0, -0.8); walk(0, 20); const bump = P.pos.z; put(13, 0.7, 0.8); walk(-E, 20);

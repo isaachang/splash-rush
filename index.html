@@ -1043,6 +1043,17 @@ function buildTextures() {
     for (let r = 0; r < 4; r++) for (let c = -1; c < 2; c++) { g.fillStyle = tone(178, 168, 148, rr(0.94, 1.04)); g.fillRect(c * 128 + (r % 2) * 64 + 2, r * 64 + 2, 124, 60); }
     speckle(g, w, h, 2500, 0.09);
   });
+  TEX.sandstone = canvasTex(256, 256, (g, w, h) => {    // 紅砂岩: the old city wall under Zhenhai Tower (texture = 2 m)
+    g.fillStyle = '#4a221b'; g.fillRect(0, 0, w, h);
+    for (let r = 0; r < 4; r++) for (let c = -1; c < 2; c++) { g.fillStyle = tone(150, 62, 48, rr(0.88, 1.08)); g.fillRect(c * 128 + (r % 2) * 64 + 2, r * 64 + 2, 124, 60); }
+    speckle(g, w, h, 2500, 0.1);
+  });
+  TEX.hull = canvasTex(256, 128, (g, w, h) => {         // dragon boat hull: lacquered planks, a gold line under the gunwale
+    g.fillStyle = '#7c2219'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 26) { g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(0, y, w, 2); }
+    for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? '40,8,4' : '190,90,60'},${rr(0.04, 0.14)})`; g.fillRect(rr(0, w), rr(0, h), rr(20, 70), 1.5); }
+    g.fillStyle = '#d8a640'; g.fillRect(0, 10, w, 5);
+  });
   // skatepark: smooth pool concrete, wooden ramps, grass / hedges, see-through grate
   TEX.skate = canvasTex(512, 512, (g, w, h) => {
     g.fillStyle = '#d9dde2'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2600, 0.07); speckle(g, w, h, 900, 0.12, false);
@@ -1144,6 +1155,8 @@ function box(x0, x1, z0, z1, h, style, top) { return { t: 'box', x0, x1, z0, z1,
 function ramp(x0, x1, z0, z1, axis, h0, h1, top) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: top || 'grate' }; }
 // a floating block: solid from y0 up to h, open underneath — people walk under it and bump their heads on it,
 // ink lands on its top and on the ground below separately (a second paint layer), its sides take no ink
+// a floating ramp: the same, with a sloping top (an arched bridge is two of these and a flat crown)
+function framp(x0, x1, z0, z1, axis, y0, h0, h1, top) { return Object.assign(ramp(x0, x1, z0, z1, axis, h0, h1, top), { y0, float: true }); }
 function slab(x0, x1, z0, z1, y0, h, style, top) { return Object.assign(box(x0, x1, z0, z1, h, style, top), { y0, float: true }); }
 function mirrorSolid(s) { const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0 }); if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; } return m; }
 // each map's layout is built once and kept, so switching back and forth is instant
@@ -1324,6 +1337,7 @@ function defineCanton() {
   const F = (x0, x1, z0, z1, y0, h, style, top, o) => Object.assign(slab(x0, x1, z0, z1, CL + y0, CL + h, style, top), o || {});
   const oob = (x0, x1, z0, z1, h) => Object.assign(S(x0, x1, z0, z1, h, 'panel', 'tile'), { oob: true });
   const tag = (s, kind) => Object.assign(s, { kind });
+  const FR = (x0, x1, z0, z1, y0, h0, h1) => Object.assign(framp(x0, x1, z0, z1, 'z', CL + y0, CL + h0, CL + h1, 'flag'), { navTop: true });
   const ON = { walls: true, navTop: true };          // stands on the centre deck: the canal tunnel underneath stays open, its sides are normal inkable walls
   const half = [
     tag(box(-26, 26, 3.5, 52, CL, 'canal', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
@@ -1354,16 +1368,20 @@ function defineCanton() {
     S(-7, -5, 6, 8, 0.5, 'cstone', 'grass'), S(10, 12, 5.5, 7.5, 0.5, 'cstone', 'grass'),
     // (four 0.44 m steps running straight out from the bank, 3 m wide: walk up them toward the street)
     ...[[-12, -9], [20, 23]].flatMap(([x0, x1]) => [0, 1, 2, 3].map(k => box(x0, x1, 2.9 - k * 0.6, 3.5 - k * 0.6, CL - 0.44 * (k + 1), 'cstone', 'paving'))),
-    tag(F(14, 18, -3.5, 3.5, -0.3, 0, 'stone', 'paving', { navTop: true }), 'bridge'),
-    tag(box(8.5, 18, 0.2, 1.4, 0.7, 'crate', 'wood'), 'boat'),
+    // an arched stone bridge: up 0.9 m, a flat crown high enough for the dragon boat's flags, down again; people walk under the ramps too.
+    // Its parapets are the two edge strips, 0.5 m higher: you step over them to drop into the canal.
+    ...[[14.3, 17.7, 0], [14, 14.3, 0.5], [17.7, 18, 0.5]].flatMap(([x0, x1, up]) => [
+      tag(FR(x0, x1, -3.5, -1.2, -0.3, up, 0.9 + up), 'bridge'), tag(F(x0, x1, -1.2, 1.2, 0.5, 0.9 + up, 'stone', 'flag', { navTop: true }), 'bridge'), tag(FR(x0, x1, 1.2, 3.5, -0.3, 0.9 + up, up), 'bridge')]),
+    tag(box(8.5, 18, 0.2, 1.4, 0.7, 'hull', 'wood'), 'boat'),
     // ---- beside the tower: two steps of the old city wall (jump 1 m, then 2 m)
-    F(2.5, 5, -2.5, 0, 0, 2.0, 'brick', 'paving', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'brick', 'paving', ON),
+    F(2.5, 5, -2.5, 0, 0, 2.0, 'redwall', 'flag', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'redwall', 'flag', ON),
   ];
   for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'plaster', 'concrete'), 'column')); }
   half.forEach(s => { SOLIDS.push(s); SOLIDS.push(Object.assign(mirrorSolid(s), { team1: true })); });
   // centre: a square deck over the canal (only squids fit underneath), Zhenhai Tower on it — climb its inked walls to the 4 m terrace
-  SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'stone', 'paving', { navTop: true }), 'deck'));
-  SOLIDS.push(tag(F(-2.5, 2.5, -2.5, 2.5, 0, 4.0, 'contR', 'tile', ON), 'tower'), tag(F(-1, 1, -1, 1, 0, 8.2, 'contR', 'tile', ON), 'towerTop'));
+  SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'stone', 'flag', { navTop: true }), 'deck'));
+  [-1, 1].forEach(sg => SOLIDS.push(Object.assign(F(sg > 0 ? 6.7 : -7, sg > 0 ? 7 : -6.7, -3.5, 3.5, 0, 0.5, 'cstone', 'flag', ON), sg < 0 ? { team1: true } : {})));
+  SOLIDS.push(tag(F(-2.5, 2.5, -2.5, 2.5, 0, 4.0, 'redwall', 'tile', ON), 'tower'), tag(F(-1, 1, -1, 1, 0, 8.2, 'redwall', 'tile', ON), 'towerTop'));
   // perimeter walls (only the inner face takes ink)
   const B = CL + 3.4;
   SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'plaster'), { bound: '-x' }));
@@ -1551,7 +1569,7 @@ function resetPaint() {
 function buildWallAtlas() {
   const faces = [];
   for (const s of SOLIDS) {
-    if (s.t === 'ramp') { rampFaces(s, faces); continue; }
+    if (s.t === 'ramp') { if (s.float) s.faces = {}; else rampFaces(s, faces); continue; }
     if (s.t !== 'box') continue; s.faces = {};
     if (s.oob || (s.float && !s.walls)) continue;                        // out-of-bounds and floating blocks: sides not paintable, not climbable
     const dirs = s.bound ? [s.bound] : ['+x', '-x', '+z', '-z'];
@@ -1726,7 +1744,7 @@ function uploadPaint() {
 const PU = {
   noiseMap: { value: null }, teamCol0: { value: new THREE.Color() }, teamCol1: { value: new THREE.Color() },
   paintOrigin: { value: new THREE.Vector2(-XH, -ZH) }, paintSize: { value: new THREE.Vector2(PSX, PSZ) },
-  floorPaint: { value: null }, wallPaint: { value: null }, layoutMap: { value: null },
+  floorPaint: { value: null }, wallPaint: { value: null }, layoutMap: { value: null }, inkRelief: { value: 0 },
   floorPaint2: { value: null }, layerMap: { value: null }
 };
 function paintMat(opts, mode, layout) {
@@ -1734,7 +1752,7 @@ function paintMat(opts, mode, layout) {
   const floor = mode === 'floor';
   m.onBeforeCompile = sh => {
     sh.uniforms.paintMap = floor ? PU.floorPaint : PU.wallPaint;
-    ['noiseMap', 'teamCol0', 'teamCol1', 'paintOrigin', 'paintSize', 'layoutMap'].forEach(k => sh.uniforms[k] = PU[k]);
+    ['noiseMap', 'teamCol0', 'teamCol1', 'paintOrigin', 'paintSize', 'layoutMap', 'inkRelief'].forEach(k => sh.uniforms[k] = PU[k]);
     if (floor) { sh.uniforms.paintMap2 = PU.floorPaint2; sh.uniforms.layerMap = PU.layerMap; }
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
@@ -1744,7 +1762,7 @@ ${floor ? 'varying float vPY;' : 'attribute vec2 paintUv; attribute vec2 noiseUv
 ${floor ? 'vec4 pwp = modelMatrix * vec4(transformed, 1.0); vPUv = (pwp.xz - paintOrigin) / paintSize; vNUv = pwp.xz; vPY = pwp.y;' : 'vPUv = paintUv; vNUv = noiseUv;'}`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-uniform sampler2D paintMap; uniform sampler2D noiseMap; uniform sampler2D layoutMap; uniform vec3 teamCol0; uniform vec3 teamCol1;
+uniform sampler2D paintMap; uniform sampler2D noiseMap; uniform sampler2D layoutMap; uniform vec3 teamCol0; uniform vec3 teamCol1; uniform float inkRelief;
 varying vec2 vPUv; varying vec2 vNUv;
 ${floor ? `uniform sampler2D paintMap2; uniform sampler2D layerMap; varying float vPY;
 vec4 pSample(vec2 uv){ vec4 li = texture2D(layerMap, uv); vec4 a = texture2D(paintMap, uv); vec4 b = texture2D(paintMap2, uv); return (li.a > 0.5 && vPY < li.r * 32.0 - 8.0) ? b : a; }` : 'vec4 pSample(vec2 uv){ return texture2D(paintMap, uv); }'}
@@ -1756,12 +1774,17 @@ vec3 inkPerturb(vec3 sp, vec3 sn, vec2 dH, float fd){
   return normalize(abs(det) * sn - gr);
 }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
+float relief = 0.0;
+#ifdef USE_MAP
+{ float l0 = dot(sampledDiffuseColor.rgb, vec3(0.333)), l1 = dot(texture2D(map, vMapUv, 5.0).rgb, vec3(0.333));   // joints and grooves of the surface under the ink
+  relief = clamp((l0 - l1) / max(l1, 0.08), -0.5, 0.25) * inkRelief; }
+#endif
 ${layout ? 'vec4 lay = texture2D(layoutMap, vPUv); diffuseColor.rgb = mix(diffuseColor.rgb, lay.rgb, lay.a);' : ''}
 vec4 pp = pSample(vPUv);
 float fld = max(pp.r, pp.g) + (inkNoise(vNUv)-0.5)*0.34;
 float inkA = smoothstep(0.46, 0.54, fld);
 vec3 inkC = mix(teamCol0, teamCol1, smoothstep(-0.1, 0.1, pp.g - pp.r));
-inkC *= mix(0.7, 1.05, smoothstep(0.5, 0.95, fld));
+inkC *= mix(0.7, 1.05, smoothstep(0.5, 0.95, fld)) * (1.0 + relief);
 diffuseColor.rgb = mix(diffuseColor.rgb, inkC, inkA);`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
 roughnessFactor = mix(roughnessFactor, 0.13, inkA);`)
@@ -1909,18 +1932,22 @@ const WALL_STYLE = {
   canal: { tex: 'canal', su: 4, vFull: true, color: 0xffffff, rough: 0.95 },
   plaster: { tex: 'plaster', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
   cstone: { tex: 'cstone', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.85 },
+  redwall: { tex: 'sandstone', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.9 },
+  hull: { tex: 'hull', su: 2, vFull: true, color: 0xffffff, rough: 0.5 },
 };
-const TOP_STYLE = { paving: { tex: 'granite', s: 4, rough: 0.9 }, tile: { tex: 'terrace', s: 2.4, rough: 0.8 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
+const TOP_STYLE = { paving: { tex: 'granite', s: 4, rough: 0.9 }, tile: { tex: 'terrace', s: 2.4, rough: 0.8 }, flag: { tex: 'cstone', s: 2, rough: 0.85 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
 let arenaGroup;
 function buildArena() {
   arenaGroup = new THREE.Group(); scene.add(arenaGroup);
-  PU.noiseMap.value = TEX.noise; PU.floorPaint.value = Paint.tex; PU.floorPaint2.value = Paint.tex2; PU.layerMap.value = Paint.layTex; PU.wallPaint.value = Paint.wtex; PU.layoutMap.value = TEX.layout;
+  PU.noiseMap.value = TEX.noise; PU.floorPaint.value = Paint.tex; PU.floorPaint2.value = Paint.tex2; PU.layerMap.value = Paint.layTex; PU.wallPaint.value = Paint.wtex; PU.layoutMap.value = TEX.layout; PU.inkRelief.value = MAP_ID === 'canton' ? 0.8 : 0;   // 西關大屋: ink keeps the joints of the stone and brick it covers
   if (TERR.on) buildTerrainMesh(); else {
   // floor
   const fg = quadGeo([[-XH, 0, -ZH], [XH, 0, -ZH], [XH, 0, ZH], [-XH, 0, ZH]], [[-XH / 8, -ZH / 8], [XH / 8, -ZH / 8], [XH / 8, ZH / 8], [-XH / 8, ZH / 8]], null, null, [0, 1, 0]);
   const floor = new THREE.Mesh(fg, paintMat({ map: TEX.concrete, roughness: 0.92, color: 0xffffff }, 'floor', true));
   floor.receiveShadow = true; arenaGroup.add(floor);
   }
+  // a side of a floating block that sits against an ordinary block at least as tall (the canal bank): not drawn, it would flicker
+  const butts = (s, x, z, h) => SOLIDS.some(o => o !== s && !o.float && !o.bound && inRect(o, x, z) && topAt(o, x, z) >= h - 0.05);
   // tops & ramps grouped by style
   const tops = {}, walls = {}, sides = [], hedge = [], slabs = [];
   const PX = Paint.PX, W = Paint.W, H = Paint.H;
@@ -1958,10 +1985,10 @@ function buildArena() {
       if (s.float && !s.walls) {                                       // sides and underside of a floating block (plain, no ink)
         const y0 = s.y0, y1 = s.h, w = s.x1 - s.x0, d = s.z1 - s.z0;
         [[[s.x1, s.z0], [s.x1, s.z1], [1, 0, 0], d], [[s.x0, s.z1], [s.x0, s.z0], [-1, 0, 0], d], [[s.x1, s.z1], [s.x0, s.z1], [0, 0, 1], w], [[s.x0, s.z0], [s.x1, s.z0], [0, 0, -1], w]].forEach(([a, b, n, L]) =>
-          slabs.push(quadGeo([[a[0], y0, a[1]], [b[0], y0, b[1]], [b[0], y1, b[1]], [a[0], y1, a[1]]], [[0, y0 / 3], [L / 3, y0 / 3], [L / 3, y1 / 3], [0, y1 / 3]], null, null, n)));
+          butts(s, (a[0] + b[0]) / 2 + n[0] * 0.05, (a[1] + b[1]) / 2 + n[2] * 0.05, y1) || slabs.push(quadGeo([[a[0], y0, a[1]], [b[0], y0, b[1]], [b[0], y1, b[1]], [a[0], y1, a[1]]], [[0, y0 / 3], [L / 3, y0 / 3], [L / 3, y1 / 3], [0, y1 / 3]], null, null, n)));
         slabs.push(quadGeo([[s.x0, y0, s.z0], [s.x1, y0, s.z0], [s.x1, y0, s.z1], [s.x0, y0, s.z1]], [[s.x0 / 3, s.z0 / 3], [s.x1 / 3, s.z0 / 3], [s.x1 / 3, s.z1 / 3], [s.x0 / 3, s.z1 / 3]], null, null, [0, -1, 0]));
       }
-      if (s.oob) {                                         // hedge sides above the street, not in the paint atlas
+      if (s.oob && MAP_ID !== 'canton') {                  // hedge sides above the street, not in the paint atlas
         const y0 = MAP_ID === 'skate' ? SL : MAP_ID === 'canton' ? CL : 0;
         [['+x', s.x1, 1, 0], ['-x', s.x0, -1, 0], ['+z', s.z1, 0, 1], ['-z', s.z0, 0, -1]].forEach(([d, pl, nx, nz]) => {
           if ((d === '+x' && s.x1 >= XH - 0.01) || (d === '-x' && s.x0 <= -XH + 0.01) || (d === '+z' && s.z1 >= ZH - 0.01) || (d === '-z' && s.z0 <= -ZH + 0.01)) return;
@@ -1981,6 +2008,12 @@ function buildArena() {
         const f = s.faces[d];
         if (f.side) wallQuad('stone', f, [[lowAt, 0], [highAt, 0], [highAt, hi], [lowAt, Math.max(0.001, Math.min(s.h0, s.h1))]]);
         else wallQuad('stone', f, [[f.a0, 0], [f.a1, 0], [f.a1, hi], [f.a0, hi]]);
+      }
+      if (s.float) {                                       // floating ramp (z axis): plain sides, the tall end, the underside
+        const y0 = s.y0, lo = s.h0 < s.h1 ? s.z0 : s.z1, hiZ = s.h0 < s.h1 ? s.z1 : s.z0, hl = Math.min(s.h0, s.h1);
+        [[s.x1, 1], [s.x0, -1]].forEach(([x, n]) => slabs.push(quadGeo([[x, y0, lo], [x, y0, hiZ], [x, hi, hiZ], [x, hl, lo]], [[lo / 3, y0 / 3], [hiZ / 3, y0 / 3], [hiZ / 3, hi / 3], [lo / 3, hl / 3]], null, null, [n, 0, 0])));
+        slabs.push(quadGeo([[s.x0, y0, hiZ], [s.x1, y0, hiZ], [s.x1, hi, hiZ], [s.x0, hi, hiZ]], [[s.x0 / 3, y0 / 3], [s.x1 / 3, y0 / 3], [s.x1 / 3, hi / 3], [s.x0 / 3, hi / 3]], null, null, [0, 0, hiZ > lo ? 1 : -1]));
+        slabs.push(quadGeo([[s.x0, y0, s.z0], [s.x1, y0, s.z0], [s.x1, y0, s.z1], [s.x0, y0, s.z1]], [[s.x0 / 3, s.z0 / 3], [s.x1 / 3, s.z0 / 3], [s.x1 / 3, s.z1 / 3], [s.x0 / 3, s.z1 / 3]], null, null, [0, -1, 0]));
       }
     }
   }
@@ -2436,6 +2469,72 @@ function cantonSign(text, w, h, bg = '#141210', fg = '#e8c15a') {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.6 }));
   return m;
 }
+// decor textures of the 西關大屋 map, drawn the first time the map is built
+function cantonTex() {
+  if (TEX.manchu) return;
+  const rr = (a, b) => a + (b - a) * Math.random(), FONT = '"Songti TC","Songti SC","Noto Serif CJK TC","Noto Serif CJK SC",serif';
+  // 滿洲窗: coloured glass in a dark wood lattice
+  const manchu = (g, x0, y0, w, h, n = 4, m = 4) => {
+    g.fillStyle = '#5a2f1c'; g.fillRect(x0, y0, w, h);
+    const fr = Math.max(2, Math.min(w, h) * 0.03), cw = (w - fr) / n, ch = (h - fr) / m;
+    for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
+      const ex = i === 0 || i === n - 1, ey = j === 0 || j === m - 1;
+      g.fillStyle = ex && ey ? '#c53a2b' : ex ? '#2f66b0' : ey ? '#3a8f55' : (i + j) % 2 ? '#dfe9e6' : '#e9c64a';
+      g.fillRect(x0 + fr + i * cw, y0 + fr + j * ch, cw - fr, ch - fr);
+      if (!ex && !ey) { g.strokeStyle = 'rgba(90,47,28,.55)'; g.lineWidth = 1; g.beginPath(); const cx = x0 + fr + i * cw + (cw - fr) / 2, cy = y0 + fr + j * ch + (ch - fr) / 2; g.moveTo(cx, cy - (ch - fr) / 2); g.lineTo(cx + (cw - fr) / 2, cy); g.lineTo(cx, cy + (ch - fr) / 2); g.lineTo(cx - (cw - fr) / 2, cy); g.closePath(); g.stroke(); }
+    }
+  };
+  TEX._manchu = manchu; TEX._font = FONT;
+  TEX.manchu = canvasTex(256, 256, (g, w, h) => manchu(g, 0, 0, w, h, 6, 6), false);
+  TEX.roofTile = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#5d6266'; g.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 16) { const gr = g.createLinearGradient(x, 0, x + 16, 0); gr.addColorStop(0, '#4b5054'); gr.addColorStop(0.5, '#8a9095'); gr.addColorStop(1, '#4b5054'); g.fillStyle = gr; g.fillRect(x, 0, 16, h); } for (let y = 0; y < h; y += 32) { g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(0, y, w, 3); } });
+  TEX.greenTile = canvasTex(128, 128, (g, w, h) => { for (let x = 0; x < w; x += 16) { const gr = g.createLinearGradient(x, 0, x + 16, 0); gr.addColorStop(0, '#1b5f42'); gr.addColorStop(0.5, '#46a474'); gr.addColorStop(1, '#1b5f42'); g.fillStyle = gr; g.fillRect(x, 0, 16, h); } for (let y = 0; y < h; y += 32) { g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(0, y, w, 3); } });
+  // a qilou bay: 4 m wide, 12.8 m tall — shopfront, two upper floors of shuttered windows with manchu fanlights, a parapet
+  const FAC = [['#ead7a6', '#fbf4e1', '#3d7f5a'], ['#e9b9ac', '#fff3ec', '#2f6b85'], ['#b9d9c2', '#f4fbf5', '#7a4a2a'], ['#efe7d6', '#ffffff', '#386e9a'], ['#bccfe1', '#f6fafd', '#3b6f4f'], ['#e4a670', '#fff1e2', '#2c5c74'], ['#b0604a', '#e9dcc8', '#2f5a43'], ['#d9d3c6', '#fbfaf6', '#8a3b2b']];
+  TEX.facade = FAC.map(([base, trim, shut], k) => canvasTex(256, 820, (g, w, h) => {
+    const px = w / 4, Y = m => h - m * px;
+    g.fillStyle = base; g.fillRect(0, 0, w, h); speckle(g, w, h, 1500, 0.06);
+    g.fillStyle = trim; g.fillRect(0, Y(12.2), 14, 7.8 * px); g.fillRect(w - 14, Y(12.2), 14, 7.8 * px);
+    [[4.4, 0.35], [7.8, 0.25], [11.2, 0.4]].forEach(([y, t]) => { g.fillStyle = trim; g.fillRect(0, Y(y + t), w, t * px); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, Y(y), w, 3); });
+    if (k % 2 === 0) { g.fillStyle = trim; g.beginPath(); g.moveTo(10, Y(11.6)); g.quadraticCurveTo(w / 2, Y(13.6), w - 10, Y(11.6)); g.lineTo(w - 10, Y(11.2)); g.lineTo(10, Y(11.2)); g.fill(); g.fillStyle = base; g.beginPath(); g.arc(w / 2, Y(11.75), 0.35 * px, 0, Math.PI * 2); g.fill(); }
+    else { g.fillStyle = trim; for (let x = 18; x < w - 18; x += 14) g.fillRect(x, Y(12.3), 8, 0.9 * px); g.fillRect(10, Y(12.5), w - 20, 6); }
+    [4.9, 8.3].forEach(y0 => {
+      [0.55, 2.35].forEach(x0 => { const X = x0 * px, W = 1.1 * px, H = 2.5 * px, top = Y(y0 + 2.5);
+        g.fillStyle = trim; g.fillRect(X - 5, top - 5, W + 10, H + 10); g.fillStyle = '#26303a'; g.fillRect(X, top + 0.8 * px, W, H - 0.8 * px); manchu(g, X, top, W, 0.8 * px, 3, 2);
+        for (let s2 = 0; s2 < 2; s2++) { const sx = s2 ? X + W * 0.62 : X; g.fillStyle = shut; g.fillRect(sx, top + 0.85 * px, W * 0.38, H - 0.85 * px); g.fillStyle = 'rgba(0,0,0,.25)'; for (let l = 0; l < 14; l++) g.fillRect(sx, top + 0.95 * px + l * 6, W * 0.38, 1.5); } });
+      g.fillStyle = 'rgba(30,30,30,.85)'; for (let x = 0.4 * px; x < w - 0.4 * px; x += 7) g.fillRect(x, Y(y0 + 0.9), 2, 0.9 * px); g.fillRect(0.4 * px, Y(y0 + 0.95), w - 0.8 * px, 3); });
+    g.fillStyle = '#2a2622'; g.fillRect(16, Y(3.4), w - 32, 3.4 * px); g.fillStyle = 'rgba(255,214,140,.45)'; g.fillRect(24, Y(3.0), w - 48, 2.2 * px);
+    g.fillStyle = '#3a312a'; for (let x = 24; x < w - 24; x += 18) g.fillRect(x, Y(3.0), 3, 2.2 * px); g.fillStyle = '#1d2a22'; g.fillRect(16, Y(4.25), w - 32, 0.75 * px);
+  }));
+  // the stone arch under a bridge side (7 m span, CL tall): transparent opening, solid spandrels at the two top corners, a ring of voussoirs
+  TEX.archFace = canvasTex(512, 160, (g, w, h) => {
+    g.clearRect(0, 0, w, h); const px = w / 7;
+    g.fillStyle = '#7d7566'; g.beginPath(); g.moveTo(0, 0); g.lineTo(w, 0); g.lineTo(w, 0.95 * px); g.quadraticCurveTo(w / 2, -0.25 * px, 0, 0.95 * px); g.closePath(); g.fill();
+    g.strokeStyle = '#a2987f'; g.lineWidth = 0.2 * px; g.beginPath(); g.moveTo(0, 0.95 * px); g.quadraticCurveTo(w / 2, -0.25 * px, w, 0.95 * px); g.stroke();
+    g.fillStyle = '#7d7566'; g.fillRect(0, 0, w, 0.32 * px); g.fillStyle = '#a2987f'; g.fillRect(0, 0.26 * px, w, 0.07 * px);
+  }, false);
+}
+// the tea house facade (16 x 9 m): three floors of manchu windows over a row of shopfront doors
+function cantonTeaFace() {
+  return canvasTex(1024, 576, (g, w, h) => {
+    g.fillStyle = '#e9d9b4'; g.fillRect(0, 0, w, h); speckle(g, w, h, 5000, 0.05);
+    for (let fl = 0; fl < 2; fl++) for (let c = 0; c < 8; c++) { const x = 28 + c * 124, y = 70 + fl * 150; g.fillStyle = '#f8f0dc'; g.fillRect(x - 6, y - 6, 104, 122); TEX._manchu(g, x, y, 92, 110, 4, 5); g.fillStyle = '#2f6a48'; g.fillRect(x - 6, y + 118, 104, 14); g.fillStyle = '#f8f0dc'; for (let q = 0; q < 6; q++) g.fillRect(x + q * 17, y + 118, 6, 14); }
+    g.fillStyle = '#f8f0dc'; for (const y of [48, 206, 356]) g.fillRect(0, y, w, 8);
+    g.fillStyle = '#3a2a1e'; g.fillRect(0, 372, w, h - 372);
+    for (let c = 0; c < 6; c++) { const x = 20 + c * 168; g.fillStyle = '#7a5a34'; g.fillRect(x + 12, 392, 136, h - 392); g.fillStyle = '#f4ecd8'; g.fillRect(x, 372, 10, h - 372); g.fillStyle = '#b3201a'; g.fillRect(x - 6, 372, 5, h - 372); g.fillRect(x + 11, 372, 5, h - 372); }
+  }, false);
+}
+// the mansion's main hall front (14 x 4.4 m): grey brick, a stone base, the sliding-bar door in the middle, two manchu windows each side
+function cantonHallFace() {
+  return canvasTex(1024, 322, (g, w, h) => {
+    const px = w / 14; g.fillStyle = '#b4b6b0'; g.fillRect(0, 0, w, h);
+    for (let r = 0; r < h / 9; r++) for (let c = -1; c < w / 30 + 1; c++) { const k = 0.9 + Math.random() * 0.2; g.fillStyle = `rgb(${98 * k | 0},${112 * k | 0},${124 * k | 0})`; g.fillRect(c * 30 + (r % 2) * 15 + 1, r * 9 + 1, 28, 7); }
+    g.fillStyle = '#b9b09c'; g.fillRect(0, h - 0.5 * px, w, 0.5 * px); g.fillRect(0, 0, w, 0.3 * px);
+    [1.6, 4.0, 10.0, 12.4].forEach(c => { g.fillStyle = '#e4dccb'; g.fillRect((c - 0.75) * px, h - 3.3 * px, 1.5 * px, 2.3 * px); TEX._manchu(g, (c - 0.62) * px, h - 3.18 * px, 1.24 * px, 2.06 * px, 4, 6); });
+    g.fillStyle = '#d6cdb8'; g.fillRect(5.6 * px, h - 3.6 * px, 2.8 * px, 3.6 * px); g.fillStyle = '#1e1512'; g.fillRect(5.9 * px, h - 3.3 * px, 2.2 * px, 3.3 * px);
+    g.fillStyle = '#6e2f1c'; for (let b = 0; b < 11; b++) g.fillRect(5.9 * px, h - 3.2 * px + b * 0.3 * px, 2.2 * px, 0.11 * px);          // 趟櫳: the sliding bars
+    g.fillStyle = '#4a1f14'; g.fillRect(5.9 * px, h - 3.3 * px, 0.14 * px, 3.3 * px); g.fillRect(7.96 * px, h - 3.3 * px, 0.14 * px, 3.3 * px);
+  }, false);
+}
 function buildDecorCanton() {
   const deco = new THREE.Group(); scene.add(deco);
   const std = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.8 }, o || {}));
@@ -2457,50 +2556,97 @@ function buildDecorCanton() {
     { tea: '陶陶居', house: '吳系茶餐廳', stall: '蘿蔔牛雜', mansion: '泰華樓', shops: [['黃振龍涼茶', 12, '#0f5a3a', '#f6d443'], ['源記腸粉', 21, '#fffdf4', '#c0261c'], ['南信牛奶甜品專家', 31, '#a3171a', '#f1cf6b']] },
     { tea: '蓮香樓', house: '廣州酒家', stall: '雞公欖', mansion: '小畫舫齋', shops: [['西關明記腸粉', 13, '#f5c518', '#b3201a'], ['陳添記', 22, '#f7f1dc', '#b3201a'], ['皇上皇臘味', 31, '#c11a1f', '#f6d24a']] },
   ];
+  cantonTex();
+  const tx = (t, ru, rv) => { const c = t.clone(); c.repeat.set(ru, rv); c.needsUpdate = true; return c; };
+  Object.assign(M, { roof: std(0xffffff, { map: TEX.roofTile }), groof: std(0xffffff, { map: TEX.greenTile, roughness: 0.45 }), dwood: std(0x4a1f14, { roughness: 0.6 }), dark: std(0x1c1a1c, { roughness: 0.9 }), cream: std(0xe9dcc0), manchu: std(0xffffff, { map: TEX.manchu, emissive: 0x332a18, roughness: 0.35 }), redwall: std(0xffffff, { map: TEX.sandstone }) });
+  // a tiled roof skirt / hip roof: a frustum from the eave rectangle up to a smaller rectangle (inset 0 at the top = a ridge or a point)
+  const frustum = (grp, x0, x1, z0, z1, y0, y1, ix, iz, mat) => {
+    const A = [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], B = [[x0 + ix, y1, z0 + iz], [x1 - ix, y1, z0 + iz], [x1 - ix, y1, z1 - iz], [x0 + ix, y1, z1 - iz]], pos = [], uv = [];
+    for (let i = 0; i < 4; i++) { const j = (i + 1) % 4, L = Math.hypot(A[j][0] - A[i][0], A[j][2] - A[i][2]), sl = Math.hypot(y1 - y0, i % 2 ? ix : iz), d = (L - Math.hypot(B[j][0] - B[i][0], B[j][2] - B[i][2])) / 2;
+      [[A[j], [L, 0]], [A[i], [0, 0]], [B[i], [d, sl]], [A[j], [L, 0]], [B[i], [d, sl]], [B[j], [L - d, sl]]].forEach(([q, u]) => { pos.push(...q); uv.push(u[0] / 1.2, u[1] / 1.2); }); }
+    [B[0], B[3], B[2], B[0], B[2], B[1], A[0], A[1], A[2], A[0], A[2], A[3]].forEach(q => { pos.push(...q); uv.push(q[0] / 1.2, q[2] / 1.2); });   // top, and the soffit seen from the street
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, mat); m.castShadow = m.receiveShadow = true; grp.add(m); return m;
+  };
+  const face = (grp, tex, w, h, x, y, z, ry, o) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), std(0xffffff, Object.assign({ map: tex }, o || {}))); m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; grp.add(m); return m; };
   names.forEach((n, t) => {
     const sg = t ? -1 : 1, P = (x, z) => [x * sg, z * sg], ry = r => r + (t ? Math.PI : 0);
-    let [x, z] = P(-18, 43.96); sign(n.tea, 9, 2.2, x, CL + 5.2, z, ry(Math.PI), t ? '#7a1512' : '#141210', t ? '#f3d98a' : '#e8c15a');
-    [x, z] = P(8, 51.9); sign(n.tea, 14, 3, x, CL + 6.5, z, ry(Math.PI), t ? '#7a1512' : '#141210', t ? '#f3d98a' : '#e8c15a');
+    // everything below is written for team 0's half (+z); team 1's copy is the same group turned 180°
+    const G = new THREE.Group(); G.rotation.y = t ? Math.PI : 0; deco.add(G);
+    const bx = (x0, x1, y0, y1, z0, z1, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.castShadow = m.receiveShadow = true; G.add(m); return m; };
+    const tm = std(t ? 0x2f8f62 : 0xb5362a, { roughness: 0.5 });                       // the team half's accent colour (dragon boat)
+    let [x, z] = P(-18, 43.9); sign(n.tea, 9, 1.9, x, CL + 3.45, z, ry(Math.PI), t ? '#7a1512' : '#141210', t ? '#f3d98a' : '#e8c15a');
     [x, z] = P(-4.96, 21.5); sign(n.house, 5, 1.1, x, CL + 1.75, z, ry(Math.PI / 2), t ? '#7a1512' : '#c8202a', t ? '#f3d98a' : '#ffffff');
     [x, z] = P(3.5, 26.65); sign(n.stall, 2.2, 0.6, x, CL + 0.7, z, ry(0), '#7a1d18', '#ffe39a');
-    [x, z] = P(-14.96, 23); sign(n.mansion, 2.6, 0.38, x, CL + 2.4, z, ry(Math.PI / 2));
+    [x, z] = P(-14.93, 23); sign(n.mansion, 2.6, 0.5, x, CL + 2.72, z, ry(Math.PI / 2));
     n.shops.forEach(([nm, zc, bg, fg]) => { [x, z] = P(25.96, zc); sign(nm, 7, 0.9, x, CL + 2.05, z, ry(-Math.PI / 2), bg, fg); });
-    // paifang: the name on both faces, a green tiled roof
+
+    // ---- tea house at the spawn end (out of bounds block): manchu-window facades on its two open sides, a parapet, a green pavilion on the roof
+    const tf = cantonTeaFace();
+    face(G, tx(tf, 1, 1), 16, 9, -18, CL + 4.5, 43.98, Math.PI); face(G, tx(tf, 0.5, 1), 8, 9, -9.98, CL + 4.5, 48, Math.PI / 2);
+    bx(-26, -9.8, CL + 9, CL + 9.5, 43.8, 52, M.cream);
+    bx(-20, -16, CL + 9.5, CL + 11.2, 46, 50, M.cream); frustum(G, -21, -15, 45, 51, CL + 10.6, CL + 11.3, 1.4, 1.4, M.groof); bx(-19.2, -16.8, CL + 11.3, CL + 12.3, 46.8, 49.2, M.cream); frustum(G, -20.3, -15.7, 45.7, 50.3, CL + 12.3, CL + 13.9, 2.3, 2.3, M.groof);
+    { const b = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), M.gold); b.position.set(-18, CL + 14.05, 48); G.add(b); }
+
+    // ---- 獵德 paifang: three tiled roofs (the middle one higher), brackets under the beam, drum stones at the posts
     [x, z] = P(0, 31.52); sign('獵德', 3.4, 0.95, x, CL + 4.0, z, ry(0)); [x, z] = P(0, 30.48); sign('獵德', 3.4, 0.95, x, CL + 4.0, z, ry(Math.PI));
-    [x, z] = P(0, 31); boxAt(x - 5.7, x + 5.7, CL + 4.6, CL + 4.82, z - 1.1, z + 1.1, M.green); boxAt(x - 2.4, x + 2.4, CL + 4.82, CL + 5.5, z - 0.4, z + 0.4, M.stone); boxAt(x - 3.1, x + 3.1, CL + 5.5, CL + 5.72, z - 1.0, z + 1.0, M.green);
-    // arcade colonnade: plinth and capital on every column, a beam with corner brackets between them, ceiling joists (visual only)
-    for (let i = 0; i < 8; i++) {
-      const c = 8.3 + i * (35.7 - 8.3) / 7, [cx, cz] = P(20.6, c);
-      boxAt(cx - 0.42, cx + 0.42, CL, CL + 0.32, cz - 0.42, cz + 0.42, M.cstone); boxAt(cx - 0.36, cx + 0.36, CL + 0.32, CL + 0.4, cz - 0.36, cz + 0.36, M.cstone);
-      boxAt(cx - 0.38, cx + 0.38, CL + 3.02, CL + 3.12, cz - 0.38, cz + 0.38, M.white); boxAt(cx - 0.44, cx + 0.44, CL + 3.12, CL + 3.39, cz - 0.44, cz + 0.44, M.white);
-      const [jx, jz] = P(23.45, c); boxAt(jx - 2.55, jx + 2.55, CL + 3.22, CL + 3.39, jz - 0.12, jz + 0.12, M.plaster);
-      if (i < 7) { const d = (35.7 - 8.3) / 7, [mx, mz] = P(20.6, c + d / 2);
-        boxAt(mx - 0.16, mx + 0.16, CL + 3.08, CL + 3.39, mz - d / 2 + 0.3, mz + d / 2 - 0.3, M.plaster);
-        for (const e of [-1, 1]) for (let q = 0; q < 3; q++) { const [bx, bz] = P(20.6, c + d / 2 + e * (d / 2 - 0.44 - q * 0.22)); boxAt(bx - 0.14, bx + 0.14, CL + 2.84 + q * 0.08, CL + 3.08, bz - 0.11, bz + 0.11, M.plaster); } }
-    }
-    // arcade: balustrade on the street side of the upper deck (visual only)
-    [x, z] = P(20.45, 22); boxAt(x - 0.12, x + 0.12, CL + 4.55, CL + 4.7, z - 14, z + 14, M.white); for (let i = 0; i < 28; i++) { const [bx, bz] = P(20.45, 8.5 + i); boxAt(bx - 0.06, bx + 0.06, CL + 3.8, CL + 4.55, bz - 0.06, bz + 0.06, M.white); }
-    // dragon boat: head toward the tower, tail, drum
-    const bm = t ? M.green : M.red;
-    [x, z] = P(8.0, 0.8); boxAt(x - 0.45, x + 0.45, 1.3, 1.75, z - 0.22, z + 0.22, bm); [x, z] = P(8.45, 0.8); boxAt(x - 0.12, x + 0.12, 0.7, 1.4, z - 0.12, z + 0.12, bm);
-    [x, z] = P(12, 0.8); add(new THREE.CylinderGeometry(0.36, 0.36, 0.5, 14), M.red, x, 0.95, z);
-    [x, z] = P(17.7, 0.8); boxAt(x - 0.1, x + 0.1, 0.7, 1.5, z - 0.1, z + 0.1, bm);
-    // mansion: main hall roof ridge (out of bounds block), gate jambs
-    [x, z] = P(-24.5, 23); boxAt(x - 1.9, x + 1.9, CL + 4.4, CL + 4.65, z - 7.4, z + 7.4, std(0x666b70)); boxAt(x - 1.0, x + 1.0, CL + 4.65, CL + 5.2, z - 7.0, z + 7.0, std(0x73787d)); boxAt(x - 0.25, x + 0.25, CL + 5.2, CL + 5.5, z - 7.2, z + 7.2, std(0x5b6166));
+    frustum(G, -6.0, -2.2, 29.9, 32.1, CL + 4.62, CL + 5.25, 0.5, 0.95, M.groof); frustum(G, 2.2, 6.0, 29.9, 32.1, CL + 4.62, CL + 5.25, 0.5, 0.95, M.groof);
+    bx(-2.3, 2.3, CL + 4.6, CL + 5.45, 30.6, 31.4, M.cstone); frustum(G, -3.2, 3.2, 29.8, 32.2, CL + 5.45, CL + 6.3, 0.7, 1.05, M.groof);
+    [[-2.2, CL + 5.25], [2.2, CL + 5.25], [0, CL + 6.3]].forEach(([rx, ry2], i) => bx(rx - (i < 2 ? 1.5 : 2.5), rx + (i < 2 ? 1.5 : 2.5), ry2, ry2 + 0.16, 30.9, 31.1, M.groof));
+    [-4, 4].forEach(px => { bx(px - 0.55, px + 0.55, CL, CL + 0.5, 30.3, 31.7, M.cstone); [-1, 1].forEach(e => bx(px + e * 0.9 - 0.45, px + e * 0.9 + 0.45, CL + 3.0, CL + 3.4, 30.8, 31.2, M.cstone)); });
+
+    // ---- stone bridge: posts on the parapets, an arch under each side, a string course
+    [14.15, 17.85].forEach(px => { for (let i = 0; i < 5; i++) { const pz = -3.3 + i * 1.65, py = CL + 0.5 + 0.9 * clamp((3.5 - Math.abs(pz)) / 2.3, 0, 1) - 0.06; bx(px - 0.2, px + 0.2, py, py + 0.34, pz - 0.2, pz + 0.2, M.cstone); bx(px - 0.13, px + 0.13, py + 0.34, py + 0.46, pz - 0.13, pz + 0.13, M.cstone); } });
+    [[13.99, -Math.PI / 2], [18.01, Math.PI / 2]].forEach(([px, r]) => face(G, TEX.archFace, 7, CL, px, CL / 2, 0, r, { transparent: true, alphaTest: 0.5, side: THREE.DoubleSide }));
+
+    // ---- dragon boat (head toward the tower): neck and head, horns, eyes, a curled tail, the drum, a red parasol, flags
+    { const neck = bx(-0.2, 0.2, 0, 1.25, -0.2, 0.2, tm); neck.position.set(8.25, 1.1, 0.8); neck.rotation.z = 0.55;
+      bx(7.25, 8.2, 1.45, 1.95, 0.55, 1.05, tm); bx(7.06, 7.3, 1.45, 1.72, 0.62, 0.98, M.gold);
+      [0.6, 1.0].forEach(hz => { const h = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.5, 6), M.gold); h.position.set(7.95, 2.15, hz); h.rotation.z = -0.35; G.add(h); });
+      [0.54, 1.06].forEach(ez => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), M.white); e.position.set(7.6, 1.78, ez); G.add(e); });
+      const tail = bx(-0.14, 0.14, 0, 1.3, -0.16, 0.16, tm); tail.position.set(18.15, 1.15, 0.8); tail.rotation.z = -0.5; bx(18.4, 18.6, 1.6, 2.1, 0.55, 1.05, M.gold);
+      bx(8.5, 18, 0.7, 0.76, 0.2, 0.3, M.gold); bx(8.5, 18, 0.7, 0.76, 1.3, 1.4, M.gold);
+      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.5, 14), M.red); drum.position.set(12, 0.95, 0.8); drum.castShadow = true; G.add(drum);
+      const skin = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.03, 14), M.white); skin.position.set(12, 1.21, 0.8); G.add(skin);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.3, 6), M.gold); pole.position.set(10.3, 1.85, 0.8); G.add(pole);
+      const par = new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.5, 14), std(0xe9c64a, { side: THREE.DoubleSide })); par.position.set(10.3, 3.1, 0.8); par.castShadow = true; G.add(par);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.22, 14, 1, true), std(0xb5362a, { side: THREE.DoubleSide })); rim.position.set(10.3, 2.75, 0.8); G.add(rim);
+      [9.2, 13.6, 15.4].forEach((fx, i) => { const p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.7, 5), M.gold); p2.position.set(fx, 1.55, 0.8); G.add(p2); bx(fx, fx + 0.6, 1.95, 2.4, 0.78, 0.82, i % 2 ? M.gold : M.red); }); }
+
+    // ---- Xiguan mansion: the hall at the back (out of bounds) with manchu windows and a sliding-bar door, a grey tiled roof between two wok-ear gables;
+    //      the open gate with its two door leaves swung back, manchu windows on the street wall
+    face(G, cantonHallFace(), 14, 4.4, -22.98, CL + 2.2, 23, Math.PI / 2);
+    { const sh = new THREE.Shape(); sh.moveTo(-2.3, 0); sh.lineTo(0, 1.5); sh.lineTo(2.3, 0); sh.lineTo(-2.3, 0);
+      const rg = new THREE.ExtrudeGeometry(sh, { depth: 13.4, bevelEnabled: false }); const uvr = rg.attributes.uv; for (let i = 0; i < uvr.count; i++) uvr.setXY(i, uvr.getX(i) / 1.2, uvr.getY(i) / 1.2);
+      const r = new THREE.Mesh(rg, M.roof); r.position.set(-24.3, CL + 4.4, 16.3); r.castShadow = true; G.add(r);
+      bx(-24.45, -24.15, CL + 5.85, CL + 6.05, 16.2, 29.8, std(0x4d5357));
+      const wk = new THREE.Shape(); wk.moveTo(-2.4, 0); wk.lineTo(-2.4, 2.3); wk.quadraticCurveTo(-1.5, 2.3, -1.25, 3.0); wk.absarc(0, 3.0, 1.25, Math.PI, 0, true); wk.quadraticCurveTo(1.5, 2.3, 2.4, 2.3); wk.lineTo(2.4, 0); wk.lineTo(-2.4, 0);
+      [15.95, 29.75].forEach(gz => { const w = new THREE.Mesh(new THREE.ExtrudeGeometry(wk, { depth: 0.3, bevelEnabled: false }), std(0x5d666c)); w.position.set(-24.4, CL + 2.6, gz); w.castShadow = true; G.add(w);
+        const cap = new THREE.Mesh(new THREE.ExtrudeGeometry(wk, { depth: 0.42, bevelEnabled: false }), std(0x2c2f33)); cap.scale.set(1.04, 1.03, 1); cap.position.set(-24.4, CL + 2.6, gz - 0.06); cap.renderOrder = -1; G.add(cap); w.position.z = gz - 0.07; w.scale.z = 1.5; }); }
+    bx(-16.12, -14.88, CL, CL + 2.19, 20.7, 21.05, M.cstone); bx(-16.12, -14.88, CL, CL + 2.19, 24.95, 25.3, M.cstone);                // gate jambs
+    bx(-17.9, -16.05, CL + 0.05, CL + 2.1, 20.82, 20.94, M.dwood); bx(-17.9, -16.05, CL + 0.05, CL + 2.1, 25.06, 25.18, M.dwood);  // door leaves, open
+    [18.5, 27.5].forEach(wz => { bx(-14.99, -14.93, CL + 0.75, CL + 2.25, wz - 0.75, wz + 0.75, M.cream); const w = new THREE.Mesh(new THREE.PlaneGeometry(1.26, 1.26), M.manchu); w.position.set(-14.92, CL + 1.5, wz); w.rotation.y = Math.PI / 2; G.add(w); });
   });
-  // Zhenhai Tower: green eaves round each storey, hip roof, name board
-  [[2.5, 1.95], [2.5, 3.85], [1.0, 5.6], [0.85, 7.0]].forEach(([r, y]) => boxAt(-r - 0.4, r + 0.4, CL + y, CL + y + 0.12, -r - 0.4, r + 0.4, M.green));
-  { const roof = new THREE.ConeGeometry(1.8, 1.2, 4); roof.rotateY(Math.PI / 4); add(roof, M.green, 0, CL + 8.2 + 0.6, 0); }
-  sign('鎮海樓', 1.6, 0.5, 0, CL + 5.05, 1.02, 0); sign('鎮海樓', 1.6, 0.5, 0, CL + 5.05, -1.02, Math.PI);
-  // rows of shop-houses outside the walls, a far skyline
-  const wt = TEX.windows; const pal = [0xead7a6, 0xe9b9ac, 0xb9d9c2, 0xefe7d6, 0xbccfe1, 0xe4a670, 0xd9d3c6];
+
+  // ---- 鎮海樓: red walls on the old city wall, green tiled eaves round every storey, dark window openings, a hip roof, the name board
+  [[2.5, 2.0, 0.75], [2.5, 4.0, 0.75], [1.0, 6.0, 0.6]].forEach(([r, y, o]) => { frustum(deco, -r - o, r + o, -r - o, r + o, CL + y - 0.28, CL + y + 0.12, o + 0.02, o + 0.02, M.groof); boxAt(-r - 0.06, r + 0.06, CL + y - 0.5, CL + y - 0.28, -r - 0.06, r + 0.06, M.cream); });
+  frustum(deco, -1.75, 1.75, -1.75, 1.75, CL + 8.2, CL + 9.5, 1.55, 1.75, M.groof); boxAt(-0.3, 0.3, CL + 9.45, CL + 9.62, -0.09, 0.09, M.groof); boxAt(-1.06, 1.06, CL + 7.9, CL + 8.2, -1.06, 1.06, M.cream);
+  [[2.51, 0], [-2.51, Math.PI], [0, -1], [0, 1]].forEach(([px, r], i) => { for (const st of [[2.35, 3.35], [0, 0]]) for (const off of [-1.5, 0, 1.5]) { if (!st[1]) continue; const m = new THREE.Mesh(new THREE.PlaneGeometry(0.9, st[1] - st[0]), M.dark); if (i < 2) { m.position.set(px, CL + (st[0] + st[1]) / 2, off); m.rotation.y = r ? -Math.PI / 2 : Math.PI / 2; } else { m.position.set(off, CL + (st[0] + st[1]) / 2, r * 2.51); m.rotation.y = r > 0 ? 0 : Math.PI; } deco.add(m); }
+    for (const off of [-0.45, 0.45]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.8), M.dark); if (i < 2) { m.position.set(px > 0 ? 1.01 : -1.01, CL + 6.9, off); m.rotation.y = px > 0 ? Math.PI / 2 : -Math.PI / 2; } else { m.position.set(off, CL + 6.9, r * 1.01); m.rotation.y = r > 0 ? 0 : Math.PI; } deco.add(m); } });
+  sign('鎮海樓', 1.7, 0.55, 0, CL + 5.0, 1.02, 0); sign('鎮海樓', 1.7, 0.55, 0, CL + 5.0, -1.02, Math.PI);
+  // centre deck: posts on its two parapets
+  [-6.85, 6.85].forEach(px => { for (let i = 0; i < 5; i++) { const pz = -3.3 + i * 1.65; boxAt(px - 0.2, px + 0.2, CL + 0.5, CL + 0.78, pz - 0.2, pz + 0.2, M.cstone); boxAt(px - 0.13, px + 0.13, CL + 0.78, CL + 0.9, pz - 0.13, pz + 0.13, M.cstone); } });
+
+  // ---- rows of qilou shop-houses outside the walls (a facade texture per 4 m bay), plain towers further off
   let k = 0;
   for (let z = -ZH - 10; z < ZH + 10; z += 8) for (const sx of [-1, 1]) {
     if (z + 8 > -3.5 && z < 3.5) continue;
-    const h = 11 + (k % 3) * 2.5, t = wt.clone(); t.repeat.set(2, 3); t.needsUpdate = true;
-    boxAt(sx > 0 ? XH + 1.5 : -XH - 11.5, sx > 0 ? XH + 11.5 : -XH - 1.5, CL, CL + h, z, z + 7.9, std(pal[k++ % pal.length], { map: t }));
+    const f = TEX.facade[k++ % TEX.facade.length];
+    boxAt(sx > 0 ? XH + 1.5 : -XH - 11.5, sx > 0 ? XH + 11.5 : -XH - 1.5, CL, CL + 12.8, z, z + 7.9, std(0xffffff, { map: tx(f, 2, 1) }));
   }
-  for (const sz of [-1, 1]) { const t = wt.clone(); t.repeat.set(12, 3); t.needsUpdate = true; boxAt(-XH - 11.5, XH + 11.5, CL, CL + 14, sz > 0 ? ZH + 1.5 : -ZH - 11.5, sz > 0 ? ZH + 11.5 : -ZH - 1.5, std(pal[sz > 0 ? 0 : 5], { map: t })); }
+  for (const sz of [-1, 1]) for (let i = 0; i < 8; i++) { const x0 = -XH - 11.5 + i * (XH * 2 + 23) / 8; boxAt(x0, x0 + (XH * 2 + 23) / 8 - 0.1, CL, CL + 12.8, sz > 0 ? ZH + 1.5 : -ZH - 11.5, sz > 0 ? ZH + 11.5 : -ZH - 1.5, std(0xffffff, { map: tx(TEX.facade[(i * 3 + (sz > 0 ? 1 : 4)) % TEX.facade.length], 2, 1) })); }
+  const wt = TEX.windows, pal = [0xead7a6, 0xe9b9ac, 0xb9d9c2, 0xefe7d6, 0xbccfe1];
+  for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283 + 0.3, r = 95 + (i % 3) * 18, h = 26 + (i * 7 % 5) * 7; boxAt(Math.cos(a) * r - 7, Math.cos(a) * r + 7, CL, CL + h, Math.sin(a) * r * 1.3 - 7, Math.sin(a) * r * 1.3 + 7, std(pal[i % 5], { map: tx(wt, 3, 6) })); }
   deco.updateMatrixWorld(true);
 }
 /* ======================================================= GAME DATA

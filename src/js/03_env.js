@@ -461,7 +461,7 @@ function buildDecorCanton() {
     [-4, 4].forEach(px => { bx(px - 0.55, px + 0.55, CL, CL + 0.5, 30.3, 31.7, M.cstone); [-1, 1].forEach(e => bx(px + e * 0.9 - 0.45, px + e * 0.9 + 0.45, CL + 3.0, CL + 3.4, 30.8, 31.2, M.cstone)); });
 
     // ---- stone bridge: posts on the parapets, an arch under each side, a string course
-    [14.15, 17.85].forEach(px => { for (let i = 0; i < 5; i++) { const pz = -3.3 + i * 1.65; bx(px - 0.2, px + 0.2, CL + 0.5, CL + 0.78, pz - 0.2, pz + 0.2, M.cstone); bx(px - 0.13, px + 0.13, CL + 0.78, CL + 0.9, pz - 0.13, pz + 0.13, M.cstone); } });
+    [14.15, 17.85].forEach(px => { for (let i = 0; i < 5; i++) { const pz = -3.3 + i * 1.65, py = CL + 0.5 + 0.9 * clamp((3.5 - Math.abs(pz)) / 2.3, 0, 1) - 0.06; bx(px - 0.2, px + 0.2, py, py + 0.34, pz - 0.2, pz + 0.2, M.cstone); bx(px - 0.13, px + 0.13, py + 0.34, py + 0.46, pz - 0.13, pz + 0.13, M.cstone); } });
     [[13.99, -Math.PI / 2], [18.01, Math.PI / 2]].forEach(([px, r]) => face(G, TEX.archFace, 7, CL, px, CL / 2, 0, r, { transparent: true, alphaTest: 0.5, side: THREE.DoubleSide }));
 
     // ---- dragon boat (head toward the tower): neck and head, horns, eyes, a curled tail, the drum, a red parasol, flags
@@ -488,7 +488,7 @@ function buildDecorCanton() {
       const wk = new THREE.Shape(); wk.moveTo(-2.4, 0); wk.lineTo(-2.4, 2.3); wk.quadraticCurveTo(-1.5, 2.3, -1.25, 3.0); wk.absarc(0, 3.0, 1.25, Math.PI, 0, true); wk.quadraticCurveTo(1.5, 2.3, 2.4, 2.3); wk.lineTo(2.4, 0); wk.lineTo(-2.4, 0);
       [15.95, 29.75].forEach(gz => { const w = new THREE.Mesh(new THREE.ExtrudeGeometry(wk, { depth: 0.3, bevelEnabled: false }), std(0x5d666c)); w.position.set(-24.4, CL + 2.6, gz); w.castShadow = true; G.add(w);
         const cap = new THREE.Mesh(new THREE.ExtrudeGeometry(wk, { depth: 0.42, bevelEnabled: false }), std(0x2c2f33)); cap.scale.set(1.04, 1.03, 1); cap.position.set(-24.4, CL + 2.6, gz - 0.06); cap.renderOrder = -1; G.add(cap); w.position.z = gz - 0.07; w.scale.z = 1.5; }); }
-    bx(-16.12, -14.88, CL, CL + 2.2, 20.7, 21, M.cstone); bx(-16.12, -14.88, CL, CL + 2.2, 25, 25.3, M.cstone);                // gate jambs
+    bx(-16.12, -14.88, CL, CL + 2.19, 20.7, 21.05, M.cstone); bx(-16.12, -14.88, CL, CL + 2.19, 24.95, 25.3, M.cstone);                // gate jambs
     bx(-17.9, -16.05, CL + 0.05, CL + 2.1, 20.82, 20.94, M.dwood); bx(-17.9, -16.05, CL + 0.05, CL + 2.1, 25.06, 25.18, M.dwood);  // door leaves, open
     [18.5, 27.5].forEach(wz => { bx(-14.99, -14.93, CL + 0.75, CL + 2.25, wz - 0.75, wz + 0.75, M.cream); const w = new THREE.Mesh(new THREE.PlaneGeometry(1.26, 1.26), M.manchu); w.position.set(-14.92, CL + 1.5, wz); w.rotation.y = Math.PI / 2; G.add(w); });
   });

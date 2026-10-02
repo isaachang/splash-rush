@@ -35,6 +35,8 @@ function box(x0, x1, z0, z1, h, style, top) { return { t: 'box', x0, x1, z0, z1,
 function ramp(x0, x1, z0, z1, axis, h0, h1, top) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: top || 'grate' }; }
 // a floating block: solid from y0 up to h, open underneath — people walk under it and bump their heads on it,
 // ink lands on its top and on the ground below separately (a second paint layer), its sides take no ink
+// a floating ramp: the same, with a sloping top (an arched bridge is two of these and a flat crown)
+function framp(x0, x1, z0, z1, axis, y0, h0, h1, top) { return Object.assign(ramp(x0, x1, z0, z1, axis, h0, h1, top), { y0, float: true }); }
 function slab(x0, x1, z0, z1, y0, h, style, top) { return Object.assign(box(x0, x1, z0, z1, h, style, top), { y0, float: true }); }
 function mirrorSolid(s) { const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0 }); if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; } return m; }
 // each map's layout is built once and kept, so switching back and forth is instant
@@ -215,6 +217,7 @@ function defineCanton() {
   const F = (x0, x1, z0, z1, y0, h, style, top, o) => Object.assign(slab(x0, x1, z0, z1, CL + y0, CL + h, style, top), o || {});
   const oob = (x0, x1, z0, z1, h) => Object.assign(S(x0, x1, z0, z1, h, 'panel', 'tile'), { oob: true });
   const tag = (s, kind) => Object.assign(s, { kind });
+  const FR = (x0, x1, z0, z1, y0, h0, h1) => Object.assign(framp(x0, x1, z0, z1, 'z', CL + y0, CL + h0, CL + h1, 'flag'), { navTop: true });
   const ON = { walls: true, navTop: true };          // stands on the centre deck: the canal tunnel underneath stays open, its sides are normal inkable walls
   const half = [
     tag(box(-26, 26, 3.5, 52, CL, 'canal', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
@@ -245,9 +248,10 @@ function defineCanton() {
     S(-7, -5, 6, 8, 0.5, 'cstone', 'grass'), S(10, 12, 5.5, 7.5, 0.5, 'cstone', 'grass'),
     // (four 0.44 m steps running straight out from the bank, 3 m wide: walk up them toward the street)
     ...[[-12, -9], [20, 23]].flatMap(([x0, x1]) => [0, 1, 2, 3].map(k => box(x0, x1, 2.9 - k * 0.6, 3.5 - k * 0.6, CL - 0.44 * (k + 1), 'cstone', 'paving'))),
-    tag(F(14, 18, -3.5, 3.5, -0.3, 0, 'stone', 'flag', { navTop: true }), 'bridge'),
-    // (low stone parapets: you step over them to drop into the canal)
-    F(14, 14.3, -3.5, 3.5, 0, 0.5, 'cstone', 'flag', ON), F(17.7, 18, -3.5, 3.5, 0, 0.5, 'cstone', 'flag', ON),
+    // an arched stone bridge: up 0.9 m, a flat crown high enough for the dragon boat's flags, down again; people walk under the ramps too.
+    // Its parapets are the two edge strips, 0.5 m higher: you step over them to drop into the canal.
+    ...[[14.3, 17.7, 0], [14, 14.3, 0.5], [17.7, 18, 0.5]].flatMap(([x0, x1, up]) => [
+      tag(FR(x0, x1, -3.5, -1.2, -0.3, up, 0.9 + up), 'bridge'), tag(F(x0, x1, -1.2, 1.2, 0.5, 0.9 + up, 'stone', 'flag', { navTop: true }), 'bridge'), tag(FR(x0, x1, 1.2, 3.5, -0.3, 0.9 + up, up), 'bridge')]),
     tag(box(8.5, 18, 0.2, 1.4, 0.7, 'hull', 'wood'), 'boat'),
     // ---- beside the tower: two steps of the old city wall (jump 1 m, then 2 m)
     F(2.5, 5, -2.5, 0, 0, 2.0, 'redwall', 'flag', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'redwall', 'flag', ON),
@@ -445,7 +449,7 @@ function resetPaint() {
 function buildWallAtlas() {
   const faces = [];
   for (const s of SOLIDS) {
-    if (s.t === 'ramp') { rampFaces(s, faces); continue; }
+    if (s.t === 'ramp') { if (s.float) s.faces = {}; else rampFaces(s, faces); continue; }
     if (s.t !== 'box') continue; s.faces = {};
     if (s.oob || (s.float && !s.walls)) continue;                        // out-of-bounds and floating blocks: sides not paintable, not climbable
     const dirs = s.bound ? [s.bound] : ['+x', '-x', '+z', '-z'];
@@ -822,6 +826,8 @@ function buildArena() {
   const floor = new THREE.Mesh(fg, paintMat({ map: TEX.concrete, roughness: 0.92, color: 0xffffff }, 'floor', true));
   floor.receiveShadow = true; arenaGroup.add(floor);
   }
+  // a side of a floating block that sits against an ordinary block at least as tall (the canal bank): not drawn, it would flicker
+  const butts = (s, x, z, h) => SOLIDS.some(o => o !== s && !o.float && !o.bound && inRect(o, x, z) && topAt(o, x, z) >= h - 0.05);
   // tops & ramps grouped by style
   const tops = {}, walls = {}, sides = [], hedge = [], slabs = [];
   const PX = Paint.PX, W = Paint.W, H = Paint.H;
@@ -859,7 +865,7 @@ function buildArena() {
       if (s.float && !s.walls) {                                       // sides and underside of a floating block (plain, no ink)
         const y0 = s.y0, y1 = s.h, w = s.x1 - s.x0, d = s.z1 - s.z0;
         [[[s.x1, s.z0], [s.x1, s.z1], [1, 0, 0], d], [[s.x0, s.z1], [s.x0, s.z0], [-1, 0, 0], d], [[s.x1, s.z1], [s.x0, s.z1], [0, 0, 1], w], [[s.x0, s.z0], [s.x1, s.z0], [0, 0, -1], w]].forEach(([a, b, n, L]) =>
-          slabs.push(quadGeo([[a[0], y0, a[1]], [b[0], y0, b[1]], [b[0], y1, b[1]], [a[0], y1, a[1]]], [[0, y0 / 3], [L / 3, y0 / 3], [L / 3, y1 / 3], [0, y1 / 3]], null, null, n)));
+          butts(s, (a[0] + b[0]) / 2 + n[0] * 0.05, (a[1] + b[1]) / 2 + n[2] * 0.05, y1) || slabs.push(quadGeo([[a[0], y0, a[1]], [b[0], y0, b[1]], [b[0], y1, b[1]], [a[0], y1, a[1]]], [[0, y0 / 3], [L / 3, y0 / 3], [L / 3, y1 / 3], [0, y1 / 3]], null, null, n)));
         slabs.push(quadGeo([[s.x0, y0, s.z0], [s.x1, y0, s.z0], [s.x1, y0, s.z1], [s.x0, y0, s.z1]], [[s.x0 / 3, s.z0 / 3], [s.x1 / 3, s.z0 / 3], [s.x1 / 3, s.z1 / 3], [s.x0 / 3, s.z1 / 3]], null, null, [0, -1, 0]));
       }
       if (s.oob && MAP_ID !== 'canton') {                  // hedge sides above the street, not in the paint atlas
@@ -882,6 +888,12 @@ function buildArena() {
         const f = s.faces[d];
         if (f.side) wallQuad('stone', f, [[lowAt, 0], [highAt, 0], [highAt, hi], [lowAt, Math.max(0.001, Math.min(s.h0, s.h1))]]);
         else wallQuad('stone', f, [[f.a0, 0], [f.a1, 0], [f.a1, hi], [f.a0, hi]]);
+      }
+      if (s.float) {                                       // floating ramp (z axis): plain sides, the tall end, the underside
+        const y0 = s.y0, lo = s.h0 < s.h1 ? s.z0 : s.z1, hiZ = s.h0 < s.h1 ? s.z1 : s.z0, hl = Math.min(s.h0, s.h1);
+        [[s.x1, 1], [s.x0, -1]].forEach(([x, n]) => slabs.push(quadGeo([[x, y0, lo], [x, y0, hiZ], [x, hi, hiZ], [x, hl, lo]], [[lo / 3, y0 / 3], [hiZ / 3, y0 / 3], [hiZ / 3, hi / 3], [lo / 3, hl / 3]], null, null, [n, 0, 0])));
+        slabs.push(quadGeo([[s.x0, y0, hiZ], [s.x1, y0, hiZ], [s.x1, hi, hiZ], [s.x0, hi, hiZ]], [[s.x0 / 3, y0 / 3], [s.x1 / 3, y0 / 3], [s.x1 / 3, hi / 3], [s.x0 / 3, hi / 3]], null, null, [0, 0, hiZ > lo ? 1 : -1]));
+        slabs.push(quadGeo([[s.x0, y0, s.z0], [s.x1, y0, s.z0], [s.x1, y0, s.z1], [s.x0, y0, s.z1]], [[s.x0 / 3, s.z0 / 3], [s.x1 / 3, s.z0 / 3], [s.x1 / 3, s.z1 / 3], [s.x0 / 3, s.z1 / 3]], null, null, [0, -1, 0]));
       }
     }
   }
