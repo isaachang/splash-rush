@@ -17,11 +17,11 @@ const WEAPONS = {
     id: 'rifle', name: '墨浪步枪', en: 'SPLASH RIFLE', role: '全能 · 中距离', type: 'auto', cls: 'shooter',
     desc: '射速、射程、涂地都很均衡，3 发击倒。适合任何场合，新手首选。',
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
-    dmg: 36, dmgFar: 18, falloff: [0.18, 0.42], interval: 0.105, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
+    dmg: 36, dmgFar: 18, falloff: [0.18, 0.42], interval: 0.125, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
     spread: 0.045, airSpread: 0.1, cost: 1.42, splat: [1.07, 1.35],
     moveFire: 4.8, muzzleF: 0.55, range: 16, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,
-    stats: { range: 4, dmg: 3, rate: 4, paint: 3, mobility: 4 }
+    stats: { range: 4, dmg: 3, rate: 3, paint: 3, mobility: 4 }
   },
   charger: {
     id: 'charger', name: '重炮狙击', en: 'HEAVY CANNON', role: '远程 · 狙击', type: 'charge', cls: 'charger',
@@ -172,6 +172,7 @@ const RELEASES = [
     '石墩削弱：走路速度和潜墨速度都慢 5%',
     '重型加特林要先转约 0.3 秒才开始连射，按住一直打、松手就停，再按要重新转；有专属的转动音效',
     '阿飒新增第二把主武器「疾风冲锋枪」：射速极快、单发很弱，很费墨但回墨快',
+    '墨浪步枪射速降一格（每秒约 9.5 发 → 8 发），和冲锋枪拉开差别',
     '选场地时背景会淡入淡出切换成那张场地，不用再重新载入'
   ] },
   { v: 'v0.9.0', date: '2026-10-02', time: '01:50', title: '新地图：墨浪滑板场', items: [
