@@ -344,7 +344,7 @@ function startMatch() {
   applyPalette(); resetPaint(); Fx.clear(); Proj.clear();
   spawnTeams(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
-  G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov();
+  G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
   $('subw').innerHTML = '<i></i>' + SUBS[PLAYER.subId].short;
   Cam.yaw = SPAWN[0].yaw; Cam.pitch = -0.08; Cam.pivotY = SPAWN[0].y + 1.5;
@@ -918,7 +918,47 @@ const Preview = {
 };
 
 /* ------------------------------------------------------------- update */
+/* 西關大屋's opening film: three held shots of the landmarks (hard cuts, slow moves, a long lens), then one unbroken move through the
+   paifang and round to the play camera. Letterbox bars, a caption per shot; hold Space to skip to the landing. */
+const CINE = { T: 7.0, shots: [
+  { t0: 0.0, t1: 1.5, p0: [-13.5, 1.0, 0.4], p1: [-12.7, 4.4, 0.9], l0: [0, 5.2, 0], l1: [0, 7.6, 0], fov: 38, cap: ['鎮海樓', 'ZHENHAI TOWER'] },
+  { t0: 1.5, t1: 3.0, p0: [-4.2, 3.7, -16.6], p1: [-3.6, 3.9, -23.4], l0: [5, 4.1, -19.8], l1: [5, 4.3, -22.6], fov: 40, cap: ['廣州酒家', 'GUANGZHOU RESTAURANT'] },
+  { t0: 3.0, t1: 4.5, p0: [22.3, 3.75, 29.5], p1: [22.3, 3.75, 20.5], l0: [26, 3.6, 24.5], l1: [26, 3.6, 15.5], fov: 46, cap: ['腸粉街', 'RICE-ROLL ARCADE'] },
+  { t0: 4.5, t1: 5.8, p0: [0.6, 3.5, 22.5], p1: [0, 4.3, 33.5], l0: [0, 6.0, 31], l1: [0, 5.4, 47], fov: 44, cap: ['獵德牌坊', 'LIEDE ARCHWAY'], own: true } ] };
+function cineUI(on) { const h = $('hud'); if (!h || !h.classList) return; if (on) { h.classList.add('cine'); h.classList.add('cbars'); } else { h.classList.remove('cine'); h.classList.remove('cbars'); $('cineTitle').classList.remove('on'); $('cineCap').classList.remove('on'); } }
+function updateCine(dt) {
+  const C = CINE, sg = PLAYER.team ? -1 : 1, V = (a, own) => new THREE.Vector3(a[0] * (own ? sg : 1), a[1], a[2] * (own ? sg : 1)), sm = k => k * k * (3 - 2 * k);
+  const end = startCamPose(), F = G.flags;
+  Input.dx = Input.dy = 0; Input.jumpQ = false;
+  if (!F.cine) { F.cine = 1; F.shot = -1; F.hold = 0; cineUI(true); }
+  // hold Space to skip: the ring fills in 0.6 s, then the camera goes straight to the landing
+  if (!F.skip && G.introT < C.T - 1.3) { F.hold = Input.keys.Space ? F.hold + dt : 0; const r = $('cineRing'); if (r && r.style) r.style.strokeDashoffset = String(88 * (1 - clamp(F.hold / 0.6, 0, 1)));
+    if (F.hold >= 0.6) { F.skip = { t: 0, p: camera.position.clone(), l: (F.look || end.look).clone(), fov: camera.fov }; Input.spaceLock = true; $('cineTitle').classList.remove('on'); $('cineCap').classList.remove('on'); } }
+  let pos, look, fov;
+  const land = (k, p, l, f0) => {      // the last move: rise, swing round the player, settle on the play camera
+    const e = sm(clamp(k, 0, 1)), mid = new THREE.Vector3((p.x + end.pos.x) / 2 + 7 * sg, Math.max(p.y, end.pos.y) + 3.2, (p.z + end.pos.z) / 2 + 3 * sg);
+    pos = p.clone().lerp(mid, e).lerp(mid.clone().lerp(end.pos, e), e); look = l.clone().lerp(new THREE.Vector3(PLAYER.pos.x, PLAYER.pos.y + 1.4, PLAYER.pos.z), Math.sin(e * Math.PI) * 0.6).lerp(end.look, e * e); fov = lerp(f0, SETTINGS.fov, e);
+    if (k > 0.35 && !F.bars) { F.bars = 1; $('hud').classList.remove('cbars'); $('cineCap').classList.remove('on'); }
+  };
+  if (F.skip) { F.skip.t += dt; land(F.skip.t / 0.9, F.skip.p, F.skip.l, F.skip.fov); if (F.skip.t >= 0.9) G.introT = Math.max(G.introT, C.T); else G.introT = Math.min(G.introT, C.T - 0.01); }
+  else { G.introT += dt; const t = G.introT, last = C.shots[C.shots.length - 1];
+    if (t < last.t1) { let i = C.shots.findIndex(s => t < s.t1); const s = C.shots[i], k = (t - s.t0) / (s.t1 - s.t0), e = s.own ? sm(k) * 0.5 + k * 0.5 : k * 0.85 + sm(k) * 0.15;
+      pos = V(s.p0, s.own).lerp(V(s.p1, s.own), e); look = V(s.l0, s.own).lerp(V(s.l1, s.own), e); fov = s.fov;
+      if (F.shot !== i) { F.shot = i; const c = $('cineCap'); c.classList.remove('on'); if (c.children && c.children[0]) { c.children[0].textContent = s.cap[0]; c.children[1].textContent = s.cap[1]; } F.capAt = t + 0.12; }
+      if (F.capAt && t >= F.capAt) { F.capAt = 0; $('cineCap').classList.add('on'); }
+      if (i === 0) { if (t > 0.15 && !F.ttl) { F.ttl = 1; $('cineTitle').classList.add('on'); } if (t > 1.15 && F.ttl === 1) { F.ttl = 2; $('cineTitle').classList.remove('on'); } }
+    } else land((t - last.t1) / (C.T - last.t1), V(last.p1, true), V(last.l1, true), last.fov);
+  }
+  if (G.introT < C.T) { F.look = look; camera.position.copy(pos); camera.lookAt(look); if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); } return; }
+  // landed: the usual READY / GO
+  if (!F.done) { F.done = 1; cineUI(false); resetFov(); camera.position.copy(end.pos); camera.lookAt(end.look); }
+  if (F.skip) G.introT += dt;
+  const t = G.introT;
+  if (!F.t2) { F.t2 = 1; HUD.center('READY?', '', 1000); Sfx.beep(false); }
+  if (t > C.T + 1.0) { G.state = 'play'; HUD.center('GO!', '', 900); Sfx.whistle(); Sfx.beep(true); flash(0.35); Sfx.music('game'); Cam.pos.copy(camera.position); Input.jumpQ = false; }
+}
 function updateIntro(dt) {
+  if (MAP_ID === 'canton') return updateCine(dt);
   G.introT += dt; const t = G.introT;
   Input.dx = Input.dy = 0;            // no looking around during the opening shot (it used to pile up and swing the camera at GO)
   const k = clamp(t / 3.0, 0, 1), e = k * k * (3 - 2 * k);

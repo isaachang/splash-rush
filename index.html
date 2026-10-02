@@ -509,6 +509,23 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .mtile .mn em{display:block;font-style:normal;font-size:10px;opacity:.6;line-height:1.3;margin-top:2px}
 .mtile .mon{position:absolute;top:-9px;right:8px;font-style:normal;font-size:10px;font-weight:900;background:var(--c0);color:#111;border:2px solid #111;border-radius:8px;padding:0 6px}
 .rcol h3 small{font-size:11px;color:#fff;opacity:.5;letter-spacing:1px;margin-left:8px}
+
+/* ---- opening film (西關大屋): letterbox bars, place captions, hold-to-skip */
+#hud.cine > :not(.ck){opacity:0!important}
+.cbar{position:fixed;left:0;right:0;height:12vh;background:#000;transition:transform .55s cubic-bezier(.6,0,.2,1);z-index:3}
+#cbarT{top:0;transform:translateY(-101%)}#cbarB{bottom:0;transform:translateY(101%)}
+#hud.cbars #cbarT,#hud.cbars #cbarB{transform:none}
+#cineTitle,#cineCap,#cineSkip{position:fixed;opacity:0;transition:opacity .45s;z-index:4;color:#fff;font-family:"Songti TC","Songti SC","Noto Serif CJK TC","Noto Serif CJK SC",STSong,serif}
+#cineTitle{left:0;right:0;top:36%;text-align:center}
+#cineTitle b{display:block;font-size:clamp(54px,9vw,128px);font-weight:900;letter-spacing:.14em;text-shadow:0 4px 30px rgba(0,0,0,.65)}
+#cineTitle i{display:block;font:700 clamp(12px,1.3vw,18px)/1 -apple-system,"PingFang SC",sans-serif;letter-spacing:.6em;margin-top:14px;opacity:.9;text-shadow:0 2px 10px rgba(0,0,0,.7)}
+#cineCap{left:6vw;bottom:15.5vh}
+#cineCap b{display:block;font-size:clamp(26px,3.2vw,46px);font-weight:900;letter-spacing:.1em;text-shadow:0 3px 18px rgba(0,0,0,.75)}
+#cineCap i{display:block;font:700 clamp(10px,1vw,14px)/1 -apple-system,"PingFang SC",sans-serif;letter-spacing:.42em;margin-top:8px;opacity:.85;text-shadow:0 2px 8px rgba(0,0,0,.8)}
+#cineSkip{right:4vw;bottom:calc(6vh - 14px);display:flex;align-items:center;gap:10px;font:700 14px/1 -apple-system,"PingFang SC",sans-serif;letter-spacing:.12em;color:rgba(255,255,255,.82)}
+#cineSkip svg{width:28px;height:28px}
+#cineSkip kbd{font:inherit;border:1.5px solid rgba(255,255,255,.6);border-radius:5px;padding:3px 7px}
+#hud.cine #cineSkip,#cineTitle.on,#cineCap.on{opacity:1}
 </style></head><body>
 <canvas id="gl"></canvas>
 <canvas id="glFade"></canvas>
@@ -595,6 +612,10 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   <canvas id="minimap" width="150" height="246"></canvas>
   <div id="mapHint">点击队友（或按 1 / 2 / 3）超级跳过去 · 再按 M 关闭地图</div>
   <div id="center"></div>
+  <div class="cbar ck" id="cbarT"></div><div class="cbar ck" id="cbarB"></div>
+  <div id="cineTitle" class="ck"><b>西關大屋</b><i>XIGUAN MANSION</i></div>
+  <div id="cineCap" class="ck"><b></b><i></i></div>
+  <div id="cineSkip" class="ck"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="4"/><circle id="cineRing" cx="18" cy="18" r="14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="88" stroke-dashoffset="88" transform="rotate(-90 18 18)"/></svg>长按 <kbd>空格</kbd> 跳过</div>
   <div id="death"><div class="by" id="deathBy"></div><div class="cd" id="deathCd">5</div><div class="tip" id="deathTip"></div></div>
   <div id="specTag"></div>
   <div id="hint"><kbd>WASD</kbd>移动 <kbd>鼠标左键</kbd>射击 <kbd>Shift</kbd>潜墨 <kbd>空格</kbd>跳 <kbd>右键/E</kbd>炸弹 <kbd>Q</kbd>必杀 <kbd>M</kbd>地图/超级跳 <kbd>Tab</kbd>战况</div>
@@ -5620,7 +5641,7 @@ function initInput() {
   addEventListener('keydown', e => {
     if (e.repeat) { if (['Space', 'Tab'].includes(e.code)) e.preventDefault(); return; }
     Input.keys[e.code] = true;
-    if (e.code === 'Space') { Input.jumpQ = true; e.preventDefault(); }
+    if (e.code === 'Space') { if (!Input.spaceLock) Input.jumpQ = true; e.preventDefault(); }     // (spaceLock: still held from skipping the opening film)
     if (e.code === 'KeyE') Input.bombHoldKey = true;
     if (e.code === 'KeyQ') Input.spQ = true;
     if (e.code === 'KeyM') toggleMap();
@@ -5628,7 +5649,7 @@ function initInput() {
     if (G.mapOpen && e.code === 'Escape') toggleMap(false);
     if (e.code === 'Tab') e.preventDefault();
   });
-  addEventListener('keyup', e => { Input.keys[e.code] = false; if (e.code === 'KeyE') Input.bombHoldKey = false; });
+  addEventListener('keyup', e => { Input.keys[e.code] = false; if (e.code === 'KeyE') Input.bombHoldKey = false; if (e.code === 'Space') Input.spaceLock = false; });
   addEventListener('blur', () => { Input.keys = {}; Input.fire = false; Input.bombHoldKey = Input.bombHoldMouse = false; });
   const cv = $('gl');
   addEventListener('mousedown', e => {
@@ -6121,7 +6142,7 @@ function startMatch() {
   applyPalette(); resetPaint(); Fx.clear(); Proj.clear();
   spawnTeams(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
-  G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov();
+  G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
   $('subw').innerHTML = '<i></i>' + SUBS[PLAYER.subId].short;
   Cam.yaw = SPAWN[0].yaw; Cam.pitch = -0.08; Cam.pivotY = SPAWN[0].y + 1.5;
@@ -6695,7 +6716,47 @@ const Preview = {
 };
 
 /* ------------------------------------------------------------- update */
+/* 西關大屋's opening film: three held shots of the landmarks (hard cuts, slow moves, a long lens), then one unbroken move through the
+   paifang and round to the play camera. Letterbox bars, a caption per shot; hold Space to skip to the landing. */
+const CINE = { T: 7.0, shots: [
+  { t0: 0.0, t1: 1.5, p0: [-13.5, 1.0, 0.4], p1: [-12.7, 4.4, 0.9], l0: [0, 5.2, 0], l1: [0, 7.6, 0], fov: 38, cap: ['鎮海樓', 'ZHENHAI TOWER'] },
+  { t0: 1.5, t1: 3.0, p0: [-4.2, 3.7, -16.6], p1: [-3.6, 3.9, -23.4], l0: [5, 4.1, -19.8], l1: [5, 4.3, -22.6], fov: 40, cap: ['廣州酒家', 'GUANGZHOU RESTAURANT'] },
+  { t0: 3.0, t1: 4.5, p0: [22.3, 3.75, 29.5], p1: [22.3, 3.75, 20.5], l0: [26, 3.6, 24.5], l1: [26, 3.6, 15.5], fov: 46, cap: ['腸粉街', 'RICE-ROLL ARCADE'] },
+  { t0: 4.5, t1: 5.8, p0: [0.6, 3.5, 22.5], p1: [0, 4.3, 33.5], l0: [0, 6.0, 31], l1: [0, 5.4, 47], fov: 44, cap: ['獵德牌坊', 'LIEDE ARCHWAY'], own: true } ] };
+function cineUI(on) { const h = $('hud'); if (!h || !h.classList) return; if (on) { h.classList.add('cine'); h.classList.add('cbars'); } else { h.classList.remove('cine'); h.classList.remove('cbars'); $('cineTitle').classList.remove('on'); $('cineCap').classList.remove('on'); } }
+function updateCine(dt) {
+  const C = CINE, sg = PLAYER.team ? -1 : 1, V = (a, own) => new THREE.Vector3(a[0] * (own ? sg : 1), a[1], a[2] * (own ? sg : 1)), sm = k => k * k * (3 - 2 * k);
+  const end = startCamPose(), F = G.flags;
+  Input.dx = Input.dy = 0; Input.jumpQ = false;
+  if (!F.cine) { F.cine = 1; F.shot = -1; F.hold = 0; cineUI(true); }
+  // hold Space to skip: the ring fills in 0.6 s, then the camera goes straight to the landing
+  if (!F.skip && G.introT < C.T - 1.3) { F.hold = Input.keys.Space ? F.hold + dt : 0; const r = $('cineRing'); if (r && r.style) r.style.strokeDashoffset = String(88 * (1 - clamp(F.hold / 0.6, 0, 1)));
+    if (F.hold >= 0.6) { F.skip = { t: 0, p: camera.position.clone(), l: (F.look || end.look).clone(), fov: camera.fov }; Input.spaceLock = true; $('cineTitle').classList.remove('on'); $('cineCap').classList.remove('on'); } }
+  let pos, look, fov;
+  const land = (k, p, l, f0) => {      // the last move: rise, swing round the player, settle on the play camera
+    const e = sm(clamp(k, 0, 1)), mid = new THREE.Vector3((p.x + end.pos.x) / 2 + 7 * sg, Math.max(p.y, end.pos.y) + 3.2, (p.z + end.pos.z) / 2 + 3 * sg);
+    pos = p.clone().lerp(mid, e).lerp(mid.clone().lerp(end.pos, e), e); look = l.clone().lerp(new THREE.Vector3(PLAYER.pos.x, PLAYER.pos.y + 1.4, PLAYER.pos.z), Math.sin(e * Math.PI) * 0.6).lerp(end.look, e * e); fov = lerp(f0, SETTINGS.fov, e);
+    if (k > 0.35 && !F.bars) { F.bars = 1; $('hud').classList.remove('cbars'); $('cineCap').classList.remove('on'); }
+  };
+  if (F.skip) { F.skip.t += dt; land(F.skip.t / 0.9, F.skip.p, F.skip.l, F.skip.fov); if (F.skip.t >= 0.9) G.introT = Math.max(G.introT, C.T); else G.introT = Math.min(G.introT, C.T - 0.01); }
+  else { G.introT += dt; const t = G.introT, last = C.shots[C.shots.length - 1];
+    if (t < last.t1) { let i = C.shots.findIndex(s => t < s.t1); const s = C.shots[i], k = (t - s.t0) / (s.t1 - s.t0), e = s.own ? sm(k) * 0.5 + k * 0.5 : k * 0.85 + sm(k) * 0.15;
+      pos = V(s.p0, s.own).lerp(V(s.p1, s.own), e); look = V(s.l0, s.own).lerp(V(s.l1, s.own), e); fov = s.fov;
+      if (F.shot !== i) { F.shot = i; const c = $('cineCap'); c.classList.remove('on'); if (c.children && c.children[0]) { c.children[0].textContent = s.cap[0]; c.children[1].textContent = s.cap[1]; } F.capAt = t + 0.12; }
+      if (F.capAt && t >= F.capAt) { F.capAt = 0; $('cineCap').classList.add('on'); }
+      if (i === 0) { if (t > 0.15 && !F.ttl) { F.ttl = 1; $('cineTitle').classList.add('on'); } if (t > 1.15 && F.ttl === 1) { F.ttl = 2; $('cineTitle').classList.remove('on'); } }
+    } else land((t - last.t1) / (C.T - last.t1), V(last.p1, true), V(last.l1, true), last.fov);
+  }
+  if (G.introT < C.T) { F.look = look; camera.position.copy(pos); camera.lookAt(look); if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); } return; }
+  // landed: the usual READY / GO
+  if (!F.done) { F.done = 1; cineUI(false); resetFov(); camera.position.copy(end.pos); camera.lookAt(end.look); }
+  if (F.skip) G.introT += dt;
+  const t = G.introT;
+  if (!F.t2) { F.t2 = 1; HUD.center('READY?', '', 1000); Sfx.beep(false); }
+  if (t > C.T + 1.0) { G.state = 'play'; HUD.center('GO!', '', 900); Sfx.whistle(); Sfx.beep(true); flash(0.35); Sfx.music('game'); Cam.pos.copy(camera.position); Input.jumpQ = false; }
+}
 function updateIntro(dt) {
+  if (MAP_ID === 'canton') return updateCine(dt);
   G.introT += dt; const t = G.introT;
   Input.dx = Input.dy = 0;            // no looking around during the opening shot (it used to pile up and swing the camera at GO)
   const k = clamp(t / 3.0, 0, 1), e = k * k * (3 - 2 * k);

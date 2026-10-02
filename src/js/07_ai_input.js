@@ -278,7 +278,7 @@ function initInput() {
   addEventListener('keydown', e => {
     if (e.repeat) { if (['Space', 'Tab'].includes(e.code)) e.preventDefault(); return; }
     Input.keys[e.code] = true;
-    if (e.code === 'Space') { Input.jumpQ = true; e.preventDefault(); }
+    if (e.code === 'Space') { if (!Input.spaceLock) Input.jumpQ = true; e.preventDefault(); }     // (spaceLock: still held from skipping the opening film)
     if (e.code === 'KeyE') Input.bombHoldKey = true;
     if (e.code === 'KeyQ') Input.spQ = true;
     if (e.code === 'KeyM') toggleMap();
@@ -286,7 +286,7 @@ function initInput() {
     if (G.mapOpen && e.code === 'Escape') toggleMap(false);
     if (e.code === 'Tab') e.preventDefault();
   });
-  addEventListener('keyup', e => { Input.keys[e.code] = false; if (e.code === 'KeyE') Input.bombHoldKey = false; });
+  addEventListener('keyup', e => { Input.keys[e.code] = false; if (e.code === 'KeyE') Input.bombHoldKey = false; if (e.code === 'Space') Input.spaceLock = false; });
   addEventListener('blur', () => { Input.keys = {}; Input.fire = false; Input.bombHoldKey = Input.bombHoldMouse = false; });
   const cv = $('gl');
   addEventListener('mousedown', e => {
