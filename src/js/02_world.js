@@ -238,10 +238,10 @@ function defineCanton() {
     S(-20.5, -18, 21, 25, 1.0, 'crate', 'grass'),
     R(-15, -10, 12.4, 16, 'x', 2.6, 0, 'paving'), R(-15, -10, 30, 34, 'x', 2.6, 0, 'paving'),
     // ---- the street between them
-    tag(S(-11, -5, 18, 25, 2.4, 'contR', 'tile'), 'house'),
+    tag(S(-11, -5, 18, 25, 2.4, 'plaster', 'tile'), 'house'),
     S(-5, -3.5, 18, 19.6, 1.2, 'crate', 'crate'), S(-1, 0.6, 14, 15.6, 0.5, 'crate', 'crate'),
     S(5, 11, 13, 18, 0.5, 'cstone', 'grass'),
-    tag(S(2, 5, 25, 26.6, 1.1, 'contG', 'wood'), 'stall'), S(13, 15, 24, 26.5, 1.2, 'contB', 'wood'), S(14, 17, 16, 17, 1.0, 'cstone', 'grass'),
+    tag(S(2, 5, 25, 26.6, 1.1, 'panel', 'wood'), 'stall'), S(13, 15, 24, 26.5, 1.2, 'contB', 'wood'), S(14, 17, 16, 17, 1.0, 'cstone', 'grass'),
     tag(S(-4.4, -3.6, 30.6, 31.4, 4.6, 'cstone', 'concrete'), 'paifang'), tag(S(3.6, 4.4, 30.6, 31.4, 4.6, 'cstone', 'concrete'), 'paifang'),
     tag(F(-5, 5, 30.5, 31.5, 3.4, 4.6, 'stone', 'concrete'), 'paifang'),
     // ---- canal side: kapok planters, stone landing steps down into the canal, a stone bridge, a moored dragon boat

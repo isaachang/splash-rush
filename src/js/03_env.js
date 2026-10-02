@@ -30,6 +30,8 @@ function buildSkyEnv() {
   pm.dispose();
 }
 function buildSea() {
+  // 西關大屋 is lit warmer (late-afternoon sun on plaster and brick); the other maps keep the cool seaside light
+  if (hemi && hemi.color) { const c = MAP_ID === 'canton'; hemi.color.set(c ? 0xf4e8d4 : 0xd6ecff); hemi.groundColor.set(c ? 0xa89474 : 0x9b8a74); hemi.intensity = c ? 0.75 : 0.55; if (sun && sun.color) sun.color.set(c ? 0xffe6c0 : 0xfff0d8); }
   if (MAP_ID === 'skate') return buildPlaza();
   if (MAP_ID === 'canton') return buildCantonGround();
   const m = new THREE.ShaderMaterial({
@@ -370,6 +372,104 @@ function cantonTex() {
     g.fillStyle = '#2a2622'; g.fillRect(16, Y(3.4), w - 32, 3.4 * px); g.fillStyle = 'rgba(255,214,140,.45)'; g.fillRect(24, Y(3.0), w - 48, 2.2 * px);
     g.fillStyle = '#3a312a'; for (let x = 24; x < w - 24; x += 18) g.fillRect(x, Y(3.0), 3, 2.2 * px); g.fillStyle = '#1d2a22'; g.fillRect(16, Y(4.25), w - 32, 0.75 * px);
   }));
+  // ---- real shops, each with its own frontage (drawn 256 px tall, 96 px per metre wide)
+  const SERIF = '"Noto Serif CJK TC","Noto Serif CJK SC","Songti TC","Songti SC","STSong",serif';
+  const SANS = '"Noto Sans CJK TC","Noto Sans CJK SC","PingFang TC","PingFang SC","Heiti TC",sans-serif';
+  const txt = (g, t, x, y, px, col, font = SERIF, align = 'center', w = 900, maxW = 0) => { g.fillStyle = col; g.font = `${w} ${px}px ${font}`; if (maxW) { let k = 0; while (((g.measureText(t) || {}).width || 0) > maxW && k++ < 60) { px *= 0.95; g.font = `${w} ${px}px ${font}`; } } g.textAlign = align; g.textBaseline = 'middle'; g.fillText(t, x, y); };
+  const vtxt = (g, t, x, y0, px, col, font = SERIF) => { [...t].forEach((c, i) => txt(g, c, x, y0 + (i + 0.5) * px * 1.08, px, col, font)); };
+  const tiles = (g, x, y, w, h, s, c1, c2) => { for (let i = 0; i * s < w; i++) for (let j = 0; j * s < h; j++) { g.fillStyle = (i + j) % 2 ? c1 : c2; g.fillRect(x + i * s, y + j * s, Math.min(s, w - i * s) - 1, Math.min(s, h - j * s) - 1); } };
+  const PXM = 96;
+  const SHOPFACE = {
+    // 黃振龍涼茶: open counter, a row of brass gourd urns, covered bowls, the price board of herbal teas
+    hzl(g, w, h) {
+      g.fillStyle = '#efe6c8'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#0f5a3a'; g.fillRect(0, 0, w, 62); g.fillStyle = '#f2c230'; g.fillRect(0, 62, w, 5);
+      txt(g, '黃振龍涼茶', w / 2, 33, 44, '#f6d443'); txt(g, '始創於一九四〇年代', w - 96, 36, 14, '#f6d443', SANS, 'center', 700);
+      g.fillStyle = '#3a2a1c'; g.fillRect(20, 78, w - 40, 96);                          // shelf wall of herb drawers
+      for (let i = 0; i < Math.floor((w - 60) / 30); i++) for (let j = 0; j < 3; j++) { g.fillStyle = '#6b4a2c'; g.fillRect(28 + i * 30, 84 + j * 30, 26, 26); g.fillStyle = '#d9b36a'; g.fillRect(38 + i * 30, 95 + j * 30, 6, 4); }
+      g.fillStyle = '#0f5a3a'; g.fillRect(0, 174, w, 82); g.fillStyle = '#f2c230'; g.fillRect(0, 174, w, 6);   // counter
+      for (let i = 0; i < 3; i++) { const x = 90 + i * (w - 180) / 2;                       // brass gourds
+        const gr = g.createRadialGradient(x - 8, 135, 2, x, 140, 30); gr.addColorStop(0, '#ffe9a0'); gr.addColorStop(1, '#a8741c'); g.fillStyle = gr;
+        g.beginPath(); g.arc(x, 150, 24, 0, 7); g.fill(); g.beginPath(); g.arc(x, 118, 15, 0, 7); g.fill(); g.fillRect(x - 4, 96, 8, 10); g.fillStyle = '#7a1d18'; g.fillRect(x - 12, 128, 24, 5); }
+      for (let i = 0; i < Math.floor((w - 60) / 46); i++) { const x = 40 + i * 46; if (Math.abs((x - 90) % ((w - 180) / 2)) < 34) continue; g.fillStyle = '#fbfaf2'; g.beginPath(); g.ellipse(x, 168, 16, 7, 0, 0, 7); g.fill(); g.fillStyle = '#3b2412'; g.beginPath(); g.ellipse(x, 166, 12, 4, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(200,230,240,.7)'; g.fillRect(x - 15, 158, 30, 3); }
+      ['斑痧涼茶', '廿四味', '五花茶', '龜苓膏', '酸梅湯', '羅漢果'].forEach((t, i) => { const x = 46 + i * (w - 92) / 5; g.fillStyle = '#f6efd2'; g.fillRect(x - 17, 190, 34, 62); vtxt(g, t, x, 192, 13.5, '#7a1d18'); });
+    },
+    // 源記腸粉 (華貴路): white-tiled street shop, the pull-drawer steam cabinet in an open kitchen window, red menu strips
+    yuanji(g, w, h) {
+      tiles(g, 0, 0, w, h, 16, '#f4f4ee', '#e9ebe4');
+      g.fillStyle = '#fffdf4'; g.fillRect(0, 0, w, 62); g.strokeStyle = '#c0261c'; g.lineWidth = 5; g.strokeRect(4, 4, w - 8, 54);
+      txt(g, '源記腸粉', w / 2 - 60, 33, 44, '#c0261c'); txt(g, '華貴路老舖', w / 2 + 120, 26, 16, '#c0261c', SANS, 'center', 700); txt(g, '腸粉泰斗', w / 2 + 120, 46, 15, '#1f1f1f', SERIF);
+      g.fillStyle = '#20262b'; g.fillRect(24, 78, w * 0.46, 120); g.fillStyle = '#c9d2d6'; g.fillRect(40, 96, w * 0.46 - 32, 96);          // steam cabinet
+      for (let j = 0; j < 4; j++) { g.fillStyle = '#9aa7ad'; g.fillRect(46, 102 + j * 23, w * 0.46 - 44, 19); g.fillStyle = '#5c676d'; g.fillRect(40 + (w * 0.46 - 32) / 2 - 16, 109 + j * 23, 32, 4); }
+      for (let i = 0; i < 9; i++) { g.fillStyle = `rgba(255,255,255,${0.12 + (i % 3) * 0.08})`; g.beginPath(); g.arc(60 + i * (w * 0.46 - 60) / 8, 84 - (i % 2) * 6, 13, 0, 7); g.fill(); }
+      g.fillStyle = '#b8c0c4'; g.fillRect(24, 198, w * 0.46, 58);
+      const mx = w * 0.56; ['鮮蝦腸', '牛肉腸', '豬肝腸', '叉燒腸', '艇仔粥', '牛肉粥'].forEach((t, i) => { const x = mx + i * (w - mx - 24) / 5; g.fillStyle = '#c0261c'; g.fillRect(x - 14, 82, 28, 84); vtxt(g, t, x, 86, 16, '#fff8e0'); });
+      g.fillStyle = '#5a3a22'; for (let i = 0; i < 3; i++) { const x = mx + 20 + i * (w - mx - 60) / 2; g.fillRect(x - 22, 196, 44, 6); g.fillRect(x - 3, 202, 6, 54); g.fillRect(x - 16, 224, 12, 32); g.fillRect(x + 6, 224, 12, 32); }
+    },
+    // 明記腸粉 (龍津西路, since 1981): yellow light-box sign, tables and stools seen through the open front, the boat-congee board
+    mingji(g, w, h) {
+      g.fillStyle = '#e8dcc0'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#f5c518'; g.fillRect(0, 0, w, 62); g.fillStyle = '#b3201a'; g.fillRect(0, 58, w, 6);
+      txt(g, '西關明記腸粉', w / 2, 32, 42, '#b3201a'); txt(g, '1981', 46, 34, 18, '#b3201a', SANS); txt(g, '荔枝灣', w - 56, 34, 17, '#b3201a', SERIF);
+      g.fillStyle = '#3a2c22'; g.fillRect(18, 76, w - 36, 180); g.fillStyle = 'rgba(255,214,150,.35)'; g.fillRect(18, 76, w - 36, 180);
+      for (let i = 0; i < Math.floor((w - 60) / 120); i++) { const x = 80 + i * 120; g.fillStyle = '#f3ead6'; g.beginPath(); g.ellipse(x, 196, 42, 12, 0, 0, 7); g.fill(); g.fillStyle = '#8a5a34'; g.fillRect(x - 4, 200, 8, 50); g.fillStyle = '#c0392b'; [-34, 34].forEach(d => { g.beginPath(); g.ellipse(x + d, 226, 12, 5, 0, 0, 7); g.fill(); g.fillRect(x + d - 2, 228, 4, 26); }); g.fillStyle = '#fff'; g.beginPath(); g.ellipse(x, 192, 20, 5, 0, 0, 7); g.fill(); }
+      g.fillStyle = '#1e3326'; g.fillRect(30, 84, w - 60, 46); ['牛腩腸粉', '艇仔粥', '乾炒牛河', '鹹蛋黃蝦仁腸', '雙皮奶'].forEach((t, i) => txt(g, t, 30 + (i + 0.5) * (w - 60) / 5, 108, 19, '#f6e7a8'));
+      for (let i = 0; i < 5; i++) { g.strokeStyle = '#d8c79a'; g.lineWidth = 2; g.beginPath(); g.moveTo(60 + i * (w - 120) / 4, 76); g.lineTo(60 + i * (w - 120) / 4, 84); g.stroke(); }
+    },
+    // 南信牛奶甜品專家 (第十甫路): red board with gold characters, white tiles, bowls of double-skin milk in a glass case
+    nanxin(g, w, h) {
+      tiles(g, 0, 0, w, h, 20, '#fbfbf6', '#eef3f1');
+      g.fillStyle = '#a3171a'; g.fillRect(0, 0, w, 62); g.strokeStyle = '#e8c15a'; g.lineWidth = 3; g.strokeRect(6, 6, w - 12, 50);
+      txt(g, '南信牛奶甜品專家', w / 2, 32, 38, '#f1cf6b');
+      g.fillStyle = 'rgba(190,225,235,.55)'; g.fillRect(24, 132, w * 0.5, 70); g.strokeStyle = '#8fa3aa'; g.lineWidth = 3; g.strokeRect(24, 132, w * 0.5, 70);
+      for (let i = 0; i < 7; i++) { const x = 52 + i * (w * 0.5 - 56) / 6; g.fillStyle = '#fff'; g.beginPath(); g.ellipse(x, 184, 17, 9, 0, 0, 7); g.fill(); g.fillStyle = '#fff6d8'; g.beginPath(); g.ellipse(x, 181, 13, 5, 0, 0, 7); g.fill(); g.fillStyle = '#c0392b'; g.beginPath(); g.arc(x, 180, 2.5, 0, 7); g.fill(); }
+      g.fillStyle = '#a3171a'; g.fillRect(24, 202, w * 0.5, 54);
+      ['雙皮奶', '薑撞奶', '鳳凰奶糊', '牛三星'].forEach((t, i) => { const x = w * 0.6 + i * (w * 0.4 - 30) / 3; g.fillStyle = '#fff'; g.strokeStyle = '#a3171a'; g.lineWidth = 3; g.fillRect(x - 17, 80, 34, 96); g.strokeRect(x - 17, 80, 34, 96); vtxt(g, t, x, 84, 19, '#a3171a'); });
+      g.fillStyle = '#2b2b2b'; g.fillRect(w * 0.56, 190, w * 0.44 - 20, 66); g.fillStyle = 'rgba(255,220,160,.4)'; g.fillRect(w * 0.56, 190, w * 0.44 - 20, 66);
+    },
+    // 陳添記 (十五甫三巷): a back-lane shop — hand-painted red board, green timber shutters, plates of fish skin on a steel counter
+    chentianji(g, w, h) {
+      g.fillStyle = '#cfc9b8'; g.fillRect(0, 0, w, h); for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(90,80,60,${Math.random() * 0.08})`; g.fillRect(Math.random() * w, Math.random() * h, 3, 2); }
+      g.fillStyle = '#f7f1dc'; g.fillRect(14, 4, w - 28, 56); txt(g, '陳添記', w / 2 - 110, 33, 46, '#b3201a'); txt(g, '祖傳爽魚皮', w / 2 + 90, 24, 22, '#b3201a'); txt(g, '西關老字號', w / 2 + 90, 48, 15, '#1f1f1f', SANS, 'center', 700);
+      g.fillStyle = '#2f6b4f'; [[18, 70], [w - 18 - 70, 70]].forEach(([x, ww]) => { g.fillRect(x, 74, ww, 182); g.fillStyle = '#245640'; for (let j = 0; j < 12; j++) g.fillRect(x + 6, 82 + j * 14, ww - 12, 4); g.fillStyle = '#2f6b4f'; });
+      g.fillStyle = '#26221e'; g.fillRect(96, 74, w - 192, 182);
+      g.fillStyle = '#c4ccd0'; g.fillRect(96, 168, w - 192, 88); g.fillStyle = '#e6ebee'; g.fillRect(96, 168, w - 192, 8);
+      for (let i = 0; i < Math.floor((w - 230) / 58); i++) { const x = 130 + i * 58; g.fillStyle = '#fff'; g.beginPath(); g.ellipse(x, 164, 24, 8, 0, 0, 7); g.fill(); g.fillStyle = '#d8d2bd'; for (let k = 0; k < 6; k++) g.fillRect(x - 16 + k * 5, 154 + (k % 2) * 3, 4, 8); g.fillStyle = '#4c9a4a'; g.fillRect(x - 6, 152, 12, 3); }
+      ['魚皮', '艇仔粥', '豬腸粉'].forEach((t, i) => { g.fillStyle = '#f7f1dc'; g.fillRect(110 + i * 46, 84, 34, 70); vtxt(g, t, 127 + i * 46, 88, 18, '#b3201a'); });
+    },
+    // 皇上皇臘味 (下九路, 1940): red-and-gold board, rows of cured sausages hanging over glass counters
+    hsh(g, w, h) {
+      g.fillStyle = '#f3e7c6'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#c11a1f'; g.fillRect(0, 0, w, 66); g.fillStyle = '#f3c63c'; g.fillRect(0, 62, w, 5);
+      const cx = w / 2 - 150; g.fillStyle = '#f3c63c'; g.beginPath(); g.moveTo(cx - 22, 46); g.lineTo(cx - 22, 22); g.lineTo(cx - 10, 34); g.lineTo(cx, 16); g.lineTo(cx + 10, 34); g.lineTo(cx + 22, 22); g.lineTo(cx + 22, 46); g.fill();
+      txt(g, '皇上皇', w / 2 - 40, 34, 48, '#f6d24a'); txt(g, '臘味', w / 2 + 90, 34, 36, '#fff3c4'); txt(g, '始創一九四〇', w - 80, 36, 14, '#fff3c4', SANS, 'center', 700);
+      g.fillStyle = '#5a3a22'; g.fillRect(16, 82, w - 32, 6);
+      for (let i = 0; i < Math.floor((w - 40) / 13); i++) { const x = 22 + i * 13, L = 70 + (i % 5) * 7; g.strokeStyle = '#d9c9a0'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, 88); g.lineTo(x, 96); g.stroke(); g.fillStyle = i % 4 === 0 ? '#5a1f1a' : i % 3 === 0 ? '#8e2a22' : '#a8382a'; g.fillRect(x - 3.5, 96, 7, L); g.fillStyle = 'rgba(255,230,200,.25)'; g.fillRect(x - 3.5, 96, 2, L); }
+      g.fillStyle = 'rgba(190,225,235,.5)'; g.fillRect(16, 188, w - 32, 34); g.fillStyle = '#c11a1f'; g.fillRect(16, 222, w - 32, 34); txt(g, '臘腸　臘肉　臘鴨　秋風起　食臘味', w / 2, 240, 18, '#f6d24a');
+    },
+    // 吳系茶餐廳: Hong Kong style café — the red-white-blue of the woven carrier bag, a folding iron gate, booth seats, the menu wall
+    wuxi(g, w, h) {
+      const cols = ['#c8202a', '#ffffff', '#1f4fa3', '#ffffff']; for (let i = 0; i * 14 < w; i++) { g.fillStyle = cols[i % 4]; g.fillRect(i * 14, 0, 14, h); }
+      g.fillStyle = '#c8202a'; g.fillRect(0, 0, w, 62); g.fillStyle = '#1f4fa3'; g.fillRect(0, 58, w, 6); txt(g, '吳系茶餐廳', w / 2, 32, 40, '#ffffff', SERIF, 'center', 900, w - 60);
+      g.fillStyle = '#20262b'; g.fillRect(w * 0.08, 74, w * 0.84, h - 74); g.fillStyle = 'rgba(255,214,150,.38)'; g.fillRect(w * 0.08, 74, w * 0.84, h - 74);
+      for (let i = 0; i < 3; i++) { const x = w * 0.16 + i * w * 0.17; g.fillStyle = '#2f6b4f'; g.fillRect(x - 30, 150, 60, 62); g.fillStyle = '#245640'; g.fillRect(x - 30, 150, 60, 8); g.fillStyle = '#e9e2cf'; g.fillRect(x - 22, 176, 44, 6); g.fillStyle = '#7a5a34'; g.fillRect(x - 3, 182, 6, 30); }
+      ['菠蘿油', '絲襪奶茶', '燒鵝飯', '雲吞麵', '八寶飯'].forEach((t2, i) => { const x = w * 0.6 + i * w * 0.062; g.fillStyle = i % 2 ? '#ffffff' : '#fff3d0'; g.fillRect(x - 12, 82, 24, 92); vtxt(g, t2, x, 86, 15, i % 2 ? '#1f4fa3' : '#c8202a'); });
+      g.strokeStyle = '#8f979c'; g.lineWidth = 2; for (let i = 0; i < 7; i++) { const x = w * 0.84 + i * 9; g.beginPath(); g.moveTo(x, 74); g.lineTo(x, h); g.stroke(); for (let y = 84; y < h; y += 18) { g.beginPath(); g.moveTo(x, y); g.lineTo(x + 9, y + 9); g.lineTo(x, y + 18); g.stroke(); } }
+      g.fillStyle = '#c8202a'; g.fillRect(w * 0.08, h - 30, w * 0.74, 30); txt(g, '港式燒味　即叫即做', w * 0.45, h - 14, 16, '#fff', SANS, 'center', 700, w * 0.7);
+    },
+    // 廣州酒家 (文昌南路, 1935): dark-red board with gold characters, "食在廣州第一家", a round moon-gate entrance, manchu windows
+    gzjj(g, w, h) {
+      g.fillStyle = '#efe4c6'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#7a1512'; g.fillRect(0, 0, w, 66); g.strokeStyle = '#f3d98a'; g.lineWidth = 3; g.strokeRect(6, 6, w - 12, 54); txt(g, '廣州酒家', w / 2, 34, 46, '#f3d98a', SERIF, 'center', 900, w - 80);
+      const cx = w / 2; g.fillStyle = '#7a1512'; g.fillRect(cx - 86, 84, 172, h - 84); g.fillStyle = '#231c16'; g.beginPath(); g.arc(cx, 176, 70, 0, 7); g.fill(); g.fillRect(cx - 44, 176, 88, h - 176);
+      g.strokeStyle = '#f3d98a'; g.lineWidth = 5; g.beginPath(); g.arc(cx, 176, 72, 0, 7); g.stroke(); g.fillStyle = 'rgba(255,205,130,.4)'; g.beginPath(); g.arc(cx, 176, 62, 0, 7); g.fill();
+      [w * 0.14, w * 0.86].forEach(x => { g.fillStyle = '#f8f2e3'; g.fillRect(x - 54, 88, 108, 122); manchu(g, x - 48, 94, 96, 110, 4, 5); });
+      [[cx - 112, '食在廣州'], [cx + 112, '第一家']].forEach(([x, t2]) => { g.fillStyle = '#141210'; g.fillRect(x - 15, 84, 30, t2.length * 24 + 10); vtxt(g, t2, x, 88, 21, '#f3d98a'); });
+      g.fillStyle = '#7a1512'; g.fillRect(0, h - 26, w, 26); txt(g, '文昌雞　蝦餃　月餅　始創一九三五', w / 2, h - 12, 15, '#f3d98a', SANS, 'center', 700, w - 30);
+    },
+  };
+  TEX._shopFace = (key, wm, hm) => { const t = canvasTex(Math.round(wm * PXM), Math.round(hm * PXM), (g, w, h) => { g.save(); g.scale(1, h / 256); SHOPFACE[key](g, w, 256); g.restore(); }, false); return t; };
+  TEX._vsign = (text, bg, fg) => canvasTex(96, Math.round(96 * Math.max(3, text.length) * 0.92), (g, w, h) => { g.fillStyle = bg; g.fillRect(0, 0, w, h); g.strokeStyle = fg; g.lineWidth = 5; g.strokeRect(6, 6, w - 12, h - 12); const n = text.length; [...text].forEach((c, i) => txt(g, c, w / 2, 12 + (i + 0.5) * (h - 24) / n, w * 0.6, fg)); }, false);
   // the stone arch under a bridge side (7 m span, CL tall): transparent opening, solid spandrels at the two top corners, a ring of voussoirs
   TEX.archFace = canvasTex(512, 160, (g, w, h) => {
     g.clearRect(0, 0, w, h); const px = w / 7;
@@ -418,12 +518,12 @@ function buildDecorCanton() {
   }));
   // ---- landmarks and shops, different on the two halves (team 0 at +z, team 1 at -z)
   const names = [
-    { tea: '陶陶居', house: '吳系茶餐廳', stall: '蘿蔔牛雜', mansion: '泰華樓', shops: [['黃振龍涼茶', 12, '#0f5a3a', '#f6d443'], ['源記腸粉', 21, '#fffdf4', '#c0261c'], ['南信牛奶甜品專家', 31, '#a3171a', '#f1cf6b']] },
-    { tea: '蓮香樓', house: '廣州酒家', stall: '雞公欖', mansion: '小畫舫齋', shops: [['西關明記腸粉', 13, '#f5c518', '#b3201a'], ['陳添記', 22, '#f7f1dc', '#b3201a'], ['皇上皇臘味', 31, '#c11a1f', '#f6d24a']] },
+    { tea: '陶陶居', house: '吳系茶餐廳', stall: '蘿蔔牛雜', mansion: '泰華樓', hk: 'wuxi', shops: [['黃振龍涼茶', 12, '#0f5a3a', '#f6d443', 'hzl'], ['源記腸粉', 21, '#fffdf4', '#c0261c', 'yuanji'], ['南信牛奶甜品', 31, '#a3171a', '#f1cf6b', 'nanxin']] },
+    { tea: '蓮香樓', house: '廣州酒家', stall: '雞公欖', mansion: '小畫舫齋', hk: 'gzjj', shops: [['明記腸粉', 12, '#f5c518', '#b3201a', 'mingji'], ['陳添記', 21, '#f7f1dc', '#b3201a', 'chentianji'], ['皇上皇臘味', 31, '#c11a1f', '#f6d24a', 'hsh']] },
   ];
   cantonTex();
   const tx = (t, ru, rv) => { const c = t.clone(); c.repeat.set(ru, rv); c.needsUpdate = true; return c; };
-  Object.assign(M, { roof: std(0xffffff, { map: TEX.roofTile }), groof: std(0xffffff, { map: TEX.greenTile, roughness: 0.45 }), dwood: std(0x4a1f14, { roughness: 0.6 }), dark: std(0x1c1a1c, { roughness: 0.9 }), cream: std(0xe9dcc0), manchu: std(0xffffff, { map: TEX.manchu, emissive: 0x332a18, roughness: 0.35 }), redwall: std(0xffffff, { map: TEX.sandstone }) });
+  Object.assign(M, { roof: std(0xffffff, { map: TEX.roofTile }), groof: std(0xffffff, { map: TEX.greenTile, roughness: 0.45 }), dwood: std(0x4a1f14, { roughness: 0.6 }), dark: std(0x1c1a1c, { roughness: 0.9 }), cream: std(0xe9dcc0), manchu: std(0xffffff, { map: TEX.manchu, emissive: 0x332a18, roughness: 0.35 }), redwall: std(0xffffff, { map: TEX.sandstone }), lantern: std(0xd8291c, { emissive: 0x5a0d06, roughness: 0.5 }), flat: std(0x8d857a, { roughness: 0.95 }) });
   // a tiled roof skirt / hip roof: a frustum from the eave rectangle up to a smaller rectangle (inset 0 at the top = a ridge or a point)
   const frustum = (grp, x0, x1, z0, z1, y0, y1, ix, iz, mat) => {
     const A = [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], B = [[x0 + ix, y1, z0 + iz], [x1 - ix, y1, z0 + iz], [x1 - ix, y1, z1 - iz], [x0 + ix, y1, z1 - iz]], pos = [], uv = [];
@@ -441,10 +541,38 @@ function buildDecorCanton() {
     const bx = (x0, x1, y0, y1, z0, z1, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.castShadow = m.receiveShadow = true; G.add(m); return m; };
     const tm = std(t ? 0x2f8f62 : 0xb5362a, { roughness: 0.5 });                       // the team half's accent colour (dragon boat)
     let [x, z] = P(-18, 43.9); sign(n.tea, 9, 1.9, x, CL + 3.45, z, ry(Math.PI), t ? '#7a1512' : '#141210', t ? '#f3d98a' : '#e8c15a');
-    [x, z] = P(-4.96, 21.5); sign(n.house, 5, 1.1, x, CL + 1.75, z, ry(Math.PI / 2), t ? '#7a1512' : '#c8202a', t ? '#f3d98a' : '#ffffff');
     [x, z] = P(3.5, 26.65); sign(n.stall, 2.2, 0.6, x, CL + 0.7, z, ry(0), '#7a1d18', '#ffe39a');
     [x, z] = P(-14.93, 23); sign(n.mansion, 2.6, 0.5, x, CL + 2.72, z, ry(Math.PI / 2));
-    n.shops.forEach(([nm, zc, bg, fg]) => { [x, z] = P(25.96, zc); sign(nm, 7, 0.9, x, CL + 2.05, z, ry(-Math.PI / 2), bg, fg); });
+    // ---- shops under the arcade: each one's own frontage on the back wall (ink doesn't stick to it), its vertical sign on the facade above the deck
+    n.shops.forEach(([nm, zc, bg, fg, key]) => {
+      face(G, TEX._shopFace(key, 8, 3.0), 8, 3.0, 25.97, CL + 1.5, zc, -Math.PI / 2);
+      const L = nm.length * 0.85 + 0.3; const v = face(G, TEX._vsign(nm, bg, fg), 0.95, L, 27.0, CL + 9.6 - L / 2, zc + 3.2, 0, { side: THREE.DoubleSide }); v.castShadow = true; bx(27.0, 27.5, CL + 9.45, CL + 9.55, zc + 3.17, zc + 3.23, M.dark);
+    });
+    // ---- arcade colonnade: plinth and capital on every column, a beam with corner brackets between them, ceiling joists; a balustrade on the deck edge
+    for (let i = 0; i < 8; i++) {
+      const d = (35.7 - 8.3) / 7, c = 8.3 + i * d;
+      bx(20.18, 21.02, CL, CL + 0.32, c - 0.42, c + 0.42, M.cstone); bx(20.24, 20.96, CL + 0.32, CL + 0.4, c - 0.36, c + 0.36, M.cstone);
+      bx(20.22, 20.98, CL + 3.02, CL + 3.12, c - 0.38, c + 0.38, M.white); bx(20.16, 21.04, CL + 3.12, CL + 3.39, c - 0.44, c + 0.44, M.white);
+      bx(20.9, 26, CL + 3.22, CL + 3.39, c - 0.12, c + 0.12, M.plaster);
+      if (i < 7) { bx(20.44, 20.76, CL + 3.08, CL + 3.39, c + 0.3, c + d - 0.3, M.plaster);
+        for (const e of [0, 1]) for (let q = 0; q < 3; q++) { const bz = e ? c + d - 0.44 - q * 0.22 : c + 0.44 + q * 0.22; bx(20.46, 20.74, CL + 2.84 + q * 0.08, CL + 3.08, bz - 0.11, bz + 0.11, M.plaster); } }
+    }
+    bx(20.33, 20.57, CL + 4.55, CL + 4.7, 8, 36, M.white); for (let i = 0; i < 28; i++) bx(20.39, 20.51, CL + 3.8, CL + 4.55, 8.44 + i, 8.56 + i, M.white);
+    // ---- the café on the street (吳系茶餐廳 / 廣州酒家): frontage toward the street centre, a parapet, the big board on the roof
+    face(G, TEX._shopFace(n.hk, 7, 2.4), 7, 2.4, -4.97, CL + 1.2, 21.5, Math.PI / 2);
+    bx(-5.25, -5, CL + 2.4, CL + 2.62, 18, 25, M.cream);
+    { const [sx, sz] = P(-5.12, 21.5); sign(n.house, 5.2, 1.15, sx + sg * 0.01, CL + 3.45, sz, ry(Math.PI / 2), t ? '#7a1512' : '#c8202a', t ? '#f3d98a' : '#ffffff'); sign(n.house, 5.2, 1.15, sx - sg * 0.01, CL + 3.45, sz, ry(-Math.PI / 2), t ? '#7a1512' : '#c8202a', t ? '#f3d98a' : '#ffffff'); }
+    [19.4, 23.6].forEach(pz => bx(-5.17, -5.07, CL + 2.62, CL + 2.9, pz - 0.05, pz + 0.05, M.dark));
+    // ---- street stall: four posts and a striped awning, the pot and its skewers; the cargo trike's wheels and handlebar; bamboo steamers by the café
+    [[2.1, 25.1], [4.9, 25.1], [2.1, 26.5], [4.9, 26.5]].forEach(([px, pz]) => bx(px - 0.04, px + 0.04, CL + 1.1, CL + 3.0, pz - 0.04, pz + 0.04, M.dark));
+    for (let i = 0; i < 6; i++) bx(1.8 + i * 0.57, 1.8 + (i + 1) * 0.57, CL + 3.0, CL + 3.07, 24.8, 26.8, i % 2 ? M.cream : M.red);
+    { const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.36, 0.34, 14), M.dark); pot.position.set(2.9, CL + 1.27, 25.8); G.add(pot); for (let i = 0; i < 7; i++) { const sk = bx(-0.015, 0.015, 0, 0.5, -0.015, 0.015, M.gold); sk.position.set(3.7 + i * 0.16, CL + 1.3, 25.8); sk.rotation.z = -0.35; } }
+    [[13.2, 24.25], [14.8, 24.25], [14, 26.75]].forEach(([wx, wz]) => { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.12, 16), M.dark); w.rotation.x = Math.PI / 2; w.position.set(wx, CL + 0.42, wz); G.add(w); });
+    bx(13.95, 14.05, CL + 0.5, CL + 1.55, 26.7, 26.8, M.dark); bx(13.6, 14.4, CL + 1.5, CL + 1.58, 26.72, 26.8, M.dark);
+    [[-4.3, 25.6, 5], [-3.5, 25.9, 7], [-4.0, 26.6, 4]].forEach(([sx, sz, nS]) => { for (let i = 0; i < nS; i++) { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.17, 14), std(i % 2 ? 0xc9a463 : 0xb89152)); st.position.set(sx, CL + 0.09 + i * 0.18, sz); st.castShadow = true; G.add(st); } });
+    // ---- lantern strings across the street
+    [[15.5, 5.6], [28.2, 5.9]].forEach(([lz, ly]) => { const line = bx(-15, 20.3, CL + ly, CL + ly + 0.025, lz - 0.012, lz + 0.012, M.dark); line.castShadow = false;
+      for (let i = 0; i < 9; i++) { const lx = -12 + i * 3.7; const l = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), M.lantern); l.scale.y = 0.8; l.position.set(lx, CL + ly - 0.32, lz); G.add(l); bx(lx - 0.1, lx + 0.1, CL + ly - 0.1, CL + ly - 0.06, lz - 0.1, lz + 0.1, M.gold); } });
 
     // ---- tea house at the spawn end (out of bounds block): manchu-window facades on its two open sides, a parapet, a green pavilion on the roof
     const tf = cantonTeaFace();
@@ -507,9 +635,9 @@ function buildDecorCanton() {
   for (let z = -ZH - 10; z < ZH + 10; z += 8) for (const sx of [-1, 1]) {
     if (z + 8 > -3.5 && z < 3.5) continue;
     const f = TEX.facade[k++ % TEX.facade.length];
-    boxAt(sx > 0 ? XH + 1.5 : -XH - 11.5, sx > 0 ? XH + 11.5 : -XH - 1.5, CL, CL + 12.8, z, z + 7.9, std(0xffffff, { map: tx(f, 2, 1) }));
+    { const fm = std(0xffffff, { map: tx(f, 2, 1) }); boxAt(sx > 0 ? XH + 1.5 : -XH - 11.5, sx > 0 ? XH + 11.5 : -XH - 1.5, CL, CL + 12.8, z, z + 7.9, [fm, fm, M.flat, M.flat, fm, fm]); }
   }
-  for (const sz of [-1, 1]) for (let i = 0; i < 8; i++) { const x0 = -XH - 11.5 + i * (XH * 2 + 23) / 8; boxAt(x0, x0 + (XH * 2 + 23) / 8 - 0.1, CL, CL + 12.8, sz > 0 ? ZH + 1.5 : -ZH - 11.5, sz > 0 ? ZH + 11.5 : -ZH - 1.5, std(0xffffff, { map: tx(TEX.facade[(i * 3 + (sz > 0 ? 1 : 4)) % TEX.facade.length], 2, 1) })); }
+  for (const sz of [-1, 1]) for (let i = 0; i < 8; i++) { const x0 = -XH - 11.5 + i * (XH * 2 + 23) / 8; const fm = std(0xffffff, { map: tx(TEX.facade[(i * 3 + (sz > 0 ? 1 : 4)) % TEX.facade.length], 2, 1) }); boxAt(x0, x0 + (XH * 2 + 23) / 8 - 0.1, CL, CL + 12.8, sz > 0 ? ZH + 1.5 : -ZH - 11.5, sz > 0 ? ZH + 11.5 : -ZH - 1.5, [fm, fm, M.flat, M.flat, fm, fm]); }
   const wt = TEX.windows, pal = [0xead7a6, 0xe9b9ac, 0xb9d9c2, 0xefe7d6, 0xbccfe1];
   for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283 + 0.3, r = 95 + (i % 3) * 18, h = 26 + (i * 7 % 5) * 7; boxAt(Math.cos(a) * r - 7, Math.cos(a) * r + 7, CL, CL + h, Math.sin(a) * r * 1.3 - 7, Math.sin(a) * r * 1.3 + 7, std(pal[i % 5], { map: tx(wt, 3, 6) })); }
   deco.updateMatrixWorld(true);
