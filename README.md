@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.10.1-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.12.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -54,7 +54,7 @@
 - **阵亡观战**：先看是谁打倒了你，再切到队友视角，等复活时也不无聊
 - **单文件、零依赖**：整个游戏就是一个 HTML 文件，音乐和音效也是程序实时合成的
 
-## 📸 截图
+## 🎬 实机画面
 
 <p align="center">
   <img src="docs/screenshots/title.jpg" width="49%" alt="主页"> <img src="docs/screenshots/lobby.jpg" width="49%" alt="战前准备">
