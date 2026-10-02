@@ -64,7 +64,7 @@
 <p align="center">
   <img src="docs/screenshots/canton-grid.jpg" width="100%" alt="西關大屋地图场景">
 </p>
-<p align="center"><sub>默认场地「西關大屋」· 镇海楼广场、骑楼茶楼街、双层腸粉街骑楼、猎德牌坊、河涌龙舟拱桥、大屋天井趟栊门</sub></p>
+<p align="center"><sub>默认场地「西關大屋」· 镇海楼广场、廣州酒家、吳系茶餐廳、猎德牌坊、河涌龙舟拱桥、大屋天井趟栊门</sub></p>
 
 ## 🛠 开发
 
