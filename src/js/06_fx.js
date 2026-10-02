@@ -106,6 +106,45 @@ const Fx = {
   clear() { this.parts.length = 0; this.rings.forEach(r => r.visible = false); this.beams.forEach(b => b.visible = false); if (this.balls) this.balls.forEach(b => b.visible = false); }
 };
 
+// ---------- ink-surface wake: bright streaks and ripples that lie on the ink (ground, slopes and walls) ----------
+// Drawn additively, so fading a mark out is just fading its colour to black: one draw call per shape.
+const _wq = new THREE.Quaternion(), _wm = new THREE.Matrix4(), _wx = new THREE.Vector3(), _wy = new THREE.Vector3(), _wz = new THREE.Vector3(), _ws = new THREE.Vector3(), _wc = new THREE.Color();
+const Wake = {
+  N: 1000, list: [], streaks: null, rings: null,
+  init() {
+    const mat = () => new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const mk = geo => { const m = new THREE.InstancedMesh(geo, mat(), this.N); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.count = 0; m.setColorAt(0, _col.set('#fff')); m.renderOrder = 2; scene.add(m); return m; };
+    this.streaks = mk(new THREE.CircleGeometry(1, 14).rotateX(-Math.PI / 2));     // stretched into a lens
+    this.rings = mk(new THREE.RingGeometry(0.84, 1, 30).rotateX(-Math.PI / 2));
+  },
+  // o: { ring, x,y,z, n:{x,y,z} surface normal, f:{x,y,z} long axis, v:{x,y,z} drift, w, l (half sizes), grow (/s), life, col, a }
+  add(o) {
+    if (this.list.length >= this.N) this.list.shift();
+    o.max = o.life; o.vx = o.v ? o.v.x : 0; o.vy = o.v ? o.v.y : 0; o.vz = o.v ? o.v.z : 0; this.list.push(o);
+  },
+  ring(x, y, z, n, col, r0, grow, life, a) { this.add({ ring: 1, x, y, z, n, f: null, w: r0, l: r0, grow, life, col, a }); },
+  update(dt) {
+    const L = this.list; let ns = 0, nr = 0;
+    const dr = Math.exp(-1.3 * dt);
+    for (let i = L.length - 1; i >= 0; i--) { const p = L[i]; p.life -= dt; if (p.life <= 0) L.splice(i, 1); }
+    for (const p of L) {
+      p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.vx *= dr; p.vy *= dr; p.vz *= dr;
+      p.w += p.grow * dt; p.l += p.grow * dt * (p.ring ? 1 : 1.6);
+      const k = p.life / p.max, fade = Math.pow(k, 1.3) * Math.min(1, (1 - k) * 14) * p.a;
+      const n = p.n; _wy.set(n.x, n.y, n.z);
+      if (p.f) { _wz.set(p.f.x, p.f.y, p.f.z).addScaledVector(_wy, -(p.f.x * n.x + p.f.y * n.y + p.f.z * n.z)); if (_wz.lengthSq() < 1e-6) _wz.set(1, 0, 0).addScaledVector(_wy, -n.x); }
+      else { _wz.set(0, 0, 1).addScaledVector(_wy, -n.z); if (_wz.lengthSq() < 1e-6) _wz.set(0, 1, 0); }
+      _wz.normalize(); _wx.crossVectors(_wy, _wz);
+      _wm.makeBasis(_wx, _wy, _wz); _ws.set(p.w, 1, p.l); _wm.scale(_ws); _wm.setPosition(p.x, p.y, p.z);
+      _wc.set(p.col).lerp(_col.set('#ffffff'), 0.3).multiplyScalar(fade * 0.4);
+      const m = p.ring ? this.rings : this.streaks, idx = p.ring ? nr++ : ns++;
+      m.setMatrixAt(idx, _wm); m.setColorAt(idx, _wc);
+    }
+    for (const [m, c] of [[this.streaks, ns], [this.rings, nr]]) { m.count = c; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+  },
+  clear() { this.list.length = 0; if (this.streaks) this.streaks.count = this.rings.count = 0; }
+};
+
 /* ======================================================== PROJECTILES */
 const CURL_FUSE = 1.2, CURL_CRUISE = 0.65;       // curling bomb: fuse, and how long it slides at full speed before braking
 const Proj = {

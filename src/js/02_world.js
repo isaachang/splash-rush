@@ -372,6 +372,13 @@ function groundBelow(x, z, y, step, noBridge) {
   if (!noBridge) for (const b of BRIDGES) if (b.h > h && b.h <= y + step && inRect(b, x, z)) h = b.h;
   return h;
 }
+// surface normal of the ground under a point (for things that must lie on slopes)
+function surfNormal(x, y, z) {
+  const e = 0.25, h = (ax, az) => groundBelow(x + ax, z + az, y + 0.3, 0.3, true);
+  let gx = (h(e, 0) - h(-e, 0)) / (2 * e), gz = (h(0, e) - h(0, -e)) / (2 * e);
+  if (Math.abs(gx) > 1.2 || Math.abs(gz) > 1.2) gx = gz = 0;               // a kerb or a ledge under the probe, not a slope
+  const l = Math.hypot(gx, 1, gz); return { x: -gx / l, y: 1 / l, z: -gz / l };
+}
 // is point inside solid geometry?  (true = the ground / terrain, else the block it is in)
 function solidAt(x, y, z) {
   if (y < 0) return true;

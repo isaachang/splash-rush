@@ -341,7 +341,7 @@ function spawnTeams() {
 function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProjectionMatrix(); }
 function startMatch() {
   Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
-  applyPalette(); resetPaint(); Fx.clear(); Proj.clear();
+  applyPalette(); resetPaint(); Fx.clear(); Wake.clear(); Proj.clear();
   spawnTeams(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
@@ -462,7 +462,7 @@ function showResults() {
 function resetToAttract() {
   if (G.state === 'title') return;
   G.state = 'title'; G.titleT = 0; clearChars(); resetFov();
-  Fx.clear(); Proj.clear(); applyPalette(); resetPaint();
+  Fx.clear(); Wake.clear(); Proj.clear(); applyPalette(); resetPaint();
   show('hud', false); show('results', false);
   Sfx.music('title');
 }
@@ -590,7 +590,7 @@ function mapFadeHold() {
 }
 // tear down the map-specific scene (arena, sea / plaza, decor) and build the chosen map's
 function loadMap(id) {
-  resetToAttract(); Fx.clear(); Proj.clear();
+  resetToAttract(); Fx.clear(); Wake.clear(); Proj.clear();
   const keep = new Set(Object.values(TEX)); for (const k in MAP_CACHE) if (MAP_CACHE[k].layout) keep.add(MAP_CACHE[k].layout);
   (WORLD.objs || []).forEach(o => {
     scene.remove(o);
@@ -1087,7 +1087,7 @@ function loop() {
       if (G.state !== 'intro') updateCamera(dt);
       HUD.update(dt);
     }
-    Proj.update(dt); Cover.update(dt); Fx.update(dt); Barrier.update(dt, t);
+    Proj.update(dt); Cover.update(dt); Fx.update(dt); Wake.update(dt); Barrier.update(dt, t);
     uploadPaint(); updateWorld(t, dt);
   }
   G.frameN = (G.frameN || 0) + 1;
@@ -1175,7 +1175,7 @@ function boot() {
   initPaint();
   initGeo();
   buildSkyEnv(); buildWorld();
-  Fx.init(); Proj.init(); Barrier.init(); ScreenInk.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI(); Preview.init();
+  Fx.init(); Wake.init(); Proj.init(); Barrier.init(); ScreenInk.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI(); Preview.init();
   applyPalette();
   renderer.compile(scene, camera);
   G.state = 'title';
