@@ -3,16 +3,16 @@
    every system below reads; switching maps (setMap + loadMap in the game
    module) rebuilds the world in place, without reloading the page.        */
 const MAP_LIST = {
+  canton: { id: 'canton', name: '西關大屋', en: 'XIGUAN MANSION', XH: 26, ZH: 52, cull: true, size: '52 × 104 米', tags: ['河涌石桥', '骑楼上下两层', '镇海楼'], desc: '从陶陶居打到莲香楼：穿过猎德牌坊，抢下河涌龙舟。广州人的老规矩，饮茶先霸位' },
   dock: { id: 'dock', name: '潮汐码头广场', en: 'TIDE DOCK PLAZA', XH: 28, ZH: 46, size: '56 × 92 米', tags: ['集装箱', '中路开阔', '两侧高台'], desc: '码头上的集装箱广场，中路开阔、两侧有高台' },
-  skate: { id: 'skate', name: '墨浪滑板场', en: 'RUSH SKATEPARK', XH: 25.5, ZH: 55.5, cull: true, spawnSlots: [[-1.7, -0.5], [-0.6, 0.7], [0.6, -0.5], [1.7, 0.7]], size: '51 × 111 米', tags: ['S 形泳池', '中央高塔', '铁网走道'], desc: '城市滑板公园：S 形下沉泳池、波浪外墙、中央高塔和铁网走道' },
-  canton: { id: 'canton', name: '西關大屋', en: 'XIGUAN MANSION', XH: 26, ZH: 52, cull: true, size: '52 × 104 米', tags: ['河涌石桥', '骑楼上下两层', '镇海楼'], desc: '老西关的街：骑楼、西关大屋、一条河涌和三座桥，正中间是镇海楼' }
+  skate: { id: 'skate', name: '墨浪滑板场', en: 'RUSH SKATEPARK', XH: 25.5, ZH: 55.5, cull: true, spawnSlots: [[-1.7, -0.5], [-0.6, 0.7], [0.6, -0.5], [1.7, 0.7]], size: '51 × 111 米', tags: ['S 形泳池', '中央高塔', '铁网走道'], desc: '城市滑板公园：S 形下沉泳池、波浪外墙、中央高塔和铁网走道' }
 };
 const MAP_KEY = 'splashrush.map';
 let MAP_ID = (() => {
   if (typeof SR_MAP !== 'undefined' && MAP_LIST[SR_MAP]) return SR_MAP;     // tests / tools
   try { const q = new URLSearchParams(location.search).get('map'); if (q && MAP_LIST[q]) return q; } catch (e) { }
   try { const v = localStorage.getItem(MAP_KEY); if (v && MAP_LIST[v]) return v; } catch (e) { }
-  return 'dock';
+  return 'canton';                                                           // a new player starts on the newest map
 })();
 const CELL = 0.14;
 let MAP, XH, ZH, NX, NZ, PSX, PSZ, SPAWN, DECK;

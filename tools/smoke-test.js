@@ -20,7 +20,7 @@ function makeSandbox() {
   const quiet = Object.assign({}, console, { warn() { } });
   const g = { document, console: quiet, Math, Date, performance, setTimeout: () => 0, clearTimeout() { }, setInterval: () => 0, clearInterval() { }, innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1, requestAnimationFrame: () => 0, addEventListener: (n, f) => { (listeners[n] = listeners[n] || []).push(f); } };
   g.window = g; g.globalThis = g; vm.createContext(g);
-  if (process.env.SR_MAP) g.SR_MAP = process.env.SR_MAP;             // which map to boot (default: the dock)
+  g.SR_MAP = process.env.SR_MAP || 'dock';             // which map to boot (default: the dock)
   vm.runInContext(read('vendor/three.min.js'), g, { filename: 'three.min.js' });
   vm.runInContext(`THREE.WebGLRenderer = class { constructor(){ this.shadowMap = {}; } setSize(){} setPixelRatio(){} render(){} compile(){} };
     THREE.PMREMGenerator = class { fromScene(){ return { texture: null }; } dispose(){} };`, g);

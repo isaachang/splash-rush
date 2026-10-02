@@ -18,7 +18,7 @@ function makeSandbox() {
   const document = { getElementById: id => els[id] || (els[id] = el(id)), createElement: t => el(t), createElementNS: () => el('svg'), querySelectorAll: () => [], addEventListener() { }, documentElement: el('html'), pointerLockElement: null, exitPointerLock() { } };
   const quiet = Object.assign({}, console, { warn() { } });
   const g = { document, console: quiet, Math, Date, performance, setTimeout: () => 0, clearTimeout() { }, setInterval: () => 0, clearInterval() { }, innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1, requestAnimationFrame: () => 0, addEventListener: (n, f) => { (listeners[n] = listeners[n] || []).push(f); } };
-  g.window = g; g.globalThis = g; vm.createContext(g);
+  g.window = g; g.globalThis = g; g.SR_MAP = 'dock'; vm.createContext(g);       // these checks are written for the dock
   vm.runInContext(read('vendor/three.min.js'), g, { filename: 'three.min.js' });
   vm.runInContext(`THREE.WebGLRenderer = class { constructor(){ this.shadowMap = {}; } setSize(){} setPixelRatio(){} render(){} compile(){} };
     THREE.PMREMGenerator = class { fromScene(){ return { texture: null }; } dispose(){} };`, g);
