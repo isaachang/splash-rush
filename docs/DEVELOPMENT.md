@@ -36,6 +36,8 @@ node tools/smoke-test.js      # 自动跑完整对局，必须显示 SMOKE TEST 
 node tools/feature-test.js    # 逐项验证核心机制，必须全部 PASS
 node tools/map-test.js        # 改了滑板场（或地形代码）时跑，必须 ALL MAP TESTS PASSED
 node tools/canton-test.js     # 改了西關大屋（或悬空方块、涂地分层）时跑，必须 ALL CANTON TESTS PASSED
+node tools/ai-test.js         # 改了机器人、寻路或地图地形时跑，必须 ALL AI TESTS PASSED
+node tools/ai-bench.js canton 2 1 12   # 调机器人强弱时用：全电脑对打，看胜场、涂地、击倒和卡住的秒数（不是必过项）
 open index.html               # 自己打开试玩
 
 # 4. 提交：改一小块就提交一次，每次提交都应该是能打包、能运行的状态

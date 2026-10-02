@@ -100,7 +100,7 @@ class Character {
     this.name = name; this.team = team; this.isPlayer = !!isPlayer;
     this.weapon = WEAPONS[opts.weapon] || WEAPONS.rifle;
     // character: body + stats (hp, speed, ink tank); the look comes from the character
-    this.cs = CHARACTERS[opts.char] || CHARACTERS.man; this.maxHp = this.cs.hp; this.inkK = this.cs.inkCap;
+    this.cs = CHARACTERS[opts.char] || CHARACTERS.man; const vip = isPlayer && vipOn(); this.maxHp = this.cs.hp * (vip ? VIP_HP : 1); this.inkK = this.cs.inkCap * (vip ? VIP_INK : 1);   // (Karita's mode: four times the health, three times the ink)
     this.subId = this.cs.sub || this.weapon.sub;              // sub weapon (E) belongs to the character
     this.look = Object.assign({}, opts.look || randomLook(), this.cs.look);
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3();
@@ -301,7 +301,7 @@ class Character {
   }
   onOwnDeck() { const d = DECK[this.team]; return this.pos.y > 1.9 && inRect(d, this.pos.x, this.pos.z); }
   inOwnBarrier() { return inBarrier(this.team, this.pos); }
-  invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.state === 'sjfly' || this.inOwnBarrier(); }
+  invuln() { return this.invulnT > 0 || !!this.sp || this.state === 'drop' || this.state === 'sjfly' || this.inOwnBarrier() || (this.isPlayer && devGod()); }
   // got hit by a bullet: flinch back a little and flash
   onHit(dir, dmg) {
     const kk = this.cs.knockK;                       // heavy characters barely flinch or get pushed
@@ -390,7 +390,7 @@ class Character {
     const sp = SPAWN[this.team]; this.state = 'drop'; this.alive = true; this.hp = this.maxHp; this.ink = 100;
     // super jump straight to a chosen teammate (player picks on the map; bots sometimes jump to the front)
     let tgt = this.canJumpTo(this.jumpTarget) ? this.jumpTarget : null; this.jumpTarget = null;
-    if (!tgt && !this.isPlayer && Math.random() < 0.4) { const opts = CHARS.filter(c => this.canJumpTo(c) && !c.inOwnBarrier()); if (opts.length) tgt = pick(opts); }
+    if (!tgt && (!this.isPlayer || G.pilot) && G.squads) tgt = G.squads[this.team].jumpPick(this);          // bots: the squad says who (if anyone) to land beside
     this.pos.set(sp.x + rand(-2.5, 2.5), sp.y + 24, sp.z + rand(-1.5, 1.5)); this.dropY = sp.y; this.dropSJ = false;
     this.vel.set(0, -30, 0);
     this.aimYaw = this.yaw = this.bodyYaw = sp.yaw; this.aimPitch = 0;
@@ -559,6 +559,7 @@ class Character {
     const rk = this.cs.inkRegen * (W.inkRegenK || 1);
     if (this.submerged) { this.ink = Math.min(100, this.ink + 40 * dt * rk); }
     else if (T - this.lastShot > (W.regenDelay ?? 0.6)) this.ink = Math.min(100, this.ink + (this.swim ? 12 : 6.5) * dt * rk);
+    if (this.isPlayer && devGod()) this.ink = 100;                      // developer mode: the tank never runs down
     // regen like the original: starts after 1 s without damage; 12.5/s standing, 100/s submerged in own ink
     if (T - this.lastHurt > 1.0 && !(this.inEnemy && !this.invuln())) this.hp = Math.min(this.maxHp, this.hp + (this.submerged ? 100 : 12.5) * (this.maxHp / 100) * dt);
     // enemy ink: ~30 HP/s but never below 50

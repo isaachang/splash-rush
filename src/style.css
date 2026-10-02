@@ -525,3 +525,47 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 #cineSkip svg{width:28px;height:28px}
 #cineSkip kbd{font:inherit;border:1.5px solid rgba(255,255,255,.6);border-radius:5px;padding:3px 7px}
 #hud.cine #cineSkip,#cineTitle.on,#cineCap.on{opacity:1}
+
+/* ---------- developer mode / Karita's mode: the feedback when a secret name is entered ---------- */
+.pnameWrap{position:relative}
+.pnameWrap.dev input{background:linear-gradient(90deg,var(--c0),#ffe45c,var(--c1),var(--c0));background-size:300% 100%;color:#fff;-webkit-text-stroke:1px #111;paint-order:stroke fill;letter-spacing:6px;animation:devInk 3s linear infinite;box-shadow:0 0 0 3px #111,0 0 22px rgba(255,228,92,.8)}
+.pnameWrap.shake{animation:devShake .45s cubic-bezier(.3,1.6,.5,1)}
+.pnameWrap.ok input{animation:devOk .5s ease}
+.devStamp{position:absolute;right:-16px;top:-30px;display:none;flex-direction:column;align-items:center;line-height:1.15;font-size:15px;font-weight:900;letter-spacing:2px;color:#111;background:#ffe45c;border:4px solid #111;border-radius:14px;padding:5px 12px 6px;box-shadow:0 5px 0 #111;transform:rotate(9deg);pointer-events:none;white-space:nowrap}
+.devStamp b{position:absolute;left:-18px;top:-16px;width:34px;height:34px;border-radius:50%;background:var(--c0);border:4px solid #111;color:#fff;font-size:22px;line-height:24px;text-align:center;box-shadow:0 3px 0 #111}
+.devStamp small{font-size:10px;letter-spacing:1px;opacity:.75}
+.pnameWrap.dev .devStamp{display:flex}
+.pnameWrap.slam .devStamp,.pnameWrap.slam .vipStamp{animation:devSlam .6s cubic-bezier(.2,1.7,.4,1) both}
+.pnameWrap.drop.wasDev .devStamp,.pnameWrap.drop.wasVip .vipStamp{display:flex;animation:devDrop .7s cubic-bezier(.5,0,.9,.4) both}
+@keyframes devInk{to{background-position:300% 0}}
+@keyframes devShake{0%{transform:translateX(0) rotate(0)}20%{transform:translateX(-9px) rotate(-2deg)}45%{transform:translateX(8px) rotate(2deg)}70%{transform:translateX(-4px) rotate(-1deg)}100%{transform:none}}
+@keyframes devOk{0%{box-shadow:0 0 0 0 rgba(125,255,154,.9)}100%{box-shadow:0 0 0 14px rgba(125,255,154,0)}}
+@keyframes devSlam{0%{transform:rotate(-30deg) scale(3.2);opacity:0}55%{transform:rotate(12deg) scale(.9);opacity:1}100%{transform:rotate(9deg) scale(1)}}
+@keyframes devDrop{0%{transform:rotate(9deg)}30%{transform:rotate(-14deg) translateY(-6px)}100%{transform:rotate(60deg) translateY(120vh);opacity:.2}}
+#devFx{position:fixed;inset:0;z-index:35;pointer-events:none;overflow:hidden}
+#devFx svg{position:absolute;filter:drop-shadow(0 6px 0 rgba(0,0,0,.3));animation:devSplat 1.5s cubic-bezier(.2,1.4,.4,1) both}
+#devFx .devWord{position:absolute;left:0;right:0;top:36%;text-align:center;font-size:clamp(46px,7.5vw,104px);font-weight:900;font-style:italic;color:#fff;-webkit-text-stroke:6px #111;paint-order:stroke fill;text-shadow:0 8px 0 #111;animation:devWord 1.7s cubic-bezier(.2,1.6,.4,1) both}
+#devFx .devWord small{display:block;margin-top:8px;font-size:.26em;font-style:normal;letter-spacing:6px;-webkit-text-stroke:3px #111;color:#ffe45c;text-shadow:0 4px 0 #111}
+@keyframes devSplat{0%{transform:translate(var(--fx),var(--fy)) scale(.1) rotate(0);opacity:0}18%{opacity:.95}35%{transform:translate(0,0) scale(1) rotate(var(--fr));opacity:.95}80%{opacity:.85}100%{transform:translate(0,14px) scale(1.04) rotate(var(--fr));opacity:0}}
+@keyframes devWord{0%{transform:scale(.2) rotate(-12deg);opacity:0}22%{transform:scale(1.12) rotate(-4deg);opacity:1}32%{transform:scale(1) rotate(-4deg)}78%{transform:scale(1) rotate(-4deg);opacity:1}100%{transform:scale(1.25) rotate(-4deg);opacity:0}}
+/* Karita */
+.pnameWrap.vip input{background:linear-gradient(90deg,#ff5a8a,#ffb3c9,#ffe45c,#ff8fb1,#ff5a8a);background-size:300% 100%;color:#fff;-webkit-text-stroke:1px #111;paint-order:stroke fill;letter-spacing:5px;font-style:italic;animation:devInk 4s linear infinite;box-shadow:0 0 0 3px #111,0 0 24px rgba(255,120,170,.85)}
+.vipStamp{position:absolute;right:-16px;top:-32px;display:none;flex-direction:column;align-items:center;line-height:1.15;font-size:15px;font-weight:900;letter-spacing:1px;color:#fff;-webkit-text-stroke:.6px #111;background:#ff5a8a;border:4px solid #111;border-radius:16px;padding:5px 14px 6px;box-shadow:0 5px 0 #111;transform:rotate(7deg);pointer-events:none;white-space:nowrap}
+.vipStamp b{position:absolute;left:-18px;top:-16px;width:34px;height:34px;border-radius:50%;background:#fff;border:4px solid #111;color:#ff3d77;-webkit-text-stroke:0;font-size:19px;line-height:27px;text-align:center;box-shadow:0 3px 0 #111;animation:vipBeat 1.1s ease-in-out infinite}
+.vipStamp small{font-size:10px;letter-spacing:1px;color:#fff3c4;-webkit-text-stroke:0}
+.pnameWrap.vip .vipStamp{display:flex}
+@keyframes vipBeat{0%,100%{transform:scale(1)}18%{transform:scale(1.22)}36%{transform:scale(1)}54%{transform:scale(1.14)}}
+#devFx.vipFx{background:radial-gradient(ellipse at 50% 45%,rgba(255,120,170,.28),rgba(255,120,170,0) 65%);animation:vipGlow 4.2s ease both}
+#devFx.vipFx svg{bottom:-140px;top:auto;filter:drop-shadow(0 5px 0 rgba(0,0,0,.25));animation:vipRise 3s cubic-bezier(.3,.6,.4,1) both}
+#devFx .vipWord{position:absolute;left:0;right:0;top:27%;display:flex;flex-direction:column;align-items:center;gap:6px;animation:vipWordIn 4.1s ease both}
+#devFx .vipWord i{font-style:normal;font-size:clamp(20px,2.6vw,34px);font-weight:900;letter-spacing:14px;color:#fff;-webkit-text-stroke:3px #111;paint-order:stroke fill;text-shadow:0 4px 0 #111}
+#devFx .vipWord b{font-size:clamp(70px,12vw,168px);font-weight:900;font-style:italic;line-height:1;color:#fff;-webkit-text-stroke:7px #111;paint-order:stroke fill;text-shadow:0 9px 0 #ff5a8a,0 12px 0 #111;display:flex;align-items:flex-end}
+#devFx .vipWord b span{display:inline-block;animation:vipLetter .55s cubic-bezier(.2,1.8,.4,1) both}
+#devFx .vipWord b em{font-style:normal;font-size:.5em;color:#ff3d77;margin-left:.12em;-webkit-text-stroke:5px #111;text-shadow:0 5px 0 #111;animation:vipLetter .55s 1s cubic-bezier(.2,1.8,.4,1) both,vipBeat 1.1s 1.6s ease-in-out infinite}
+#devFx .vipWord small{margin-top:10px;font-size:clamp(14px,1.7vw,22px);font-weight:900;letter-spacing:4px;color:#111;background:#ffe45c;border:4px solid #111;border-radius:30px;padding:5px 22px;box-shadow:0 5px 0 #111;transform:rotate(-2deg);animation:pop .5s 1.25s cubic-bezier(.2,1.6,.4,1) both}
+#devFx .vipWord u{text-decoration:none;font-size:clamp(13px,1.4vw,18px);font-weight:700;letter-spacing:3px;color:#fff;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.6);margin-top:8px;animation:vipFade 1s 1.7s both}
+@keyframes vipRise{0%{transform:translate(0,0) rotate(0) scale(.6);opacity:0}12%{opacity:.95}50%{transform:translate(var(--sw),-62vh) rotate(var(--fr)) scale(1)}85%{opacity:.9}100%{transform:translate(calc(var(--sw) * -1),-125vh) rotate(calc(var(--fr) * -1)) scale(1.05);opacity:0}}
+@keyframes vipLetter{0%{transform:translateY(60px) scale(.3) rotate(-20deg);opacity:0}100%{transform:none;opacity:1}}
+@keyframes vipWordIn{0%{opacity:1}86%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-24px)}}
+@keyframes vipFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes vipGlow{0%{opacity:0}12%{opacity:1}85%{opacity:1}100%{opacity:0}}
