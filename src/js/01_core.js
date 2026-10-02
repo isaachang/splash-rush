@@ -364,6 +364,17 @@ function buildTextures() {
     for (let r = 0; r < 4; r++) for (let c = -1; c < 2; c++) { g.fillStyle = tone(178, 168, 148, rr(0.94, 1.04)); g.fillRect(c * 128 + (r % 2) * 64 + 2, r * 64 + 2, 124, 60); }
     speckle(g, w, h, 2500, 0.09);
   });
+  TEX.sandstone = canvasTex(256, 256, (g, w, h) => {    // 紅砂岩: the old city wall under Zhenhai Tower (texture = 2 m)
+    g.fillStyle = '#4a221b'; g.fillRect(0, 0, w, h);
+    for (let r = 0; r < 4; r++) for (let c = -1; c < 2; c++) { g.fillStyle = tone(150, 62, 48, rr(0.88, 1.08)); g.fillRect(c * 128 + (r % 2) * 64 + 2, r * 64 + 2, 124, 60); }
+    speckle(g, w, h, 2500, 0.1);
+  });
+  TEX.hull = canvasTex(256, 128, (g, w, h) => {         // dragon boat hull: lacquered planks, a gold line under the gunwale
+    g.fillStyle = '#7c2219'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 26) { g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(0, y, w, 2); }
+    for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? '40,8,4' : '190,90,60'},${rr(0.04, 0.14)})`; g.fillRect(rr(0, w), rr(0, h), rr(20, 70), 1.5); }
+    g.fillStyle = '#d8a640'; g.fillRect(0, 10, w, 5);
+  });
   // skatepark: smooth pool concrete, wooden ramps, grass / hedges, see-through grate
   TEX.skate = canvasTex(512, 512, (g, w, h) => {
     g.fillStyle = '#d9dde2'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2600, 0.07); speckle(g, w, h, 900, 0.12, false);

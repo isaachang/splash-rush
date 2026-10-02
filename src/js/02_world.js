@@ -245,16 +245,19 @@ function defineCanton() {
     S(-7, -5, 6, 8, 0.5, 'cstone', 'grass'), S(10, 12, 5.5, 7.5, 0.5, 'cstone', 'grass'),
     // (four 0.44 m steps running straight out from the bank, 3 m wide: walk up them toward the street)
     ...[[-12, -9], [20, 23]].flatMap(([x0, x1]) => [0, 1, 2, 3].map(k => box(x0, x1, 2.9 - k * 0.6, 3.5 - k * 0.6, CL - 0.44 * (k + 1), 'cstone', 'paving'))),
-    tag(F(14, 18, -3.5, 3.5, -0.3, 0, 'stone', 'paving', { navTop: true }), 'bridge'),
-    tag(box(8.5, 18, 0.2, 1.4, 0.7, 'crate', 'wood'), 'boat'),
+    tag(F(14, 18, -3.5, 3.5, -0.3, 0, 'stone', 'flag', { navTop: true }), 'bridge'),
+    // (low stone parapets: you step over them to drop into the canal)
+    F(14, 14.3, -3.5, 3.5, 0, 0.5, 'cstone', 'flag', ON), F(17.7, 18, -3.5, 3.5, 0, 0.5, 'cstone', 'flag', ON),
+    tag(box(8.5, 18, 0.2, 1.4, 0.7, 'hull', 'wood'), 'boat'),
     // ---- beside the tower: two steps of the old city wall (jump 1 m, then 2 m)
-    F(2.5, 5, -2.5, 0, 0, 2.0, 'brick', 'paving', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'brick', 'paving', ON),
+    F(2.5, 5, -2.5, 0, 0, 2.0, 'redwall', 'flag', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'redwall', 'flag', ON),
   ];
   for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'plaster', 'concrete'), 'column')); }
   half.forEach(s => { SOLIDS.push(s); SOLIDS.push(Object.assign(mirrorSolid(s), { team1: true })); });
   // centre: a square deck over the canal (only squids fit underneath), Zhenhai Tower on it — climb its inked walls to the 4 m terrace
-  SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'stone', 'paving', { navTop: true }), 'deck'));
-  SOLIDS.push(tag(F(-2.5, 2.5, -2.5, 2.5, 0, 4.0, 'contR', 'tile', ON), 'tower'), tag(F(-1, 1, -1, 1, 0, 8.2, 'contR', 'tile', ON), 'towerTop'));
+  SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'stone', 'flag', { navTop: true }), 'deck'));
+  [-1, 1].forEach(sg => SOLIDS.push(Object.assign(F(sg > 0 ? 6.7 : -7, sg > 0 ? 7 : -6.7, -3.5, 3.5, 0, 0.5, 'cstone', 'flag', ON), sg < 0 ? { team1: true } : {})));
+  SOLIDS.push(tag(F(-2.5, 2.5, -2.5, 2.5, 0, 4.0, 'redwall', 'tile', ON), 'tower'), tag(F(-1, 1, -1, 1, 0, 8.2, 'redwall', 'tile', ON), 'towerTop'));
   // perimeter walls (only the inner face takes ink)
   const B = CL + 3.4;
   SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'plaster'), { bound: '-x' }));
@@ -617,7 +620,7 @@ function uploadPaint() {
 const PU = {
   noiseMap: { value: null }, teamCol0: { value: new THREE.Color() }, teamCol1: { value: new THREE.Color() },
   paintOrigin: { value: new THREE.Vector2(-XH, -ZH) }, paintSize: { value: new THREE.Vector2(PSX, PSZ) },
-  floorPaint: { value: null }, wallPaint: { value: null }, layoutMap: { value: null },
+  floorPaint: { value: null }, wallPaint: { value: null }, layoutMap: { value: null }, inkRelief: { value: 0 },
   floorPaint2: { value: null }, layerMap: { value: null }
 };
 function paintMat(opts, mode, layout) {
@@ -625,7 +628,7 @@ function paintMat(opts, mode, layout) {
   const floor = mode === 'floor';
   m.onBeforeCompile = sh => {
     sh.uniforms.paintMap = floor ? PU.floorPaint : PU.wallPaint;
-    ['noiseMap', 'teamCol0', 'teamCol1', 'paintOrigin', 'paintSize', 'layoutMap'].forEach(k => sh.uniforms[k] = PU[k]);
+    ['noiseMap', 'teamCol0', 'teamCol1', 'paintOrigin', 'paintSize', 'layoutMap', 'inkRelief'].forEach(k => sh.uniforms[k] = PU[k]);
     if (floor) { sh.uniforms.paintMap2 = PU.floorPaint2; sh.uniforms.layerMap = PU.layerMap; }
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
@@ -635,7 +638,7 @@ ${floor ? 'varying float vPY;' : 'attribute vec2 paintUv; attribute vec2 noiseUv
 ${floor ? 'vec4 pwp = modelMatrix * vec4(transformed, 1.0); vPUv = (pwp.xz - paintOrigin) / paintSize; vNUv = pwp.xz; vPY = pwp.y;' : 'vPUv = paintUv; vNUv = noiseUv;'}`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-uniform sampler2D paintMap; uniform sampler2D noiseMap; uniform sampler2D layoutMap; uniform vec3 teamCol0; uniform vec3 teamCol1;
+uniform sampler2D paintMap; uniform sampler2D noiseMap; uniform sampler2D layoutMap; uniform vec3 teamCol0; uniform vec3 teamCol1; uniform float inkRelief;
 varying vec2 vPUv; varying vec2 vNUv;
 ${floor ? `uniform sampler2D paintMap2; uniform sampler2D layerMap; varying float vPY;
 vec4 pSample(vec2 uv){ vec4 li = texture2D(layerMap, uv); vec4 a = texture2D(paintMap, uv); vec4 b = texture2D(paintMap2, uv); return (li.a > 0.5 && vPY < li.r * 32.0 - 8.0) ? b : a; }` : 'vec4 pSample(vec2 uv){ return texture2D(paintMap, uv); }'}
@@ -647,12 +650,17 @@ vec3 inkPerturb(vec3 sp, vec3 sn, vec2 dH, float fd){
   return normalize(abs(det) * sn - gr);
 }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
+float relief = 0.0;
+#ifdef USE_MAP
+{ float l0 = dot(sampledDiffuseColor.rgb, vec3(0.333)), l1 = dot(texture2D(map, vMapUv, 5.0).rgb, vec3(0.333));   // joints and grooves of the surface under the ink
+  relief = clamp((l0 - l1) / max(l1, 0.08), -0.5, 0.25) * inkRelief; }
+#endif
 ${layout ? 'vec4 lay = texture2D(layoutMap, vPUv); diffuseColor.rgb = mix(diffuseColor.rgb, lay.rgb, lay.a);' : ''}
 vec4 pp = pSample(vPUv);
 float fld = max(pp.r, pp.g) + (inkNoise(vNUv)-0.5)*0.34;
 float inkA = smoothstep(0.46, 0.54, fld);
 vec3 inkC = mix(teamCol0, teamCol1, smoothstep(-0.1, 0.1, pp.g - pp.r));
-inkC *= mix(0.7, 1.05, smoothstep(0.5, 0.95, fld));
+inkC *= mix(0.7, 1.05, smoothstep(0.5, 0.95, fld)) * (1.0 + relief);
 diffuseColor.rgb = mix(diffuseColor.rgb, inkC, inkA);`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
 roughnessFactor = mix(roughnessFactor, 0.13, inkA);`)
@@ -800,12 +808,14 @@ const WALL_STYLE = {
   canal: { tex: 'canal', su: 4, vFull: true, color: 0xffffff, rough: 0.95 },
   plaster: { tex: 'plaster', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
   cstone: { tex: 'cstone', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.85 },
+  redwall: { tex: 'sandstone', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.9 },
+  hull: { tex: 'hull', su: 2, vFull: true, color: 0xffffff, rough: 0.5 },
 };
-const TOP_STYLE = { paving: { tex: 'granite', s: 4, rough: 0.9 }, tile: { tex: 'terrace', s: 2.4, rough: 0.8 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
+const TOP_STYLE = { paving: { tex: 'granite', s: 4, rough: 0.9 }, tile: { tex: 'terrace', s: 2.4, rough: 0.8 }, flag: { tex: 'cstone', s: 2, rough: 0.85 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
 let arenaGroup;
 function buildArena() {
   arenaGroup = new THREE.Group(); scene.add(arenaGroup);
-  PU.noiseMap.value = TEX.noise; PU.floorPaint.value = Paint.tex; PU.floorPaint2.value = Paint.tex2; PU.layerMap.value = Paint.layTex; PU.wallPaint.value = Paint.wtex; PU.layoutMap.value = TEX.layout;
+  PU.noiseMap.value = TEX.noise; PU.floorPaint.value = Paint.tex; PU.floorPaint2.value = Paint.tex2; PU.layerMap.value = Paint.layTex; PU.wallPaint.value = Paint.wtex; PU.layoutMap.value = TEX.layout; PU.inkRelief.value = MAP_ID === 'canton' ? 0.8 : 0;   // 西關大屋: ink keeps the joints of the stone and brick it covers
   if (TERR.on) buildTerrainMesh(); else {
   // floor
   const fg = quadGeo([[-XH, 0, -ZH], [XH, 0, -ZH], [XH, 0, ZH], [-XH, 0, ZH]], [[-XH / 8, -ZH / 8], [XH / 8, -ZH / 8], [XH / 8, ZH / 8], [-XH / 8, ZH / 8]], null, null, [0, 1, 0]);
@@ -852,7 +862,7 @@ function buildArena() {
           slabs.push(quadGeo([[a[0], y0, a[1]], [b[0], y0, b[1]], [b[0], y1, b[1]], [a[0], y1, a[1]]], [[0, y0 / 3], [L / 3, y0 / 3], [L / 3, y1 / 3], [0, y1 / 3]], null, null, n)));
         slabs.push(quadGeo([[s.x0, y0, s.z0], [s.x1, y0, s.z0], [s.x1, y0, s.z1], [s.x0, y0, s.z1]], [[s.x0 / 3, s.z0 / 3], [s.x1 / 3, s.z0 / 3], [s.x1 / 3, s.z1 / 3], [s.x0 / 3, s.z1 / 3]], null, null, [0, -1, 0]));
       }
-      if (s.oob) {                                         // hedge sides above the street, not in the paint atlas
+      if (s.oob && MAP_ID !== 'canton') {                  // hedge sides above the street, not in the paint atlas
         const y0 = MAP_ID === 'skate' ? SL : MAP_ID === 'canton' ? CL : 0;
         [['+x', s.x1, 1, 0], ['-x', s.x0, -1, 0], ['+z', s.z1, 0, 1], ['-z', s.z0, 0, -1]].forEach(([d, pl, nx, nz]) => {
           if ((d === '+x' && s.x1 >= XH - 0.01) || (d === '-x' && s.x0 <= -XH + 0.01) || (d === '+z' && s.z1 >= ZH - 0.01) || (d === '-z' && s.z0 <= -ZH + 0.01)) return;
