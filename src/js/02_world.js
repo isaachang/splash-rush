@@ -217,50 +217,50 @@ function defineCanton() {
   const tag = (s, kind) => Object.assign(s, { kind });
   const ON = { walls: true, navTop: true };          // stands on the centre deck: the canal tunnel underneath stays open, its sides are normal inkable walls
   const half = [
-    tag(box(-26, 26, 3.5, 52, CL, 'stone', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
+    tag(box(-26, 26, 3.5, 52, CL, 'canal', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
     // ---- spawn: the tea house's roof terrace
-    tag(S(-10, 10, 42, 52, 2.0, 'panel', 'tile'), 'spawn'),
+    tag(S(-10, 10, 42, 52, 2.0, 'brick', 'tile'), 'spawn'),
     R(-3, 3, 36, 42, 'z', 0, 2.0, 'paving'),
-    S(10, 26, 42, 52, 2.0, 'panel', 'tile'),
+    S(10, 26, 42, 52, 2.0, 'brick', 'tile'),
     tag(S(15, 17, 46, 48, 3.6, 'contB', 'grate'), 'tank'),
     tag(oob(-26, -10, 44, 52, 9.0), 'teahouse'),
     R(20.3, 26, 36, 42, 'z', 3.8, 2.0, 'tile'),
     // ---- qilou arcade along the +x wall: covered street below, walkable deck above
-    tag(F(20.3, 26, 8, 36, 3.4, 3.8, 'panel', 'tile'), 'arcade'),
+    tag(F(20.3, 26, 8, 36, 3.4, 3.8, 'plaster', 'tile'), 'arcade'),
     // ---- Xiguan mansion along the -x wall: two roofed wings, an open gate into the courtyard, the main hall at the back
-    tag(S(-26, -15, 12, 16, 2.6, 'stone', 'tile'), 'mansion'), tag(S(-26, -15, 30, 34, 2.6, 'stone', 'tile'), 'mansion'),
+    tag(S(-26, -15, 12, 16, 2.6, 'brick', 'tile'), 'mansion'), tag(S(-26, -15, 30, 34, 2.6, 'brick', 'tile'), 'mansion'),
     tag(oob(-26, -23, 16, 30, 4.4), 'hall'),
-    S(-16, -15, 16, 21, 2.6, 'stone', 'tile'), S(-16, -15, 25, 30, 2.6, 'stone', 'tile'),
-    tag(F(-16, -15, 21, 25, 2.2, 2.6, 'stone', 'tile'), 'lintel'),
+    S(-16, -15, 16, 21, 2.6, 'brick', 'tile'), S(-16, -15, 25, 30, 2.6, 'brick', 'tile'),
+    tag(F(-16, -15, 21, 25, 2.2, 2.6, 'brick', 'tile'), 'lintel'),
     S(-20.5, -18, 21, 25, 1.0, 'crate', 'grass'),
     R(-15, -10, 12.4, 16, 'x', 2.6, 0, 'paving'), R(-15, -10, 30, 34, 'x', 2.6, 0, 'paving'),
     // ---- the street between them
     tag(S(-11, -5, 18, 25, 2.4, 'contR', 'tile'), 'house'),
     S(-5, -3.5, 18, 19.6, 1.2, 'crate', 'crate'), S(-1, 0.6, 14, 15.6, 0.5, 'crate', 'crate'),
-    S(5, 11, 13, 18, 0.5, 'stone', 'grass'),
-    tag(S(2, 5, 25, 26.6, 1.1, 'contG', 'wood'), 'stall'), S(13, 15, 24, 26.5, 1.2, 'contB', 'wood'), S(14, 17, 16, 17, 1.0, 'stone', 'grass'),
-    tag(S(-4.4, -3.6, 30.6, 31.4, 4.6, 'stone', 'concrete'), 'paifang'), tag(S(3.6, 4.4, 30.6, 31.4, 4.6, 'stone', 'concrete'), 'paifang'),
+    S(5, 11, 13, 18, 0.5, 'cstone', 'grass'),
+    tag(S(2, 5, 25, 26.6, 1.1, 'contG', 'wood'), 'stall'), S(13, 15, 24, 26.5, 1.2, 'contB', 'wood'), S(14, 17, 16, 17, 1.0, 'cstone', 'grass'),
+    tag(S(-4.4, -3.6, 30.6, 31.4, 4.6, 'cstone', 'concrete'), 'paifang'), tag(S(3.6, 4.4, 30.6, 31.4, 4.6, 'cstone', 'concrete'), 'paifang'),
     tag(F(-5, 5, 30.5, 31.5, 3.4, 4.6, 'stone', 'concrete'), 'paifang'),
     // ---- canal side: kapok planters, stone landing steps down into the canal, a stone bridge, a moored dragon boat
-    S(-7, -5, 6, 8, 0.5, 'stone', 'grass'), S(10, 12, 5.5, 7.5, 0.5, 'stone', 'grass'),
+    S(-7, -5, 6, 8, 0.5, 'cstone', 'grass'), S(10, 12, 5.5, 7.5, 0.5, 'cstone', 'grass'),
     // (four 0.44 m steps running straight out from the bank, 3 m wide: walk up them toward the street)
-    ...[[-12, -9], [20, 23]].flatMap(([x0, x1]) => [0, 1, 2, 3].map(k => box(x0, x1, 2.9 - k * 0.6, 3.5 - k * 0.6, CL - 0.44 * (k + 1), 'stone', 'paving'))),
+    ...[[-12, -9], [20, 23]].flatMap(([x0, x1]) => [0, 1, 2, 3].map(k => box(x0, x1, 2.9 - k * 0.6, 3.5 - k * 0.6, CL - 0.44 * (k + 1), 'cstone', 'paving'))),
     tag(F(14, 18, -3.5, 3.5, -0.3, 0, 'stone', 'paving', { navTop: true }), 'bridge'),
     tag(box(8.5, 18, 0.2, 1.4, 0.7, 'crate', 'wood'), 'boat'),
     // ---- beside the tower: two steps of the old city wall (jump 1 m, then 2 m)
-    F(2.5, 5, -2.5, 0, 0, 2.0, 'stone', 'paving', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'stone', 'paving', ON),
+    F(2.5, 5, -2.5, 0, 0, 2.0, 'brick', 'paving', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'brick', 'paving', ON),
   ];
-  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'panel', 'concrete'), 'column')); }
+  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'plaster', 'concrete'), 'column')); }
   half.forEach(s => { SOLIDS.push(s); SOLIDS.push(Object.assign(mirrorSolid(s), { team1: true })); });
   // centre: a square deck over the canal (only squids fit underneath), Zhenhai Tower on it — climb its inked walls to the 4 m terrace
   SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'stone', 'paving', { navTop: true }), 'deck'));
   SOLIDS.push(tag(F(-2.5, 2.5, -2.5, 2.5, 0, 4.0, 'contR', 'tile', ON), 'tower'), tag(F(-1, 1, -1, 1, 0, 8.2, 'contR', 'tile', ON), 'towerTop'));
   // perimeter walls (only the inner face takes ink)
   const B = CL + 3.4;
-  SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'panel'), { bound: '-x' }));
-  SOLIDS.push(Object.assign(box(-XH - 1.5, -XH, -ZH, ZH, B, 'panel'), { bound: '+x' }));
-  SOLIDS.push(Object.assign(box(-XH, XH, ZH, ZH + 1.5, B, 'panel'), { bound: '-z' }));
-  SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }));
+  SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'plaster'), { bound: '-x' }));
+  SOLIDS.push(Object.assign(box(-XH - 1.5, -XH, -ZH, ZH, B, 'plaster'), { bound: '+x' }));
+  SOLIDS.push(Object.assign(box(-XH, XH, ZH, ZH + 1.5, B, 'plaster'), { bound: '-z' }));
+  SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'plaster'), { bound: '+z' }));
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
 // canal bed paint: darker wet stone, contact shadows along the banks and under the bridges
@@ -796,8 +796,12 @@ const WALL_STYLE = {
   crate: { tex: 'crate', su: 0, vFull: true, color: 0xffffff, rough: 0.8 },
   stone: { tex: 'stone', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
   hedge: { tex: 'hedge', su: 2, vFull: false, color: 0xffffff, rough: 0.95 },
+  brick: { tex: 'brick', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.9 },
+  canal: { tex: 'canal', su: 4, vFull: true, color: 0xffffff, rough: 0.95 },
+  plaster: { tex: 'plaster', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
+  cstone: { tex: 'cstone', su: 2, sv: 2, vFull: false, color: 0xffffff, rough: 0.85 },
 };
-const TOP_STYLE = { paving: { tex: 'stone', s: 5, rough: 0.9, color: 0xd9d3c6 }, tile: { tex: 'concrete', s: 3, rough: 0.8, color: 0xc98a72 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
+const TOP_STYLE = { paving: { tex: 'granite', s: 4, rough: 0.9 }, tile: { tex: 'terrace', s: 2.4, rough: 0.8 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
 let arenaGroup;
 function buildArena() {
   arenaGroup = new THREE.Group(); scene.add(arenaGroup);
@@ -816,7 +820,7 @@ function buildArena() {
     const st = WALL_STYLE[style], su = st.su || f.h, pts = [], uv = [], puv = [], nuv = [];
     for (const [a, y] of corners) {
       pts.push(f.ax ? [f.plane, y, a] : [a, y, f.plane]);
-      uv.push([(a - f.a0) / su, st.vFull ? y / f.h : y / 3]);
+      uv.push([(a - f.a0) / su, st.vFull ? y / f.h : y / (st.sv || 3)]);
       puv.push([(f.rx + 1 + (a - f.a0) * PX) / W, (f.ry + 1 + y * PX) / H]);
       nuv.push([a * 1.0 + f.plane * 0.37, y]);
     }
@@ -880,7 +884,7 @@ function buildArena() {
     m.castShadow = m.receiveShadow = true; arenaGroup.add(m);
   }
   if (sides.length) { const sm = new THREE.Mesh(mergeGeos(sides), new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.85, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
-  if (slabs.length) { const sm = new THREE.Mesh(mergeGeos(slabs), new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.85, color: 0xe9e2d2, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
+  if (slabs.length) { const sm = new THREE.Mesh(mergeGeos(slabs), new THREE.MeshStandardMaterial({ map: TEX.cstone, roughness: 0.85, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
   if (hedge.length) { const hm = new THREE.Mesh(mergeGeos(hedge), new THREE.MeshStandardMaterial({ map: TEX.hedge, roughness: 0.95 })); hm.castShadow = hm.receiveShadow = true; arenaGroup.add(hm); }
   // see-through grate bridges and fences (yellow frames, like the park's rails)
   if (BRIDGES.length || FENCES.length) {

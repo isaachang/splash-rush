@@ -302,12 +302,25 @@ function buildDecorSkate() {
    and just enough dressing to tell the landmarks apart: name boards, the tower's upper storeys, the
    paifang roof, the dragon boats' heads. The detailed look comes in the art pass.                    */
 function buildCantonGround() {
-  // shallow water over the canal bed (visual only: you wade through it)
-  const wm = new THREE.MeshStandardMaterial({ color: 0x7fb5a8, transparent: true, opacity: 0.42, roughness: 0.08, metalness: 0.2, depthWrite: false });
-  const w = new THREE.Mesh(new THREE.PlaneGeometry(XH * 2 + 240, 7), wm); w.rotation.x = -Math.PI / 2; w.position.y = 0.22; w.renderOrder = 1; scene.add(w);
+  // shallow water over the canal bed (visual only: you wade through it): slow ripples, sky glints, the bed and its ink show through
+  const wm = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { time: { value: 0 }, noiseMap: { value: TEX.noise } },
+    vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `uniform float time; uniform sampler2D noiseMap; varying vec3 vW;
+    void main(){
+      vec2 p = vW.xz;
+      float a = texture2D(noiseMap, p * 0.11 + vec2(time * 0.020, time * 0.006)).r, b = texture2D(noiseMap, p * 0.23 - vec2(time * 0.013, -time * 0.017)).r;
+      float n = a * 0.6 + b * 0.4;
+      vec3 v = normalize(cameraPosition - vW); float fr = pow(1.0 - clamp(v.y, 0.0, 1.0), 3.0);
+      vec3 col = mix(vec3(0.33, 0.56, 0.52), vec3(0.74, 0.88, 0.90), fr * 0.8);
+      float glint = smoothstep(0.66, 0.72, n) * (0.25 + 0.75 * fr);
+      float edge = smoothstep(3.1, 3.5, abs(vW.z));                       // a paler line where the water meets the banks
+      col += glint * 0.5 + edge * 0.10;
+      gl_FragColor = vec4(col, clamp(0.26 + fr * 0.4 + glint * 0.3 + (n - 0.5) * 0.12 + edge * 0.12, 0.0, 0.85));
+    }` });
+  const w = new THREE.Mesh(new THREE.PlaneGeometry(XH * 2 + 240, 7), wm); w.rotation.x = -Math.PI / 2; w.position.y = 0.22; w.renderOrder = 1; scene.add(w); WORLD.sea = w;
   // the city outside: paving at street level with the canal running on through it
-  const pave = TEX.stone.clone(); pave.repeat.set(60, 30); pave.needsUpdate = true;
-  const pm = new THREE.MeshStandardMaterial({ map: pave, color: 0xd9d3c6, roughness: 0.95 });
+  const pave = TEX.granite.clone(); pave.repeat.set(200, 99); pave.needsUpdate = true;
+  const pm = new THREE.MeshStandardMaterial({ map: pave, roughness: 0.95 });
   [[3.56, 400], [-400, -3.56]].forEach(([z0, z1]) => { const m = new THREE.Mesh(new THREE.BoxGeometry(800, 3, z1 - z0), pm); m.position.set(0, CL - 1.53, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m); });
   const bed = new THREE.Mesh(new THREE.PlaneGeometry(800, 7), new THREE.MeshStandardMaterial({ color: 0x6f766f, roughness: 1 })); bed.rotation.x = -Math.PI / 2; bed.position.y = -0.02; scene.add(bed);
 }
@@ -324,7 +337,7 @@ function cantonSign(text, w, h, bg = '#141210', fg = '#e8c15a') {
 function buildDecorCanton() {
   const deco = new THREE.Group(); scene.add(deco);
   const std = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.8 }, o || {}));
-  const M = { stone: std(0xe9e2d2, { map: TEX.stone }), green: std(0x2f8f62, { roughness: 0.5 }), red: std(0xb5503f), wood: std(0x6e3220), bark: std(0x857565, { roughness: 0.95 }), leaf: std(0x3f6f38, { flatShading: true }), flower: std(0xe4402a, { emissive: 0x3a0800 }), gold: std(0xd8a640, { metalness: 0.5, roughness: 0.4 }), white: std(0xf4f1e8) };
+  const M = { stone: std(0xe9e2d2, { map: TEX.stone }), green: std(0x2f8f62, { roughness: 0.5 }), red: std(0xb5503f), wood: std(0x6e3220), bark: std(0x857565, { roughness: 0.95 }), leaf: std(0x3f6f38, { flatShading: true }), flower: std(0xe4402a, { emissive: 0x3a0800 }), gold: std(0xd8a640, { metalness: 0.5, roughness: 0.4 }), white: std(0xf4f1e8), cstone: std(0xffffff, { map: TEX.cstone }), plaster: std(0xffffff, { map: TEX.plaster }) };
   const add = (geo, mat, x, y, z, ry) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (ry) m.rotation.y = ry; m.castShadow = true; m.receiveShadow = true; deco.add(m); return m; };
   const boxAt = (x0, x1, y0, y1, z0, z1, mat) => add(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
   const sign = (text, w, h, x, y, z, ry, bg, fg, two) => { const m = cantonSign(text, w, h, bg, fg); m.position.set(x, y, z); m.rotation.y = ry; deco.add(m); if (two) { const b = m.clone(); b.rotation.y = ry + Math.PI; deco.add(b); } };
@@ -353,6 +366,16 @@ function buildDecorCanton() {
     // paifang: the name on both faces, a green tiled roof
     [x, z] = P(0, 31.52); sign('獵德', 3.4, 0.95, x, CL + 4.0, z, ry(0)); [x, z] = P(0, 30.48); sign('獵德', 3.4, 0.95, x, CL + 4.0, z, ry(Math.PI));
     [x, z] = P(0, 31); boxAt(x - 5.7, x + 5.7, CL + 4.6, CL + 4.82, z - 1.1, z + 1.1, M.green); boxAt(x - 2.4, x + 2.4, CL + 4.82, CL + 5.5, z - 0.4, z + 0.4, M.stone); boxAt(x - 3.1, x + 3.1, CL + 5.5, CL + 5.72, z - 1.0, z + 1.0, M.green);
+    // arcade colonnade: plinth and capital on every column, a beam with corner brackets between them, ceiling joists (visual only)
+    for (let i = 0; i < 8; i++) {
+      const c = 8.3 + i * (35.7 - 8.3) / 7, [cx, cz] = P(20.6, c);
+      boxAt(cx - 0.42, cx + 0.42, CL, CL + 0.32, cz - 0.42, cz + 0.42, M.cstone); boxAt(cx - 0.36, cx + 0.36, CL + 0.32, CL + 0.4, cz - 0.36, cz + 0.36, M.cstone);
+      boxAt(cx - 0.38, cx + 0.38, CL + 3.02, CL + 3.12, cz - 0.38, cz + 0.38, M.white); boxAt(cx - 0.44, cx + 0.44, CL + 3.12, CL + 3.39, cz - 0.44, cz + 0.44, M.white);
+      const [jx, jz] = P(23.45, c); boxAt(jx - 2.55, jx + 2.55, CL + 3.22, CL + 3.39, jz - 0.12, jz + 0.12, M.plaster);
+      if (i < 7) { const d = (35.7 - 8.3) / 7, [mx, mz] = P(20.6, c + d / 2);
+        boxAt(mx - 0.16, mx + 0.16, CL + 3.08, CL + 3.39, mz - d / 2 + 0.3, mz + d / 2 - 0.3, M.plaster);
+        for (const e of [-1, 1]) for (let q = 0; q < 3; q++) { const [bx, bz] = P(20.6, c + d / 2 + e * (d / 2 - 0.44 - q * 0.22)); boxAt(bx - 0.14, bx + 0.14, CL + 2.84 + q * 0.08, CL + 3.08, bz - 0.11, bz + 0.11, M.plaster); } }
+    }
     // arcade: balustrade on the street side of the upper deck (visual only)
     [x, z] = P(20.45, 22); boxAt(x - 0.12, x + 0.12, CL + 4.55, CL + 4.7, z - 14, z + 14, M.white); for (let i = 0; i < 28; i++) { const [bx, bz] = P(20.45, 8.5 + i); boxAt(bx - 0.06, bx + 0.06, CL + 3.8, CL + 4.55, bz - 0.06, bz + 0.06, M.white); }
     // dragon boat: head toward the tower, tail, drum

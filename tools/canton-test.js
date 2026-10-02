@@ -76,7 +76,7 @@ const tests = function () {
   ok(!solidAt(0, 0.3, 0) && !solidAt(3.5, 0.3, -1.5) && !!solidAt(0, CL + 1, 0) && !!solidAt(3.5, CL + 1, -1.5) && near(groundBelow(0, 0, 1, 0, true), 0), 'the tower and the old wall stand on the deck: the canal tunnel under them is open');
   P.pos.set(0, 0, 2); P.setSwim(true); put(0, 0, 2); P.special = 100; P.startSpecial(); const spNo = !P.sp && P.swim;
   P.setSwim(false); P.vel.y = 13; let mx = 0; for (let i = 0; i < 30; i++) { loop(); mx = Math.max(mx, P.pos.y); }
-  ok(spNo && mx < 0.9, 'in the tunnel: no special, and nobody can be pushed up through the deck (peak ' + mx.toFixed(2) + ' m));
+  ok(spNo && mx < 0.9, 'in the tunnel: no special, and nobody can be pushed up through the deck (peak ' + mx.toFixed(2) + ' m)');
   // tower: 1 m step, 2 m step, then the 4 m terrace only by its inked walls
   const s1 = groundAt(3.7, -3.3), s2 = groundAt(3.7, -1.2), jumpH = 8.3 * 8.3 / (2 * GRAV);
   put(3.7, CL + 2, -1.2); Cam.yaw = -E; let tp = 0; Input.keys = { KeyW: true }; Input.jumpQ = true; for (let i = 0; i < 30; i++) { loop(); tp = Math.max(tp, P.pos.y); } Input.keys = {};

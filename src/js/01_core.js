@@ -329,6 +329,41 @@ function buildTextures() {
     for (let y = 0; y < 8; y++) for (let x = 0; x < 4; x++) { const l = 140 + Math.random() * 30; g.fillStyle = `rgb(${l},${l + 3},${l + 10})`; g.fillRect(x * 64 + (y % 2) * 32 + 2, y * 32 + 2, 60, 28); }
     speckle(g, w, h, 1500, 0.15);
   });
+  // ---- 西關大屋: granite street slabs, grey-blue brick, damp canal blocks, red terrace tiles, cream plaster, dressed stone
+  const tone = (r, g2, b, k) => `rgb(${Math.round(r * k)},${Math.round(g2 * k)},${Math.round(b * k)})`, rr = (a, b) => a + (b - a) * Math.random();
+  TEX.granite = canvasTex(512, 512, (g, w, h) => {      // 麻石: long slabs in running courses (texture = 4 m); kept pale and calm so ink reads on it
+    g.fillStyle = '#6f695e'; g.fillRect(0, 0, w, h);
+    const rows = 8, rh = h / rows;
+    for (let r = 0; r < rows; r++) { let x = -rr(0, 120); while (x < w) { const L = rr(110, 220); g.fillStyle = tone(158, 147, 128, rr(0.93, 1.05)); g.fillRect(x + 2, r * rh + 2, L - 4, rh - 4); if (x + L > w) g.fillRect(x + 2 - w, r * rh + 2, L - 4, rh - 4); x += L; } }
+    speckle(g, w, h, 5000, 0.1);
+  });
+  TEX.brick = canvasTex(512, 512, (g, w, h) => {        // 青磚 (texture = 2 m)
+    g.fillStyle = '#a3a59e'; g.fillRect(0, 0, w, h);
+    const bw = 64, bh = 512 / 26;
+    for (let r = 0; r < 26; r++) for (let c = -1; c < 9; c++) { const x = c * bw + (r % 2) * bw / 2; g.fillStyle = tone(98, 112, 124, rr(0.9, 1.1)); g.fillRect(x + 1.5, r * bh + 1.5, bw - 3, bh - 3); }
+    speckle(g, w, h, 4000, 0.07);
+  });
+  TEX.canal = canvasTex(512, 256, (g, w, h) => {        // canal bank: rough blocks, mossy toward the water (one texture = the whole height)
+    g.fillStyle = '#7f7b71'; g.fillRect(0, 0, w, h);
+    for (let r = 0; r < 4; r++) { let x = -rr(0, 80); while (x < w) { const L = rr(70, 150); g.fillStyle = tone(132, 124, 108, rr(0.88, 1.06)); g.fillRect(x + 3, r * 64 + 3, L - 6, 58); if (x + L > w) g.fillRect(x + 3 - w, r * 64 + 3, L - 6, 58); x += L; } }
+    speckle(g, w, h, 4000, 0.14);
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(0.6, 'rgba(50,80,50,.12)'); gr.addColorStop(1, 'rgba(40,78,48,.6)'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  });
+  TEX.terrace = canvasTex(256, 256, (g, w, h) => {      // 階磚: red quarry tiles (texture = 2.4 m)
+    g.fillStyle = '#cdbfab'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { g.fillStyle = tone(170, 84, 60, rr(0.92, 1.06)); g.fillRect(i * 32 + 1.5, j * 32 + 1.5, 29, 29); }
+    speckle(g, w, h, 1500, 0.08);
+  });
+  TEX.plaster = canvasTex(256, 256, (g, w, h) => {      // arcade render: warm cream, faint rain streaks
+    g.fillStyle = '#d2b98a'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? '120,100,70' : '255,250,235'},${rr(0.02, 0.07)})`; g.fillRect(rr(0, w), 0, rr(2, 10), h); }
+    speckle(g, w, h, 1800, 0.06);
+  });
+  TEX.cstone = canvasTex(256, 256, (g, w, h) => {       // dressed pale granite (texture = 2 m): steps, bridges, the paifang, plinths
+    g.fillStyle = '#7d7668'; g.fillRect(0, 0, w, h);
+    for (let r = 0; r < 4; r++) for (let c = -1; c < 2; c++) { g.fillStyle = tone(178, 168, 148, rr(0.94, 1.04)); g.fillRect(c * 128 + (r % 2) * 64 + 2, r * 64 + 2, 124, 60); }
+    speckle(g, w, h, 2500, 0.09);
+  });
   // skatepark: smooth pool concrete, wooden ramps, grass / hedges, see-through grate
   TEX.skate = canvasTex(512, 512, (g, w, h) => {
     g.fillStyle = '#d9dde2'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2600, 0.07); speckle(g, w, h, 900, 0.12, false);
