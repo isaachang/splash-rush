@@ -30,13 +30,13 @@ const tests = function () {
   ok(!gaps.length, 'no gap narrower than 1.5 m between blocks on the street' + (gaps.length ? ': ' + gaps.slice(0, 4).join(' | ') : ''));
   ok(Paint.total > NX * NZ * 0.85, 'turf total counts both layers (' + (Paint.total / (NX * NZ) * 100).toFixed(0) + '% of the grid)');
   // ---- floating blocks: geometry queries
-  ok(near(groundAt(23, 20), CL + 3) && near(groundBelow(23, 20, CL + 0.1, STEP), CL) && !solidAt(23, CL + 1, 20) && !!solidAt(23, CL + 2.8, 20) && !solidAt(23, CL + 3.2, 20), 'arcade: the upper deck is solid, the street under it is open');
+  ok(near(groundAt(23, 20), CL + 3.8) && near(groundBelow(23, 20, CL + 0.1, STEP), CL) && !solidAt(23, CL + 1, 20) && !!solidAt(23, CL + 3.6, 20) && !solidAt(23, CL + 4.0, 20), 'arcade: the upper deck is solid, the street under it is open');
   ok(!solidAt(0, CL + 2, 31) && !!solidAt(0, CL + 4, 31) && !solidAt(-15.5, CL + 1, 23) && !!solidAt(-15.5, CL + 2.4, 23), 'the paifang beam and the mansion lintel are open underneath');
   // ---- two paint layers
   resetPaint();
-  const g1 = splatFloor(23, CL, 20, 1.5, 0, 0.7, false), topBefore = ownerAt(23, CL + 3, 20);
-  const g2 = splatFloor(23, CL + 3, 20, 1.5, 1, 0.7, false);
-  ok(g1 > 0 && g2 > 0 && topBefore === -1 && ownerAt(23, CL, 20) === 0 && ownerAt(23, CL + 3, 20) === 1, 'ink under the arcade and ink on its deck are kept apart (street = team 0, deck = team 1)');
+  const g1 = splatFloor(23, CL, 20, 1.5, 0, 0.7, false), topBefore = ownerAt(23, CL + 3.8, 20);
+  const g2 = splatFloor(23, CL + 3.8, 20, 1.5, 1, 0.7, false);
+  ok(g1 > 0 && g2 > 0 && topBefore === -1 && ownerAt(23, CL, 20) === 0 && ownerAt(23, CL + 3.8, 20) === 1, 'ink under the arcade and ink on its deck are kept apart (street = team 0, deck = team 1)');
   const g3 = splatFloor(0, 0, 0, 1.2, 1, 0.7, false); ok(g3 > 0 && ownerAt(0.2, 0, 0.2) === 1 && ownerAt(4, CL, 0) === -1, 'the canal bed under the centre deck takes ink without touching the deck above');
   const oo = SOLIDS.find(s => s.oob); ok(splatFloor((oo.x0 + oo.x1) / 2, oo.h, (oo.z0 + oo.z1) / 2, 2, 0, 0.7, false) === 0, 'ink does not stick to the out-of-bounds buildings');
   resetPaint(); ok(Paint.teamCells[0] === 0 && Paint.teamCells[1] === 0 && ownerAt(23, CL, 20) === -1 && ownerAt(0.2, 0, 0.2) === -1, 'resetting the paint clears both layers');
@@ -53,8 +53,8 @@ const tests = function () {
   const N = Math.PI, E = Math.PI / 2;            // yaw: 0 = +z, PI = -z, PI/2 = +x, -PI/2 = -x
   put(23.5, CL, 34); walk(N, 110); ok(P.pos.z < 14 && near(P.pos.y, CL), 'walking the covered street under the arcade, end to end (z ' + P.pos.z.toFixed(1) + ', y ' + P.pos.y.toFixed(2) + ')');
   put(23.5, CL, 22); let top = 0; Input.jumpQ = true; for (let i = 0; i < 40; i++) { loop(); top = Math.max(top, P.pos.y); }
-  ok(top + BODY_H <= CL + 2.6 + 0.02 && top > CL + 0.5, 'jumping under the arcade: the head bumps the deck (peak ' + (top - CL).toFixed(2) + ' m, deck underside at 2.6 m)');
-  put(23.5, CL + 2, 46); walk(N, 120); ok(near(P.pos.y, CL + 3) && P.pos.z < 30, 'from the spawn terrace up the ramp onto the arcade deck (y ' + (P.pos.y - CL).toFixed(2) + ' m)');
+  ok(top + BODY_H < CL + 3.4 && top > CL + 1.2, 'jumping under the arcade: a full jump clears the deck (peak ' + (top - CL).toFixed(2) + ' m, deck underside at 3.4 m)');
+  put(23.5, CL + 2, 46); walk(N, 120); ok(near(P.pos.y, CL + 3.8) && P.pos.z < 30, 'from the spawn terrace up the ramp onto the arcade deck (y ' + (P.pos.y - CL).toFixed(2) + ' m)');
   put(0, CL, 35); walk(N, 60); ok(P.pos.z < 28 && near(P.pos.y, CL), 'walking through the paifang');
   put(-11, CL, 23); walk(-E, 70); ok(P.pos.x < -17 && near(P.pos.y, CL), 'walking in through the open mansion gate into the courtyard (x ' + P.pos.x.toFixed(1) + ')');
   put(-9, CL, 14.2); walk(-E, 60); ok(near(P.pos.y, CL + 2.6) && P.pos.x < -15, 'up the outside stairs onto the mansion roof');
@@ -73,6 +73,7 @@ const tests = function () {
   put(13, 0, -0.8); walk(0, 20); const bump = P.pos.z; put(13, 0.7, 0.8); walk(-E, 20);
   ok(bump < 0 && near(P.pos.y, 0.7) && P.pos.x < 10.5, 'the dragon boat: too high to walk onto (a jump up), and you can walk along its deck (' + [bump.toFixed(2), P.pos.x.toFixed(1), P.pos.y.toFixed(2)] + ')');
   put(13, 0, -1.2); let peak = 0; Input.jumpQ = true; for (let i = 0; i < 30; i++) { loop(); peak = Math.max(peak, P.pos.y); } ok(peak < CL - 0.4, 'the canal bank is too high to jump out of (peak ' + peak.toFixed(2) + ' of ' + CL + ' m)');
+  ok(!solidAt(0, 0.3, 0) && !solidAt(3.5, 0.3, -1.5) && !!solidAt(0, CL + 1, 0) && !!solidAt(3.5, CL + 1, -1.5) && near(groundBelow(0, 0, 1, 0, true), 0), 'the tower and the old wall stand on the deck: the canal tunnel under them is open');
   // tower: 1 m step, 2 m step, then the 4 m terrace only by its inked walls
   const s1 = groundAt(3.7, -3.3), s2 = groundAt(3.7, -1.2), jumpH = 8.3 * 8.3 / (2 * GRAV);
   put(3.7, CL + 2, -1.2); Cam.yaw = -E; let tp = 0; Input.keys = { KeyW: true }; Input.jumpQ = true; for (let i = 0; i < 30; i++) { loop(); tp = Math.max(tp, P.pos.y); } Input.keys = {};
@@ -82,7 +83,7 @@ const tests = function () {
   ok(climbed >= CL + 4 - 0.05, 'tower: swimming up its inked wall takes you to the terrace (reached ' + (climbed - CL).toFixed(2) + ' m)');
   // shots
   resetPaint(); Proj.shot(P, new THREE.Vector3(23.5, CL + 1.2, 24), new THREE.Vector3(0, -0.5, -0.86).normalize(), WEAPONS.rifle); for (let i = 0; i < 20; i++) loop();
-  let low = 0, up = 0; for (let z = 18; z < 24; z += 0.3) { if (ownerAt(23.5, CL, z) === P.team) low++; if (ownerAt(23.5, CL + 3, z) === P.team) up++; }
+  let low = 0, up = 0; for (let z = 18; z < 24; z += 0.3) { if (ownerAt(23.5, CL, z) === P.team) low++; if (ownerAt(23.5, CL + 3.8, z) === P.team) up++; }
   ok(low > 0 && up === 0, 'a shot fired under the arcade paints the street, not the deck above (' + low + ' / ' + up + ' cells)');
   resetPaint(); Proj.shot(P, new THREE.Vector3(23.5, CL + 1.2, 24), new THREE.Vector3(0, 0.6, -0.8).normalize(), WEAPONS.rifle); for (let i = 0; i < 20; i++) loop();
   ok(Paint.teamCells[0] + Paint.teamCells[1] < 40, 'a shot into the underside of the deck leaves no paint');

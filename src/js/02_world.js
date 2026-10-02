@@ -215,6 +215,7 @@ function defineCanton() {
   const F = (x0, x1, z0, z1, y0, h, style, top, o) => Object.assign(slab(x0, x1, z0, z1, CL + y0, CL + h, style, top), o || {});
   const oob = (x0, x1, z0, z1, h) => Object.assign(S(x0, x1, z0, z1, h, 'panel', 'tile'), { oob: true });
   const tag = (s, kind) => Object.assign(s, { kind });
+  const ON = { walls: true, navTop: true };          // stands on the centre deck: the canal tunnel underneath stays open, its sides are normal inkable walls
   const half = [
     tag(box(-26, 26, 3.5, 52, CL, 'stone', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
     // ---- spawn: the tea house's roof terrace
@@ -223,9 +224,9 @@ function defineCanton() {
     S(10, 26, 42, 52, 2.0, 'panel', 'tile'),
     tag(S(15, 17, 46, 48, 3.6, 'contB', 'grate'), 'tank'),
     tag(oob(-26, -10, 44, 52, 9.0), 'teahouse'),
-    R(20.3, 26, 36, 42, 'z', 3.0, 2.0, 'tile'),
+    R(20.3, 26, 36, 42, 'z', 3.8, 2.0, 'tile'),
     // ---- qilou arcade along the +x wall: covered street below, walkable deck above
-    tag(F(20.3, 26, 8, 36, 2.6, 3.0, 'panel', 'tile'), 'arcade'),
+    tag(F(20.3, 26, 8, 36, 3.4, 3.8, 'panel', 'tile'), 'arcade'),
     // ---- Xiguan mansion along the -x wall: two roofed wings, an open gate into the courtyard, the main hall at the back
     tag(S(-26, -15, 12, 16, 2.6, 'stone', 'tile'), 'mansion'), tag(S(-26, -15, 30, 34, 2.6, 'stone', 'tile'), 'mansion'),
     tag(oob(-26, -23, 16, 30, 4.4), 'hall'),
@@ -247,13 +248,13 @@ function defineCanton() {
     tag(F(14, 18, -3.5, 3.5, -0.3, 0, 'stone', 'paving', { navTop: true }), 'bridge'),
     tag(box(8.5, 18, 0.2, 1.4, 0.7, 'crate', 'wood'), 'boat'),
     // ---- beside the tower: two steps of the old city wall (jump 1 m, then 2 m)
-    S(2.5, 5, -2.5, 0, 2.0, 'stone', 'paving'), S(2.5, 5, -4.2, -2.5, 1.0, 'stone', 'paving'),
+    F(2.5, 5, -2.5, 0, 0, 2.0, 'stone', 'paving', ON), F(2.5, 5, -4.2, -2.5, 0, 1.0, 'stone', 'paving', ON),
   ];
-  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 2.6, 'panel', 'concrete'), 'column')); }
+  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 3.4, 'panel', 'concrete'), 'column')); }
   half.forEach(s => { SOLIDS.push(s); SOLIDS.push(Object.assign(mirrorSolid(s), { team1: true })); });
   // centre: a square deck over the canal (only squids fit underneath), Zhenhai Tower on it — climb its inked walls to the 4 m terrace
   SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'stone', 'paving', { navTop: true }), 'deck'));
-  SOLIDS.push(tag(S(-2.5, 2.5, -2.5, 2.5, 4.0, 'contR', 'tile'), 'tower'), tag(S(-1, 1, -1, 1, 8.2, 'contR', 'tile'), 'towerTop'));
+  SOLIDS.push(tag(F(-2.5, 2.5, -2.5, 2.5, 0, 4.0, 'contR', 'tile', ON), 'tower'), tag(F(-1, 1, -1, 1, 0, 8.2, 'contR', 'tile', ON), 'towerTop'));
   // perimeter walls (only the inner face takes ink)
   const B = CL + 3.4;
   SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'panel'), { bound: '-x' }));
@@ -443,7 +444,7 @@ function buildWallAtlas() {
   for (const s of SOLIDS) {
     if (s.t === 'ramp') { rampFaces(s, faces); continue; }
     if (s.t !== 'box') continue; s.faces = {};
-    if (s.oob || s.float) continue;                        // out-of-bounds and floating blocks: sides not paintable, not climbable
+    if (s.oob || (s.float && !s.walls)) continue;                        // out-of-bounds and floating blocks: sides not paintable, not climbable
     const dirs = s.bound ? [s.bound] : ['+x', '-x', '+z', '-z'];
     for (const d of dirs) {
       if (MAP.cull && !s.bound && faceHidden(s, d)) continue;
@@ -840,8 +841,8 @@ function buildArena() {
         pts[2][1] = pts[3][1] = s.h;
         sides.push(quadGeo(pts, [[0, 0], [L[1] - L[0], 0], [L[1] - L[0], 1], [0, 1]], null, null, nn[1] === 'x' ? [nn[0] === '+' ? 1 : -1, 0, 0] : [0, 0, nn[0] === '+' ? 1 : -1]));
       }
-      for (const d in s.faces) { const f = s.faces[d]; wallQuad(s.style, f, [[f.a0, 0], [f.a1, 0], [f.a1, f.h], [f.a0, f.h]]); }
-      if (s.float) {                                       // sides and underside of a floating block (plain, no ink)
+      for (const d in s.faces) { const f = s.faces[d]; const b = s.walls ? s.y0 : 0; wallQuad(s.style, f, [[f.a0, b], [f.a1, b], [f.a1, f.h], [f.a0, f.h]]); }
+      if (s.float && !s.walls) {                                       // sides and underside of a floating block (plain, no ink)
         const y0 = s.y0, y1 = s.h, w = s.x1 - s.x0, d = s.z1 - s.z0;
         [[[s.x1, s.z0], [s.x1, s.z1], [1, 0, 0], d], [[s.x0, s.z1], [s.x0, s.z0], [-1, 0, 0], d], [[s.x1, s.z1], [s.x0, s.z1], [0, 0, 1], w], [[s.x0, s.z0], [s.x1, s.z0], [0, 0, -1], w]].forEach(([a, b, n, L]) =>
           slabs.push(quadGeo([[a[0], y0, a[1]], [b[0], y0, b[1]], [b[0], y1, b[1]], [a[0], y1, a[1]]], [[0, y0 / 3], [L / 3, y0 / 3], [L / 3, y1 / 3], [0, y1 / 3]], null, null, n)));

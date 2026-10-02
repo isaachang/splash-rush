@@ -308,7 +308,7 @@ function buildCantonGround() {
   // the city outside: paving at street level with the canal running on through it
   const pave = TEX.stone.clone(); pave.repeat.set(60, 30); pave.needsUpdate = true;
   const pm = new THREE.MeshStandardMaterial({ map: pave, color: 0xd9d3c6, roughness: 0.95 });
-  [[3.5, 400], [-400, -3.5]].forEach(([z0, z1]) => { const m = new THREE.Mesh(new THREE.BoxGeometry(800, 3, z1 - z0), pm); m.position.set(0, CL - 1.53, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m); });
+  [[3.56, 400], [-400, -3.56]].forEach(([z0, z1]) => { const m = new THREE.Mesh(new THREE.BoxGeometry(800, 3, z1 - z0), pm); m.position.set(0, CL - 1.53, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m); });
   const bed = new THREE.Mesh(new THREE.PlaneGeometry(800, 7), new THREE.MeshStandardMaterial({ color: 0x6f766f, roughness: 1 })); bed.rotation.x = -Math.PI / 2; bed.position.y = -0.02; scene.add(bed);
 }
 function cantonSign(text, w, h, bg = '#141210', fg = '#e8c15a') {
@@ -354,7 +354,7 @@ function buildDecorCanton() {
     [x, z] = P(0, 31.52); sign('獵德', 3.4, 0.95, x, CL + 4.0, z, ry(0)); [x, z] = P(0, 30.48); sign('獵德', 3.4, 0.95, x, CL + 4.0, z, ry(Math.PI));
     [x, z] = P(0, 31); boxAt(x - 5.7, x + 5.7, CL + 4.6, CL + 4.82, z - 1.1, z + 1.1, M.green); boxAt(x - 2.4, x + 2.4, CL + 4.82, CL + 5.5, z - 0.4, z + 0.4, M.stone); boxAt(x - 3.1, x + 3.1, CL + 5.5, CL + 5.72, z - 1.0, z + 1.0, M.green);
     // arcade: balustrade on the street side of the upper deck (visual only)
-    [x, z] = P(20.45, 22); boxAt(x - 0.12, x + 0.12, CL + 3.75, CL + 3.9, z - 14, z + 14, M.white); for (let i = 0; i < 28; i++) { const [bx, bz] = P(20.45, 8.5 + i); boxAt(bx - 0.06, bx + 0.06, CL + 3.0, CL + 3.75, bz - 0.06, bz + 0.06, M.white); }
+    [x, z] = P(20.45, 22); boxAt(x - 0.12, x + 0.12, CL + 4.55, CL + 4.7, z - 14, z + 14, M.white); for (let i = 0; i < 28; i++) { const [bx, bz] = P(20.45, 8.5 + i); boxAt(bx - 0.06, bx + 0.06, CL + 3.8, CL + 4.55, bz - 0.06, bz + 0.06, M.white); }
     // dragon boat: head toward the tower, tail, drum
     const bm = t ? M.green : M.red;
     [x, z] = P(8.0, 0.8); boxAt(x - 0.45, x + 0.45, 1.3, 1.75, z - 0.22, z + 0.22, bm); [x, z] = P(8.45, 0.8); boxAt(x - 0.12, x + 0.12, 0.7, 1.4, z - 0.12, z + 0.12, bm);
