@@ -4,7 +4,8 @@
    module) rebuilds the world in place, without reloading the page.        */
 const MAP_LIST = {
   dock: { id: 'dock', name: '潮汐码头广场', en: 'TIDE DOCK PLAZA', XH: 28, ZH: 46, size: '56 × 92 米', tags: ['集装箱', '中路开阔', '两侧高台'], desc: '码头上的集装箱广场，中路开阔、两侧有高台' },
-  skate: { id: 'skate', name: '墨浪滑板场', en: 'RUSH SKATEPARK', XH: 25.5, ZH: 55.5, cull: true, spawnSlots: [[-1.7, -0.5], [-0.6, 0.7], [0.6, -0.5], [1.7, 0.7]], size: '51 × 111 米', tags: ['S 形泳池', '中央高塔', '铁网走道'], desc: '城市滑板公园：S 形下沉泳池、波浪外墙、中央高塔和铁网走道' }
+  skate: { id: 'skate', name: '墨浪滑板场', en: 'RUSH SKATEPARK', XH: 25.5, ZH: 55.5, cull: true, spawnSlots: [[-1.7, -0.5], [-0.6, 0.7], [0.6, -0.5], [1.7, 0.7]], size: '51 × 111 米', tags: ['S 形泳池', '中央高塔', '铁网走道'], desc: '城市滑板公园：S 形下沉泳池、波浪外墙、中央高塔和铁网走道' },
+  canton: { id: 'canton', name: '西關大屋', en: 'XIGUAN MANSION', XH: 26, ZH: 52, cull: true, size: '52 × 104 米', tags: ['河涌石桥', '骑楼上下两层', '镇海楼'], desc: '老西关的街：骑楼、西关大屋、一条河涌和三座桥，正中间是镇海楼' }
 };
 const MAP_KEY = 'splashrush.map';
 let MAP_ID = (() => {
@@ -20,6 +21,7 @@ function setMap(id) {
   MAP_ID = MAP_LIST[id] ? id : 'dock'; MAP = MAP_LIST[MAP_ID];
   XH = MAP.XH; ZH = MAP.ZH; NX = Math.ceil(XH * 2 / CELL); NZ = Math.ceil(ZH * 2 / CELL); PSX = NX * CELL; PSZ = NZ * CELL;
   // yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
+  if (MAP_ID === 'canton') { SPAWN = [{ x: 0, z: 47, y: CL + 2.0, yaw: Math.PI }, { x: 0, z: -47, y: CL + 2.0, yaw: 0 }]; DECK = [{ x0: -10, x1: 10, z0: 42, z1: 52 }, { x0: -10, x1: 10, z0: -52, z1: -42 }]; return; }
   SPAWN = MAP_ID === 'skate' ? [{ x: -6.8 * SKATE_K, z: 42.6 * SKATE_K, y: 2.0, yaw: Math.PI }, { x: 6.8 * SKATE_K, z: -42.6 * SKATE_K, y: 2.0, yaw: 0 }] : [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
   DECK = MAP_ID === 'skate' ? [{ x0: -10.3 * SKATE_K, x1: -3.3 * SKATE_K, z0: 36 * SKATE_K, z1: 46.5 * SKATE_K }, { x0: 3.3 * SKATE_K, x1: 10.3 * SKATE_K, z0: -46.5 * SKATE_K, z1: -36 * SKATE_K }] : [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
 }
@@ -31,6 +33,9 @@ const BRIDGES = [], FENCES = [];
 const TREES = [], PALMS = []; let TREE_Y0 = 1e9;
 function box(x0, x1, z0, z1, h, style, top) { return { t: 'box', x0, x1, z0, z1, h, style, top: top || 'concrete' }; }
 function ramp(x0, x1, z0, z1, axis, h0, h1, top) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: top || 'grate' }; }
+// a floating block: solid from y0 up to h, open underneath — people walk under it and bump their heads on it,
+// ink lands on its top and on the ground below separately (a second paint layer), its sides take no ink
+function slab(x0, x1, z0, z1, y0, h, style, top) { return Object.assign(box(x0, x1, z0, z1, h, style, top), { y0, float: true }); }
 function mirrorSolid(s) { const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0 }); if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; } return m; }
 // each map's layout is built once and kept, so switching back and forth is instant
 const MAP_CACHE = {};
@@ -39,7 +44,7 @@ function defineMap() {
   Object.assign(TERR, { on: false, W: 0, H: 0, h: null, mat: null, oob: null, outline: null, bowls: [], plats: [], tower: null });
   const c = MAP_CACHE[MAP_ID];
   if (c && c.solids) { SOLIDS.push(...c.solids); BRIDGES.push(...c.bridges); FENCES.push(...c.fences); PALMS.push(...c.palms); Object.assign(TERR, c.terr); Object.assign(SG, c.sg); return; }
-  if (MAP_ID === 'skate') defineSkate(); else defineDock(); buildSolidGrid();
+  if (MAP_ID === 'skate') defineSkate(); else if (MAP_ID === 'canton') defineCanton(); else defineDock(); buildSolidGrid();
   MAP_CACHE[MAP_ID] = Object.assign(c || {}, { solids: SOLIDS.slice(), bridges: BRIDGES.slice(), fences: FENCES.slice(), palms: PALMS.slice(), terr: Object.assign({}, TERR), sg: Object.assign({}, SG) });
 }
 // the floor layout texture (baked shadows, bowl shading, markings), also built once per map
@@ -94,6 +99,7 @@ function defineDock() {
    straight-edged parts are blocks. Team 0 spawns at +z, its bowl is on the +x side.
    Heights: bowl floor 0, street 1.0 (SL), spawn platform / side ledge 2.0, tower top 4.0.     */
 const SL = 1.0;    // street level (the bowls and pits are sunk below it)
+const CL = 2.2;    // 西關大屋: street level above the canal bed (the canal is the real ground, the street is a slab on top)
 const SKATE_LV = { plat: 2.0 };
 // the plan below is traced at the reference's scale, then everything is spread out by SKATE_K (heights stay):
 // at 1.0 the park was ~15% tighter than the original relative to our characters and felt cramped
@@ -197,6 +203,80 @@ function defineSkate() {
   buildTerrain();
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
+/* ---- 西關大屋 (Xiguan Mansion): an old Canton street. The canal bed is the ground (y = 0); the street is a big
+   slab CL high on either side of it, so the canal's stone banks are ordinary paintable, climbable walls.
+   Team 0 spawns at +z on the tea house roof terrace. Heights above the street: low cover 0.5 / 1.0–1.2,
+   spawn terrace 2.0, small house 2.4, mansion roofs 2.6, arcade upper deck 3.0, Zhenhai tower terrace 4.0.
+   Floating blocks (slab): the arcade's upper deck, the three bridges, the paifang beam, the mansion's door lintel. */
+const CANTON_TREES = [[8, 15.5, 0.5, 'banyan'], [-6, 7, 0.5, 'kapok'], [11, 6.5, 0.5, 'kapok']];   // x, z, planter height, kind (team 0's half)
+function defineCanton() {
+  const S = (x0, x1, z0, z1, h, style, top) => box(x0, x1, z0, z1, CL + h, style, top);             // a block standing on the street
+  const R = (x0, x1, z0, z1, axis, h0, h1, top) => ramp(x0, x1, z0, z1, axis, CL + h0, CL + h1, top);
+  const F = (x0, x1, z0, z1, y0, h, style, top, o) => Object.assign(slab(x0, x1, z0, z1, CL + y0, CL + h, style, top), o || {});
+  const oob = (x0, x1, z0, z1, h) => Object.assign(S(x0, x1, z0, z1, h, 'panel', 'tile'), { oob: true });
+  const tag = (s, kind) => Object.assign(s, { kind });
+  const half = [
+    tag(box(-26, 26, 3.5, 52, CL, 'stone', 'paving'), 'street'),                          // the street slab; its -z face is the canal bank
+    // ---- spawn: the tea house's roof terrace
+    tag(S(-10, 10, 42, 52, 2.0, 'panel', 'tile'), 'spawn'),
+    R(-3, 3, 36, 42, 'z', 0, 2.0, 'paving'),
+    S(10, 26, 42, 52, 2.0, 'panel', 'tile'),
+    tag(S(15, 17, 46, 48, 3.6, 'contB', 'grate'), 'tank'),
+    tag(oob(-26, -10, 44, 52, 9.0), 'teahouse'),
+    R(20.3, 26, 36, 42, 'z', 3.0, 2.0, 'tile'),
+    // ---- qilou arcade along the +x wall: covered street below, walkable deck above
+    tag(F(20.3, 26, 8, 36, 2.6, 3.0, 'panel', 'tile'), 'arcade'),
+    // ---- Xiguan mansion along the -x wall: two roofed wings, an open gate into the courtyard, the main hall at the back
+    tag(S(-26, -15, 12, 16, 2.6, 'stone', 'tile'), 'mansion'), tag(S(-26, -15, 30, 34, 2.6, 'stone', 'tile'), 'mansion'),
+    tag(oob(-26, -23, 16, 30, 4.4), 'hall'),
+    S(-16, -15, 16, 21, 2.6, 'stone', 'tile'), S(-16, -15, 25, 30, 2.6, 'stone', 'tile'),
+    tag(F(-16, -15, 21, 25, 2.2, 2.6, 'stone', 'tile'), 'lintel'),
+    S(-20.5, -18, 21, 25, 1.0, 'crate', 'grass'),
+    R(-15, -10, 12.4, 16, 'x', 2.6, 0, 'paving'), R(-15, -10, 30, 34, 'x', 2.6, 0, 'paving'),
+    // ---- the street between them
+    tag(S(-11, -5, 18, 25, 2.4, 'contR', 'tile'), 'house'),
+    S(-5, -3.5, 18, 19.6, 1.2, 'crate', 'crate'), S(-1, 0.6, 14, 15.6, 0.5, 'crate', 'crate'),
+    S(5, 11, 13, 18, 0.5, 'stone', 'grass'),
+    tag(S(2, 5, 25, 26.6, 1.1, 'contG', 'wood'), 'stall'), S(13, 15, 24, 26.5, 1.2, 'contB', 'wood'), S(14, 17, 16, 17, 1.0, 'stone', 'grass'),
+    tag(S(-4.4, -3.6, 30.6, 31.4, 4.6, 'stone', 'concrete'), 'paifang'), tag(S(3.6, 4.4, 30.6, 31.4, 4.6, 'stone', 'concrete'), 'paifang'),
+    tag(F(-5, 5, 30.5, 31.5, 3.4, 4.6, 'stone', 'concrete'), 'paifang'),
+    // ---- canal side: kapok planters, stone landing steps down into the canal, a stone bridge, a moored dragon boat
+    S(-7, -5, 6, 8, 0.5, 'stone', 'grass'), S(10, 12, 5.5, 7.5, 0.5, 'stone', 'grass'),
+    // (four 0.44 m steps running straight out from the bank, 3 m wide: walk up them toward the street)
+    ...[[-12, -9], [20, 23]].flatMap(([x0, x1]) => [0, 1, 2, 3].map(k => box(x0, x1, 2.9 - k * 0.6, 3.5 - k * 0.6, CL - 0.44 * (k + 1), 'stone', 'paving'))),
+    tag(F(14, 18, -3.5, 3.5, -0.3, 0, 'stone', 'paving', { navTop: true }), 'bridge'),
+    tag(box(8.5, 18, 0.2, 1.4, 0.7, 'crate', 'wood'), 'boat'),
+    // ---- beside the tower: two steps of the old city wall (jump 1 m, then 2 m)
+    S(2.5, 5, -2.5, 0, 2.0, 'stone', 'paving'), S(2.5, 5, -4.2, -2.5, 1.0, 'stone', 'paving'),
+  ];
+  for (let i = 0; i < 8; i++) { const c = 8.3 + i * (35.7 - 8.3) / 7; half.push(tag(S(20.3, 20.9, c - 0.3, c + 0.3, 2.6, 'panel', 'concrete'), 'column')); }
+  half.forEach(s => { SOLIDS.push(s); SOLIDS.push(Object.assign(mirrorSolid(s), { team1: true })); });
+  // centre: a square deck over the canal (only squids fit underneath), Zhenhai Tower on it — climb its inked walls to the 4 m terrace
+  SOLIDS.push(tag(F(-7, 7, -3.5, 3.5, -0.8, 0, 'stone', 'paving', { navTop: true }), 'deck'));
+  SOLIDS.push(tag(S(-2.5, 2.5, -2.5, 2.5, 4.0, 'contR', 'tile'), 'tower'), tag(S(-1, 1, -1, 1, 8.2, 'contR', 'tile'), 'towerTop'));
+  // perimeter walls (only the inner face takes ink)
+  const B = CL + 3.4;
+  SOLIDS.push(Object.assign(box(XH, XH + 1.5, -ZH, ZH, B, 'panel'), { bound: '-x' }));
+  SOLIDS.push(Object.assign(box(-XH - 1.5, -XH, -ZH, ZH, B, 'panel'), { bound: '+x' }));
+  SOLIDS.push(Object.assign(box(-XH, XH, ZH, ZH + 1.5, B, 'panel'), { bound: '-z' }));
+  SOLIDS.push(Object.assign(box(-XH, XH, -ZH - 1.5, -ZH, B, 'panel'), { bound: '+z' }));
+  SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
+}
+// canal bed paint: darker wet stone, contact shadows along the banks and under the bridges
+function makeLayoutCanton() {
+  const W = 512, H = Math.round(512 * PSZ / PSX);
+  const t = canvasTex(W, H, (g) => {
+    const m2p = (x, z) => [(x + XH) / PSX * W, (z + ZH) / PSZ * H], s = W / PSX;
+    const [, z0] = m2p(0, -3.5), [, z1] = m2p(0, 3.5);
+    g.fillStyle = 'rgba(96,104,98,.55)'; g.fillRect(0, z0, W, z1 - z0);
+    const gr = g.createLinearGradient(0, z0, 0, z1); gr.addColorStop(0, 'rgba(10,20,18,.55)'); gr.addColorStop(0.18, 'rgba(10,20,18,0)'); gr.addColorStop(0.82, 'rgba(10,20,18,0)'); gr.addColorStop(1, 'rgba(10,20,18,.55)');
+    g.fillStyle = gr; g.fillRect(0, z0, W, z1 - z0);
+    g.fillStyle = 'rgba(8,14,14,.4)';
+    for (const so of SOLIDS) { if (!so.float || so.z1 - so.z0 < 6) continue; const [a] = m2p(so.x0, 0), [c] = m2p(so.x1, 0); g.fillRect(a, z0, c - a, z1 - z0); }
+  }, false);
+  t.flipY = false; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
 function inRect(s, x, z) { return x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1; }
 function topAt(s, x, z) {
   if (s.t === 'box') return s.h;
@@ -288,7 +368,7 @@ function solidAt(x, y, z) {
   if (y < 0) return true;
   if (TERR.on && (y < terrH(x, z) || (y < TERR.OOB_H && terrOob(x, z)))) return true;
   if (y > TREE_Y0) for (const t of TREES) { if (y < t.y0 || y > t.y1) continue; const dx = x - t.x, dz = z - t.z, r = y > t.yc ? t.rc : t.r; if (dx * dx + dz * dz < r * r) return t; }
-  for (const s of solidsNear(x, z)) if (inRect(s, x, z) && y < topAt(s, x, z)) return s;
+  for (const s of solidsNear(x, z)) if (inRect(s, x, z) && y < topAt(s, x, z) && !(s.float && y < s.y0)) return s;
   return null;
 }
 // characters: out of bounds is a wall at any height, terrain too steep to step up is a wall
@@ -302,6 +382,8 @@ function segBlocked(ax, ay, az, bx, by, bz, stepLen = 0.4) {
 /* ============================================================ PAINT */
 const Paint = {
   data: null, owner: null, hgt: null, onTerr: null, tex: null, dirty: false, teamCells: [0, 0], total: 0,
+  // second floor layer: the ground under floating blocks (same grid; hgt2 = -99 where there is none)
+  has2: false, data2: null, owner2: null, hgt2: null, tex2: null, dirty2: false, layTex: null,
   wdata: null, wtex: null, wdirty: false, W: 1024, H: 1024, PX: 8, faces: []
 };
 function initPaint() {
@@ -322,13 +404,38 @@ function initPaint() {
     Paint.total = n;
   }
   for (let k = 0; k < NX * NZ; k++) Paint.data[k * 4 + 3] = 255;
+  initPaintLayer2();
   Paint.tex = new THREE.DataTexture(Paint.data, NX, NZ, THREE.RGBAFormat);
   Paint.tex.magFilter = THREE.LinearFilter; Paint.tex.minFilter = THREE.LinearFilter; Paint.tex.generateMipmaps = false; Paint.tex.needsUpdate = true;
   buildWallAtlas();
 }
+// the ground under floating blocks gets its own paint cells; a small lookup texture tells the floor shader, per cell,
+// below which height a surface belongs to that lower layer (r = that height, a = "there is a lower layer here")
+function initPaintLayer2() {
+  [Paint.tex2, Paint.layTex].forEach(t => t && t.dispose());
+  const FL = SOLIDS.filter(s => s.float), has = Paint.has2 = FL.length > 0, N = has ? NX * NZ : 1, w = has ? NX : 1, h = has ? NZ : 1;
+  Paint.data2 = new Uint8Array(N * 4); Paint.owner2 = new Int8Array(N).fill(-1); Paint.hgt2 = new Float32Array(N).fill(-99);
+  const lay = new Uint8Array(N * 4);
+  for (let k = 0; k < N; k++) Paint.data2[k * 4 + 3] = 255;
+  for (const f of FL) {
+    const i0 = Math.max(0, Math.floor((f.x0 + XH) / CELL)), i1 = Math.min(NX - 1, Math.floor((f.x1 + XH) / CELL)), j0 = Math.max(0, Math.floor((f.z0 + ZH) / CELL)), j1 = Math.min(NZ - 1, Math.floor((f.z1 + ZH) / CELL));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const x = (i + 0.5) * CELL - XH, z = (j + 0.5) * CELL - ZH, k = j * NX + i;
+      if (!inRect(f, x, z) || Paint.hgt[k] > 50 || Paint.hgt2[k] > -90) continue;
+      const low = groundBelow(x, z, f.y0 - 0.05, 0, true); if (low > f.y0 - 0.4) continue;      // something fills the gap: nothing to paint under here
+      Paint.hgt2[k] = low; lay[k * 4] = Math.round(clamp((f.y0 - 0.05 + 8) / 32, 0, 1) * 255); lay[k * 4 + 3] = 255; Paint.total++;
+    }
+  }
+  Paint.tex2 = new THREE.DataTexture(Paint.data2, w, h, THREE.RGBAFormat);
+  Paint.tex2.magFilter = THREE.LinearFilter; Paint.tex2.minFilter = THREE.LinearFilter; Paint.tex2.generateMipmaps = false; Paint.tex2.needsUpdate = true;
+  Paint.layTex = new THREE.DataTexture(lay, w, h, THREE.RGBAFormat);
+  Paint.layTex.magFilter = THREE.NearestFilter; Paint.layTex.minFilter = THREE.NearestFilter; Paint.layTex.generateMipmaps = false; Paint.layTex.needsUpdate = true;
+  Paint.dirty2 = false;
+}
 function resetPaint() {
   Paint.data.fill(0); for (let k = 0; k < NX * NZ; k++) Paint.data[k * 4 + 3] = 255;
   Paint.owner.fill(-1); Paint.teamCells = [0, 0]; Paint.dirty = true;
+  if (Paint.has2) { Paint.data2.fill(0); for (let k = 3; k < Paint.data2.length; k += 4) Paint.data2[k] = 255; Paint.owner2.fill(-1); Paint.dirty2 = true; }
   Paint.wdata.fill(0); for (let k = 3; k < Paint.wdata.length; k += 4) Paint.wdata[k] = 255; Paint.wdirty = true;
 }
 function buildWallAtlas() {
@@ -336,7 +443,7 @@ function buildWallAtlas() {
   for (const s of SOLIDS) {
     if (s.t === 'ramp') { rampFaces(s, faces); continue; }
     if (s.t !== 'box') continue; s.faces = {};
-    if (s.oob) continue;                                   // out-of-bounds blocks: not paintable, not climbable
+    if (s.oob || s.float) continue;                        // out-of-bounds and floating blocks: sides not paintable, not climbable
     const dirs = s.bound ? [s.bound] : ['+x', '-x', '+z', '-z'];
     for (const d of dirs) {
       if (MAP.cull && !s.bound && faceHidden(s, d)) continue;
@@ -382,12 +489,12 @@ function faceHidden(s, d) {
   let all = true;
   for (let k = 0; k <= 8 && all; k++) {
     const a = lerp(a0 + 0.04, a1 - 0.04, k / 8), px = ax ? plane + sg * 0.05 : a, pz = ax ? a : plane + sg * 0.05;
-    if (!SOLIDS.some(o => o !== s && !o.bound && inRect(o, px, pz) && topAt(o, px, pz) >= s.h - 0.05) && !(TERR.on && (terrOob(px, pz) || terrH(px, pz) >= s.h - 0.05))) all = false;
+    if (!SOLIDS.some(o => o !== s && !o.bound && !o.float && inRect(o, px, pz) && topAt(o, px, pz) >= s.h - 0.05) && !(TERR.on && (terrOob(px, pz) || terrH(px, pz) >= s.h - 0.05))) all = false;
   }
   if (all) return true;
   const iv = [];
   for (const o of SOLIDS) {
-    if (o === s || o.t !== 'box' || o.bound || o.oob || o.h < s.h - 0.01) continue;
+    if (o === s || o.t !== 'box' || o.bound || o.oob || o.float || o.h < s.h - 0.01) continue;
     const op = d === '+x' ? o.x1 : d === '-x' ? o.x0 : d === '+z' ? o.z1 : o.z0; if (Math.abs(op - plane) > 0.02) continue;
     iv.push([ax ? o.z0 : o.x0, ax ? o.z1 : o.x1]);
   }
@@ -406,7 +513,7 @@ function rampFaces(s, faces) {
     const plane = d === '+x' ? s.x1 : d === '-x' ? s.x0 : d === '+z' ? s.z1 : s.z0, a0 = ax ? s.z0 : s.x0, a1 = ax ? s.z1 : s.x1;
     // covered by a neighbouring block?  (sample just outside the face, low down)
     const am = (a0 + a1) / 2, ox = ax ? plane + nx * 0.05 : am, oz = ax ? am : plane + nz * 0.05;
-    if (d === highD && (SOLIDS.some(o => o !== s && !o.bound && inRect(o, ox, oz) && topAt(o, ox, oz) >= hi - 0.05) || (TERR.on && (terrOob(ox, oz) || terrH(ox, oz) >= hi - 0.05)))) continue;
+    if (d === highD && (SOLIDS.some(o => o !== s && !o.bound && !o.float && inRect(o, ox, oz) && topAt(o, ox, oz) >= hi - 0.05) || (TERR.on && (terrOob(ox, oz) || terrH(ox, oz) >= hi - 0.05)))) continue;
     const f = { s, d, ax, plane, a0, a1, h: hi, nx, nz, ramp: true, side: d !== highD };
     s.faces[d] = f; faces.push(f);
   }
@@ -425,7 +532,8 @@ function shapeVal(sh, dx, dz, r, fade) {
   return s < 0 ? 0 : s > 1 ? 1 : s;
 }
 function splatFloor(x, y, z, r, team, tol = 0.7, wallsToo = true, dir = null) {
-  const D = Paint.data, O = Paint.owner, Hg = Paint.hgt, TC = Paint.teamCells, OT = Paint.onTerr;
+  const D1 = Paint.data, O1 = Paint.owner, Hg = Paint.hgt, TC = Paint.teamCells, OT = Paint.onTerr;
+  const H2 = Paint.has2 ? Paint.hgt2 : null, D2 = Paint.data2, O2 = Paint.owner2; let hit2 = false;
   // a splat that lands on the terrain follows its slope (a bowl wall) instead of stopping at a fixed height band
   const slopeOk = TERR.on && Math.abs(terrH(x, z) - y) < 0.15 && !terrOob(x, z);
   const sh = makeShape(r), fade = CELL * 2.2;
@@ -440,7 +548,11 @@ function splatFloor(x, y, z, r, team, tol = 0.7, wallsToo = true, dir = null) {
     for (let i = i0; i <= i1; i++) {
       const q = j * NX + i;
       let ddx = (i + 0.5) * CELL - XH - x, ddz = dz;
-      if (Math.abs(Hg[q] - y) > tol + (slopeOk && OT[q] ? Math.hypot(ddx, ddz) * 0.95 : 0)) continue;
+      let D = D1, O = O1;
+      if (Math.abs(Hg[q] - y) > tol + (slopeOk && OT[q] ? Math.hypot(ddx, ddz) * 0.95 : 0)) {
+        if (!H2 || Math.abs(H2[q] - y) > tol) continue;
+        D = D2; O = O2; hit2 = true;                       // the ground under a floating block
+      }
       if (dir) { const a = (ddx * ux + ddz * uz) / k, b = -ddx * uz + ddz * ux; ddx = a; ddz = b; }
       const s = shapeVal(sh, ddx, ddz, r, fade);
       if (s <= 0) continue;
@@ -451,7 +563,7 @@ function splatFloor(x, y, z, r, team, tol = 0.7, wallsToo = true, dir = null) {
       if (now !== prev) { if (prev >= 0) TC[prev]--; if (now >= 0) TC[now]++; O[q] = now; if (now === team) gained++; }
     }
   }
-  Paint.dirty = true;
+  Paint.dirty = true; if (hit2) Paint.dirty2 = true;
   if (wallsToo) {
     for (const f of Paint.faces) {
       if (f.cap) {
@@ -489,9 +601,14 @@ function wallOwner(f, u, v) {
   return D[o] >= 128 ? 0 : D[o + 1] >= 128 ? 1 : -1;
 }
 function cellIndex(x, z) { const i = Math.floor((x + XH) / CELL), j = Math.floor((z + ZH) / CELL); if (i < 0 || j < 0 || i >= NX || j >= NZ) return -1; return j * NX + i; }
-function ownerAt(x, y, z) { const k = cellIndex(x, z); if (k < 0) return -1; if (Math.abs(Paint.hgt[k] - y) > 0.4) return -2; return Paint.owner[k]; }
+function ownerAt(x, y, z) {
+  const k = cellIndex(x, z); if (k < 0) return -1;
+  if (Math.abs(Paint.hgt[k] - y) > 0.4) return Paint.has2 && Math.abs(Paint.hgt2[k] - y) <= 0.4 ? Paint.owner2[k] : -2;
+  return Paint.owner[k];
+}
 function uploadPaint() {
   if (Paint.dirty) { Paint.tex.needsUpdate = true; Paint.dirty = false; }
+  if (Paint.dirty2) { Paint.tex2.needsUpdate = true; Paint.dirty2 = false; }
   if (Paint.wdirty) { Paint.wtex.needsUpdate = true; Paint.wdirty = false; }
 }
 
@@ -499,7 +616,8 @@ function uploadPaint() {
 const PU = {
   noiseMap: { value: null }, teamCol0: { value: new THREE.Color() }, teamCol1: { value: new THREE.Color() },
   paintOrigin: { value: new THREE.Vector2(-XH, -ZH) }, paintSize: { value: new THREE.Vector2(PSX, PSZ) },
-  floorPaint: { value: null }, wallPaint: { value: null }, layoutMap: { value: null }
+  floorPaint: { value: null }, wallPaint: { value: null }, layoutMap: { value: null },
+  floorPaint2: { value: null }, layerMap: { value: null }
 };
 function paintMat(opts, mode, layout) {
   const m = new THREE.MeshStandardMaterial(opts);
@@ -507,18 +625,21 @@ function paintMat(opts, mode, layout) {
   m.onBeforeCompile = sh => {
     sh.uniforms.paintMap = floor ? PU.floorPaint : PU.wallPaint;
     ['noiseMap', 'teamCol0', 'teamCol1', 'paintOrigin', 'paintSize', 'layoutMap'].forEach(k => sh.uniforms[k] = PU[k]);
+    if (floor) { sh.uniforms.paintMap2 = PU.floorPaint2; sh.uniforms.layerMap = PU.layerMap; }
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
 varying vec2 vPUv; varying vec2 vNUv; uniform vec2 paintOrigin; uniform vec2 paintSize;
-${floor ? '' : 'attribute vec2 paintUv; attribute vec2 noiseUv;'}`)
+${floor ? 'varying float vPY;' : 'attribute vec2 paintUv; attribute vec2 noiseUv;'}`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
-${floor ? 'vec4 pwp = modelMatrix * vec4(transformed, 1.0); vPUv = (pwp.xz - paintOrigin) / paintSize; vNUv = pwp.xz;' : 'vPUv = paintUv; vNUv = noiseUv;'}`);
+${floor ? 'vec4 pwp = modelMatrix * vec4(transformed, 1.0); vPUv = (pwp.xz - paintOrigin) / paintSize; vNUv = pwp.xz; vPY = pwp.y;' : 'vPUv = paintUv; vNUv = noiseUv;'}`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
 uniform sampler2D paintMap; uniform sampler2D noiseMap; uniform sampler2D layoutMap; uniform vec3 teamCol0; uniform vec3 teamCol1;
 varying vec2 vPUv; varying vec2 vNUv;
+${floor ? `uniform sampler2D paintMap2; uniform sampler2D layerMap; varying float vPY;
+vec4 pSample(vec2 uv){ vec4 li = texture2D(layerMap, uv); vec4 a = texture2D(paintMap, uv); vec4 b = texture2D(paintMap2, uv); return (li.a > 0.5 && vPY < li.r * 32.0 - 8.0) ? b : a; }` : 'vec4 pSample(vec2 uv){ return texture2D(paintMap, uv); }'}
 float inkNoise(vec2 n){ return texture2D(noiseMap, n*0.21).r*0.62 + texture2D(noiseMap, n*0.83+0.37).r*0.38; }
-float inkField(vec2 uv, vec2 n){ vec4 p = texture2D(paintMap, uv); return max(p.r, p.g) + (inkNoise(n)-0.5)*0.34; }
+float inkField(vec2 uv, vec2 n){ vec4 p = pSample(uv); return max(p.r, p.g) + (inkNoise(n)-0.5)*0.34; }
 vec3 inkPerturb(vec3 sp, vec3 sn, vec2 dH, float fd){
   vec3 sx = dFdx(sp); vec3 sy = dFdy(sp); vec3 r1 = cross(sy, sn); vec3 r2 = cross(sn, sx);
   float det = dot(sx, r1) * fd; vec3 gr = sign(det) * (dH.x * r1 + dH.y * r2);
@@ -526,7 +647,7 @@ vec3 inkPerturb(vec3 sp, vec3 sn, vec2 dH, float fd){
 }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
 ${layout ? 'vec4 lay = texture2D(layoutMap, vPUv); diffuseColor.rgb = mix(diffuseColor.rgb, lay.rgb, lay.a);' : ''}
-vec4 pp = texture2D(paintMap, vPUv);
+vec4 pp = pSample(vPUv);
 float fld = max(pp.r, pp.g) + (inkNoise(vNUv)-0.5)*0.34;
 float inkA = smoothstep(0.46, 0.54, fld);
 vec3 inkC = mix(teamCol0, teamCol1, smoothstep(-0.1, 0.1, pp.g - pp.r));
@@ -550,7 +671,7 @@ totalEmissiveRadiance += inkC * 0.07 * inkA;`);
 }
 
 /* ===================================================== LAYOUT TEXTURE */
-function makeLayoutTex() { return MAP_ID === 'skate' ? makeLayoutSkate() : makeLayoutDock(); }
+function makeLayoutTex() { return MAP_ID === 'skate' ? makeLayoutSkate() : MAP_ID === 'canton' ? makeLayoutCanton() : makeLayoutDock(); }
 // skatepark: the only bare floor is the sunken bowls and pits — pale pool concrete with painted S-curves
 // skatepark ground paint: baked slope shading in the bowls (so their curves read from above), white coping
 // along the bowl rims, pale snake humps, soft contact shadows round the blocks, the team logos on the spawn platforms
@@ -675,11 +796,11 @@ const WALL_STYLE = {
   stone: { tex: 'stone', su: 3, vFull: false, color: 0xffffff, rough: 0.85 },
   hedge: { tex: 'hedge', su: 2, vFull: false, color: 0xffffff, rough: 0.95 },
 };
-const TOP_STYLE = { skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
+const TOP_STYLE = { paving: { tex: 'stone', s: 5, rough: 0.9, color: 0xd9d3c6 }, tile: { tex: 'concrete', s: 3, rough: 0.8, color: 0xc98a72 }, skate: { tex: 'skate', s: 6, rough: 0.55 }, wood: { tex: 'wood', s: 3, rough: 0.75 }, grass: { tex: 'grass', s: 4, rough: 1 }, concrete: { tex: 'concrete', s: 8, rough: 0.9 }, grate: { tex: 'grate', s: 2, rough: 0.45, metal: 0.4 }, deck: { tex: 'deck', s: 4, rough: 0.6, metal: 0.2 }, crate: { tex: 'crate', s: 2, rough: 0.8 } };
 let arenaGroup;
 function buildArena() {
   arenaGroup = new THREE.Group(); scene.add(arenaGroup);
-  PU.noiseMap.value = TEX.noise; PU.floorPaint.value = Paint.tex; PU.wallPaint.value = Paint.wtex; PU.layoutMap.value = TEX.layout;
+  PU.noiseMap.value = TEX.noise; PU.floorPaint.value = Paint.tex; PU.floorPaint2.value = Paint.tex2; PU.layerMap.value = Paint.layTex; PU.wallPaint.value = Paint.wtex; PU.layoutMap.value = TEX.layout;
   if (TERR.on) buildTerrainMesh(); else {
   // floor
   const fg = quadGeo([[-XH, 0, -ZH], [XH, 0, -ZH], [XH, 0, ZH], [-XH, 0, ZH]], [[-XH / 8, -ZH / 8], [XH / 8, -ZH / 8], [XH / 8, ZH / 8], [-XH / 8, ZH / 8]], null, null, [0, 1, 0]);
@@ -687,7 +808,7 @@ function buildArena() {
   floor.receiveShadow = true; arenaGroup.add(floor);
   }
   // tops & ramps grouped by style
-  const tops = {}, walls = {}, sides = [], hedge = [];
+  const tops = {}, walls = {}, sides = [], hedge = [], slabs = [];
   const PX = Paint.PX, W = Paint.W, H = Paint.H;
   // one wall quad (corners as [along, height]) with its slot in the paint atlas
   const wallQuad = (style, f, corners) => {
@@ -720,8 +841,14 @@ function buildArena() {
         sides.push(quadGeo(pts, [[0, 0], [L[1] - L[0], 0], [L[1] - L[0], 1], [0, 1]], null, null, nn[1] === 'x' ? [nn[0] === '+' ? 1 : -1, 0, 0] : [0, 0, nn[0] === '+' ? 1 : -1]));
       }
       for (const d in s.faces) { const f = s.faces[d]; wallQuad(s.style, f, [[f.a0, 0], [f.a1, 0], [f.a1, f.h], [f.a0, f.h]]); }
+      if (s.float) {                                       // sides and underside of a floating block (plain, no ink)
+        const y0 = s.y0, y1 = s.h, w = s.x1 - s.x0, d = s.z1 - s.z0;
+        [[[s.x1, s.z0], [s.x1, s.z1], [1, 0, 0], d], [[s.x0, s.z1], [s.x0, s.z0], [-1, 0, 0], d], [[s.x1, s.z1], [s.x0, s.z1], [0, 0, 1], w], [[s.x0, s.z0], [s.x1, s.z0], [0, 0, -1], w]].forEach(([a, b, n, L]) =>
+          slabs.push(quadGeo([[a[0], y0, a[1]], [b[0], y0, b[1]], [b[0], y1, b[1]], [a[0], y1, a[1]]], [[0, y0 / 3], [L / 3, y0 / 3], [L / 3, y1 / 3], [0, y1 / 3]], null, null, n)));
+        slabs.push(quadGeo([[s.x0, y0, s.z0], [s.x1, y0, s.z0], [s.x1, y0, s.z1], [s.x0, y0, s.z1]], [[s.x0 / 3, s.z0 / 3], [s.x1 / 3, s.z0 / 3], [s.x1 / 3, s.z1 / 3], [s.x0 / 3, s.z1 / 3]], null, null, [0, -1, 0]));
+      }
       if (s.oob) {                                         // hedge sides above the street, not in the paint atlas
-        const y0 = MAP_ID === 'skate' ? SL : 0;
+        const y0 = MAP_ID === 'skate' ? SL : MAP_ID === 'canton' ? CL : 0;
         [['+x', s.x1, 1, 0], ['-x', s.x0, -1, 0], ['+z', s.z1, 0, 1], ['-z', s.z0, 0, -1]].forEach(([d, pl, nx, nz]) => {
           if ((d === '+x' && s.x1 >= XH - 0.01) || (d === '-x' && s.x0 <= -XH + 0.01) || (d === '+z' && s.z1 >= ZH - 0.01) || (d === '-z' && s.z0 <= -ZH + 0.01)) return;
           const L = nx ? [s.z0, s.z1] : [s.x0, s.x1], pts = [[L[0], y0], [L[1], y0], [L[1], s.h], [L[0], s.h]].map(([a, y]) => nx ? [pl, y, a] : [a, y, pl]);
@@ -738,13 +865,13 @@ function buildArena() {
       const hi = Math.max(s.h0, s.h1), lowAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z0 : s.z1) : (s.h0 < s.h1 ? s.x0 : s.x1), highAt = s.axis === 'z' ? (s.h0 < s.h1 ? s.z1 : s.z0) : (s.h0 < s.h1 ? s.x1 : s.x0);
       for (const d in s.faces) {
         const f = s.faces[d];
-        if (f.side) wallQuad('stone', f, [[lowAt, 0], [highAt, 0], [highAt, hi], [lowAt, 0.001]]);
+        if (f.side) wallQuad('stone', f, [[lowAt, 0], [highAt, 0], [highAt, hi], [lowAt, Math.max(0.001, Math.min(s.h0, s.h1))]]);
         else wallQuad('stone', f, [[f.a0, 0], [f.a1, 0], [f.a1, hi], [f.a0, hi]]);
       }
     }
   }
   for (const k in tops) {
-    const ts = TOP_STYLE[k]; const m = new THREE.Mesh(mergeGeos(tops[k]), paintMat({ map: TEX[ts.tex], roughness: ts.rough, metalness: ts.metal || 0 }, 'floor', false));
+    const ts = TOP_STYLE[k]; const m = new THREE.Mesh(mergeGeos(tops[k]), paintMat({ map: TEX[ts.tex], roughness: ts.rough, metalness: ts.metal || 0, color: ts.color || 0xffffff }, 'floor', false));
     m.castShadow = m.receiveShadow = true; arenaGroup.add(m);
   }
   for (const k in walls) {
@@ -752,6 +879,7 @@ function buildArena() {
     m.castShadow = m.receiveShadow = true; arenaGroup.add(m);
   }
   if (sides.length) { const sm = new THREE.Mesh(mergeGeos(sides), new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.85, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
+  if (slabs.length) { const sm = new THREE.Mesh(mergeGeos(slabs), new THREE.MeshStandardMaterial({ map: TEX.stone, roughness: 0.85, color: 0xe9e2d2, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; arenaGroup.add(sm); }
   if (hedge.length) { const hm = new THREE.Mesh(mergeGeos(hedge), new THREE.MeshStandardMaterial({ map: TEX.hedge, roughness: 0.95 })); hm.castShadow = hm.receiveShadow = true; arenaGroup.add(hm); }
   // see-through grate bridges and fences (yellow frames, like the park's rails)
   if (BRIDGES.length || FENCES.length) {

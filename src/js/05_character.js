@@ -2,7 +2,7 @@
 const CHARS = [];
 let PLAYER = null;
 const RING8 = Array.from({ length: 8 }, (_, a) => [Math.cos(a * Math.PI / 4), Math.sin(a * Math.PI / 4)]);
-const STEP = 0.55, BODY_H = 1.7, GRAV = 24, RESPAWN = 5.5, SPECIAL_AREA = 42;
+const STEP = 0.55, BODY_H = 1.7, SQUID_H = 0.6, GRAV = 24, RESPAWN = 5.5, SPECIAL_AREA = 42;
 const BOT_NAMES = ['小墨', '咕噜', '泡泡', '阿飞', '闪电', '橘子汽水', '海苔', '奶昔', '跳跳糖', '大橙', '蓝莓', '噗噗', '墨鱼丸'];
 const TEAMMAT = [0, 1].map(() => new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.06, emissive: 0xffffff, emissiveIntensity: 0.16 }));
 const TEAMGHOST = [0, 1].map(() => new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.1, clearcoat: 1, transparent: true, opacity: 0.38, depthWrite: false, emissive: 0xffffff, emissiveIntensity: 0.3 }));
@@ -343,6 +343,11 @@ class Character {
     if (sndVol(p0) > 0.05) Sfx.superJump();
   }
   hideSJMarker() { if (this.sjMarker) this.sjMarker.visible = false; }
+  // is there a floating block right above, too low to stand under?
+  lowCeiling() {
+    for (const s of solidsNear(this.pos.x, this.pos.z)) if (s.float && s.y0 > this.pos.y + 0.3 && s.y0 < this.pos.y + BODY_H + 0.02 && this.pos.x > s.x0 - 0.38 && this.pos.x < s.x1 + 0.38 && this.pos.z > s.z0 - 0.38 && this.pos.z < s.z1 + 0.38) return true;
+    return false;
+  }
   setSwim(on) {
     if (on === this.swim) return;
     this.swim = on; this.swimPop = 1;
@@ -473,7 +478,7 @@ class Character {
     }
     // ----- swim state
     const wantSwim = I.swim && !this.sp;
-    this.setSwim(wantSwim);
+    this.setSwim(wantSwim || (this.swim && this.lowCeiling()));        // under a low floating block there is no room to stand up: stay a squid
     const fo = this.grounded ? ownerAt(this.pos.x, this.pos.y, this.pos.z) : -3;
     this.submerged = this.swim && ((this.grounded && fo === this.team) || this.climbing);
     if (this.submerged) this.lastSub = G.time;
@@ -539,6 +544,7 @@ class Character {
     const wasG = this.grounded, y0 = this.pos.y;
     this.pos.y += this.vel.y * dt;
     if (this.vel.y > 0 && !this.swim && BRIDGES.length) for (const b of BRIDGES) { const c = b.h - 0.06 - BODY_H; if (y0 <= c + 1e-3 && this.pos.y > c && inRect(b, this.pos.x, this.pos.z)) { this.pos.y = c; this.vel.y = 0; } }   // head bumps the grate above
+    if (this.vel.y > 0) for (const s of solidsNear(this.pos.x, this.pos.z)) if (s.float && inRect(s, this.pos.x, this.pos.z)) { const c = s.y0 - (this.swim ? SQUID_H : BODY_H); if (y0 <= c + 1e-3 && this.pos.y > c) { this.pos.y = c; this.vel.y = 0; } }   // head bumps a floating block
     const g = groundBelow(this.pos.x, this.pos.z, Math.max(this.pos.y, this.pos.y - this.vel.y * dt), STEP, this.swim);   // squids drop through grate bridges
     if (this.pos.y <= g) {
       if (!wasG && this.vel.y < -12 && this.isPlayer) Sfx.land(0.5);
@@ -732,6 +738,7 @@ class Character {
       if (x + r < s.x0 || x - r > s.x1 || z + r < s.z0 || z - r > s.z1) continue;
       const cx = clamp(x, s.x0, s.x1), cz = clamp(z, s.z0, s.z1);
       if (topAt(s, cx, cz) <= this.pos.y + STEP) continue;
+      if (s.float && this.pos.y + (this.swim ? SQUID_H : BODY_H) <= s.y0 + 0.02) continue;      // floating block overhead: walk under it
       let dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), nx, nz;
       if (d > 1e-5) { if (d >= r) continue; nx = dx / d; nz = dz / d; this.pos.x = cx + nx * r; this.pos.z = cz + nz * r; }
       else {

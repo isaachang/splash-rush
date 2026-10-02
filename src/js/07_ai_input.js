@@ -1,12 +1,19 @@
 /* ============================================================ NAV GRID */
 const NAV = { W: 0, H: 0, h: null, cost: null };
+// the height the AI walks at: the ground under floating blocks (the covered arcade street, the paifang, the mansion gate),
+// except blocks marked navTop (bridges), whose top is the way across
+function navGround(x, z) {
+  let h = groundAt(x, z);
+  for (const s of solidsNear(x, z)) if (s.float && !s.navTop && inRect(s, x, z) && s.h >= h - 0.01) h = groundBelow(x, z, s.y0 - 0.05, 0, true);
+  return h;
+}
 function initNav() {
   NAV.W = XH * 2; NAV.H = ZH * 2;
   const W = NAV.W, H = NAV.H; NAV.h = new Float32Array(W * H); NAV.cost = new Float32Array(W * H);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
-    const x = -XH + i + 0.5, z = -ZH + j + 0.5, h = TERR.on && terrOob(x, z) ? 99 : groundAt(x, z); NAV.h[j * W + i] = h;   // never path outside the park
+    const x = -XH + i + 0.5, z = -ZH + j + 0.5, h = TERR.on && terrOob(x, z) ? 99 : navGround(x, z); NAV.h[j * W + i] = h;   // never path outside the park
     let near = 0;
-    for (let a = 0; a < 8; a++) { const px = x + Math.cos(a * Math.PI / 4) * 0.75, pz = z + Math.sin(a * Math.PI / 4) * 0.75; if (Math.abs(px) > XH - 0.3 || Math.abs(pz) > ZH - 0.3) { near = 1; continue; } if (groundAt(px, pz) > h + STEP) near = 1; }
+    for (let a = 0; a < 8; a++) { const px = x + Math.cos(a * Math.PI / 4) * 0.75, pz = z + Math.sin(a * Math.PI / 4) * 0.75; if (Math.abs(px) > XH - 0.3 || Math.abs(pz) > ZH - 0.3) { near = 1; continue; } if (navGround(px, pz) > h + STEP) near = 1; }
     NAV.cost[j * W + i] = near ? 3.5 : 1;
   }
 }
@@ -253,7 +260,7 @@ class Bot {
     const wantYaw = baseYaw + Math.sin(T * 2.3 * this.jitter + this.sweep) * 0.6;
     c.aimYaw += angDiff(c.aimYaw, wantYaw) * Math.min(1, dt * (chg ? 3 : 6)); c.aimPitch = damp(c.aimPitch, (chg ? -0.12 : -0.3) + Math.sin(T * 1.4 + this.sweep) * (chg ? 0.05 : 0.12), 5, dt);
     const ax = c.pos.x + Math.sin(c.aimYaw) * 4, az = c.pos.z + Math.cos(c.aimYaw) * 4;
-    const ah = ownerAt(ax, groundAt(ax, az), az);
+    const ah = ownerAt(ax, navGround(ax, az), az);
     const under = ownerAt(c.pos.x, c.pos.y, c.pos.z);
     const nextOwn = this.path.length ? ownerAt(this.path[0].x, this.path[0].y, this.path[0].z) === c.team : false;
     if (!c.charging && under === c.team && nextOwn && c.ink > 30 && Math.random() < 0.9 && ah === c.team) { I.swim = true; }

@@ -68,7 +68,9 @@
 node tools/smoke-test.js     # 无浏览器自动跑完整对局，检查有没有报错
 node tools/feature-test.js   # 逐项验证核心机制（蓄力、准星、炸弹、防护罩……）
 node tools/map-test.js       # 滑板场专项检查（泳池地形、外墙、铁网桥和围栏、爬塔、AI 路线）
+node tools/canton-test.js    # 西關大屋专项检查（悬空方块、上下两层涂地、河涌、镇海楼、窄缝、AI 路线）
 SR_MAP=skate node tools/smoke-test.js   # 在滑板场上跑完整对局
+SR_MAP=canton node tools/smoke-test.js  # 在西關大屋上跑完整对局
 ```
 
 ```

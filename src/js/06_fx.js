@@ -70,7 +70,7 @@ const Fx = {
       const dr = Math.exp(-1.3 * dt);
       p.vy -= p.grav * dt; p.vx *= dr; p.vz *= dr; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
       if (Math.abs(p.x) < XH && Math.abs(p.z) < ZH) {
-        const g = groundAt(p.x, p.z);
+        const g = groundBelow(p.x, p.z, p.y + 0.6, 0, true);                 // the floor under the drop (not the roof of a floating block above it)
         if (p.y < g) { if (p.vy < -1.5 && !p.flat) { p.y = g + 0.02; p.flat = 1; p.vx = p.vy = p.vz = 0; p.grav = 0; p.life = Math.min(p.life, 0.25); p.max = 0.25; } else if (!p.flat) p.y = g; }
       }
     }
@@ -173,7 +173,7 @@ const Proj = {
   // what did a straight ray / projectile hit?  -> floor (with height) or wall (with face)
   classify(s, prev, p) {
     if (s === true && TERR.on && terrOob(p.x, p.z) && p.y < TERR.OOB_H - 0.08) { const n = new THREE.Vector3(prev.x - p.x, 0, prev.z - p.z); if (n.lengthSq() < 1e-6) n.set(0, 1, 0); n.normalize(); return { type: 'none', y: p.y, n, pt: p.clone() }; }   // the park's outer wall
-    if (s === true) return { type: 'floor', y: groundAt(p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
+    if (s === true) return { type: 'floor', y: groundBelow(p.x, p.z, prev.y + 0.3, 0, true), n: new THREE.Vector3(0, 1, 0) };
     if (s.tree) return { type: 'none', y: p.y, n: new THREE.Vector3(0, 1, 0), pt: p.clone() };
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
     if (prev.y >= tPrev - 0.08) return { type: 'floor', y: topAt(s, p.x, p.z), n: new THREE.Vector3(0, 1, 0) };
@@ -330,7 +330,7 @@ const Proj = {
       const nx = prev.x - p.x, nz = prev.z - p.z, L = Math.hypot(nx, nz) || 1; this.fx(prev.x, p.y, prev.z, team, r, nx / L, 0, nz / L); return true;
     }
     if (s.tree) { const nx = prev.x - p.x, nz = prev.z - p.z, L = Math.hypot(nx, nz) || 1; this.fx(prev.x, prev.y, prev.z, team, r * 0.7, nx / L, 0.3, nz / L); return true; }   // palm: stops the shot, takes no ink
-    if (s === true) { if (inside) { const g = groundAt(hx, hz); floorHit(g); this.fx(hx, g + 0.05, hz, team, r, 0, 1, 0); } return true; }
+    if (s === true) { if (inside) { const g = groundBelow(hx, hz, prev.y + 0.3, 0, true); floorHit(g); this.fx(hx, g + 0.05, hz, team, r, 0, 1, 0); } return true; }
     const tPrev = topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1));
     if (prev.y >= tPrev - 0.08) {
       const y = topAt(s, hx, hz);
@@ -411,7 +411,7 @@ const Proj = {
         else if (s) {
           const onTop = s === true || prev.y >= topAt(s, clamp(prev.x, s.x0, s.x1), clamp(prev.z, s.z0, s.z1)) - 0.05;
           if (onTop) {
-            b.p.y = s === true ? 0 : topAt(s, b.p.x, b.p.z); b.p.y = Math.max(b.p.y, groundAt(b.p.x, b.p.z)) + 0.2;
+            b.p.y = s === true ? 0 : topAt(s, b.p.x, b.p.z); b.p.y = Math.max(b.p.y, groundBelow(b.p.x, b.p.z, prev.y + 0.3, 0, true)) + 0.2;
             if (b.bounces < 1 && Math.abs(b.v.y) > 4) { b.v.y = -b.v.y * 0.3; b.v.x *= 0.5; b.v.z *= 0.5; b.bounces++; }
             else { b.v.set(0, 0, 0); b.fuse = 0.9; }
           } else { b.p.copy(prev); b.v.x *= -0.4; b.v.z *= -0.4; }
