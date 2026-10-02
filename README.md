@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.12.0-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.10.1-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -48,7 +48,7 @@
   - **重型加特林**：按住先转约 0.3 秒，转起来后一直扫射、松手就停；射速极快、射程远，但一罐墨只够约 40 发
 - **潜墨与爬墙**：在自己的墨水里游动、隐身、1 秒回满血，还能沿着涂过的墙往上爬
 - **超级跳**：打开地图点队友，从天而降直接跳到他身边
-- **7 个 AI 队友与对手**：认得每张图的台阶、桥、暗道和能爬的墙；每队有一个看不见的指挥在分工、报点；难度三档是三种对手——轻松各玩各的，普通会撤退和分工，地狱会集火、埋伏、绕后、潜行躲枪
+- **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分三档
 - **完整对局流程**：选场地 → 战前准备（选角色和武器、看阵容）→ 开局飞行镜头 → 对局 → 裁判判定 → 结算
 - **原版风格结算**：俯视判定、比例条拉锯、WIN! / LOSE…，计分板、奖牌和毒舌吐槽奖
 - **阵亡观战**：先看是谁打倒了你，再切到队友视角，等复活时也不无聊
@@ -59,7 +59,12 @@
 <p align="center">
   <img src="docs/screenshots/title.jpg" width="49%" alt="主页"> <img src="docs/screenshots/lobby.jpg" width="49%" alt="战前准备">
 </p>
-<p align="center"><sub>主页（背景是实时涂地的竞技场） · 战前准备（选武器、看阵容）</sub></p>
+<p align="center"><sub>主页（背景是实时涂地的竞技场） · 战前准备（选角色和武器、看阵容）</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/canton-grid.jpg" width="100%" alt="西關大屋地图场景">
+</p>
+<p align="center"><sub>默认场地「西關大屋」· 镇海楼广场、骑楼茶楼街、双层腸粉街骑楼、猎德牌坊、河涌龙舟拱桥、大屋天井趟栊门</sub></p>
 
 ## 🛠 开发
 
@@ -69,8 +74,6 @@ node tools/smoke-test.js     # 无浏览器自动跑完整对局，检查有没�
 node tools/feature-test.js   # 逐项验证核心机制（蓄力、准星、炸弹、防护罩……）
 node tools/map-test.js       # 滑板场专项检查（泳池地形、外墙、铁网桥和围栏、爬塔、AI 路线）
 node tools/canton-test.js    # 西關大屋专项检查（悬空方块、上下两层涂地、河涌、镇海楼、窄缝、AI 路线）
-node tools/ai-test.js        # 机器人专项检查（三张图的寻路图、掉进河涌能走出来、撤退、集火、爬墙、三档难度）
-node tools/ai-bench.js canton 2 1 12   # 全电脑对打量强弱：地图、A 队难度、B 队难度、局数（0 轻松 1 普通 2 地狱 3 旧版机器人）
 SR_MAP=skate node tools/smoke-test.js   # 在滑板场上跑完整对局
 SR_MAP=canton node tools/smoke-test.js  # 在西關大屋上跑完整对局
 ```
@@ -84,7 +87,7 @@ src/
   js/04_data.js              武器 / 副武器 / 必杀技数据、玩家存档
   js/05_character.js         角色模型、移动、潜墨、武器逻辑
   js/06_fx.js                粒子、子弹、炸弹、飞溅
-  js/07_ai_input.js          寻路图（分层、走/潜/跳/爬）、战术点、队伍指挥、机器人、输入、镜头
+  js/07_ai_input.js          寻路、AI、输入、镜头
   js/08_game.js              界面、对局流程、启动
 vendor/three.min.js          Three.js r158（MIT）
 tools/                       构建与测试脚本
