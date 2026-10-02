@@ -312,7 +312,7 @@ class Character {
   canJumpTo(t) { return t && t !== this && t.team === this.team && t.alive && t.state === 'play' && !t.sj; }
   // super jump to a teammate: short crouch (vulnerable), launch, then land on them
   startSuperJump(t) {
-    if (!this.canJumpTo(t) || this.sj || this.sp || this.state !== 'play' || !this.alive) return false;
+    if (!this.canJumpTo(t) || this.sj || this.sp || this.state !== 'play' || !this.alive || this.lowCeiling()) return false;   // no launching from under a low floating block
     this.sj = { phase: 'crouch', t: 0, target: t, tp: t.pos.clone() };
     this.setSwim(false); this.stopCharge(); this.showSJMarker(this.sj.tp);
     if (sndVol(this.pos) > 0.05) Sfx.superJump();
@@ -344,8 +344,8 @@ class Character {
   }
   hideSJMarker() { if (this.sjMarker) this.sjMarker.visible = false; }
   // is there a floating block right above, too low to stand under?
-  lowCeiling() {
-    for (const s of solidsNear(this.pos.x, this.pos.z)) if (s.float && s.y0 > this.pos.y + 0.3 && s.y0 < this.pos.y + BODY_H + 0.02 && this.pos.x > s.x0 - 0.38 && this.pos.x < s.x1 + 0.38 && this.pos.z > s.z0 - 0.38 && this.pos.z < s.z1 + 0.38) return true;
+  lowCeiling(m = 0.38) {
+    for (const s of solidsNear(this.pos.x, this.pos.z)) if (s.float && s.y0 > this.pos.y + 0.3 && s.y0 < this.pos.y + BODY_H + 0.02 && this.pos.x > s.x0 - m && this.pos.x < s.x1 + m && this.pos.z > s.z0 - m && this.pos.z < s.z1 + m) return true;
     return false;
   }
   setSwim(on) {
@@ -406,6 +406,7 @@ class Character {
     if (this.isPlayer) Sfx.chargeStop();
   }
   startSpecial() {
+    if (this.lowCeiling()) return;                       // squid-only tunnel: no room to stand up and launch
     this.special = 0; this.specials++; this.sp = { phase: 0, t: 0 }; this.setSwim(false); this.stopCharge();
     this.vel.set(this.vel.x * 0.3, 13, this.vel.z * 0.3); this.grounded = false;
     if (sndVol(this.pos) > 0.05) Sfx.special();
@@ -478,7 +479,7 @@ class Character {
     }
     // ----- swim state
     const wantSwim = I.swim && !this.sp;
-    this.setSwim(wantSwim || (this.swim && this.lowCeiling()));        // under a low floating block there is no room to stand up: stay a squid
+    this.setSwim(wantSwim || this.lowCeiling(this.swim ? 0.38 : 0));        // under a low floating block there is no room to stand up: stay a squid
     const fo = this.grounded ? ownerAt(this.pos.x, this.pos.y, this.pos.z) : -3;
     this.submerged = this.swim && ((this.grounded && fo === this.team) || this.climbing);
     if (this.submerged) this.lastSub = G.time;
@@ -544,7 +545,7 @@ class Character {
     const wasG = this.grounded, y0 = this.pos.y;
     this.pos.y += this.vel.y * dt;
     if (this.vel.y > 0 && !this.swim && BRIDGES.length) for (const b of BRIDGES) { const c = b.h - 0.06 - BODY_H; if (y0 <= c + 1e-3 && this.pos.y > c && inRect(b, this.pos.x, this.pos.z)) { this.pos.y = c; this.vel.y = 0; } }   // head bumps the grate above
-    if (this.vel.y > 0) for (const s of solidsNear(this.pos.x, this.pos.z)) if (s.float && inRect(s, this.pos.x, this.pos.z)) { const c = s.y0 - (this.swim ? SQUID_H : BODY_H); if (y0 <= c + 1e-3 && this.pos.y > c) { this.pos.y = c; this.vel.y = 0; } }   // head bumps a floating block
+    if (this.vel.y > 0) for (const s of solidsNear(this.pos.x, this.pos.z)) if (s.float && inRect(s, this.pos.x, this.pos.z)) { const c = s.y0 - (this.swim ? SQUID_H : BODY_H); if (y0 < s.y0 && this.pos.y > c) { this.pos.y = Math.max(c, Math.min(y0, this.pos.y)); this.vel.y = 0; } }   // head bumps a floating block
     const g = groundBelow(this.pos.x, this.pos.z, Math.max(this.pos.y, this.pos.y - this.vel.y * dt), STEP, this.swim);   // squids drop through grate bridges
     if (this.pos.y <= g) {
       if (!wasG && this.vel.y < -12 && this.isPlayer) Sfx.land(0.5);
