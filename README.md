@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.9.0-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.9.1-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -40,11 +40,12 @@
 
 - **实时涂地**：每一发墨水都会涂在地面和墙上，墨面有光泽和厚度，飞溅的墨滴落到哪就涂到哪
 - **两张场地**：潮汐码头广场（集装箱、中路开阔）和墨浪滑板场（S 形下沉泳池、波浪外墙、中央高塔、铁网走道）；滑板场的泳池是真正的碗形曲面，能走下去、顺着弧形坡走上来
-- **三个角色**：阿飒（跑得最快）、满满（墨水最多）、石墩（最耐打），每个角色有自己的武器
-- **三把手感不同的武器**
+- **三个角色**：阿飒（跑得最快）、满满（墨水最多）、石墩（最耐打），每个角色有自己的武器（阿飒有两把可选）
+- **四把手感不同的武器**
   - **墨浪步枪**：全能型，子弹几乎瞬间直飞，末端下坠，3 发击倒
+  - **疾风冲锋枪**：射速极快、单发很弱（5 发击倒），很费墨但回墨快
   - **重炮狙击**：蓄力瞬间命中，蓄满一发击倒；沿途涂出墨线，有激光瞄准线
-  - **重型加特林**：按住就扫射，射速极快、射程远，但一罐墨只够约 40 发
+  - **重型加特林**：按住先转约 0.3 秒，转起来后一直扫射、松手就停；射速极快、射程远，但一罐墨只够约 40 发
 - **潜墨与爬墙**：在自己的墨水里游动、隐身、1 秒回满血，还能沿着涂过的墙往上爬
 - **超级跳**：打开地图点队友，从天而降直接跳到他身边
 - **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分三档

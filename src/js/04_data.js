@@ -17,11 +17,11 @@ const WEAPONS = {
     id: 'rifle', name: '墨浪步枪', en: 'SPLASH RIFLE', role: '全能 · 中距离', type: 'auto', cls: 'shooter',
     desc: '射速、射程、涂地都很均衡，3 发击倒。适合任何场合，新手首选。',
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
-    dmg: 36, dmgFar: 18, falloff: [0.18, 0.42], interval: 0.105, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
+    dmg: 36, dmgFar: 18, falloff: [0.18, 0.42], interval: 0.125, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
     spread: 0.045, airSpread: 0.1, cost: 1.42, splat: [1.07, 1.35],
     moveFire: 4.8, muzzleF: 0.55, range: 16, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,
-    stats: { range: 4, dmg: 3, rate: 4, paint: 3, mobility: 4 }
+    stats: { range: 4, dmg: 3, rate: 3, paint: 3, mobility: 4 }
   },
   charger: {
     id: 'charger', name: '重炮狙击', en: 'HEAVY CANNON', role: '远程 · 狙击', type: 'charge', cls: 'charger',
@@ -36,10 +36,10 @@ const WEAPONS = {
 // they reuse the same bullets, splashes, hit feedback and sounds as the rifle and the cannon
 WEAPONS.splatling = {
   id: 'splatling', name: '重型加特林', en: 'HEAVY GATLING', role: '远程 · 扫射', type: 'auto', cls: 'splatling',
-  desc: '按住就一直扫射，射速极快、射程远，但一罐墨只够打约 40 发（约 2 秒）。打完要赶紧潜墨回墨。扫射时走得慢。',
+  desc: '按住先让枪管转起来（约 0.3 秒），转起来以后按住就一直扫射，松手就停，再按又要重新转。射速极快、射程远，但一罐墨只够打约 40 发（约 2 秒），打完要赶紧潜墨回墨。转动和扫射时都走得慢。',
   // shooter-style bullets with a longer straight flight; very fast fire, small magazine
   dmg: 22, dmgFar: 12, falloff: [0.17, 0.36], interval: 0.05, speed: 150, straight: 0.11, dragH: 14, dragV: 7, grav: 72,
-  spread: 0.055, airSpread: 0.1, cost: 2.5, splat: [0.9, 1.1], moveFire: 3.8, muzzleF: 0.85, range: 21, spLoss: 0.5,
+  spinUp: 0.3, spread: 0.055, airSpread: 0.1, cost: 2.5, splat: [0.9, 1.1], moveFire: 3.8, muzzleF: 0.85, range: 21, spLoss: 0.5,
   sub: 'bomb', special: 'surge', spArea: 44,
   stats: { range: 4, dmg: 2, rate: 5, paint: 4, mobility: 2 }
 };
@@ -52,9 +52,20 @@ WEAPONS.blaster = {
   sub: 'bomb', special: 'surge', spArea: 34,
   stats: { range: 4, dmg: 5, rate: 1, paint: 1, mobility: 3 }
 };
+// 阿飒's second main weapon: very fast, weak bullets that burn through the tank but refill quickly
+WEAPONS.smg = {
+  id: 'smg', name: '疾风冲锋枪', en: 'SWIFT SMG', role: '近中距离 · 速射', type: 'auto', cls: 'shooter',
+  desc: '射速极快，单发伤害很低，5 发击倒，靠连射压人。射程和步枪一样。很费墨，一罐只够连打约 3 秒，但回墨比别的枪快，停火后也更早开始回墨。边打边跑也很灵活。',
+  // same flight as the rifle (so the bots' aim tables carry over), weaker and much faster
+  dmg: 20, dmgFar: 10, falloff: [0.18, 0.42], interval: 0.06, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
+  spread: 0.06, airSpread: 0.12, cost: 1.6, splat: [0.85, 1.05],
+  moveFire: 5.4, muzzleF: 0.5, range: 16, spLoss: 0.5, inkRegenK: 1.3, regenDelay: 0.4,
+  sub: 'bomb', special: 'surge', spArea: 40,
+  stats: { range: 4, dmg: 1, rate: 5, paint: 3, mobility: 5 }
+};
 WEAPONS.charger.charges = true;
 // (the range blaster is kept in the code but not offered for now)
-const WEAPON_ORDER = ['rifle', 'charger', 'splatling'];
+const WEAPON_ORDER = ['rifle', 'smg', 'charger', 'splatling'];
 const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'], ['paint', '涂地'], ['mobility', '机动']];
 
 /* ------------------------------------------------------ characters
@@ -64,10 +75,10 @@ const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'],
 const CHARACTERS = {
   sa: {
     id: 'sa', name: '阿飒', en: 'SWIFT', role: '疾风 · 游击', tag: '跑得最快的街头涂鸦手',
-    desc: '全场最快：移速、潜行都快一大截，适合绕后偷袭、抢地盘。但身板最薄，墨罐也小，要省着打，挨两下就得撤。',
-    hp: 80, runK: 1.25, swimK: 1.15, inkCap: 0.8, inkRegen: 1, knockK: 1.2, weapons: ['rifle'], sub: 'curling',
+    desc: '全场最快：移速、潜行都快一大截，适合绕后偷袭、抢地盘。主武器可选墨浪步枪或疾风冲锋枪。但身板最薄，墨罐也小，要省着打，挨两下就得撤。',
+    hp: 80, runK: 1.25, swimK: 1.15, inkCap: 0.8, inkRegen: 1, knockK: 1.2, weapons: ['rifle', 'smg'], sub: 'curling',
     look: { skin: '#f3c39b', cloth: '#f5f5f2', cloth2: '#40c0b0', pants: '#23242c', hat: 'band', hatColor: '#40c0b0', trim: '#5ad1ff', hair: 'tail', bodyW: 0.92, bodyH: 1.0, tankK: 0.9, crestK: 1.35 },
-    bars: { hp: 1, speed: 5, ink: 1 }, weaponNote: '专属武器'
+    bars: { hp: 1, speed: 5, ink: 1 }, weaponNote: '步枪 / 冲锋枪'
   },
   man: {
     id: 'man', name: '满满', en: 'TANKFUL', role: '墨罐 · 持久', tag: '背着超大墨罐的涂地狂',
@@ -79,14 +90,14 @@ const CHARACTERS = {
   dun: {
     id: 'dun', name: '石墩', en: 'BULWARK', role: '重装 · 肉盾', tag: '挨打也不退一步的大块头',
     desc: '又壮又胖，生命值最高（步枪要 5 发才倒），被打中几乎不后仰、不被推开，端着加特林顶在最前面。代价是全场最慢、跳得低，身板大也更容易被打中。',
-    hp: 160, runK: 0.6, swimK: 0.7, inkCap: 1, inkRegen: 1, knockK: 0.4, jumpK: 0.85, hitK: 1.3, weapons: ['splatling'], sub: 'bomb',
+    hp: 160, runK: 0.57, swimK: 0.665, inkCap: 1, inkRegen: 1, knockK: 0.4, jumpK: 0.85, hitK: 1.3, weapons: ['splatling'], sub: 'bomb',
     look: { skin: '#7d4d31', cloth: '#3b3f52', cloth2: '#ff8a3d', pants: '#2a2b35', hat: 'goggles', hatColor: '#3b3f52', trim: '#ffd23a', hair: 'fin', bodyW: 1.04, bodyH: 1.02, fat: 1, tankK: 1.05, crestK: 0.8 },
     bars: { hp: 5, speed: 1, ink: 3 }, weaponNote: '专属武器'
   }
 };
 const CHAR_ORDER = ['sa', 'man', 'dun'];
 // baseline body used by the automated mechanics tests (not selectable)
-CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', sub: null, hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'charger', 'splatling', 'blaster'] });
+CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', sub: null, hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'smg', 'charger', 'splatling', 'blaster'] });
 // a plain training dummy for the lobby sub-weapon demo (not selectable)
 CHARACTERS.dummy = Object.assign({}, CHARACTERS.std, { id: 'dummy', name: '假人', look: { skin: '#f3c39b', cloth: '#e9e4d8', cloth2: '#697386', pants: '#3b3f52', hat: 'cap', hatColor: '#697386', trim: '#f0f0f0', bodyW: 1, bodyH: 1, tankK: 1, crestK: 1 } });
 // the character that carries a given weapon (first match)
@@ -111,6 +122,7 @@ function weaponIcon(id, color = '#fff', w = 64, accent = 'var(--c0)') {
   const h = w / 2, st = 'stroke="#111" stroke-width="2.5" stroke-linejoin="round"';
   let body = '';
   if (id === 'rifle') body = `<path d="M3 13 L14 12 L14 21 L5 23 Z" fill="${color}" ${st}/><rect x="13" y="11" width="24" height="9" rx="2.5" fill="${color}" ${st}/><rect x="35" y="12.5" width="12" height="6" rx="2" fill="${color}" ${st}/><rect x="46" y="14" width="14" height="3.5" rx="1.5" fill="${color}" ${st}/><rect x="16" y="19" width="6" height="9" rx="2" fill="${color}" ${st}/><path d="M26 19 L31 19 L33 28 L28 28 Z" style="fill:${accent}" ${st}/><rect x="17" y="6" width="13" height="5" rx="2.5" style="fill:${accent}" ${st}/>`;
+  else if (id === 'smg') body = `<rect x="8" y="11" width="26" height="10" rx="3" fill="${color}" ${st}/><rect x="32" y="13" width="10" height="6" rx="2" fill="${color}" ${st}/><rect x="41" y="14.5" width="9" height="3.5" rx="1.5" fill="${color}" ${st}/><path d="M3 12 L9 12 L9 19 L4 21 Z" fill="${color}" ${st}/><rect x="19" y="20" width="7" height="12" rx="2" style="fill:${accent}" ${st}/><rect x="11" y="20" width="5" height="7" rx="2" fill="${color}" ${st}/><path d="M14 11 L18 5 L26 5 L28 11" fill="none" stroke="#111" stroke-width="2.5"/>`;
   else if (id === 'charger') body = `<rect x="4" y="14" width="22" height="9" rx="3" fill="${color}" ${st}/><rect x="24" y="15.5" width="36" height="5" rx="2" fill="${color}" ${st}/><rect x="14" y="7" width="16" height="5" rx="2.5" fill="${color}" ${st}/><rect x="10" y="21" width="6" height="8" rx="2" fill="${color}" ${st}/><circle cx="8" cy="12" r="4.5" style="fill:${accent}" ${st}/>`;
   else if (id === 'splatling') body = `<rect x="4" y="11" width="20" height="14" rx="4" fill="${color}" ${st}/><rect x="22" y="9" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="15" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="21" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="30" y="7" width="5" height="20" rx="2" style="fill:${accent}" ${st}/><circle cx="12" cy="8" r="5" style="fill:${accent}" ${st}/>`;
   else if (id === 'blaster') body = `<rect x="4" y="12" width="22" height="10" rx="3" fill="${color}" ${st}/><rect x="22" y="9" width="26" height="16" rx="5" fill="${color}" ${st}/><rect x="46" y="6" width="12" height="22" rx="4" style="fill:${accent}" ${st}/><rect x="10" y="20" width="6" height="9" rx="2" fill="${color}" ${st}/>`;
@@ -156,6 +168,13 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.9.1', date: '2026-10-02', time: '11:20', title: '石墩削弱 · 冲锋枪', items: [
+    '石墩削弱：走路速度和潜墨速度都慢 5%',
+    '重型加特林要先转约 0.3 秒才开始连射，按住一直打、松手就停，再按要重新转；有专属的转动音效',
+    '阿飒新增第二把主武器「疾风冲锋枪」：射速极快、单发很弱，很费墨但回墨快',
+    '墨浪步枪射速降一格（每秒约 9.5 发 → 8 发），和冲锋枪拉开差别',
+    '选场地时背景会淡入淡出切换成那张场地，不用再重新载入'
+  ] },
   { v: 'v0.9.0', date: '2026-10-02', time: '01:50', title: '新地图：墨浪滑板场', items: [
     '新地图「墨浪滑板场」：S 形下沉泳池、波浪外墙、中央高塔和铁网走道',
     '泳池是真正的碗形，能走下去、顺着弧形坡走上来，坡面也能涂墨',

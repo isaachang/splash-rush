@@ -2,6 +2,8 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:"Arial Rounded MT Bold","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
 canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+/* a snapshot of the old map laid over the 3D view while the new one fades in underneath (map select) */
+canvas#glFade{position:fixed;inset:0;width:100%;height:100%;display:none;z-index:1;pointer-events:none;opacity:0;transform-origin:50% 55%}
 :root{--c0:#ff7a00;--c1:#3346ff;--ink:#111}
 .screen{position:fixed;inset:0;display:none;z-index:10}
 .screen.show{display:block}
@@ -497,7 +499,6 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .mscard .chips span{font-size:12px;font-weight:900;padding:3px 10px;border-radius:10px;background:rgba(255,255,255,.1);border:2px solid #111}
 .mscard .chips span.sz{background:#ffe45c;color:#111}
 .mscard .mon{position:absolute;top:-14px;right:18px;font-style:normal;font-size:13px;font-weight:900;background:var(--c0);color:#111;border:3px solid #111;border-radius:10px;padding:1px 10px}
-.msNote{position:absolute;left:0;right:0;bottom:14vh;text-align:center;font-size:13px;font-weight:700;opacity:.55;letter-spacing:1px}
 .mapchip{cursor:pointer;font-family:inherit;font-size:14px;font-weight:900;color:#111;background:#ffe45c;border:3px solid #111;border-radius:14px;padding:3px 12px;box-shadow:0 3px 0 #111;align-self:center;transition:transform .15s}
 .mapchip:hover{transform:translateY(-2px)}
 .mtile{position:relative;display:flex;gap:10px;align-items:center;text-align:left;cursor:pointer;font-family:inherit;color:#fff;background:rgba(20,18,40,.9);border:4px solid #111;border-radius:16px;padding:7px 9px;box-shadow:0 5px 0 #111;transition:transform .18s,background .2s}
@@ -507,18 +508,10 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .mtile .mn b{display:block;font-size:14px;font-weight:900}.mtile .mn small{display:block;font-size:9px;letter-spacing:1px;color:#ffe45c;font-weight:900}
 .mtile .mn em{display:block;font-style:normal;font-size:10px;opacity:.6;line-height:1.3;margin-top:2px}
 .mtile .mon{position:absolute;top:-9px;right:8px;font-style:normal;font-size:10px;font-weight:900;background:var(--c0);color:#111;border:2px solid #111;border-radius:8px;padding:0 6px}
-#mapVeil{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,#3a2b7a,#140f30 70%);opacity:0;pointer-events:none;transition:opacity .35s}
-#mapVeil.show{opacity:1;pointer-events:auto}
-#mapVeil .mv{display:flex;flex-direction:column;align-items:center;gap:6px;transform:scale(.9);transition:transform .45s cubic-bezier(.3,1.4,.4,1)}
-#mapVeil.show .mv{transform:none}
-#mapVeil i{width:64px;height:64px;border-radius:50% 46% 52% 44%;background:var(--c0);border:4px solid #111;box-shadow:0 6px 0 #111;animation:mvSpin 1s linear infinite}
-@keyframes mvSpin{to{transform:rotate(360deg)}}
-#mapVeil b{font-size:38px;font-weight:900;font-style:italic;-webkit-text-stroke:2px #111;paint-order:stroke fill;text-shadow:0 4px 0 var(--c1)}
-#mapVeil small{font-weight:900;letter-spacing:4px;color:#ffe45c}
-#mapVeil span{font-size:13px;opacity:.7;font-weight:700}
 .rcol h3 small{font-size:11px;color:#fff;opacity:.5;letter-spacing:1px;margin-left:8px}
 </style></head><body>
 <canvas id="gl"></canvas>
+<canvas id="glFade"></canvas>
 
 <div id="loading" class="screen show"><div class="drop"></div><p>正在搅拌墨水…</p></div>
 
@@ -581,11 +574,9 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 <div id="mapsel" class="screen">
   <div class="lobbyHead"><h2>选择场地</h2><span>涂地对战 · 4 V 4</span></div>
   <div class="msBody" id="mapCards"></div>
-  <div class="msNote">点一张场地，背景会换成那张场地（会重新载入一下）</div>
   <div class="lobbyFoot"><button class="btn" id="btnMsBack">‹ 返回</button><button class="btn big" id="btnMsNext">下一步 ›</button></div>
 </div>
 
-<div id="mapVeil"><div class="mv"><i></i><b id="mapVeilName"></b><small id="mapVeilEn"></small><span>正在前往场地…</span></div></div>
 
 <div id="hud" class="screen">
   <div id="vignette"></div>
@@ -856,6 +847,37 @@ const Sfx = (() => {
       noise(0.25, 0.25 * v, 'bandpass', 900, 1.5, 300, d, t + 0.05); tone('triangle', 70, 40, 1.2, 0.12 * v, d, t + 0.1);
     },
     cannon(v, c) { noise(0.35 + c * 0.3, (0.25 + c * 0.35) * v, 'lowpass', 2400, 0.9, 120); tone('square', 520, 60, 0.25, 0.12 * v); tone('sine', 150, 40, 0.4 + c * 0.2, (0.3 + c * 0.3) * v); noise(0.06, 0.25 * v, 'highpass', 3000, 1); },
+    // SMG: a light, short, high "pip-tsk" (fires twice as often as the rifle, so it stays quiet)
+    smg(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), k = rand(0.92, 1.08);
+      noise(0.045, 0.11 * v, 'bandpass', 2600 * k, 1.6, 1500, d); tone('triangle', 620 * k, 240, 0.04, 0.06 * v, d);
+    },
+    // heavy gatling spin-up: a motor whine climbing in pitch + the barrels' ratchet ticking faster, then a hum while it fires
+    spinStart(dur) {
+      if (!ctx) return; this.spinStop(true); const t = ctx.currentTime;
+      const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(55, t); o.frequency.exponentialRampToValueAtTime(230, t + dur);
+      const of = ctx.createBiquadFilter(); of.type = 'lowpass'; of.frequency.value = 1100;
+      const n = ctx.createBufferSource(); n.buffer = noiseBuf; n.loop = true;
+      const nf = ctx.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.setValueAtTime(900, t); nf.frequency.exponentialRampToValueAtTime(2600, t + dur); nf.Q.value = 3;
+      const ng = ctx.createGain(); ng.gain.value = 0;                       // ratchet: noise gated by a square LFO that speeds up
+      const lfo = ctx.createOscillator(); lfo.type = 'square'; lfo.frequency.setValueAtTime(7, t); lfo.frequency.exponentialRampToValueAtTime(34, t + dur);
+      const lg = ctx.createGain(); lg.gain.value = 0.045; lfo.connect(lg); lg.connect(ng.gain);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.07, t + dur * 0.6);
+      o.connect(of); of.connect(g); n.connect(nf); nf.connect(ng); ng.connect(g); g.connect(sfxG);
+      o.start(t); n.start(t); lfo.start(t); this._sp = { o, n, lfo, g, nf };
+    },
+    spinReady() {
+      if (!ctx) return; tone('square', 1250, 820, 0.05, 0.05); noise(0.04, 0.08, 'highpass', 4000, 1);   // a dry metal "clack": barrels up to speed
+      if (this._sp) { const t = ctx.currentTime; this._sp.g.gain.setTargetAtTime(0.045, t, 0.08); }
+    },
+    spinStop(now) {
+      if (!ctx || !this._sp) return; const { o, n, lfo, g, nf } = this._sp, t = ctx.currentTime, d = now ? 0.03 : 0.28; this._sp = null;
+      o.frequency.cancelScheduledValues(t); o.frequency.setValueAtTime(o.frequency.value, t); o.frequency.exponentialRampToValueAtTime(45, t + d);
+      lfo.frequency.cancelScheduledValues(t); lfo.frequency.setValueAtTime(lfo.frequency.value, t); lfo.frequency.exponentialRampToValueAtTime(4, t + d);
+      nf.frequency.cancelScheduledValues(t); nf.frequency.setValueAtTime(nf.frequency.value, t); nf.frequency.exponentialRampToValueAtTime(500, t + d);
+      g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      [o, n, lfo].forEach(x => x.stop(t + d + 0.05));
+    },
     // heavy gatling: short dry mechanical rattle per round (nothing like the rifle's wet "pshh")
     gatling(v, pan = 0) {
       if (!ctx) return; const d = panNode(pan), k = rand(0.94, 1.06);
@@ -1029,7 +1051,7 @@ function buildTextures() {
     for (let y = 8; y < h - 8; y += 20) for (let x = 8; x < w - 8; x += 24) { const lit = Math.random(); g.fillStyle = lit > 0.8 ? '#fff6c8' : lit > 0.4 ? '#7f93ad' : '#5d6e87'; g.fillRect(x, y, 14, 12); }
   }, false);
   TEX.noise = makeNoiseTex(256);
-  TEX.layout = makeLayoutTex();
+  TEX.layout = layoutTex();
 }
 function makeNoiseTex(N) {
   // tileable fbm value noise
@@ -1051,24 +1073,30 @@ function makeNoiseTex(N) {
   return t;
 }
 /* ================================================================ MAP
-   Several maps: the one in use is picked before the world is built (the
-   lobby saves the choice and reloads the page), so every system below just
-   reads XH / ZH / SOLIDS / SPAWN / DECK as before.                        */
+   Several maps. The one in use sets XH / ZH / SOLIDS / SPAWN / DECK that
+   every system below reads; switching maps (setMap + loadMap in the game
+   module) rebuilds the world in place, without reloading the page.        */
 const MAP_LIST = {
   dock: { id: 'dock', name: '潮汐码头广场', en: 'TIDE DOCK PLAZA', XH: 28, ZH: 46, size: '56 × 92 米', tags: ['集装箱', '中路开阔', '两侧高台'], desc: '码头上的集装箱广场，中路开阔、两侧有高台' },
   skate: { id: 'skate', name: '墨浪滑板场', en: 'RUSH SKATEPARK', XH: 25.5, ZH: 55.5, cull: true, spawnSlots: [[-1.7, -0.5], [-0.6, 0.7], [0.6, -0.5], [1.7, 0.7]], size: '51 × 111 米', tags: ['S 形泳池', '中央高塔', '铁网走道'], desc: '城市滑板公园：S 形下沉泳池、波浪外墙、中央高塔和铁网走道' }
 };
 const MAP_KEY = 'splashrush.map';
-const MAP_ID = (() => {
+let MAP_ID = (() => {
   if (typeof SR_MAP !== 'undefined' && MAP_LIST[SR_MAP]) return SR_MAP;     // tests / tools
   try { const q = new URLSearchParams(location.search).get('map'); if (q && MAP_LIST[q]) return q; } catch (e) { }
   try { const v = localStorage.getItem(MAP_KEY); if (v && MAP_LIST[v]) return v; } catch (e) { }
   return 'dock';
 })();
-const MAP = MAP_LIST[MAP_ID];
-const XH = MAP.XH, ZH = MAP.ZH, CELL = 0.14;
-const NX = Math.ceil(XH * 2 / CELL), NZ = Math.ceil(ZH * 2 / CELL);
-const PSX = NX * CELL, PSZ = NZ * CELL;
+const CELL = 0.14;
+let MAP, XH, ZH, NX, NZ, PSX, PSZ, SPAWN, DECK;
+// point every map-sized global at the chosen map (the world itself is rebuilt by loadMap)
+function setMap(id) {
+  MAP_ID = MAP_LIST[id] ? id : 'dock'; MAP = MAP_LIST[MAP_ID];
+  XH = MAP.XH; ZH = MAP.ZH; NX = Math.ceil(XH * 2 / CELL); NZ = Math.ceil(ZH * 2 / CELL); PSX = NX * CELL; PSZ = NZ * CELL;
+  // yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
+  SPAWN = MAP_ID === 'skate' ? [{ x: -6.8 * SKATE_K, z: 42.6 * SKATE_K, y: 2.0, yaw: Math.PI }, { x: 6.8 * SKATE_K, z: -42.6 * SKATE_K, y: 2.0, yaw: 0 }] : [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
+  DECK = MAP_ID === 'skate' ? [{ x0: -10.3 * SKATE_K, x1: -3.3 * SKATE_K, z0: 36 * SKATE_K, z1: 46.5 * SKATE_K }, { x0: 3.3 * SKATE_K, x1: 10.3 * SKATE_K, z0: -46.5 * SKATE_K, z1: -36 * SKATE_K }] : [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
+}
 const SOLIDS = [];
 // see-through grate pieces kept apart from SOLIDS: bridges (stand on them in human form, squids and ink fall through)
 // and fences (block people, squids and ink pass)
@@ -1078,7 +1106,24 @@ const TREES = [], PALMS = []; let TREE_Y0 = 1e9;
 function box(x0, x1, z0, z1, h, style, top) { return { t: 'box', x0, x1, z0, z1, h, style, top: top || 'concrete' }; }
 function ramp(x0, x1, z0, z1, axis, h0, h1, top) { return { t: 'ramp', x0, x1, z0, z1, axis, h0, h1, style: 'stone', top: top || 'grate' }; }
 function mirrorSolid(s) { const m = Object.assign({}, s, { x0: -s.x1, x1: -s.x0, z0: -s.z1, z1: -s.z0 }); if (s.t === 'ramp') { m.h0 = s.h1; m.h1 = s.h0; } return m; }
-function defineMap() { if (MAP_ID === 'skate') defineSkate(); else defineDock(); buildSolidGrid(); }
+// each map's layout is built once and kept, so switching back and forth is instant
+const MAP_CACHE = {};
+function defineMap() {
+  SOLIDS.length = BRIDGES.length = FENCES.length = TREES.length = PALMS.length = 0; TREE_Y0 = 1e9;   // start from an empty world (map switch)
+  Object.assign(TERR, { on: false, W: 0, H: 0, h: null, mat: null, oob: null, outline: null, bowls: [], plats: [], tower: null });
+  const c = MAP_CACHE[MAP_ID];
+  if (c && c.solids) { SOLIDS.push(...c.solids); BRIDGES.push(...c.bridges); FENCES.push(...c.fences); PALMS.push(...c.palms); Object.assign(TERR, c.terr); Object.assign(SG, c.sg); return; }
+  if (MAP_ID === 'skate') defineSkate(); else defineDock(); buildSolidGrid();
+  MAP_CACHE[MAP_ID] = Object.assign(c || {}, { solids: SOLIDS.slice(), bridges: BRIDGES.slice(), fences: FENCES.slice(), palms: PALMS.slice(), terr: Object.assign({}, TERR), sg: Object.assign({}, SG) });
+}
+// the floor layout texture (baked shadows, bowl shading, markings), also built once per map
+function layoutTex() { const c = MAP_CACHE[MAP_ID] || (MAP_CACHE[MAP_ID] = {}); return c.layout || (c.layout = makeLayoutTex()); }
+// do the slow part of every other map up front (during the loading screen), then come back to the current one
+function prebuildMaps() {
+  const cur = MAP_ID;
+  for (const id in MAP_LIST) { if (id === cur || (MAP_CACHE[id] && MAP_CACHE[id].layout)) continue; setMap(id); defineMap(); layoutTex(); }
+  setMap(cur); defineMap();
+}
 // coarse grid over the arena: which solids touch each 4 m cell (padded), so ground / collision lookups stay cheap
 const SG = { S: 4, W: 0, H: 0, cells: null };
 function buildSolidGrid() {
@@ -1127,6 +1172,7 @@ const SKATE_LV = { plat: 2.0 };
 // the plan below is traced at the reference's scale, then everything is spread out by SKATE_K (heights stay):
 // at 1.0 the park was ~15% tighter than the original relative to our characters and felt cramped
 const SKATE_K = 1.15;
+setMap(MAP_ID);
 // a path made of straight runs ('L') and smooth curves ('C'): [x, z] points
 function pathOf(...parts) { const out = []; for (const [k, P] of parts) { const q = k === 'C' ? smoothPts(P, false, 3) : P; q.forEach(p => { const l = out[out.length - 1]; if (!l || Math.hypot(l[0] - p[0], l[1] - p[1]) > 0.02) out.push(p); }); } return out; }
 function defineSkate() {
@@ -1225,9 +1271,6 @@ function defineSkate() {
   buildTerrain();
   SOLIDS.forEach((s, i) => { s.id = i; s.maxH = s.t === 'ramp' ? Math.max(s.h0, s.h1) : s.h; });
 }
-// yaw = facing the battlefield (team 0 looks toward -z, team 1 toward +z)
-const SPAWN = MAP_ID === 'skate' ? [{ x: -6.8 * SKATE_K, z: 42.6 * SKATE_K, y: 2.0, yaw: Math.PI }, { x: 6.8 * SKATE_K, z: -42.6 * SKATE_K, y: 2.0, yaw: 0 }] : [{ x: 0, z: 42, y: 2.0, yaw: Math.PI }, { x: 0, z: -42, y: 2.0, yaw: 0 }];
-const DECK = MAP_ID === 'skate' ? [{ x0: -10.3 * SKATE_K, x1: -3.3 * SKATE_K, z0: 36 * SKATE_K, z1: 46.5 * SKATE_K }, { x0: 3.3 * SKATE_K, x1: 10.3 * SKATE_K, z0: -46.5 * SKATE_K, z1: -36 * SKATE_K }] : [{ x0: -9, x1: 9, z0: 37, z1: 46 }, { x0: -9, x1: 9, z0: -46, z1: -37 }];
 function inRect(s, x, z) { return x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1; }
 function topAt(s, x, z) {
   if (s.t === 'box') return s.h;
@@ -1332,10 +1375,13 @@ function segBlocked(ax, ay, az, bx, by, bz, stepLen = 0.4) {
 
 /* ============================================================ PAINT */
 const Paint = {
-  data: null, owner: null, hgt: null, onTerr: null, tex: null, dirty: false, teamCells: [0, 0], total: NX * NZ,
+  data: null, owner: null, hgt: null, onTerr: null, tex: null, dirty: false, teamCells: [0, 0], total: 0,
   wdata: null, wtex: null, wdirty: false, W: 1024, H: 1024, PX: 8, faces: []
 };
 function initPaint() {
+  if (Paint.tex) Paint.tex.dispose();
+  Paint.total = NX * NZ; Paint.teamCells = [0, 0];
+  PU.paintOrigin.value.set(-XH, -ZH); PU.paintSize.value.set(PSX, PSZ);
   Paint.data = new Uint8Array(NX * NZ * 4);
   Paint.owner = new Int8Array(NX * NZ).fill(-1);
   Paint.hgt = new Float32Array(NX * NZ);
@@ -2201,11 +2247,11 @@ const WEAPONS = {
     id: 'rifle', name: '墨浪步枪', en: 'SPLASH RIFLE', role: '全能 · 中距离', type: 'auto', cls: 'shooter',
     desc: '射速、射程、涂地都很均衡，3 发击倒。适合任何场合，新手首选。',
     // ballistics (Splatoon-style): near-instant straight flight, then a "brake" phase with drag + gravity
-    dmg: 36, dmgFar: 18, falloff: [0.18, 0.42], interval: 0.105, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
+    dmg: 36, dmgFar: 18, falloff: [0.18, 0.42], interval: 0.125, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
     spread: 0.045, airSpread: 0.1, cost: 1.42, splat: [1.07, 1.35],
     moveFire: 4.8, muzzleF: 0.55, range: 16, spLoss: 0.5,
     sub: 'bomb', special: 'surge', spArea: 42,
-    stats: { range: 4, dmg: 3, rate: 4, paint: 3, mobility: 4 }
+    stats: { range: 4, dmg: 3, rate: 3, paint: 3, mobility: 4 }
   },
   charger: {
     id: 'charger', name: '重炮狙击', en: 'HEAVY CANNON', role: '远程 · 狙击', type: 'charge', cls: 'charger',
@@ -2220,10 +2266,10 @@ const WEAPONS = {
 // they reuse the same bullets, splashes, hit feedback and sounds as the rifle and the cannon
 WEAPONS.splatling = {
   id: 'splatling', name: '重型加特林', en: 'HEAVY GATLING', role: '远程 · 扫射', type: 'auto', cls: 'splatling',
-  desc: '按住就一直扫射，射速极快、射程远，但一罐墨只够打约 40 发（约 2 秒）。打完要赶紧潜墨回墨。扫射时走得慢。',
+  desc: '按住先让枪管转起来（约 0.3 秒），转起来以后按住就一直扫射，松手就停，再按又要重新转。射速极快、射程远，但一罐墨只够打约 40 发（约 2 秒），打完要赶紧潜墨回墨。转动和扫射时都走得慢。',
   // shooter-style bullets with a longer straight flight; very fast fire, small magazine
   dmg: 22, dmgFar: 12, falloff: [0.17, 0.36], interval: 0.05, speed: 150, straight: 0.11, dragH: 14, dragV: 7, grav: 72,
-  spread: 0.055, airSpread: 0.1, cost: 2.5, splat: [0.9, 1.1], moveFire: 3.8, muzzleF: 0.85, range: 21, spLoss: 0.5,
+  spinUp: 0.3, spread: 0.055, airSpread: 0.1, cost: 2.5, splat: [0.9, 1.1], moveFire: 3.8, muzzleF: 0.85, range: 21, spLoss: 0.5,
   sub: 'bomb', special: 'surge', spArea: 44,
   stats: { range: 4, dmg: 2, rate: 5, paint: 4, mobility: 2 }
 };
@@ -2236,9 +2282,20 @@ WEAPONS.blaster = {
   sub: 'bomb', special: 'surge', spArea: 34,
   stats: { range: 4, dmg: 5, rate: 1, paint: 1, mobility: 3 }
 };
+// 阿飒's second main weapon: very fast, weak bullets that burn through the tank but refill quickly
+WEAPONS.smg = {
+  id: 'smg', name: '疾风冲锋枪', en: 'SWIFT SMG', role: '近中距离 · 速射', type: 'auto', cls: 'shooter',
+  desc: '射速极快，单发伤害很低，5 发击倒，靠连射压人。射程和步枪一样。很费墨，一罐只够连打约 3 秒，但回墨比别的枪快，停火后也更早开始回墨。边打边跑也很灵活。',
+  // same flight as the rifle (so the bots' aim tables carry over), weaker and much faster
+  dmg: 20, dmgFar: 10, falloff: [0.18, 0.42], interval: 0.06, speed: 130, straight: 0.07, dragH: 14, dragV: 7, grav: 72,
+  spread: 0.06, airSpread: 0.12, cost: 1.6, splat: [0.85, 1.05],
+  moveFire: 5.4, muzzleF: 0.5, range: 16, spLoss: 0.5, inkRegenK: 1.3, regenDelay: 0.4,
+  sub: 'bomb', special: 'surge', spArea: 40,
+  stats: { range: 4, dmg: 1, rate: 5, paint: 3, mobility: 5 }
+};
 WEAPONS.charger.charges = true;
 // (the range blaster is kept in the code but not offered for now)
-const WEAPON_ORDER = ['rifle', 'charger', 'splatling'];
+const WEAPON_ORDER = ['rifle', 'smg', 'charger', 'splatling'];
 const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'], ['paint', '涂地'], ['mobility', '机动']];
 
 /* ------------------------------------------------------ characters
@@ -2248,10 +2305,10 @@ const STAT_LABELS = [['range', '射程'], ['dmg', '伤害'], ['rate', '射速'],
 const CHARACTERS = {
   sa: {
     id: 'sa', name: '阿飒', en: 'SWIFT', role: '疾风 · 游击', tag: '跑得最快的街头涂鸦手',
-    desc: '全场最快：移速、潜行都快一大截，适合绕后偷袭、抢地盘。但身板最薄，墨罐也小，要省着打，挨两下就得撤。',
-    hp: 80, runK: 1.25, swimK: 1.15, inkCap: 0.8, inkRegen: 1, knockK: 1.2, weapons: ['rifle'], sub: 'curling',
+    desc: '全场最快：移速、潜行都快一大截，适合绕后偷袭、抢地盘。主武器可选墨浪步枪或疾风冲锋枪。但身板最薄，墨罐也小，要省着打，挨两下就得撤。',
+    hp: 80, runK: 1.25, swimK: 1.15, inkCap: 0.8, inkRegen: 1, knockK: 1.2, weapons: ['rifle', 'smg'], sub: 'curling',
     look: { skin: '#f3c39b', cloth: '#f5f5f2', cloth2: '#40c0b0', pants: '#23242c', hat: 'band', hatColor: '#40c0b0', trim: '#5ad1ff', hair: 'tail', bodyW: 0.92, bodyH: 1.0, tankK: 0.9, crestK: 1.35 },
-    bars: { hp: 1, speed: 5, ink: 1 }, weaponNote: '专属武器'
+    bars: { hp: 1, speed: 5, ink: 1 }, weaponNote: '步枪 / 冲锋枪'
   },
   man: {
     id: 'man', name: '满满', en: 'TANKFUL', role: '墨罐 · 持久', tag: '背着超大墨罐的涂地狂',
@@ -2263,14 +2320,14 @@ const CHARACTERS = {
   dun: {
     id: 'dun', name: '石墩', en: 'BULWARK', role: '重装 · 肉盾', tag: '挨打也不退一步的大块头',
     desc: '又壮又胖，生命值最高（步枪要 5 发才倒），被打中几乎不后仰、不被推开，端着加特林顶在最前面。代价是全场最慢、跳得低，身板大也更容易被打中。',
-    hp: 160, runK: 0.6, swimK: 0.7, inkCap: 1, inkRegen: 1, knockK: 0.4, jumpK: 0.85, hitK: 1.3, weapons: ['splatling'], sub: 'bomb',
+    hp: 160, runK: 0.57, swimK: 0.665, inkCap: 1, inkRegen: 1, knockK: 0.4, jumpK: 0.85, hitK: 1.3, weapons: ['splatling'], sub: 'bomb',
     look: { skin: '#7d4d31', cloth: '#3b3f52', cloth2: '#ff8a3d', pants: '#2a2b35', hat: 'goggles', hatColor: '#3b3f52', trim: '#ffd23a', hair: 'fin', bodyW: 1.04, bodyH: 1.02, fat: 1, tankK: 1.05, crestK: 0.8 },
     bars: { hp: 5, speed: 1, ink: 3 }, weaponNote: '专属武器'
   }
 };
 const CHAR_ORDER = ['sa', 'man', 'dun'];
 // baseline body used by the automated mechanics tests (not selectable)
-CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', sub: null, hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'charger', 'splatling', 'blaster'] });
+CHARACTERS.std = Object.assign({}, CHARACTERS.man, { id: 'std', name: '标准', sub: null, hp: 100, runK: 1, swimK: 1, inkCap: 1, inkRegen: 1, knockK: 1, weapons: ['rifle', 'smg', 'charger', 'splatling', 'blaster'] });
 // a plain training dummy for the lobby sub-weapon demo (not selectable)
 CHARACTERS.dummy = Object.assign({}, CHARACTERS.std, { id: 'dummy', name: '假人', look: { skin: '#f3c39b', cloth: '#e9e4d8', cloth2: '#697386', pants: '#3b3f52', hat: 'cap', hatColor: '#697386', trim: '#f0f0f0', bodyW: 1, bodyH: 1, tankK: 1, crestK: 1 } });
 // the character that carries a given weapon (first match)
@@ -2295,6 +2352,7 @@ function weaponIcon(id, color = '#fff', w = 64, accent = 'var(--c0)') {
   const h = w / 2, st = 'stroke="#111" stroke-width="2.5" stroke-linejoin="round"';
   let body = '';
   if (id === 'rifle') body = `<path d="M3 13 L14 12 L14 21 L5 23 Z" fill="${color}" ${st}/><rect x="13" y="11" width="24" height="9" rx="2.5" fill="${color}" ${st}/><rect x="35" y="12.5" width="12" height="6" rx="2" fill="${color}" ${st}/><rect x="46" y="14" width="14" height="3.5" rx="1.5" fill="${color}" ${st}/><rect x="16" y="19" width="6" height="9" rx="2" fill="${color}" ${st}/><path d="M26 19 L31 19 L33 28 L28 28 Z" style="fill:${accent}" ${st}/><rect x="17" y="6" width="13" height="5" rx="2.5" style="fill:${accent}" ${st}/>`;
+  else if (id === 'smg') body = `<rect x="8" y="11" width="26" height="10" rx="3" fill="${color}" ${st}/><rect x="32" y="13" width="10" height="6" rx="2" fill="${color}" ${st}/><rect x="41" y="14.5" width="9" height="3.5" rx="1.5" fill="${color}" ${st}/><path d="M3 12 L9 12 L9 19 L4 21 Z" fill="${color}" ${st}/><rect x="19" y="20" width="7" height="12" rx="2" style="fill:${accent}" ${st}/><rect x="11" y="20" width="5" height="7" rx="2" fill="${color}" ${st}/><path d="M14 11 L18 5 L26 5 L28 11" fill="none" stroke="#111" stroke-width="2.5"/>`;
   else if (id === 'charger') body = `<rect x="4" y="14" width="22" height="9" rx="3" fill="${color}" ${st}/><rect x="24" y="15.5" width="36" height="5" rx="2" fill="${color}" ${st}/><rect x="14" y="7" width="16" height="5" rx="2.5" fill="${color}" ${st}/><rect x="10" y="21" width="6" height="8" rx="2" fill="${color}" ${st}/><circle cx="8" cy="12" r="4.5" style="fill:${accent}" ${st}/>`;
   else if (id === 'splatling') body = `<rect x="4" y="11" width="20" height="14" rx="4" fill="${color}" ${st}/><rect x="22" y="9" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="15" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="22" y="21" width="36" height="4" rx="2" fill="${color}" ${st}/><rect x="30" y="7" width="5" height="20" rx="2" style="fill:${accent}" ${st}/><circle cx="12" cy="8" r="5" style="fill:${accent}" ${st}/>`;
   else if (id === 'blaster') body = `<rect x="4" y="12" width="22" height="10" rx="3" fill="${color}" ${st}/><rect x="22" y="9" width="26" height="16" rx="5" fill="${color}" ${st}/><rect x="46" y="6" width="12" height="22" rx="4" style="fill:${accent}" ${st}/><rect x="10" y="20" width="6" height="9" rx="2" fill="${color}" ${st}/>`;
@@ -2340,6 +2398,13 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.9.1', date: '2026-10-02', time: '11:20', title: '石墩削弱 · 冲锋枪', items: [
+    '石墩削弱：走路速度和潜墨速度都慢 5%',
+    '重型加特林要先转约 0.3 秒才开始连射，按住一直打、松手就停，再按要重新转；有专属的转动音效',
+    '阿飒新增第二把主武器「疾风冲锋枪」：射速极快、单发很弱，很费墨但回墨快',
+    '墨浪步枪射速降一格（每秒约 9.5 发 → 8 发），和冲锋枪拉开差别',
+    '选场地时背景会淡入淡出切换成那张场地，不用再重新载入'
+  ] },
   { v: 'v0.9.0', date: '2026-10-02', time: '01:50', title: '新地图：墨浪滑板场', items: [
     '新地图「墨浪滑板场」：S 形下沉泳池、波浪外墙、中央高塔和铁网走道',
     '泳池是真正的碗形，能走下去、顺着弧形坡走上来，坡面也能涂墨',
@@ -2497,6 +2562,16 @@ function buildWeaponModel(id, T, trimHex) {
     const mz = mesh(GEO.cyl, trim, 0, 0.03, 0.66, 0.125, 0.1, 0.125); mz.rotation.x = Math.PI / 2; g.add(mz);
     g.add(mesh(GEO.sphere, T, 0, 0.16, 0.12, 0.085));
     g.add(mesh(new THREE.BoxGeometry(0.06, 0.13, 0.06), body, 0, -0.085, 0.02));
+  } else if (id === 'smg') {
+    // compact SMG: short receiver, stubby barrel, a long team-colour ink magazine hanging under it, folding stock
+    g.add(mesh(new THREE.BoxGeometry(0.09, 0.11, 0.3), body, 0, 0.02, 0.06));
+    g.add(mesh(new THREE.BoxGeometry(0.094, 0.02, 0.3), trim, 0, 0.08, 0.06));
+    g.add(rx(mesh(GEO.cyl, body, 0, 0.03, 0.3, 0.032, 0.18, 0.032)));
+    g.add(mesh(new THREE.TorusGeometry(0.04, 0.013, 6, 12), trim, 0, 0.03, 0.39));
+    g.add(mesh(new THREE.BoxGeometry(0.05, 0.2, 0.07), T, 0, -0.1, 0.12));                       // ink magazine
+    g.add(mesh(new THREE.BoxGeometry(0.055, 0.11, 0.06), body, 0, -0.07, -0.04));                // grip
+    g.add(mesh(new THREE.BoxGeometry(0.02, 0.06, 0.2), trim, 0, 0.0, -0.2));                     // wire stock
+    g.add(mesh(new THREE.BoxGeometry(0.07, 0.07, 0.02), body, 0, 0.0, -0.3));
   } else if (id === 'charger') {
     g.add(mesh(new THREE.BoxGeometry(0.11, 0.14, 0.44), body, 0, 0.02, 0.06));
     g.add(rx(mesh(GEO.cyl, trim, 0, 0.04, 0.64, 0.034, 0.76, 0.034)));
@@ -2845,7 +2920,9 @@ class Character {
     if (this.isPlayer) { Sfx.superJump(); HUD.respawned(); Cam.yaw = sp.yaw; Cam.pitch = -0.1; }
     if (tgt) { this.pos.set(sp.x, sp.y, sp.z); this.beginFlight(tgt); }
   }
+  stopSpin() { this.spinning = false; this.spin = 0; if (this.isPlayer) Sfx.spinStop(); }
   stopCharge() {
+    if (this.spinning) this.stopSpin();
     this.charge = 0; this.charging = false;
     if (this.laser) { this.laser.visible = false; this.laserDot.visible = false; }
     if (this.isPlayer) Sfx.chargeStop();
@@ -2941,7 +3018,7 @@ class Character {
       }
     }
     const W = this.weapon;
-    const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging;
+    const firing = (I.fire && !this.swim && !this.sp && T - this.lastShot < 0.25) || this.charging || this.spinning;
     // ----- movement
     const mlen = Math.min(1, Math.hypot(I.mx, I.mz));
     if (this.wall && (!this.swim || this.sp)) this.wall = null;                      // let go of squid form: fall off the wall
@@ -2998,8 +3075,10 @@ class Character {
     else { if (wasG) this.airSpeed = Math.max(this.airSpeed, Math.hypot(this.vel.x, this.vel.z)); this.grounded = false; }
     if (this.pos.y < -10) { this.die(this.lastAttacker); return; }
     // ----- ink / hp
-    if (this.submerged) { this.ink = Math.min(100, this.ink + 40 * dt * this.cs.inkRegen); }
-    else if (T - this.lastShot > 0.6) this.ink = Math.min(100, this.ink + (this.swim ? 12 : 6.5) * dt * this.cs.inkRegen);
+    // refill: the character's tank sets the pace; a few weapons (the SMG) refill faster and start sooner
+    const rk = this.cs.inkRegen * (W.inkRegenK || 1);
+    if (this.submerged) { this.ink = Math.min(100, this.ink + 40 * dt * rk); }
+    else if (T - this.lastShot > (W.regenDelay ?? 0.6)) this.ink = Math.min(100, this.ink + (this.swim ? 12 : 6.5) * dt * rk);
     // regen like the original: starts after 1 s without damage; 12.5/s standing, 100/s submerged in own ink
     if (T - this.lastHurt > 1.0 && !(this.inEnemy && !this.invuln())) this.hp = Math.min(this.maxHp, this.hp + (this.submerged ? 100 : 12.5) * (this.maxHp / 100) * dt);
     // enemy ink: ~30 HP/s but never below 50
@@ -3010,7 +3089,20 @@ class Character {
     else if (!this.swim) this.bodyYaw += angDiff(this.bodyYaw, this.aimYaw) * Math.min(1, dt * turnK);
     // ----- weapons
     if (W.type === 'auto') {
-      if (I.fire && !this.swim && !this.sp && this.fireCd <= 0 && G.state === 'play') {
+      // gatling: barrels have to spin up first; only while the trigger stays held does it keep firing
+      let spunUp = true;
+      if (W.spinUp) {
+        if (I.fire) this._wantT = T;
+        const held = I.fire || (!this.isPlayer && this.spinning && T - (this._wantT ?? -9) < 0.3);   // bots flicker the trigger: give them a short grace so the barrels keep turning
+        const want = held && !this.swim && !this.sp && G.state === 'play';
+        if (want) {
+          if (!this.spinning) { this.spinning = true; this.spin = 0; if (this.isPlayer) Sfx.spinStart(W.spinUp); }
+          const before = this.spin; this.spin += dt; this.lastShot = Math.max(this.lastShot, T - 0.2);
+          if (before < W.spinUp && this.spin >= W.spinUp && this.isPlayer) Sfx.spinReady();
+          spunUp = this.spin >= W.spinUp;
+        } else { if (this.spinning) this.stopSpin(); spunUp = false; }
+      }
+      if (spunUp && (I.fire || (W.spinUp && this.spinning)) && !this.swim && !this.sp && this.fireCd <= 0 && G.state === 'play') {
         if (this.ink >= W.cost / this.inkK) {
           this.fireCd = W.interval; this.ink -= W.cost / this.inkK; this.lastShot = T; this.recoil = 1;
           const m = this.muzzle();
@@ -3021,8 +3113,8 @@ class Character {
           // muzzle: small ink flash + droplets spraying forward
           Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.11, 0.06, TEAM_HEX[this.team], 0);
           Fx.burstDir(m.x, m.y, m.z, TEAM_HEX[this.team], 3, 5, 0.045, dir.x, dir.y, dir.z, 0.35);
-          if (this.isPlayer) { Cam.kick = Math.min(0.014, (Cam.kick || 0) + (W.id === 'splatling' ? 0.003 : 0.0045)); }
-          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) (W.id === 'splatling' ? Sfx.gatling : Sfx.shoot)(v, this.isPlayer ? 0 : sndPan(this.pos));
+          if (this.isPlayer) { Cam.kick = Math.min(0.014, (Cam.kick || 0) + (W.id === 'splatling' ? 0.003 : W.id === 'smg' ? 0.0028 : 0.0045)); }
+          const v = sndVol(this.pos) * (this.isPlayer ? 1 : 0.55); if (v > 0.03) (W.id === 'splatling' ? Sfx.gatling : W.id === 'smg' ? Sfx.smg : Sfx.shoot)(v, this.isPlayer ? 0 : sndPan(this.pos));
         } else if (this.isPlayer) HUD.lowInk();
       }
     } else if (W.charges) this.updateCharge(dt, I, T);
@@ -3261,7 +3353,7 @@ class Character {
       this.arms[0].rotation.set(-Math.PI / 2 - pitch + this.recoil * 0.12, 0, 0);
       this.gun.position.y = -0.33 + this.recoil * 0.06;
       const firing = G.time - this.lastShot < 0.3;
-      if (this.gunSpin) { this.spinV = damp(this.spinV || 0, G.time - this.lastShot < 0.15 ? 45 : 0, 8, dt); this.gunSpin.rotation.z += this.spinV * dt; }
+      if (this.gunSpin) { this.spinV = damp(this.spinV || 0, this.spinning ? 45 * Math.min(1, this.spin / (this.weapon.spinUp || 1)) : G.time - this.lastShot < 0.15 ? 45 : 0, 8, dt); this.gunSpin.rotation.z += this.spinV * dt; }
       if (['charger', 'splatling', 'blaster'].includes(this.weapon.cls)) {
         // two-handed long gun: left hand supports the barrel; crouch while charging
         this.arms[1].rotation.set(-Math.PI / 2 * 0.97 - pitch, 0, -0.62);
@@ -3975,8 +4067,9 @@ const Cover = {
   clear() { this.list.slice().forEach(c => this.breakIt(c, true)); if (this.gh) this.gh.visible = false; }
 };
 /* ============================================================ NAV GRID */
-const NAV = { W: XH * 2, H: ZH * 2, h: null, cost: null };
+const NAV = { W: 0, H: 0, h: null, cost: null };
 function initNav() {
+  NAV.W = XH * 2; NAV.H = ZH * 2;
   const W = NAV.W, H = NAV.H; NAV.h = new Float32Array(W * H); NAV.cost = new Float32Array(W * H);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const x = -XH + i + 0.5, z = -ZH + j + 0.5, h = TERR.on && terrOob(x, z) ? 99 : groundAt(x, z); NAV.h[j * W + i] = h;   // never path outside the park
@@ -4059,7 +4152,7 @@ class Bot {
     const c = this.c, e0 = c.eye(); let best = null, bd = 1e9;
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
-      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : c.weapon.id === 'rifle' ? 18 : Math.max(18, c.weapon.range + 4)) || d > bd) continue;
+      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) || d > bd) continue;
       // hidden in ink: only seen up close (2.5 m), or roughly up to 7 m if swimming fast (ripples); shooting gives you away
       let fuzzy = false;
       if (e.hiddenInInk() && !(G.time - e.lastShot < 0.4)) { const fast = Math.hypot(e.vel.x, e.vel.z) > 6; if (d > (fast ? 7 : 2.5)) continue; fuzzy = fast && d > 2.5; }
@@ -4456,9 +4549,9 @@ const HUD = {
         r2.classList.toggle('lock', Cam.lock);
       } else r2.style.display = 'none';
     } else r2.style.display = 'none';
-    const cr = $('chargeRing'), isC = !!c.weapon.charges;
-    cr.classList.toggle('on', isC && c.alive); cr.classList.toggle('full', isC && c.charge >= 1);
-    if (isC) $('chargeArc').style.strokeDashoffset = 251.3 * (1 - c.charge);
+    const cr = $('chargeRing'), isC = !!c.weapon.charges, su = c.weapon.spinUp, isS = !!su && c.spinning && c.spin < su;   // gatling: a quick ring while the barrels spin up
+    cr.classList.toggle('on', (isC || isS) && c.alive); cr.classList.toggle('full', isC && c.charge >= 1);
+    if (isC) $('chargeArc').style.strokeDashoffset = 251.3 * (1 - c.charge); else if (isS) $('chargeArc').style.strokeDashoffset = 251.3 * (1 - c.spin / su);
     cr.classList.toggle('stored', isC && c.stored > 0);
     $('crosshair').style.display = c.alive && c.state === 'play' ? 'block' : 'none';
     for (const ch of CHARS) if (ch.icon) {
@@ -4953,7 +5046,7 @@ function renderLobby() {
     $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}"><span class="cp">${charIcon(m.char, 34, TEAM_HEX[t])}</span><span class="rt"><b>${m.name}${m.isPlayer ? '（你）' : ''}</b><small>${CHARACTERS[m.char].name} · ${WEAPONS[m.weapon].name}</small></span><span class="rw">${weaponIcon(m.weapon, '#fff', 34, TEAM_HEX[t])}</span></div>`).join('');
   });
 }
-// ---- maps: pick in the lobby; switching saves the choice and reloads into the lobby of the new map
+// ---- maps: picked on the map select screen; switching rebuilds the world in place and remembers the choice
 const MAP_THUMB = {"dock": "<svg viewBox=\"0 0 64 110\" width=\"64\" height=\"110\"><rect x=\"0\" y=\"0\" width=\"64\" height=\"110\" rx=\"8\" fill=\"#23222f\"/><rect x=\"18.3\" y=\"88.5\" width=\"6.9\" height=\"1.4\" fill=\"#6b6b79\"/><rect x=\"38.9\" y=\"20.1\" width=\"6.9\" height=\"1.4\" fill=\"#6b6b79\"/><rect x=\"38.9\" y=\"88.5\" width=\"6.9\" height=\"1.4\" fill=\"#6b6b79\"/><rect x=\"18.3\" y=\"20.1\" width=\"6.9\" height=\"1.4\" fill=\"#6b6b79\"/><rect x=\"24.0\" y=\"72.9\" width=\"2.3\" height=\"2.4\" fill=\"#6e6e7c\"/><rect x=\"37.7\" y=\"34.7\" width=\"2.3\" height=\"2.4\" fill=\"#6e6e7c\"/><rect x=\"36.6\" y=\"78.3\" width=\"2.3\" height=\"2.4\" fill=\"#6e6e7c\"/><rect x=\"25.1\" y=\"29.3\" width=\"2.3\" height=\"2.4\" fill=\"#6e6e7c\"/><rect x=\"1.7\" y=\"59.8\" width=\"2.3\" height=\"4.8\" fill=\"#6e6e7c\"/><rect x=\"60.0\" y=\"45.4\" width=\"2.3\" height=\"4.8\" fill=\"#6e6e7c\"/><rect x=\"43.4\" y=\"65.8\" width=\"5.7\" height=\"4.8\" fill=\"#757583\"/><rect x=\"14.9\" y=\"39.5\" width=\"5.7\" height=\"4.8\" fill=\"#757583\"/><rect x=\"21.7\" y=\"99.2\" width=\"20.6\" height=\"10.8\" fill=\"#8a8a98\"/><rect x=\"21.7\" y=\"0.0\" width=\"20.6\" height=\"10.8\" fill=\"#8a8a98\"/><rect x=\"28.6\" y=\"92.1\" width=\"6.9\" height=\"7.2\" fill=\"#686876\"/><rect x=\"28.6\" y=\"10.8\" width=\"6.9\" height=\"7.2\" fill=\"#686876\"/><rect x=\"42.3\" y=\"102.2\" width=\"5.7\" height=\"6.0\" fill=\"#686876\"/><rect x=\"16.0\" y=\"1.8\" width=\"5.7\" height=\"6.0\" fill=\"#686876\"/><rect x=\"16.0\" y=\"102.2\" width=\"5.7\" height=\"6.0\" fill=\"#686876\"/><rect x=\"42.3\" y=\"1.8\" width=\"5.7\" height=\"6.0\" fill=\"#686876\"/><rect x=\"56.0\" y=\"57.4\" width=\"2.3\" height=\"12.0\" fill=\"#90909e\"/><rect x=\"5.7\" y=\"40.7\" width=\"2.3\" height=\"12.0\" fill=\"#90909e\"/><rect x=\"29.1\" y=\"60.4\" width=\"5.7\" height=\"7.2\" fill=\"#6e6e7c\"/><rect x=\"29.1\" y=\"42.4\" width=\"5.7\" height=\"7.2\" fill=\"#6e6e7c\"/><rect x=\"24.0\" y=\"49.6\" width=\"16.0\" height=\"10.8\" fill=\"#9797a5\"/><rect x=\"4.6\" y=\"78.9\" width=\"5.7\" height=\"10.8\" fill=\"#9e9eac\"/><rect x=\"53.7\" y=\"20.3\" width=\"5.7\" height=\"10.8\" fill=\"#9e9eac\"/><rect x=\"51.4\" y=\"76.5\" width=\"9.1\" height=\"3.6\" fill=\"#9e9eac\"/><rect x=\"3.4\" y=\"29.9\" width=\"9.1\" height=\"3.6\" fill=\"#9e9eac\"/><rect x=\"12.6\" y=\"65.8\" width=\"6.9\" height=\"7.2\" fill=\"#acacba\"/><rect x=\"44.6\" y=\"37.1\" width=\"6.9\" height=\"7.2\" fill=\"#acacba\"/><rect x=\"13.7\" y=\"72.9\" width=\"4.6\" height=\"7.2\" fill=\"#797987\"/><rect x=\"45.7\" y=\"29.9\" width=\"4.6\" height=\"7.2\" fill=\"#797987\"/><rect x=\"36.0\" y=\"56.2\" width=\"2.3\" height=\"2.4\" fill=\"#c0c0ce\"/><rect x=\"25.7\" y=\"51.4\" width=\"2.3\" height=\"2.4\" fill=\"#c0c0ce\"/><rect x=\"4.8\" y=\"86.3\" width=\"2.9\" height=\"3.1\" fill=\"#d4d4e2\"/><rect x=\"56.3\" y=\"20.6\" width=\"2.9\" height=\"3.1\" fill=\"#d4d4e2\"/><circle cx=\"32.0\" cy=\"105.2\" r=\"4.5\" fill=\"var(--c0)\" stroke=\"#111\" stroke-width=\"1.5\"/><circle cx=\"32.0\" cy=\"4.8\" r=\"4.5\" fill=\"var(--c1)\" stroke=\"#111\" stroke-width=\"1.5\"/></svg>", "skate": "<svg viewBox=\"0 0 64 110\" width=\"64\" height=\"110\"><rect x=\"0\" y=\"0\" width=\"64\" height=\"110\" rx=\"8\" fill=\"#23222f\"/><rect x=\"39.5\" y=\"2.0\" width=\"4.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"2.5\" width=\"6.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"37.6\" y=\"3.0\" width=\"7.7\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"37.6\" y=\"3.5\" width=\"8.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"37.0\" y=\"4.0\" width=\"9.6\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"36.4\" y=\"5.0\" width=\"0.8\" height=\"3.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"5.0\" width=\"9.6\" height=\"3.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"8.4\" width=\"13.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"8.4\" width=\"9.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"22.6\" y=\"8.9\" width=\"5.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"8.9\" width=\"8.4\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"8.9\" width=\"10.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"22.0\" y=\"9.4\" width=\"6.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"28.2\" y=\"9.4\" width=\"8.4\" height=\"1.2\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"9.4\" width=\"10.2\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"21.3\" y=\"10.4\" width=\"7.1\" height=\"3.2\" fill=\"#686876\"/><rect x=\"28.2\" y=\"10.4\" width=\"8.4\" height=\"3.2\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"10.4\" width=\"10.2\" height=\"3.2\" fill=\"#8a8a98\"/><rect x=\"21.3\" y=\"13.4\" width=\"7.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"28.9\" y=\"13.4\" width=\"7.7\" height=\"1.2\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"13.4\" width=\"10.2\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"20.7\" y=\"14.4\" width=\"8.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"28.9\" y=\"14.4\" width=\"7.7\" height=\"1.2\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"14.4\" width=\"10.2\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"20.7\" y=\"15.4\" width=\"8.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"15.4\" width=\"7.7\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"15.4\" width=\"10.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"20.1\" y=\"15.9\" width=\"9.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"15.9\" width=\"7.7\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"36.4\" y=\"15.9\" width=\"10.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"19.5\" y=\"16.4\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"20.7\" y=\"16.4\" width=\"0.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"21.3\" y=\"16.4\" width=\"9.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"30.1\" y=\"16.4\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"31.4\" y=\"16.4\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.6\" y=\"16.4\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"18.2\" y=\"16.8\" width=\"12.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"30.1\" y=\"16.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"30.7\" y=\"16.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"32.0\" y=\"16.8\" width=\"15.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"16.3\" y=\"17.3\" width=\"14.6\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"30.7\" y=\"17.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"31.4\" y=\"17.3\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"33.9\" y=\"17.3\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"15.1\" y=\"17.8\" width=\"16.5\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"31.4\" y=\"17.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.0\" y=\"17.8\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"35.1\" y=\"17.8\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"14.4\" y=\"18.3\" width=\"17.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"32.0\" y=\"18.3\" width=\"2.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"33.9\" y=\"18.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"35.8\" y=\"18.3\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"13.8\" y=\"18.8\" width=\"20.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"33.9\" y=\"18.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"34.5\" y=\"18.8\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"36.4\" y=\"18.8\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"13.2\" y=\"19.3\" width=\"21.5\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"34.5\" y=\"19.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"35.1\" y=\"19.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"37.0\" y=\"19.3\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"19.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"13.2\" y=\"19.8\" width=\"22.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.1\" y=\"19.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"35.8\" y=\"19.8\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"37.6\" y=\"19.8\" width=\"14.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"20.3\" width=\"23.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.8\" y=\"20.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"36.4\" y=\"20.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.3\" y=\"20.3\" width=\"13.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"20.8\" width=\"24.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"20.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"20.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.3\" y=\"20.8\" width=\"13.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"21.3\" width=\"25.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.0\" y=\"21.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"21.3\" width=\"12.7\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.3\" y=\"21.8\" width=\"25.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.0\" y=\"21.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.6\" y=\"21.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"21.8\" width=\"22.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"10.7\" y=\"22.3\" width=\"27.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.6\" y=\"22.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"39.5\" y=\"22.3\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"9.4\" y=\"22.8\" width=\"28.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.6\" y=\"22.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.3\" y=\"22.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"39.5\" y=\"22.8\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"8.8\" y=\"23.3\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.6\" y=\"23.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.3\" y=\"23.3\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"39.5\" y=\"23.3\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"8.2\" y=\"23.8\" width=\"29.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.6\" y=\"23.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.3\" y=\"23.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"39.5\" y=\"23.8\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"7.5\" y=\"24.3\" width=\"30.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"24.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"24.3\" width=\"20.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"6.9\" y=\"24.8\" width=\"31.6\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"24.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"24.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"24.8\" width=\"20.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"6.3\" y=\"25.3\" width=\"32.2\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"25.3\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"25.3\" width=\"1.5\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"25.3\" width=\"20.9\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"26.3\" width=\"32.8\" height=\"2.2\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"26.3\" width=\"0.8\" height=\"2.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"26.3\" width=\"1.5\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"26.3\" width=\"20.9\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"28.2\" width=\"30.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.8\" y=\"28.2\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"28.2\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"28.2\" width=\"20.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"28.7\" width=\"29.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.1\" y=\"28.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"35.8\" y=\"28.7\" width=\"4.6\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"28.7\" width=\"20.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"29.2\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"34.5\" y=\"29.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"35.1\" y=\"29.2\" width=\"5.2\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"40.2\" y=\"29.2\" width=\"20.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"29.7\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"34.5\" y=\"29.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"35.1\" y=\"29.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"36.4\" y=\"29.7\" width=\"24.7\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"30.2\" width=\"27.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"32.6\" y=\"30.2\" width=\"28.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"30.7\" width=\"29.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.1\" y=\"30.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"36.4\" y=\"30.7\" width=\"0.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"37.0\" y=\"30.7\" width=\"15.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"30.7\" width=\"9.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"31.2\" width=\"30.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.8\" y=\"31.2\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"31.2\" width=\"11.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"50.2\" y=\"31.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"31.2\" width=\"9.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"31.7\" width=\"30.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"31.7\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"31.7\" width=\"11.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"50.2\" y=\"31.7\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"31.7\" width=\"9.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"32.2\" width=\"30.9\" height=\"2.2\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"32.2\" width=\"0.8\" height=\"2.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"32.2\" width=\"2.1\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"32.2\" width=\"11.5\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"50.2\" y=\"32.2\" width=\"2.1\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"32.2\" width=\"9.0\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"34.2\" width=\"30.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"34.2\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"34.2\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"34.2\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"45.8\" y=\"34.2\" width=\"6.5\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"34.2\" width=\"9.0\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"5.6\" y=\"35.2\" width=\"20.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"35.2\" width=\"10.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"35.2\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"35.2\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"35.2\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"45.8\" y=\"35.2\" width=\"5.8\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"51.5\" y=\"35.2\" width=\"3.3\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"35.2\" width=\"6.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"5.6\" y=\"36.2\" width=\"4.6\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"36.2\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"36.2\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"36.2\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"36.2\" width=\"9.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"36.2\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"36.2\" width=\"10.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"36.2\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"36.2\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"36.2\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"45.8\" y=\"36.2\" width=\"5.8\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"51.5\" y=\"36.2\" width=\"3.3\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"36.2\" width=\"6.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"5.6\" y=\"37.2\" width=\"4.6\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"37.2\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"37.2\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"37.2\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"37.2\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"37.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"37.2\" width=\"10.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.8\" y=\"37.2\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"37.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"38.9\" y=\"37.2\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"45.8\" y=\"37.2\" width=\"5.8\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"51.5\" y=\"37.2\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"37.2\" width=\"6.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"37.7\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"37.7\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"37.7\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"37.7\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"37.7\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"37.7\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"37.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"37.7\" width=\"10.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"35.8\" y=\"37.7\" width=\"15.9\" height=\"0.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"37.7\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"37.7\" width=\"6.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"38.2\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"38.2\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"38.2\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"38.2\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"38.2\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"38.2\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"38.2\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"26.4\" y=\"38.2\" width=\"8.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"34.5\" y=\"38.2\" width=\"17.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"38.2\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"38.2\" width=\"6.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"38.6\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"38.6\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"38.6\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"38.6\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"38.6\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"38.6\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"38.6\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"27.6\" y=\"38.6\" width=\"5.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"33.3\" y=\"38.6\" width=\"18.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"38.6\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"38.6\" width=\"6.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"39.1\" width=\"1.5\" height=\"2.2\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"39.1\" width=\"3.3\" height=\"2.2\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"39.1\" width=\"2.1\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"39.1\" width=\"2.7\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"39.1\" width=\"1.5\" height=\"2.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"39.1\" width=\"9.6\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"39.1\" width=\"26.6\" height=\"2.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"39.1\" width=\"3.3\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"39.1\" width=\"6.5\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"41.1\" width=\"1.5\" height=\"2.2\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"41.1\" width=\"3.3\" height=\"2.2\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"41.1\" width=\"2.1\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"41.1\" width=\"2.7\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"41.1\" width=\"1.5\" height=\"2.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"41.1\" width=\"9.6\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"41.1\" width=\"3.3\" height=\"2.2\" fill=\"#686876\"/><rect x=\"28.2\" y=\"41.1\" width=\"3.3\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"31.4\" y=\"41.1\" width=\"20.3\" height=\"2.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"41.1\" width=\"3.3\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"41.1\" width=\"6.5\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"43.1\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"43.1\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"43.1\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"43.1\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"43.1\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"43.1\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"43.1\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"43.1\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"31.4\" y=\"43.1\" width=\"5.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"43.1\" width=\"1.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"43.1\" width=\"4.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"42.0\" y=\"43.1\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"43.1\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"43.1\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.6\" y=\"43.1\" width=\"6.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"5.6\" y=\"43.6\" width=\"1.5\" height=\"1.2\" fill=\"#acacba\"/><rect x=\"6.9\" y=\"43.6\" width=\"3.3\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"43.6\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"43.6\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"43.6\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"43.6\" width=\"9.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"43.6\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"28.2\" y=\"43.6\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"31.4\" y=\"43.6\" width=\"5.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"43.6\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"43.6\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"42.0\" y=\"43.6\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"43.6\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"43.6\" width=\"9.6\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"5.6\" y=\"44.6\" width=\"4.6\" height=\"2.7\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"44.6\" width=\"2.1\" height=\"2.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"44.6\" width=\"2.7\" height=\"2.7\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"44.6\" width=\"1.5\" height=\"2.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"44.6\" width=\"8.4\" height=\"2.7\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"44.6\" width=\"13.4\" height=\"2.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"44.6\" width=\"1.5\" height=\"2.7\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"44.6\" width=\"4.0\" height=\"2.7\" fill=\"#686876\"/><rect x=\"42.0\" y=\"44.6\" width=\"2.7\" height=\"2.7\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"44.6\" width=\"7.1\" height=\"2.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"44.6\" width=\"9.6\" height=\"2.7\" fill=\"#4a4f63\"/><rect x=\"5.6\" y=\"47.1\" width=\"4.6\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"10.0\" y=\"47.1\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"47.1\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"14.4\" y=\"47.1\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"47.1\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"47.1\" width=\"13.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"47.1\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"47.1\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"42.0\" y=\"47.1\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"47.1\" width=\"2.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"47.1\" y=\"47.1\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"50.2\" y=\"47.1\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"47.1\" width=\"9.6\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"5.6\" y=\"48.1\" width=\"7.1\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"12.5\" y=\"48.1\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"48.1\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"48.1\" width=\"13.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"37.0\" y=\"48.1\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"48.1\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"42.0\" y=\"48.1\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"48.1\" width=\"2.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"47.1\" y=\"48.1\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"50.2\" y=\"48.1\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"48.1\" width=\"9.6\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"5.6\" y=\"49.1\" width=\"7.1\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"12.5\" y=\"49.1\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"49.1\" width=\"8.4\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"49.1\" width=\"13.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"37.0\" y=\"49.1\" width=\"1.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.3\" y=\"49.1\" width=\"4.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"42.0\" y=\"49.1\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"44.5\" y=\"49.1\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"47.1\" y=\"49.1\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"50.2\" y=\"49.1\" width=\"10.9\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"49.5\" width=\"7.1\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"12.5\" y=\"49.5\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"15.7\" y=\"49.5\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"49.5\" width=\"9.6\" height=\"1.2\" fill=\"#686876\"/><rect x=\"33.3\" y=\"49.5\" width=\"5.8\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"49.5\" width=\"8.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"47.1\" y=\"49.5\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"50.2\" y=\"49.5\" width=\"10.9\" height=\"1.2\" fill=\"#686876\"/><rect x=\"5.6\" y=\"50.5\" width=\"10.2\" height=\"0.7\" fill=\"#686876\"/><rect x=\"15.7\" y=\"50.5\" width=\"8.4\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"23.8\" y=\"50.5\" width=\"9.6\" height=\"0.7\" fill=\"#686876\"/><rect x=\"33.3\" y=\"50.5\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"50.5\" width=\"8.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"47.1\" y=\"50.5\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"50.2\" y=\"50.5\" width=\"10.9\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"51.0\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"12.5\" y=\"51.0\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"16.3\" y=\"51.0\" width=\"17.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"33.3\" y=\"51.0\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"51.0\" width=\"22.2\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"51.5\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"12.5\" y=\"51.5\" width=\"4.0\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"16.3\" y=\"51.5\" width=\"17.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"33.3\" y=\"51.5\" width=\"5.8\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"51.5\" width=\"15.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"54.0\" y=\"51.5\" width=\"4.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"58.4\" y=\"51.5\" width=\"2.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"5.6\" y=\"52.5\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"12.5\" y=\"52.5\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"16.3\" y=\"52.5\" width=\"14.6\" height=\"0.7\" fill=\"#686876\"/><rect x=\"30.7\" y=\"52.5\" width=\"2.7\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"33.3\" y=\"52.5\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"52.5\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"54.0\" y=\"52.5\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"58.4\" y=\"52.5\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"4.4\" y=\"53.0\" width=\"8.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"12.5\" y=\"53.0\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"16.3\" y=\"53.0\" width=\"13.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"53.0\" width=\"5.2\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"34.5\" y=\"53.0\" width=\"4.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"53.0\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"54.0\" y=\"53.0\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"58.4\" y=\"53.0\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"4.4\" y=\"53.5\" width=\"25.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"53.5\" width=\"5.2\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"34.5\" y=\"53.5\" width=\"4.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"38.9\" y=\"53.5\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"54.0\" y=\"53.5\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"58.4\" y=\"53.5\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"4.4\" y=\"54.0\" width=\"24.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"54.0\" width=\"6.5\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"35.1\" y=\"54.0\" width=\"19.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"54.0\" y=\"54.0\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"58.4\" y=\"54.0\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"4.4\" y=\"54.5\" width=\"24.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"54.5\" width=\"6.5\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"35.1\" y=\"54.5\" width=\"25.9\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"55.0\" width=\"26.6\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"55.0\" width=\"6.5\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"35.1\" y=\"55.0\" width=\"24.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"55.5\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"55.5\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"10.0\" y=\"55.5\" width=\"19.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"55.5\" width=\"6.5\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"35.1\" y=\"55.5\" width=\"24.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"56.0\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"56.0\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"10.0\" y=\"56.0\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.1\" y=\"56.0\" width=\"4.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"29.5\" y=\"56.0\" width=\"5.2\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"34.5\" y=\"56.0\" width=\"25.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"56.5\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"56.5\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"10.0\" y=\"56.5\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.1\" y=\"56.5\" width=\"4.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"29.5\" y=\"56.5\" width=\"5.2\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"34.5\" y=\"56.5\" width=\"13.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"47.7\" y=\"56.5\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"51.5\" y=\"56.5\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"57.0\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"5.6\" y=\"57.0\" width=\"4.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"10.0\" y=\"57.0\" width=\"15.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.1\" y=\"57.0\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"30.7\" y=\"57.0\" width=\"2.7\" height=\"0.7\" fill=\"#cecedc\"/><rect x=\"33.3\" y=\"57.0\" width=\"14.6\" height=\"0.7\" fill=\"#686876\"/><rect x=\"47.7\" y=\"57.0\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"51.5\" y=\"57.0\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"57.5\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"5.6\" y=\"57.5\" width=\"4.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"10.0\" y=\"57.5\" width=\"15.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.1\" y=\"57.5\" width=\"5.8\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"30.7\" y=\"57.5\" width=\"17.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"47.7\" y=\"57.5\" width=\"4.0\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"51.5\" y=\"57.5\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"2.5\" y=\"58.5\" width=\"22.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.1\" y=\"58.5\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"30.7\" y=\"58.5\" width=\"17.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"47.7\" y=\"58.5\" width=\"4.0\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"51.5\" y=\"58.5\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"59.0\" width=\"11.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"13.8\" y=\"59.0\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"16.9\" y=\"59.0\" width=\"8.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.1\" y=\"59.0\" width=\"5.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"30.7\" y=\"59.0\" width=\"9.6\" height=\"0.7\" fill=\"#686876\"/><rect x=\"40.2\" y=\"59.0\" width=\"8.4\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"59.0\" width=\"10.2\" height=\"0.7\" fill=\"#686876\"/><rect x=\"2.5\" y=\"59.5\" width=\"11.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"13.8\" y=\"59.5\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"16.9\" y=\"59.5\" width=\"8.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.1\" y=\"59.5\" width=\"5.8\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"30.7\" y=\"59.5\" width=\"9.6\" height=\"1.2\" fill=\"#686876\"/><rect x=\"40.2\" y=\"59.5\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"59.5\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"59.5\" width=\"7.1\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"60.5\" width=\"11.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"13.8\" y=\"60.5\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"16.9\" y=\"60.5\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"19.5\" y=\"60.5\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"60.5\" width=\"4.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"60.5\" width=\"1.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"60.5\" width=\"13.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"40.2\" y=\"60.5\" width=\"8.4\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"60.5\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"51.5\" y=\"60.5\" width=\"7.1\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"60.9\" width=\"10.2\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"12.5\" y=\"60.9\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"13.8\" y=\"60.9\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"16.9\" y=\"60.9\" width=\"2.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"19.5\" y=\"60.9\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"60.9\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"60.9\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"60.9\" width=\"13.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"40.2\" y=\"60.9\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"60.9\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"51.5\" y=\"60.9\" width=\"7.1\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"61.9\" width=\"10.2\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"12.5\" y=\"61.9\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"13.8\" y=\"61.9\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"16.9\" y=\"61.9\" width=\"2.7\" height=\"1.2\" fill=\"#686876\"/><rect x=\"19.5\" y=\"61.9\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"61.9\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"61.9\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"61.9\" width=\"13.4\" height=\"1.2\" fill=\"#686876\"/><rect x=\"40.2\" y=\"61.9\" width=\"8.4\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"61.9\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"49.6\" y=\"61.9\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"61.9\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"61.9\" width=\"4.6\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"62.9\" width=\"10.2\" height=\"2.7\" fill=\"#4a4f63\"/><rect x=\"12.5\" y=\"62.9\" width=\"7.1\" height=\"2.7\" fill=\"#686876\"/><rect x=\"19.5\" y=\"62.9\" width=\"2.7\" height=\"2.7\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"62.9\" width=\"4.0\" height=\"2.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"62.9\" width=\"1.5\" height=\"2.7\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"62.9\" width=\"13.4\" height=\"2.7\" fill=\"#686876\"/><rect x=\"40.2\" y=\"62.9\" width=\"8.4\" height=\"2.7\" fill=\"#9a9aa8\"/><rect x=\"48.3\" y=\"62.9\" width=\"1.5\" height=\"2.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"62.9\" width=\"2.7\" height=\"2.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"62.9\" width=\"2.1\" height=\"2.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"62.9\" width=\"4.6\" height=\"2.7\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"65.4\" width=\"10.2\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"12.5\" y=\"65.4\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"19.5\" y=\"65.4\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"65.4\" width=\"4.0\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"65.4\" width=\"1.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"65.4\" width=\"5.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"32.6\" y=\"65.4\" width=\"3.3\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"35.8\" y=\"65.4\" width=\"3.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"65.4\" width=\"9.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"65.4\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"49.6\" y=\"65.4\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"65.4\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"65.4\" width=\"3.3\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"65.4\" width=\"1.5\" height=\"1.2\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"66.4\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"66.4\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"66.4\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"19.5\" y=\"66.4\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"22.0\" y=\"66.4\" width=\"4.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"66.4\" width=\"1.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"66.4\" width=\"5.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.6\" y=\"66.4\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"35.8\" y=\"66.4\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"66.4\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"66.4\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"66.4\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"66.4\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"66.4\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"66.4\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"66.9\" width=\"7.1\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"66.9\" width=\"3.3\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"66.9\" width=\"20.3\" height=\"2.2\" fill=\"#686876\"/><rect x=\"32.6\" y=\"66.9\" width=\"3.3\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"35.8\" y=\"66.9\" width=\"3.3\" height=\"2.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"66.9\" width=\"9.6\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"66.9\" width=\"1.5\" height=\"2.2\" fill=\"#686876\"/><rect x=\"49.6\" y=\"66.9\" width=\"2.7\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"66.9\" width=\"2.1\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"66.9\" width=\"3.3\" height=\"2.2\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"66.9\" width=\"1.5\" height=\"2.2\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"68.9\" width=\"7.1\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"68.9\" width=\"3.3\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"68.9\" width=\"26.6\" height=\"2.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"68.9\" width=\"9.6\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"68.9\" width=\"1.5\" height=\"2.2\" fill=\"#686876\"/><rect x=\"49.6\" y=\"68.9\" width=\"2.7\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"68.9\" width=\"2.1\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"68.9\" width=\"3.3\" height=\"2.2\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"68.9\" width=\"1.5\" height=\"2.2\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"70.9\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"70.9\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"70.9\" width=\"18.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"30.7\" y=\"70.9\" width=\"5.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"36.4\" y=\"70.9\" width=\"2.7\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"70.9\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"70.9\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"70.9\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"70.9\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"70.9\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"70.9\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"71.4\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"71.4\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"71.4\" width=\"17.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"71.4\" width=\"8.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"37.6\" y=\"71.4\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"71.4\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"71.4\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"71.4\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"71.4\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"71.4\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"71.4\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"71.8\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"9.4\" y=\"71.8\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"71.8\" width=\"15.9\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"71.8\" width=\"10.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"71.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"71.8\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"71.8\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"71.8\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"71.8\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"71.8\" width=\"3.3\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"57.1\" y=\"71.8\" width=\"1.5\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"2.5\" y=\"72.3\" width=\"7.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"9.4\" y=\"72.3\" width=\"3.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"72.3\" width=\"5.8\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"18.2\" y=\"72.3\" width=\"7.1\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"72.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"72.3\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"72.3\" width=\"10.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"72.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"38.9\" y=\"72.3\" width=\"9.6\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"72.3\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"49.6\" y=\"72.3\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"72.3\" width=\"2.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"72.3\" width=\"4.6\" height=\"0.7\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"72.8\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"9.4\" y=\"72.8\" width=\"3.3\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"72.8\" width=\"5.8\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"18.2\" y=\"72.8\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"72.8\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"72.8\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"27.6\" y=\"72.8\" width=\"10.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"72.8\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"38.9\" y=\"72.8\" width=\"9.6\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"48.3\" y=\"72.8\" width=\"1.5\" height=\"1.2\" fill=\"#686876\"/><rect x=\"49.6\" y=\"72.8\" width=\"2.7\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"52.1\" y=\"72.8\" width=\"2.1\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"54.0\" y=\"72.8\" width=\"4.6\" height=\"1.2\" fill=\"#9a9aa8\"/><rect x=\"2.5\" y=\"73.8\" width=\"7.1\" height=\"1.2\" fill=\"#686876\"/><rect x=\"9.4\" y=\"73.8\" width=\"3.3\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"12.5\" y=\"73.8\" width=\"5.8\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"18.2\" y=\"73.8\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"73.8\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"73.8\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"27.6\" y=\"73.8\" width=\"10.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"38.3\" y=\"73.8\" width=\"20.3\" height=\"1.2\" fill=\"#686876\"/><rect x=\"2.5\" y=\"74.8\" width=\"9.6\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"74.8\" width=\"6.5\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"18.2\" y=\"74.8\" width=\"7.1\" height=\"1.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"74.8\" width=\"2.1\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"74.8\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"27.6\" y=\"74.8\" width=\"30.9\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"75.8\" width=\"9.6\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"75.8\" width=\"2.1\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"13.8\" y=\"75.8\" width=\"11.5\" height=\"2.2\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"75.8\" width=\"2.1\" height=\"2.2\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"75.8\" width=\"0.8\" height=\"2.2\" fill=\"#686876\"/><rect x=\"27.6\" y=\"75.8\" width=\"30.3\" height=\"2.2\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"77.8\" width=\"9.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"77.8\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"13.8\" y=\"77.8\" width=\"11.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"77.8\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.6\" y=\"77.8\" width=\"30.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"78.3\" width=\"9.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"78.3\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"13.8\" y=\"78.3\" width=\"11.5\" height=\"0.7\" fill=\"#2f4a33\"/><rect x=\"25.1\" y=\"78.3\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.2\" y=\"78.3\" width=\"30.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"78.8\" width=\"9.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"11.9\" y=\"78.8\" width=\"15.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"78.8\" width=\"0.8\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"78.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.9\" y=\"78.8\" width=\"29.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"79.3\" width=\"29.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"31.4\" y=\"79.3\" width=\"27.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"79.8\" width=\"25.3\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"79.8\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.9\" y=\"79.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"79.8\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"80.3\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"80.3\" width=\"5.2\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.9\" y=\"80.3\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"80.3\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"80.8\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"80.8\" width=\"4.6\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.2\" y=\"80.8\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"80.8\" width=\"29.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"81.3\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"81.3\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.1\" y=\"81.3\" width=\"3.3\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"81.3\" width=\"30.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"81.8\" width=\"21.5\" height=\"1.2\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"81.8\" width=\"1.5\" height=\"1.2\" fill=\"#7c7c8a\"/><rect x=\"25.1\" y=\"81.8\" width=\"0.8\" height=\"1.2\" fill=\"#686876\"/><rect x=\"25.7\" y=\"81.8\" width=\"32.8\" height=\"1.2\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"82.7\" width=\"21.5\" height=\"1.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"82.7\" width=\"1.5\" height=\"1.7\" fill=\"#7c7c8a\"/><rect x=\"25.1\" y=\"82.7\" width=\"0.8\" height=\"1.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"82.7\" width=\"32.2\" height=\"1.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"84.2\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"84.2\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.1\" y=\"84.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"84.2\" width=\"31.6\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"84.7\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"84.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.1\" y=\"84.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"25.7\" y=\"84.7\" width=\"30.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"85.2\" width=\"21.5\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"23.8\" y=\"85.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.7\" y=\"85.2\" width=\"30.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"85.7\" width=\"22.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"24.5\" y=\"85.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.7\" y=\"85.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"26.4\" y=\"85.7\" width=\"29.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"86.2\" width=\"22.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"24.5\" y=\"86.2\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.7\" y=\"86.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"26.4\" y=\"86.2\" width=\"28.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"86.7\" width=\"22.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"24.5\" y=\"86.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"25.7\" y=\"86.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"26.4\" y=\"86.7\" width=\"27.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"2.5\" y=\"87.2\" width=\"22.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"24.5\" y=\"87.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"26.4\" y=\"87.2\" width=\"26.6\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"11.9\" y=\"87.7\" width=\"13.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"25.1\" y=\"87.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"26.4\" y=\"87.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"27.0\" y=\"87.7\" width=\"25.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"11.9\" y=\"88.2\" width=\"13.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"25.1\" y=\"88.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"88.2\" width=\"25.3\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"11.9\" y=\"88.7\" width=\"14.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"25.7\" y=\"88.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.0\" y=\"88.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"27.6\" y=\"88.7\" width=\"24.0\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"11.9\" y=\"89.2\" width=\"14.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"25.7\" y=\"89.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"27.6\" y=\"89.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.2\" y=\"89.2\" width=\"22.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"11.9\" y=\"89.7\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"26.4\" y=\"89.7\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.2\" y=\"89.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"28.9\" y=\"89.7\" width=\"22.2\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"12.5\" y=\"90.2\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"90.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"28.9\" y=\"90.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"29.5\" y=\"90.2\" width=\"20.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"13.2\" y=\"90.7\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"90.7\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"29.5\" y=\"90.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"30.1\" y=\"90.7\" width=\"19.7\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"13.8\" y=\"91.2\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"28.2\" y=\"91.2\" width=\"2.1\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"30.1\" y=\"91.2\" width=\"2.1\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.0\" y=\"91.2\" width=\"17.1\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"14.4\" y=\"91.7\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"28.9\" y=\"91.7\" width=\"3.3\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"32.0\" y=\"91.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.6\" y=\"91.7\" width=\"15.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"15.7\" y=\"92.2\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"30.1\" y=\"92.2\" width=\"2.7\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"32.6\" y=\"92.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"33.3\" y=\"92.2\" width=\"13.4\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"16.3\" y=\"92.7\" width=\"15.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"32.0\" y=\"92.7\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"33.3\" y=\"92.7\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"33.9\" y=\"92.7\" width=\"10.9\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"16.9\" y=\"93.2\" width=\"14.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"31.4\" y=\"93.2\" width=\"1.5\" height=\"0.7\" fill=\"#686876\"/><rect x=\"32.6\" y=\"93.2\" width=\"1.5\" height=\"0.7\" fill=\"#7c7c8a\"/><rect x=\"33.9\" y=\"93.2\" width=\"9.0\" height=\"0.7\" fill=\"#686876\"/><rect x=\"42.7\" y=\"93.2\" width=\"0.8\" height=\"0.7\" fill=\"#4a4f63\"/><rect x=\"43.3\" y=\"93.2\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"93.6\" width=\"10.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"93.6\" width=\"7.7\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"35.1\" y=\"93.6\" width=\"8.4\" height=\"0.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"94.1\" width=\"10.9\" height=\"2.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"94.1\" width=\"7.7\" height=\"2.7\" fill=\"#acacba\"/><rect x=\"35.1\" y=\"94.1\" width=\"7.7\" height=\"2.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"96.6\" width=\"10.9\" height=\"2.2\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"96.6\" width=\"8.4\" height=\"2.2\" fill=\"#acacba\"/><rect x=\"35.8\" y=\"96.6\" width=\"7.1\" height=\"2.2\" fill=\"#686876\"/><rect x=\"16.9\" y=\"98.6\" width=\"10.9\" height=\"1.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"98.6\" width=\"8.4\" height=\"1.7\" fill=\"#acacba\"/><rect x=\"35.8\" y=\"98.6\" width=\"6.5\" height=\"1.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"100.1\" width=\"10.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"100.1\" width=\"8.4\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"35.8\" y=\"100.1\" width=\"5.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"100.6\" width=\"10.9\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.6\" y=\"100.6\" width=\"8.4\" height=\"0.7\" fill=\"#acacba\"/><rect x=\"35.8\" y=\"100.6\" width=\"5.2\" height=\"0.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"101.1\" width=\"10.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"27.0\" y=\"101.1\" width=\"0.8\" height=\"0.7\" fill=\"#686876\"/><rect x=\"16.9\" y=\"101.6\" width=\"10.2\" height=\"3.7\" fill=\"#8a8a98\"/><rect x=\"17.6\" y=\"105.0\" width=\"9.6\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"17.6\" y=\"105.5\" width=\"9.0\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"18.2\" y=\"106.0\" width=\"8.4\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"18.8\" y=\"106.5\" width=\"7.1\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"19.5\" y=\"107.0\" width=\"5.2\" height=\"0.7\" fill=\"#8a8a98\"/><rect x=\"20.7\" y=\"107.5\" width=\"2.7\" height=\"0.7\" fill=\"#8a8a98\"/><circle cx=\"22.2\" cy=\"103.5\" r=\"4.5\" fill=\"var(--c0)\" stroke=\"#111\" stroke-width=\"1.5\"/><circle cx=\"41.8\" cy=\"6.5\" r=\"4.5\" fill=\"var(--c1)\" stroke=\"#111\" stroke-width=\"1.5\"/></svg>"};
 function renderMaps() {
   const cur = MAP_ID;
@@ -4961,19 +5054,65 @@ function renderMaps() {
   $('lobbySub').textContent = '涂地对战 · ' + MAP.name;
   const sel = cur;
   $('mapCards').innerHTML = Object.values(MAP_LIST).map(m => `<button class="mscard${m.id === sel ? ' sel' : ''}" data-id="${m.id}"><span class="mt">${MAP_THUMB[m.id] || ''}</span><span class="mn"><b>${m.name}</b><small>${m.en}</small><em>${m.desc}</em><span class="chips"><span class="sz">${m.size || ''}</span>${(m.tags || []).map(t => `<span>${t}</span>`).join('')}</span></span>${m.id === cur ? '<i class="mon">当前</i>' : ''}</button>`).join('');
-  $('mapCards').querySelectorAll('.mscard').forEach(el => { el.onclick = () => { Sfx.init(); Sfx.click(); if (el.dataset.id !== MAP_ID) switchMap(el.dataset.id, 'mapsel'); }; el.ondblclick = () => { if (el.dataset.id === MAP_ID) mapSelNext(); }; });
+  $('mapCards').querySelectorAll('.mscard').forEach(el => { el.onclick = () => { Sfx.init(); Sfx.click(); if (el.dataset.id !== MAP_ID) switchMap(el.dataset.id); }; el.ondblclick = () => { if (el.dataset.id === MAP_ID) mapSelNext(); }; });
 }
 // the lobby and map select are laid out for ~1500 x 860: on a smaller window shrink them as a whole instead of squeezing
 function fitMenus() { const k = Math.min(1, innerWidth / 1500, innerHeight / 860); ['lobby', 'mapsel'].forEach(id => { const el = $(id); if (el) el.style.zoom = k < 0.999 ? k.toFixed(3) : ''; }); }
 addEventListener('resize', fitMenus);
-// map select screen: title -> pick a map -> lobby (a different map reloads the page and reopens the lobby)
+// map select screen: title -> pick a map (the background turns into it straight away) -> lobby
 function openMapSel() { renderMaps(); show('title', false); show('lobby', false); show('results', false); show('mapsel', true); }
 function mapSelNext() { Sfx.init(); Sfx.click(); show('mapsel', false); openLobby(); }
-function switchMap(id, reopen = 'lobby') {
-  const m = MAP_LIST[id]; if (!m) return;
-  try { localStorage.setItem(MAP_KEY, id); sessionStorage.setItem('splashrush.reopen', reopen); } catch (e) { }
-  $('mapVeilName').textContent = m.name; $('mapVeilEn').textContent = m.en; $('mapVeil').classList.add('show');
-  setTimeout(() => { try { location.href = location.pathname + location.hash; } catch (e) { location.reload(); } }, 420);
+// switch map in place: no page reload, the new park simply replaces the old one behind the menus
+function switchMap(id) {
+  if (!MAP_LIST[id] || id === MAP_ID) return;
+  try { localStorage.setItem(MAP_KEY, id); } catch (e) { }
+  const fade = mapFadeHold();
+  loadMap(id); renderMaps();
+  fade();
+}
+// cross-fade between maps: freeze the current view on an overlay, build the new map under it, then let the overlay dissolve
+function mapFadeHold() {
+  const f = $('glFade'), gl = renderer.domElement; let ok = false;
+  try { renderer.render(scene, camera); f.width = gl.width; f.height = gl.height; f.getContext('2d').drawImage(gl, 0, 0); ok = true; } catch (e) { }
+  if (!ok) return () => { };
+  clearTimeout(mapFadeHold.t); f.style.transition = 'none'; f.style.display = 'block'; f.style.opacity = 1; f.style.transform = 'scale(1)';
+  return () => {
+    const go = () => {
+      f.style.transition = 'opacity .75s cubic-bezier(.4,0,.2,1), transform 1s cubic-bezier(.2,.7,.2,1)'; f.style.opacity = 0; f.style.transform = 'scale(1.06)';
+      clearTimeout(mapFadeHold.t); mapFadeHold.t = setTimeout(() => { f.style.display = 'none'; }, 1100);
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(go)); else go();   // two frames: the new map is on screen under the overlay before it starts to fade
+  };
+}
+// tear down the map-specific scene (arena, sea / plaza, decor) and build the chosen map's
+function loadMap(id) {
+  resetToAttract(); Fx.clear(); Proj.clear();
+  const keep = new Set(Object.values(TEX)); for (const k in MAP_CACHE) if (MAP_CACHE[k].layout) keep.add(MAP_CACHE[k].layout);
+  (WORLD.objs || []).forEach(o => {
+    scene.remove(o);
+    o.traverse(m => {
+      if (m.geometry) m.geometry.dispose();
+      const mats = m.material ? (Array.isArray(m.material) ? m.material : [m.material]) : [];
+      mats.forEach(mt => { for (const k in mt) { const v = mt[k]; if (v && v.isTexture && !keep.has(v)) v.dispose(); } mt.dispose(); });
+    });
+  });
+  Object.assign(WORLD, { objs: [], spawnFx: [], buoys: [], sea: null, flags: null });
+  setMap(id);
+  defineMap();
+  TEX.layout = layoutTex();
+  initPaint();
+  buildWorld();
+  initNav(); HUD.init();
+  Barrier.meshes.forEach((m, t) => m.position.set(SPAWN[t].x, BARRIER_H / 2 - 0.05, SPAWN[t].z));
+  G.roster = null;                // (the title camera keeps orbiting where it was, so the two maps line up through the cross-fade)
+  applyPalette(); resetPaint();
+  renderer.compile(scene, camera);
+}
+// the map-specific part of the scene; remembered so a map switch can take it down again
+function buildWorld() {
+  const before = new Set(scene.children);
+  buildSea(); buildArena(); buildDecor();
+  WORLD.objs = scene.children.filter(o => !before.has(o));
 }
 // replay the entrance animations of the visible page (bars fill, numbers count up)
 function lobbyAnimate() {
@@ -5411,18 +5550,16 @@ function boot() {
   Profile.load();
   initRenderer();
   defineMap();
+  prebuildMaps();                 // the other maps' terrain + floor layout now, so switching maps later is instant
   buildTextures();
   initPaint();
   initGeo();
-  buildSkyEnv(); buildSea(); buildArena(); buildDecor();
+  buildSkyEnv(); buildWorld();
   Fx.init(); Proj.init(); Barrier.init(); ScreenInk.init(); initBallistics(); initNav(); HUD.init(); initInput(); initUI(); Preview.init();
   applyPalette();
   renderer.compile(scene, camera);
   G.state = 'title';
   show('loading', false); show('title', true);
-  // just switched map in the lobby: come straight back to the lobby
-  let reopen = null; try { reopen = sessionStorage.getItem('splashrush.reopen'); sessionStorage.removeItem('splashrush.reopen'); } catch (e) { }
-  if (reopen === 'lobby') openLobby(); else if (reopen === 'mapsel') openMapSel();
   loop();
 }
 function showFatal(msg) {

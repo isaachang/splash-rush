@@ -168,6 +168,37 @@ const Sfx = (() => {
       noise(0.25, 0.25 * v, 'bandpass', 900, 1.5, 300, d, t + 0.05); tone('triangle', 70, 40, 1.2, 0.12 * v, d, t + 0.1);
     },
     cannon(v, c) { noise(0.35 + c * 0.3, (0.25 + c * 0.35) * v, 'lowpass', 2400, 0.9, 120); tone('square', 520, 60, 0.25, 0.12 * v); tone('sine', 150, 40, 0.4 + c * 0.2, (0.3 + c * 0.3) * v); noise(0.06, 0.25 * v, 'highpass', 3000, 1); },
+    // SMG: a light, short, high "pip-tsk" (fires twice as often as the rifle, so it stays quiet)
+    smg(v, pan = 0) {
+      if (!ctx) return; const d = panNode(pan), k = rand(0.92, 1.08);
+      noise(0.045, 0.11 * v, 'bandpass', 2600 * k, 1.6, 1500, d); tone('triangle', 620 * k, 240, 0.04, 0.06 * v, d);
+    },
+    // heavy gatling spin-up: a motor whine climbing in pitch + the barrels' ratchet ticking faster, then a hum while it fires
+    spinStart(dur) {
+      if (!ctx) return; this.spinStop(true); const t = ctx.currentTime;
+      const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(55, t); o.frequency.exponentialRampToValueAtTime(230, t + dur);
+      const of = ctx.createBiquadFilter(); of.type = 'lowpass'; of.frequency.value = 1100;
+      const n = ctx.createBufferSource(); n.buffer = noiseBuf; n.loop = true;
+      const nf = ctx.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.setValueAtTime(900, t); nf.frequency.exponentialRampToValueAtTime(2600, t + dur); nf.Q.value = 3;
+      const ng = ctx.createGain(); ng.gain.value = 0;                       // ratchet: noise gated by a square LFO that speeds up
+      const lfo = ctx.createOscillator(); lfo.type = 'square'; lfo.frequency.setValueAtTime(7, t); lfo.frequency.exponentialRampToValueAtTime(34, t + dur);
+      const lg = ctx.createGain(); lg.gain.value = 0.045; lfo.connect(lg); lg.connect(ng.gain);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.07, t + dur * 0.6);
+      o.connect(of); of.connect(g); n.connect(nf); nf.connect(ng); ng.connect(g); g.connect(sfxG);
+      o.start(t); n.start(t); lfo.start(t); this._sp = { o, n, lfo, g, nf };
+    },
+    spinReady() {
+      if (!ctx) return; tone('square', 1250, 820, 0.05, 0.05); noise(0.04, 0.08, 'highpass', 4000, 1);   // a dry metal "clack": barrels up to speed
+      if (this._sp) { const t = ctx.currentTime; this._sp.g.gain.setTargetAtTime(0.045, t, 0.08); }
+    },
+    spinStop(now) {
+      if (!ctx || !this._sp) return; const { o, n, lfo, g, nf } = this._sp, t = ctx.currentTime, d = now ? 0.03 : 0.28; this._sp = null;
+      o.frequency.cancelScheduledValues(t); o.frequency.setValueAtTime(o.frequency.value, t); o.frequency.exponentialRampToValueAtTime(45, t + d);
+      lfo.frequency.cancelScheduledValues(t); lfo.frequency.setValueAtTime(lfo.frequency.value, t); lfo.frequency.exponentialRampToValueAtTime(4, t + d);
+      nf.frequency.cancelScheduledValues(t); nf.frequency.setValueAtTime(nf.frequency.value, t); nf.frequency.exponentialRampToValueAtTime(500, t + d);
+      g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      [o, n, lfo].forEach(x => x.stop(t + d + 0.05));
+    },
     // heavy gatling: short dry mechanical rattle per round (nothing like the rifle's wet "pshh")
     gatling(v, pan = 0) {
       if (!ctx) return; const d = panNode(pan), k = rand(0.94, 1.06);
@@ -341,7 +372,7 @@ function buildTextures() {
     for (let y = 8; y < h - 8; y += 20) for (let x = 8; x < w - 8; x += 24) { const lit = Math.random(); g.fillStyle = lit > 0.8 ? '#fff6c8' : lit > 0.4 ? '#7f93ad' : '#5d6e87'; g.fillRect(x, y, 14, 12); }
   }, false);
   TEX.noise = makeNoiseTex(256);
-  TEX.layout = makeLayoutTex();
+  TEX.layout = layoutTex();
 }
 function makeNoiseTex(N) {
   // tileable fbm value noise
