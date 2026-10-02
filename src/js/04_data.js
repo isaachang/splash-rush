@@ -168,7 +168,7 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
-  { v: 'v0.9.1', date: '2026-10-02', time: '03:30', title: '石墩削弱 · 冲锋枪', items: [
+  { v: 'v0.9.1', date: '2026-10-02', time: '11:20', title: '石墩削弱 · 冲锋枪', items: [
     '石墩削弱：走路速度和潜墨速度都慢 5%',
     '重型加特林要先转约 0.3 秒才开始连射，按住一直打、松手就停，再按要重新转；有专属的转动音效',
     '阿飒新增第二把主武器「疾风冲锋枪」：射速极快、单发很弱，很费墨但回墨快',
