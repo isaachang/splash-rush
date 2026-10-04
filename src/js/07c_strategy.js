@@ -77,7 +77,7 @@ const Strategist = {
   // game - fading out as the Director starts telling either side to paint or ease off
   intensity() {
     const tm = this.team(), row = Director.teamRow ? Director.teamRow[tm] : DIFF[1], lv = Director.teamLevel(tm), pf = Math.abs(Director.paintFocus(tm));
-    if (!row.team) return 0;
+    if (!row.team || Director.mode() === 0) return 0;                       // (and never on easy)
     return clamp((lv - 0.5) / 1.3, 0.25, 1) * clamp(1 - pf / 0.3, 0, 1);
   },
   // ---------------------------------------------------------------- handing out the jobs

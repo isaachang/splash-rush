@@ -3,7 +3,7 @@
     normal; the enemies are either smart (the Director steers them) or a fixed tier.  Prints how the matches went
     and what the Director made of the "player".
     Usage:  node tools/director-bench.js [map=canton] [player=0] [enemies=s] [matches=4] [seconds=180]
-            player: 0 easy · 1 normal · 2 hell     enemies: s smart · 0 / 1 / 2 a fixed tier
+            player: 0 easy · 1 normal · 2 hell     enemies: s smart · t0 / t1 / t2 a tier as players get it (moving within its range) · f0 / f1 / f2 a tier as it was before v0.15 (both teams on the fixed row) · 0 / 1 / 2 the enemies on a fixed row, teammates normal
             JSON=1 prints the raw numbers as JSON instead                                                    */
 const vm = require('vm'), fs = require('fs'), path = require('path');
 const src = fs.readFileSync(path.join(__dirname, 'smoke-test.js'), 'utf8');
@@ -18,8 +18,8 @@ const run = function (PL, EN, N, SECS, WPN, DIRO, NOSTRAT) {
   const out = [];
   for (let m = 0; m < N; m++) {
     const w = WPN || WEAPON_ORDER[m % WEAPON_ORDER.length];
-    GAME.dur = SECS; GAME.diff = EN; Profile.data.skill = undefined; Profile.data.weapon = w; Profile.data.char = charForWeapon(w); openLobby();
-    startMatch(); Input.locked = true; G.aiLevels = EN === SMART ? [SMART, SMART] : [1, EN]; G.pilot = true; G.pilotLevel = PL; G.bots.push(new Bot(PLAYER, 'front')); G.dirTrace = true;
+    GAME.dur = SECS; GAME.diff = EN >= 20 ? EN - 20 : EN >= 10 ? EN - 10 : EN; Profile.data.skill = undefined; Profile.data.weapon = w; Profile.data.char = charForWeapon(w); openLobby();
+    startMatch(); Input.locked = true; G.aiLevels = EN >= 20 ? [EN - 20, EN - 20] : EN >= 10 ? null : EN === SMART ? [SMART, SMART] : [1, EN]; G.pilot = true; G.pilotLevel = PL; G.bots.push(new Bot(PLAYER, 'front')); G.dirTrace = true;
     let f = 0, atCal = null;
     const jobs = {};
     while (G.state !== 'results' && f < 30 * (SECS + 40)) { loop(); f++; if (atCal === null && G.state === 'play' && G.time >= Director.calibT) atCal = Director.skill;
@@ -38,11 +38,11 @@ const run = function (PL, EN, N, SECS, WPN, DIRO, NOSTRAT) {
   }
   return out;
 };
-const EN = en === 's' ? -1 : +en;
+const EN = en === 's' ? -1 : en[0] === 't' ? 10 + +en.slice(1) : en[0] === 'f' ? 20 + +en.slice(1) : +en;
 const res = vm.runInContext('(' + run.toString() + ')(' + [+pl, EN, +n, +secs, JSON.stringify(process.env.WEAPON || ''), process.env.DIRO || 'null', process.env.NOSTRAT ? 'true' : 'false'].join(',') + ')', g);
 if (process.env.JSON) { console.log(JSON.stringify(res)); process.exit(0); }
 const avg = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length), f2 = v => v == null ? '-' : v.toFixed(2);
-const NAME = ['easy', 'normal', 'hell'];
-console.log(`${map}  player ${NAME[+pl]}  vs  enemies ${en === 's' ? 'SMART' : NAME[EN]}   (${n} matches, ${secs} s)`);
+const NAME = ['easy', 'normal', 'hell'], ENAME = EN === -1 ? 'SMART' : EN >= 20 ? 'old tier ' + NAME[EN - 20] : EN >= 10 ? 'tier ' + NAME[EN - 10] : 'fixed ' + NAME[EN];
+console.log(`${map}  player ${NAME[+pl]}  vs  enemies ${ENAME}   (${n} matches, ${secs} s)`);
 for (const r of res) console.log(`  ${r.w.padEnd(9)} ${r.win ? 'WIN ' : 'lose'} turf ${r.turf[0].toFixed(1)}-${r.turf[1].toFixed(1)}  skill ${f2(r.skill)} (at calib ${f2(r.atCal)}, sd ${f2(r.sd)})  elo ${f2(r.elo)} n ${r.duels.toFixed(1)}  sig ${JSON.stringify(r.sig)}  hit ${f2(r.hit)}/${r.shots}  K/D ${r.k}/${r.d}  enemies ${r.enemyLv.map(f2).join(' ')}`);
 console.log(`  => player-team wins ${res.filter(r => r.win).length}/${res.length}   mean |turf gap| ${avg(res.map(r => Math.abs(r.turf[0] - r.turf[1]))).toFixed(1)}   mean skill ${f2(avg(res.map(r => r.skill)))}   at calib ${f2(avg(res.map(r => r.atCal)))}`);

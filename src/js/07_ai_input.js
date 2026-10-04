@@ -235,11 +235,12 @@ function initTactics() {
 }
 // difficulty of one team's bots (tests can pit two different levels against each other with G.aiLevels)
 const aiStat = (team, k) => { const a = G.aiStat || (G.aiStat = [{}, {}]); a[team][k] = (a[team][k] || 0) + 1; };
-// smart mode (SMART): each bot's own level, from the Director.  G.pilotLevel: the bot standing in for the player in tests
+// every tier: each bot's own level, from the Director.  Tests can still pit fixed rows against each other with G.aiLevels
+// (SMART there means the Director); G.pilotLevel: the bot standing in for the player in tests
 function botDiff(team, bot) {
   if (bot && bot.c.isPlayer && G.pilotLevel != null) return DIFF[G.pilotLevel];
-  const lv = G.aiLevels ? G.aiLevels[team] : GAME.diff;
-  return lv === SMART ? Director.row(team, bot) : DIFF[lv];
+  if (!G.aiLevels) return Director.row(team, bot);
+  const lv = G.aiLevels[team]; return lv === SMART ? Director.row(team, bot) : DIFF[lv];
 }
 const depthOf = (team, z) => team === 0 ? -z : z;          // how far toward the enemy's end a spot is (0 = the middle of the map)
 
