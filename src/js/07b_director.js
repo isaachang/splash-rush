@@ -49,7 +49,7 @@ const Director = {
     this.seed = !own && rest.length ? rest.reduce((a, r) => a + r.s * (r.m || 1), 0) / wsum : null;
     const prior = clamp(own ? own.s : this.seed ?? 1, 0, LV_MAX);
     this.mem = own || null; this.elo = prior; this.n = own ? Math.min(4, (own.m || 1) * 1.5) : 0; this.nm = 0;
-    this.skill = this.target = this.mateGoal = prior; this.conf = 0; this.corrE = this.corrM = 0; this.lead = 0; this.boost = 1; this.sig = {}; this.sigT = 0; this.panelT = 0;
+    this.skill = this.target = this.mateGoal = prior; this.conf = 0; this.corrE = this.corrM = 0; this.planBonus = 0; this.lead = 0; this.boost = 1; this.sig = {}; this.sigT = 0; this.panelT = 0;
     this.wasClimb = false; this.cheat = false; this.saved = null;
     this.fights = new Map(); this.log = []; this.trace = []; this.allDuels = [];
     this.st = { alive: 0, shots: 0, hits: 0, swimT: 0, refillT: 0, climbs: 0, bombs: 0, idleT: 0 };
@@ -71,6 +71,7 @@ const Director = {
     return bot.dRow;
   },
   goal(b) { return b.c.team === PLAYER.team ? this.mateGoal : this.target; },
+  teamLevel(tm) { const sb = this.squadBrain && this.squadBrain[tm]; return sb && sb.lv != null ? sb.lv : this.skill; },
   // the level a bot is playing at right now (fixed modes: the chosen tier)
   lvOf(c) { if (this.on) return c.bot && c.bot.lv !== undefined ? c.bot.lv : c.team === PLAYER.team ? this.mateGoal : this.target; const l = G.aiLevels ? G.aiLevels[c.team] : GAME.diff; return l >= 0 && l <= 2 ? l : 1; },
   endWindow() { return this.on ? this.endWin : 30; },
@@ -149,9 +150,11 @@ const Director = {
   // cannot take - already at the top or the bottom - goes to the teammates, who otherwise move 40 % as far the other way, 0.5 at most
   steer() {
     const tc = Paint.teamCells, P = PLAYER; this.lead = (tc[P.team] - tc[1 - P.team]) / Math.max(1, Paint.total);
-    const sg = Math.sign(this.lead), c = Math.min(0.9, Math.max(0, Math.abs(this.lead) - 0.06) * 5);
-    this.target = clamp(this.skill + sg * c, 0, LV_MAX); this.corrE = this.target - this.skill;
-    this.corrM = -sg * Math.min(0.5, c * 0.4 + Math.abs(sg * c - this.corrE)); this.mateGoal = clamp(this.skill + this.corrM, 0, LV_MAX);
+    const sg = Math.sign(this.lead), c = Math.min(0.9, Math.max(0, Math.abs(this.lead) - 0.06) * 5), te = clamp(this.skill + sg * c, 0, LV_MAX);
+    this.corrM = -sg * Math.min(0.5, c * 0.4 + Math.abs(sg * c - (te - this.skill))); this.mateGoal = clamp(this.skill + this.corrM, 0, LV_MAX);
+    // bots busy countering the player play a little less efficiently; slightly sharper hands make up for it (only in a close game)
+    this.planBonus = Strategist.on ? 0.15 * Strategist.k : 0;
+    this.target = clamp(te + this.planBonus, 0, LV_MAX); this.corrE = this.target - this.skill;
     this.boost = 1 + clamp((Math.abs(this.lead) - 0.08) / 0.06, 0, 2);      // and the bots out of sight close in up to three times as fast
     // aim alone hardly moves the turf, so the teams are also told what to spend their time on: once apart (PF) the side behind keeps
     // to painting what is not theirs, and the side ahead eases off - hangs back and stops chasing, leaving the others room; teammates get a share
@@ -224,6 +227,7 @@ const Director = {
     const pfs = f => Math.abs(f) < 0.05 ? '正常' : (f > 0 ? '专心涂地 ' : '收着打 ') + pc(Math.abs(f)), pf = this.pf || [0, 0];
     h += `<div>比分 ${this.lead >= 0 ? '我方领先' : '我方落后'} ${pc(Math.abs(this.lead))} → 局势修正 敌 ${sgn(this.corrE)} · 友 ${sgn(this.corrM)}${this.boost > 1.01 ? `<small>（视野外加速 ×${this.boost.toFixed(1)}）</small>` : ''}</div>`;
     h += `<div>打法倾向 敌：${pfs(pf[1 - PLAYER.team] || 0)} · 友：${pfs(pf[PLAYER.team] || 0)}</div>`;
+    h += Strategist.panelLines();
     h += '<div>最近交火 ' + (this.log.length ? this.log.map(l => `<i class="${l.o > 0.5 ? 'w' : l.o < 0.5 ? 'l' : ''}">${l.o > 0.5 ? '赢' : l.o < 0.5 ? '输' : '平'}</i><small>预期${pc(l.p)}${l.w < 1 ? '×' + l.w.toFixed(1) : ''}</small>`).join(' ') : '—') + '</div>';
     const row = (b, goal) => `<tr><td>${b.c.name}</td><td>${b.lv === undefined ? '—' : f2(b.lv)}</td><td>→ ${f2(goal)}</td><td>${this.tier(b.lv ?? goal)}</td><td>${STN[b.dState] || ''}</td></tr>`;
     h += '<table><tr><th colspan="5">队友</th></tr>' + this.bots().filter(b => b.c.team === PLAYER.team).map(b => row(b, this.mateGoal)).join('');

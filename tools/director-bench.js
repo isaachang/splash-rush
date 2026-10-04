@@ -11,8 +11,9 @@ const [map = 'canton', pl = '0', en = 's', n = '4', secs = '180'] = process.argv
 process.env.SR_MAP = map;
 eval(src.slice(src.indexOf('const root'), src.indexOf('const weapons')));
 const g = makeSandbox();
-const run = function (PL, EN, N, SECS, WPN, DIRO) {
+const run = function (PL, EN, N, SECS, WPN, DIRO, NOSTRAT) {
   clock.getDelta = () => 1 / 30; for (let i = 0; i < 5; i++) loop();
+  if (NOSTRAT) Strategist.off = true;                                         // NOSTRAT=1 : the Director without the strategist's plans
   if (DIRO) for (const k in DIRO) Director[k] = Object.assign({}, Director[k], DIRO[k]);      // DIRO='{"PF":{"span":0.08}}' : try other Director settings
   const out = [];
   for (let m = 0; m < N; m++) {
@@ -20,7 +21,9 @@ const run = function (PL, EN, N, SECS, WPN, DIRO) {
     GAME.dur = SECS; GAME.diff = EN; Profile.data.skill = undefined; Profile.data.weapon = w; Profile.data.char = charForWeapon(w); openLobby();
     startMatch(); Input.locked = true; G.aiLevels = EN === SMART ? [SMART, SMART] : [1, EN]; G.pilot = true; G.pilotLevel = PL; G.bots.push(new Bot(PLAYER, 'front')); G.dirTrace = true;
     let f = 0, atCal = null;
-    while (G.state !== 'results' && f < 30 * (SECS + 40)) { loop(); f++; if (atCal === null && G.state === 'play' && G.time >= Director.calibT) atCal = Director.skill; }
+    const jobs = {};
+    while (G.state !== 'results' && f < 30 * (SECS + 40)) { loop(); f++; if (atCal === null && G.state === 'play' && G.time >= Director.calibT) atCal = Director.skill;
+      if (G.state === 'play' && f % 30 === 0) for (const b of G.bots) if (b.c.team === 1 && b.task) jobs[b.task.id] = (jobs[b.task.id] || 0) + 1; }
     const D = Director, t = [Paint.teamCells[0] / Paint.total * 100, Paint.teamCells[1] / Paint.total * 100];
     const late = D.trace.filter(r => r[0] > D.calibT).map(r => r[1]), mean = late.reduce((s, v) => s + v, 0) / Math.max(1, late.length);
     const sd = Math.sqrt(late.reduce((s, v) => s + (v - mean) * (v - mean), 0) / Math.max(1, late.length));
@@ -30,13 +33,13 @@ const run = function (PL, EN, N, SECS, WPN, DIRO) {
     const mates = CHARS.filter(c => c.team === 0 && !c.isPlayer);
     out.push({ w, win: t[0] > t[1], turf: t, skill: D.skill, atCal, sd, swing, elo: D.elo, duels: D.n, sig: Object.fromEntries(Object.entries(D.sig).map(([k, v]) => [k, +v.v.toFixed(2)])),
       hit: D.st.shots ? D.st.hits / D.st.shots : null, shots: D.st.shots, paintMin: PLAYER.paint / Math.max(1, D.st.alive / 60), matePaintMin: mates.map(c => c.paint / Math.max(1, (c.dirAlive || 1) / 60)),
-      mateW: mates.map(c => c.weapon.id), raw: D.raw, k: PLAYER.kills, d: PLAYER.deaths, enemyLv, duelLog: D.allDuels || [] });
-    G.aiLevels = null; G.dirTrace = false; for (let i = 0; i < 20; i++) loop(); quitToTitle(); for (let i = 0; i < 5; i++) loop();
+      mateW: mates.map(c => c.weapon.id), raw: D.raw, jobs, plans: Object.fromEntries(Object.entries((G.aiStat || [{}, {}])[1]).filter(([k]) => k.startsWith('plan_'))), prof: Strategist.prof && Object.fromEntries(Object.entries(Strategist.prof).filter(([, v]) => typeof v === 'number').map(([k, v]) => [k, +v.toFixed(2)])), k: PLAYER.kills, d: PLAYER.deaths, enemyLv, duelLog: D.allDuels || [] });
+    G.aiLevels = null; G.dirTrace = false; G.aiStat = null; for (let i = 0; i < 20; i++) loop(); quitToTitle(); for (let i = 0; i < 5; i++) loop();
   }
   return out;
 };
 const EN = en === 's' ? -1 : +en;
-const res = vm.runInContext('(' + run.toString() + ')(' + [+pl, EN, +n, +secs, JSON.stringify(process.env.WEAPON || ''), process.env.DIRO || 'null'].join(',') + ')', g);
+const res = vm.runInContext('(' + run.toString() + ')(' + [+pl, EN, +n, +secs, JSON.stringify(process.env.WEAPON || ''), process.env.DIRO || 'null', process.env.NOSTRAT ? 'true' : 'false'].join(',') + ')', g);
 if (process.env.JSON) { console.log(JSON.stringify(res)); process.exit(0); }
 const avg = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length), f2 = v => v == null ? '-' : v.toFixed(2);
 const NAME = ['easy', 'normal', 'hell'];

@@ -17,6 +17,8 @@ const avg = a => a.reduce((s, v) => s + v, 0) / a.length, f2 = v => v.toFixed(2)
   ok(sEnd >= 0.9 && sEnd >= wEnd + 0.3, 'strong stand-in (hell rifle, 3:00): judged ' + f2(sEnd) + ' ' + list(strong) + ' (bar: 0.9 or higher, and at least 0.3 above the weak one)');
   const all = weak.concat(mid, strong), sw = Math.max(...all.map(x => x.swing));
   ok(sw < 0.15, 'steady: after calibration the estimate never swings more than ' + f2(sw) + ' within 10 s (bar: under 0.15) [' + all.map(x => f2(x.swing)).join(' ') + ']');
+  const plans = new Set(all.flatMap(x => Object.keys(x.plans || {}).filter(k => k !== 'plan_none'))), jobT = all.reduce((s, x) => s + Object.values(x.jobs || {}).reduce((a, b) => a + b, 0), 0);
+  ok(plans.size >= 2 && jobT > 0, 'counter-plans in use: ' + [...plans].map(k => k.slice(5)).join(', ') + ' were picked, ' + Math.round(jobT / all.length) + ' bot-seconds of jobs a match');
   const blow = all.filter(x => Math.abs(x.turf[0] - x.turf[1]) > 25).length;
   ok(blow <= 1, 'no runaways: ' + blow + ' of ' + all.length + ' matches ended more than 25 % of the map apart');
   res.forEach(l => console.log(l));
