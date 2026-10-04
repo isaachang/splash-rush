@@ -11,8 +11,9 @@ const [map = 'canton', pl = '0', en = 's', n = '4', secs = '180'] = process.argv
 process.env.SR_MAP = map;
 eval(src.slice(src.indexOf('const root'), src.indexOf('const weapons')));
 const g = makeSandbox();
-const run = function (PL, EN, N, SECS, WPN) {
+const run = function (PL, EN, N, SECS, WPN, DIRO) {
   clock.getDelta = () => 1 / 30; for (let i = 0; i < 5; i++) loop();
+  if (DIRO) for (const k in DIRO) Director[k] = Object.assign({}, Director[k], DIRO[k]);      // DIRO='{"PF":{"span":0.08}}' : try other Director settings
   const out = [];
   for (let m = 0; m < N; m++) {
     const w = WPN || WEAPON_ORDER[m % WEAPON_ORDER.length];
@@ -35,7 +36,7 @@ const run = function (PL, EN, N, SECS, WPN) {
   return out;
 };
 const EN = en === 's' ? -1 : +en;
-const res = vm.runInContext('(' + run.toString() + ')(' + [+pl, EN, +n, +secs, JSON.stringify(process.env.WEAPON || '')].join(',') + ')', g);
+const res = vm.runInContext('(' + run.toString() + ')(' + [+pl, EN, +n, +secs, JSON.stringify(process.env.WEAPON || ''), process.env.DIRO || 'null'].join(',') + ')', g);
 if (process.env.JSON) { console.log(JSON.stringify(res)); process.exit(0); }
 const avg = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length), f2 = v => v == null ? '-' : v.toFixed(2);
 const NAME = ['easy', 'normal', 'hell'];

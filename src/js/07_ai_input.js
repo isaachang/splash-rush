@@ -310,9 +310,11 @@ class Bot {
   canSee(e) { const a = this.c.eye(), b = e.chest(); return !segBlocked(a.x, a.y, a.z, b.x, b.y, b.z, 0.5); }
   findEnemy() {
     const c = this.c, e0 = c.eye(); let best = null, bd = 1e9;
+    // smart mode: a team told to paint only takes on enemies close by, one easing off does not go looking either (both still answer whoever shoots them)
+    const pf = Director.paintFocus(c.team), rk = G.time - c.lastHurt < 1.5 ? 1 : pf > 0 ? lerp(1, 0.45, pf) : lerp(1, 0.6, -pf);
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
-      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) || d > bd) continue;
+      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk || d > bd) continue;
       // hidden in ink: only seen up close (2.5 m), or roughly up to 7 m if swimming fast (ripples); shooting gives you away
       let fuzzy = false;
       if (e.hiddenInInk() && !(G.time - e.lastShot < 0.4)) { const fast = Math.hypot(e.vel.x, e.vel.z) > 6; if (d > (fast ? 7 : 2.5)) continue; fuzzy = fast && d > 2.5; }
@@ -333,7 +335,7 @@ class Bot {
       for (let a = 0; a < 5; a++) { const o = ownerAt(p.x + Math.cos(a * 1.26) * 2, p.y, p.z + Math.sin(a * 1.26) * 2); if (o !== c.team && o !== -2) s += 0.6; }
       const zRel = (c.team === 0 ? -p.z : p.z) / ZH;
       s += this.role === 'front' ? zRel * 3 : this.role === 'mid' ? 1 - Math.abs(zRel) * 2.2 : -zRel * 2.2;
-      s -= p.distanceTo(c.pos) * 0.04; s += rand(0, 1.6);
+      s -= p.distanceTo(c.pos) * 0.04; s += rand(0, 1.6) + Director.turfBias(c.team, own, zRel);
       if (c.weapon.type === 'charge') s += NAV.h[k] * 0.9 - (this.role === 'front' ? zRel * 1.5 : 0);
       if (s > bs) { bs = s; best = k; }
     }
@@ -363,7 +365,7 @@ class Bot {
         if (role === 'home') s -= 1.5 * foes.filter(([, f]) => Math.hypot(f.x - p.x, f.z - p.z) < 8).length;
       }
       for (const o of others) if (Math.hypot(o.x - p.x, o.z - p.z) < 8) s -= 1.2;
-      s += rand(0, 1.4);
+      s += rand(0, 1.4) + Director.turfBias(tm, own, zRel);
       if (s > bs) { bs = s; best = n; }
     };
     for (let i = 0; i < 46; i++) { const k = randi(0, NAV.N - 1); if (reach[k] >= 0) consider(k, 0); }
@@ -645,7 +647,7 @@ class Bot {
         // arrived by a choke point with our ink underfoot: sometimes dive and wait there
         if (D.ambush && onOwn && T > this.lurkCd && !chg && !allout && (this.ambushAt != null || TAC.chokes.some(k => Math.hypot(k.x - c.pos.x, k.z - c.pos.z) < 7))) { this.lurkCd = T + rand(8, 14); if (this.ambushAt != null || Math.random() < D.ambush * 0.6) { this.lurkT = rand(3, 6); this.ambushAt = null; aiStat(c.team, 'lurk'); } }
       }
-      else if ((this.replanT = (this.replanT || 0) - dt) <= 0) { this.replanT = 0.3; if (D.dawdle && !this.dawdled && Math.random() < D.dawdle) { this.dawdled = true; this.dawdleT = rand(0.8, 1.8); return; } this.dawdled = false; this.chooseTarget(); }      // nothing to walk to (a fight or a dead end emptied the route): pick again straight away
+      else if ((this.replanT = (this.replanT || 0) - dt) <= 0) { this.replanT = 0.3; if (D.dawdle && !this.dawdled && Director.paintFocus(c.team) < 0.3 && Math.random() < D.dawdle) { this.dawdled = true; this.dawdleT = rand(0.8, 1.8); return; } this.dawdled = false; this.chooseTarget(); }      // nothing to walk to (a fight or a dead end emptied the route): pick again straight away
     }
     const moving = this.followPath(I, dt);
     if (this.climb) return;

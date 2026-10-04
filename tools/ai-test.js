@@ -81,9 +81,11 @@ const tests = function (DEVC, VIPC) {
   {
     const same = [0, 1, 2].every(k => diffAt(k) === DIFF[k]), mid = diffAt(0.5);
     const between = ['err', 'react', 'turn', 'fireHold', 'dodge'].every(k => mid[k] >= Math.min(DIFF[0][k], DIFF[1][k]) - 1e-9 && mid[k] <= Math.max(DIFF[0][k], DIFF[1][k]) + 1e-9);
-    let mono = true; for (let l = 0; l < 1.99; l += 0.05) { const a = diffAt(l), b = diffAt(l + 0.05); if (b.err > a.err + 1e-9 || b.react > a.react + 1e-9 || b.turn < a.turn - 1e-9) mono = false; }
-    const steps = !diffAt(0.45).retreat && diffAt(0.55).retreat > 0 && !diffAt(1.45).focus && diffAt(1.55).focus && diffAt(1.45).team === 1 && diffAt(1.55).team === 2;
-    ok(same && between && mono && steps, 'smart difficulty: levels 0 / 1 / 2 are exactly the three tiers; in between, aim and reflexes blend smoothly and know-how switches on in steps (retreat from 0.5, focus fire from 1.5)');
+    let mono = true; for (let l = 0; l < LV_MAX - 0.01; l += 0.05) { const a = diffAt(l), b = diffAt(l + 0.05); if (b.err > a.err + 1e-9 || b.react > a.react + 1e-9 || b.turn < a.turn - 1e-9) mono = false; }
+    const know = !diffAt(1.3, false).focus && diffAt(1.3, true).focus && diffAt(1.3, true).team === 2 && !diffAt(0.3, false).retreat && diffAt(0.3, true).retreat > 0;
+    const past = diffAt(2.4).err < DIFF[2].err && diffAt(2.4).react < DIFF[2].react && diffAt(2.4).focus === DIFF[2].focus && diffAt(2.4).team === 2;
+    const o = {}; let up = 0; for (let i = 0; i < 2000; i++) { o.brainT = 0; if (Director.brain(o, 1.3)) up++; }
+    ok(same && between && mono && know && past && Math.abs(up / 2000 - 0.3) < 0.04, 'smart difficulty: levels 0 / 1 / 2 are exactly the three tiers; in between, aim and reflexes blend smoothly, and a 1.3 thinks like hell (focus fire, full teamwork) ' + Math.round(up / 20) + ' % of the time; up to 2.5 the aim keeps sharpening past hell');
   }
   {
     const { B } = setup(1); const E = G.bots.find(b => b.c.team === 1);
@@ -113,10 +115,16 @@ const tests = function (DEVC, VIPC) {
   // the estimate is kept between matches and the next one starts from it
   {
     setup(SMART); const D = Director, gd = GAME.diff; G.aiLevels = null; GAME.diff = SMART; Profile.data.skill = undefined;
-    D.skill = 0.62; D.n = 6; D.st.alive = 120; D.save(); const saved = Profile.data.skill ? Profile.data.skill.s : null;
-    quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby(); startMatch(); while (G.state !== 'play') loop();
-    const start = D.skill, lvs = G.bots.map(b => b.lv);
-    ok(saved === 0.62 && start === 0.62 && D.mem && lvs.every(v => v === 0.62), 'memory: the estimate (' + saved + ') is saved with the profile at the end of a match and the next match - every bot included - starts from it');
+    D.skill = 0.62; D.nm = 6; D.st.alive = 120; D.save(); const saved = Profile.data.skill ? Profile.data.skill.s : null;
+    const next = () => { quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby(); startMatch(); while (G.state !== 'play') loop(); G.aiLevels = null; };
+    next(); const start = D.skill, lvs = G.bots.map(b => b.lv);
+    // second match: a full one judged 1.2 -> 0.6 x 0.62 + 0.4 x 1.2; a short one with few fights counts for less
+    D.skill = 1.2; D.nm = 8; D.st.alive = 150; D.save(); const second = Profile.data.skill.s;
+    next(); D.skill = 2.0; D.nm = 1; D.st.alive = 45; D.save(); const short = Profile.data.skill.s;
+    // a match with a name-box mode on: judged as usual on the panel, kept out of the saved level
+    next(); const nm = GAME.name, vip = Profile.data.vip; Profile.data.vip = VIP_NAME; GAME.name = VIP_NAME; loop(); D.skill = 2.3; D.nm = 9; D.st.alive = 150; D.save(); const cheat = Profile.data.skill.s, flagged = D.cheat;
+    GAME.name = nm; Profile.data.vip = vip;
+    ok(saved === 0.62 && start === 0.62 && D.mem && lvs.every(v => v === 0.62) && second === 0.85 && short > second && short < 0.95 && flagged && cheat === short, 'memory: the first match is saved as it is (' + saved + ') and the next match - every bot included - starts from it; after that a rolling average (a full match judged 1.2 -> ' + second + ', a short one judged 2.0 -> only ' + short + '); a match with a name-box mode on is left out (' + cheat + ')');
     Profile.data.skill = undefined; GAME.diff = gd;
   }
   // ---------------- the two name-box modes (only when the names are supplied)
