@@ -6,7 +6,7 @@
 const vm = require('vm'), fs = require('fs'), path = require('path');
 const src = fs.readFileSync(path.join(__dirname, 'smoke-test.js'), 'utf8');
 const root = path.join(__dirname, '..'), read = f => fs.readFileSync(path.join(root, f), 'utf8');
-const JS = ['01_core', '02_world', '03_env', '03b_canton_design', '04_data', '05_character', '06_fx', '07_ai_input', '07b_director', '08_game'].map(n => read(`src/js/${n}.js`)).join('\n');
+const JS = ['01_core', '02_world', '03_env', '03b_canton_design', '04_data', '05_character', '06_fx', '07_ai_input', '07b_director', '07c_strategy', '08_game'].map(n => read(`src/js/${n}.js`)).join('\n');
 process.env.SR_MAP = 'canton';
 eval(src.slice(src.indexOf('function makeSandbox'), src.indexOf('const weapons')));
 const g = makeSandbox();

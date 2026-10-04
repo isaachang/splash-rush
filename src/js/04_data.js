@@ -177,6 +177,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.14.0', date: '2026-10-04', time: '14:46', title: '会看人下菜的对手', items: [
+    '「智能」档的对手开始留意你的打法，比分咬得紧的时候会换着法子对付你',
+    '你总走同一条路，可能会在路口撞上埋伏；你冲得太深，家里可能会被人摸进去',
+    '你专心涂地不打架，可能会有两个人结伴来找你；不过刚上手的玩家不会被这样追着打'
+  ] },
   { v: 'v0.13.0', date: '2026-10-04', time: '13:27', title: '智能对手', items: [
     '「对手强度」新增一档「智能」',
     '选「智能」时，机器人最后全员冲刺抢地的时间跟着对战时长走：1:30 局最后 20 秒，3:00 局 30 秒，5:00 局 40 秒',

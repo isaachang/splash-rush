@@ -136,6 +136,37 @@ const tests = function (DEVC, VIPC) {
       'per loadout: 石墩·加特林 starts from the other loadouts (' + dunStart.toFixed(2) + ') and is then saved on its own (1.7); going back, ' + key + ' still starts from ' + back.toFixed(2) + '; an old single save only seeds new loadouts');
     Profile.data.skill = undefined; GAME.diff = gd;
   }
+  // ---------------- the strategist (smart mode): reading the player and picking a plan against it
+  {
+    setup(SMART); const S = Strategist, D = Director, sig = D.signals; D.signals = function () { this.skill = 1.6; }; for (let i = 0; i < 3; i++) loop();
+    const fresh = () => { S.fs = 0.3; S.depth = 0; S.lanes = [1 / 3, 1 / 3, 1 / 3]; S.choke = TAC.chokes.map(() => 0); S.hist = []; S.plan = null; S.planT = -99; D.raw = { paint: 0 }; };
+    const pick = f => { fresh(); f(); S.choose(); return S.plan; };
+    const zi = S.zones.findIndex(z => depthOf(S.team(), z.z) < 0), turn = i => S.zones.map((_, k) => k === zi ? [0.8 - i * 0.04, 0.1 + i * 0.04] : [0.3, 0.3]);
+    const got = { hunter: pick(() => { S.fs = 0.7; }), painter: pick(() => { S.fs = 0.05; }), diver: pick(() => { S.depth = 0.6; }),
+      steady: pick(() => { S.lanes = [0.05, 0.9, 0.05]; S.choke[0] = 0.6; }), flipper: pick(() => { for (let i = 0; i < 12; i++) S.hist.push(turn(i)); }), nothing: pick(() => { }) };
+    const want = { hunter: 'paint', painter: 'hunt', diver: 'flank', steady: 'block', flipper: 'retake', nothing: null };
+    ok(Object.keys(want).every(k => got[k] === want[k]), 'strategist: reads the player and counters - hunts people -> 抢地, paints and avoids fights -> 围猎, dives deep -> 绕后, keeps to one route -> 封路, flips their side -> 反推, nothing clear -> no plan (' + JSON.stringify(got) + ')');
+    // a plan holds for a while instead of flipping with every reading
+    fresh(); S.fs = 0.45; S.choose(); const first = S.plan; S.depth = 0.6; S.choose(); const held = S.plan; S.planT = G.time - 60; S.choose(); const later = S.plan;
+    ok(first === 'paint' && held === 'paint' && later === 'flank', 'strategist: a plan is kept for ~18 s even when another one starts to look better, then it switches (' + [first, held, later].join(' -> ') + ')');
+    // only in a close game: once the Director starts steering the score, the plans stand down
+    fresh(); S.fs = 0.05; S.choose(); const tm = S.team();
+    for (const b of G.bots) b.lv = 1.6; D.squadBrain[tm].lv = 1.6;
+    D.skill = 0.6; D.pf = [0, 0]; S.assign(); const novice = G.bots.filter(b => b.task && b.task.id === 'hunt').length; D.skill = 1.6;
+    D.pf = [0, 0]; S.assign(); const close = G.bots.filter(b => b.c.team === tm && b.task && b.task.id === 'hunt').length, kClose = S.k;
+    D.pf[tm] = 0.6; S.assign(); const behind = G.bots.filter(b => b.c.team === tm && b.task).length; D.pf[tm] = -0.6; S.assign(); const ahead = G.bots.filter(b => b.c.team === tm && b.task).length;
+    ok(novice === 0 && close === 2 && kClose > 0 && behind === 0 && ahead === 0 && G.bots.every(b => b.c.team === tm || !b.task), 'strategist: in a close game ' + close + ' bots go together to hunt a player who avoids fights (strength ' + Math.round(kClose * 100) + ' %); nobody hunts a beginner; once the score runs away either way the plans stand down; teammates never get one');
+    // a hunter goes for the player even with someone else nearer
+    D.pf = [0, 0]; const H = G.bots.find(b => b.c.team === tm), M = G.bots.find(b => b.c.team !== tm);
+    H.c.pos.set(10, 2.2, 25); PLAYER.pos.set(10, 2.2, 14); M.c.pos.set(10.5, 2.2, 20); H.task = null; const plain = H.findEnemy();
+    H.task = { id: 'hunt', x: 10, z: 14, r: 7, bonus: 5 }; const hunter = H.findEnemy(); H.task = null;
+    ok(plain === M.c && hunter === PLAYER, 'strategist: a bot sent to hunt picks the player over a nearer enemy (without the job: ' + (plain === M.c ? 'the nearer one' : plain ? plain.name : 'nobody') + ')');
+    D.signals = sig;
+  }
+  {
+    setup(1); run(60); const tasks = G.bots.filter(b => b.task || Strategist.taskId(b)).length;
+    ok(!Strategist.on && tasks === 0, 'strategist: off with a fixed tier - nobody gets a plan');
+  }
   // ---------------- the two name-box modes (only when the names are supplied)
   if (!DEVC || !VIPC) res.push('SKIP name-box modes (set SR_CODES to check them)');
   if (DEVC) {

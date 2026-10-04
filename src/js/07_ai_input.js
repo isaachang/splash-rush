@@ -311,15 +311,19 @@ class Bot {
   findEnemy() {
     const c = this.c, e0 = c.eye(); let best = null, bd = 1e9;
     // smart mode: a team told to paint only takes on enemies close by, one easing off does not go looking either (both still answer whoever shoots them)
-    const pf = Director.paintFocus(c.team), rk = G.time - c.lastHurt < 1.5 ? 1 : pf > 0 ? lerp(1, 0.45, pf) : lerp(1, 0.6, -pf);
+    const pf = Director.paintFocus(c.team), hurt = G.time - c.lastHurt < 1.5, job = Strategist.taskId(this);
+    let rk = hurt ? 1 : pf > 0 ? lerp(1, 0.45, pf) : lerp(1, 0.6, -pf);
+    // a job from the strategist: hunters look further and go for the player first; painters and flankers keep out of fights on the way
+    if (job === 'hunt') rk = Math.max(rk, 1.2); else if (!hurt && job === 'paint') rk = Math.min(rk, 0.6); else if (!hurt && job === 'flank') rk = Math.min(rk, 0.8);
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
-      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk || d > bd) continue;
+      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk || (d > bd && !(job === 'hunt' && e.isPlayer))) continue;
       // hidden in ink: only seen up close (2.5 m), or roughly up to 7 m if swimming fast (ripples); shooting gives you away
       let fuzzy = false;
       if (e.hiddenInInk() && !(G.time - e.lastShot < 0.4)) { const fast = Math.hypot(e.vel.x, e.vel.z) > 6; if (d > (fast ? 7 : 2.5)) continue; fuzzy = fast && d > 2.5; }
       const ch = e.chest(); if (segBlocked(e0.x, e0.y, e0.z, ch.x, ch.y, ch.z, 0.5)) continue;
       best = e; bd = d; this.fuzzyNext = fuzzy;
+      if (job === 'hunt' && e.isPlayer) break;
     }
     this.fuzzy = best ? this.fuzzyNext : false;
     return best;
@@ -384,6 +388,9 @@ class Bot {
       for (const k of TAC.chokes) { const dep = depthOf(tm, k.z); if (dep < S.frontD - 12 || dep > S.frontD + 16 || reach[k.node] < 0 || others.some(o => Math.hypot(o.x - k.x, o.z - k.z) < 6)) continue; consider(k.node, 3.2); }
       if (best !== b0) this.ambushAt = best;
     }
+    // a job from the strategist (smart mode): its spots get a bonus; lying in wait on the player's route is an ambush
+    const job = Strategist.taskId(this);
+    if (job && !allout) { const b0 = best; for (const n of Strategist.taskNodes(this)) consider(n, this.task.bonus); if (job === 'block' && best !== b0) this.ambushAt = best; }
     this.allowNext = NF.SWIM | NF.JUMP | NF.DROP | (canClimb ? NF.CLIMB : 0);
     return best;
   }
@@ -393,7 +400,7 @@ class Bot {
     const best = D.team && S ? this.chooseTargetTeam(D, S) : this.chooseTargetSimple();
     if (best < 0) { this.retarget = 0.5; return; }
     const st = navStart(c.pos.x, c.pos.y, c.pos.z), path = astar(st, best, this.allowNext, c.pos);
-    if (path && path.length) { if (Math.abs(NAV.nh[navNode(c.pos.x, c.pos.y, c.pos.z)] - c.pos.y) >= 0.7) path.unshift(navPos(st)); this.setPath(path); this.target = navPos(best); this.retarget = this.perch ? rand(10, 14) : rand(7, 12); this.linger = 0; }
+    if (path && path.length) { if (Math.abs(NAV.nh[navNode(c.pos.x, c.pos.y, c.pos.z)] - c.pos.y) >= 0.7) path.unshift(navPos(st)); this.setPath(path); this.target = navPos(best); this.retarget = this.perch ? rand(10, 14) : Strategist.taskId(this) === 'hunt' ? rand(2.5, 4) : rand(7, 12); this.linger = 0; }
     else { this.retarget = 0.5; if (G.aiLog) G.aiLog.push('nopath ' + c.weapon.id + ' @' + c.pos.x.toFixed(1) + ',' + c.pos.y.toFixed(1) + ',' + c.pos.z.toFixed(1) + ' st ' + st + ' h' + NAV.nh[st].toFixed(1) + ' -> ' + best + ' h' + NAV.nh[best].toFixed(1) + ' at ' + navPos(best).x + ',' + navPos(best).z + ' allow ' + this.allowNext + ' perch ' + this.perch + ' path ' + (path ? path.length : 'null') + ' reach ' + TAC.reach[c.team][best]); }
   }
   setPath(p) { this.path = p; this.wpT = 0; this.climb = null; }
@@ -645,7 +652,7 @@ class Bot {
       if (this.target && this.linger < (this.perch ? 5 : this.ambushAt != null ? 2.5 : D.team >= 2 ? 0.8 : D.team ? 1.1 : 1.6) && this.target.distanceTo(c.pos) < 2.5) {
         this.linger += dt;
         // arrived by a choke point with our ink underfoot: sometimes dive and wait there
-        if (D.ambush && onOwn && T > this.lurkCd && !chg && !allout && (this.ambushAt != null || TAC.chokes.some(k => Math.hypot(k.x - c.pos.x, k.z - c.pos.z) < 7))) { this.lurkCd = T + rand(8, 14); if (this.ambushAt != null || Math.random() < D.ambush * 0.6) { this.lurkT = rand(3, 6); this.ambushAt = null; aiStat(c.team, 'lurk'); } }
+        if ((D.ambush || Strategist.taskId(this) === 'block') && onOwn && T > this.lurkCd && !chg && !allout && (this.ambushAt != null || TAC.chokes.some(k => Math.hypot(k.x - c.pos.x, k.z - c.pos.z) < 7))) { this.lurkCd = T + rand(8, 14); if (this.ambushAt != null || Math.random() < D.ambush * 0.6) { this.lurkT = rand(3, 6); this.ambushAt = null; aiStat(c.team, 'lurk'); } }
       }
       else if ((this.replanT = (this.replanT || 0) - dt) <= 0) { this.replanT = 0.3; if (D.dawdle && !this.dawdled && Director.paintFocus(c.team) < 0.3 && Math.random() < D.dawdle) { this.dawdled = true; this.dawdleT = rand(0.8, 1.8); return; } this.dawdled = false; this.chooseTarget(); }      // nothing to walk to (a fight or a dead end emptied the route): pick again straight away
     }
