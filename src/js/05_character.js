@@ -422,12 +422,14 @@ class Character {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
     if (src && src.team !== this.team) this.dmgBy.set(src, G.time);
+    Director.onDamage(this, amount, src, this.lastVia);
     if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
     if (src && src.isPlayer) { Sfx.hit(amount >= 50); HUD.hitmark(false, amount); }
     if (this.hp <= 0) this.die(src, this.lastVia);
     return true;
   }
   die(killer, via) {
+    Director.onDeath(this, killer, via);
     this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0;
     this.setSwim(false); this.sp = null; this.climbing = false; this.wall = null; this.stopCharge(); this.stored = 0;
     this.sj = null; this.fly = null; this.dropY = null; this.dropSJ = false; this.hideSJMarker();
@@ -637,7 +639,7 @@ class Character {
       let spunUp = true;
       if (W.spinUp) {
         if (I.fire) this._wantT = T;
-        const held = I.fire || (!this.isPlayer && this.spinning && T - (this._wantT ?? -9) < 0.3);   // bots flicker the trigger: give them a short grace so the barrels keep turning
+        const held = I.fire || ((!this.isPlayer || G.pilot) && this.spinning && T - (this._wantT ?? -9) < 0.3);   // bots flicker the trigger: give them a short grace so the barrels keep turning
         const want = held && !this.swim && !this.sp && G.state === 'play';
         if (want) {
           if (!this.spinning) { this.spinning = true; this.spin = 0; if (this.isPlayer) Sfx.spinStart(W.spinUp); }
@@ -653,7 +655,7 @@ class Character {
           const dir = I.aimDir ? I.aimDir.clone() : aimVec(this);
           const spread = this.grounded ? W.spread : W.airSpread;
           dir.x += rand(-spread, spread); dir.y += rand(-spread, spread) * 0.6; dir.z += rand(-spread, spread); dir.normalize();
-          Proj.shot(this, m, dir);
+          Proj.shot(this, m, dir); Director.onShot(this);
           // muzzle: small ink flash + droplets spraying forward
           Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.11, 0.06, TEAM_HEX[this.team], 0);
           Fx.burstDir(m.x, m.y, m.z, TEAM_HEX[this.team], 3, 5, 0.045, dir.x, dir.y, dir.z, 0.35);
@@ -666,7 +668,7 @@ class Character {
     if (I.bomb && !this.swim && !this.sp && this.bombCd <= 0 && G.state === 'play') {
       const bc = SUBS[this.subId].cost / this.inkK;
       if (this.ink >= bc) {
-        this.ink -= bc; this.bombCd = 0.6; this.lastShot = T;
+        this.ink -= bc; this.bombCd = 0.6; this.lastShot = T; Director.onBomb(this);
         const dir = I.aimDir ? I.aimDir.clone() : new THREE.Vector3(Math.sin(this.aimYaw) * Math.cos(this.aimPitch), Math.sin(this.aimPitch), Math.cos(this.aimYaw) * Math.cos(this.aimPitch));
         if (this.subId === 'curling') Proj.curling(this, dir); else if (this.subId === 'cover') Cover.place(this, dir); else Proj.bomb(this, this.muzzle(), dir);
       } else if (this.isPlayer) HUD.lowInk();
@@ -709,7 +711,7 @@ class Character {
     this.fireCd = W.interval; this.ink -= W.cost / this.inkK; this.lastShot = T; this.recoil = 2;
     const m = this.muzzle(), dir = I.aimDir ? I.aimDir.clone() : aimVec(this), sp = this.grounded ? W.spread : W.airSpread;
     dir.x += rand(-sp, sp); dir.y += rand(-sp, sp) * 0.6; dir.z += rand(-sp, sp); dir.normalize();
-    Proj.shot(this, m, dir, null, null, { style: 'shell', blast: true, hitR: 0.2 });
+    Proj.shot(this, m, dir, null, null, { style: 'shell', blast: true, hitR: 0.2 }); Director.onShot(this);
     const col = TEAM_HEX[this.team];
     Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.2, 0.08, col, 0);
     Fx.burstDir(m.x, m.y, m.z, col, 8, 6, 0.07, dir.x, dir.y, dir.z, 0.45);
@@ -724,7 +726,7 @@ class Character {
     const m = this.muzzle(), dir = I.aimDir ? I.aimDir.clone() : aimVec(this);
     if (c < 1) { const s = 0.01 * (1 - c); dir.x += rand(-s, s); dir.y += rand(-s, s); dir.z += rand(-s, s); dir.normalize(); }
     const range = lerp(W.minRange, W.maxRange, ct);
-    const tr = traceRay(this, m, dir, range, 0.2);
+    const tr = traceRay(this, m, dir, range, 0.2); Director.onShot(this);
     // ink line along the path
     const full = c >= 0.999;
     let gained = 0; const lr = full ? W.lineRFull : W.lineR * (0.7 + 0.3 * c), stepL = full ? 0.6 : 0.75;

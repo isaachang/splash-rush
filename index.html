@@ -313,6 +313,20 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .st-r .sp{font-size:13px;opacity:.8}.st-r .sp.on b{color:#ffe45c;animation:blink .5s infinite}
 #specTag{position:absolute;left:50%;top:140px;transform:translateX(-50%);display:none;font-weight:900;font-size:16px;background:rgba(0,0,0,.6);border:3px solid #111;border-radius:16px;padding:5px 16px;color:#fff;text-shadow:0 2px 0 #000}
 #specTag.on{display:block}
+#dirPanel{position:absolute;left:14px;top:96px;width:400px;display:none;z-index:30;pointer-events:none;background:rgba(10,12,24,.8);border:2px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 12px;color:#e8ecff;font:12px/1.55 ui-monospace,Menlo,Consolas,monospace}
+#dirPanel.show{display:block}
+#dirPanel b{font-size:14px;color:#ffe45c;margin-right:8px}
+#dirPanel span{opacity:.75}
+#dirPanel em{font-style:normal;font-weight:900;color:#fff;font-size:14px}
+#dirPanel .big em{font-size:18px;color:#7dffb2}
+#dirPanel small{opacity:.6;margin-left:2px}
+#dirPanel i{font-style:normal;font-weight:900;padding:0 3px;border-radius:4px;background:#555}
+#dirPanel i.w{background:#2e9d5b}
+#dirPanel i.l{background:#b8404a}
+#dirPanel table{width:100%;margin-top:4px;border-collapse:collapse}
+#dirPanel td{padding:1px 4px 1px 0}
+#dirPanel th{text-align:left;font-weight:900;color:#ffe45c;padding-top:4px}
+#dirPanel b + span + i{margin-left:8px}
 /* roast badge: a cracked, grubby medal */
 .md b.x,.mdl.x b{background:linear-gradient(135deg,transparent 46%,#111 47%,#111 53%,transparent 54%),radial-gradient(circle at 35% 30%,#b9a58a,#7a6546 55%,#3e3322)}
 .mdl.x span{color:#ff9aa8}
@@ -623,8 +637,8 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
       <h3>对阵阵容</h3>
       <div class="rosterWrap"><div class="roster" id="rosterA"></div><div class="vs">VS</div><div class="roster" id="rosterB"></div></div>
       <div class="opts">
-        <div><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">地狱</button></div></div>
-        <div><h3>对战时长</h3><div class="seg" id="dur"><button data-v="90">1:30</button><button data-v="180" class="sel">3:00</button><button data-v="300">5:00</button></div></div>
+        <div class="full"><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">地狱</button><button data-v="-1">智能</button></div></div>
+        <div class="full"><h3>对战时长</h3><div class="seg" id="dur"><button data-v="90">1:30</button><button data-v="180" class="sel">3:00</button><button data-v="300">5:00</button></div></div>
         <div class="full"><h3>队伍配色</h3><div class="swatches" id="swatches"></div></div>
       </div>
     </div>
@@ -663,6 +677,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   <div id="cineSkip" class="ck"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="4"/><circle id="cineRing" cx="18" cy="18" r="14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="88" stroke-dashoffset="88" transform="rotate(-90 18 18)"/></svg>长按 <kbd>空格</kbd> 跳过</div>
   <div id="death"><div class="by" id="deathBy"></div><div class="cd" id="deathCd">5</div><div class="tip" id="deathTip"></div></div>
   <div id="specTag"></div>
+  <div id="dirPanel"></div>
   <div id="hint"><kbd>WASD</kbd>移动 <kbd>鼠标左键</kbd>射击 <kbd>Shift</kbd>潜墨 <kbd>空格</kbd>跳 <kbd>右键/E</kbd>炸弹 <kbd>Q</kbd>必杀 <kbd>M</kbd>地图/超级跳 <kbd>Tab</kbd>战况</div>
   <div id="scoreTab"><div class="st-head"><b>战况</b><span id="stTime"></span><small>松开 Tab 关闭</small></div>
     <div class="st-cols"><span></span><span>名字</span><span>击倒</span><span>助攻</span><span>阵亡</span><span>涂地</span><span>必杀</span></div>
@@ -3749,7 +3764,7 @@ const Profile = {
     if (!WEAPON_ORDER.includes(this.data.weapon)) this.data.weapon = 'rifle';
     if (!CHAR_ORDER.includes(this.data.char)) this.data.char = 'sa';
     if (!CHARACTERS[this.data.char].weapons.includes(this.data.weapon)) this.data.weapon = CHARACTERS[this.data.char].weapons[0];
-    const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
+    const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = d.diff === SMART ? SMART : clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
   },
   save() {
     Object.assign(this.data, { name: GAME.name, pal: GAME.pal, diff: GAME.diff, dur: GAME.dur });
@@ -3761,6 +3776,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.13.0', date: '2026-10-04', time: '13:27', title: '智能对手', items: [
+    '「对手强度」新增一档「智能」',
+    '选「智能」时，机器人最后全员冲刺抢地的时间跟着对战时长走：1:30 局最后 20 秒，3:00 局 30 秒，5:00 局 40 秒',
+    '「对手强度」和「对战时长」各占一整行，四个选项不再挤成两行字'
+  ] },
   { v: 'v0.12.0', date: '2026-10-03', time: '02:30', title: '变身小鱿鱼', items: [
     '潜墨形态从一团墨球换成了一只小鱿鱼：有眼睛、有尾鳍，触手会跟着摆',
     '按下潜墨不再是瞬间换模型：人会压扁、染成墨色沉下去，溅起一圈墨滴；松开时从墨里鼓出来再弹回人形（只是画面过渡，操作还是立刻生效）',
@@ -4337,12 +4357,14 @@ class Character {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
     if (src && src.team !== this.team) this.dmgBy.set(src, G.time);
+    Director.onDamage(this, amount, src, this.lastVia);
     if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
     if (src && src.isPlayer) { Sfx.hit(amount >= 50); HUD.hitmark(false, amount); }
     if (this.hp <= 0) this.die(src, this.lastVia);
     return true;
   }
   die(killer, via) {
+    Director.onDeath(this, killer, via);
     this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0;
     this.setSwim(false); this.sp = null; this.climbing = false; this.wall = null; this.stopCharge(); this.stored = 0;
     this.sj = null; this.fly = null; this.dropY = null; this.dropSJ = false; this.hideSJMarker();
@@ -4552,7 +4574,7 @@ class Character {
       let spunUp = true;
       if (W.spinUp) {
         if (I.fire) this._wantT = T;
-        const held = I.fire || (!this.isPlayer && this.spinning && T - (this._wantT ?? -9) < 0.3);   // bots flicker the trigger: give them a short grace so the barrels keep turning
+        const held = I.fire || ((!this.isPlayer || G.pilot) && this.spinning && T - (this._wantT ?? -9) < 0.3);   // bots flicker the trigger: give them a short grace so the barrels keep turning
         const want = held && !this.swim && !this.sp && G.state === 'play';
         if (want) {
           if (!this.spinning) { this.spinning = true; this.spin = 0; if (this.isPlayer) Sfx.spinStart(W.spinUp); }
@@ -4568,7 +4590,7 @@ class Character {
           const dir = I.aimDir ? I.aimDir.clone() : aimVec(this);
           const spread = this.grounded ? W.spread : W.airSpread;
           dir.x += rand(-spread, spread); dir.y += rand(-spread, spread) * 0.6; dir.z += rand(-spread, spread); dir.normalize();
-          Proj.shot(this, m, dir);
+          Proj.shot(this, m, dir); Director.onShot(this);
           // muzzle: small ink flash + droplets spraying forward
           Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.11, 0.06, TEAM_HEX[this.team], 0);
           Fx.burstDir(m.x, m.y, m.z, TEAM_HEX[this.team], 3, 5, 0.045, dir.x, dir.y, dir.z, 0.35);
@@ -4581,7 +4603,7 @@ class Character {
     if (I.bomb && !this.swim && !this.sp && this.bombCd <= 0 && G.state === 'play') {
       const bc = SUBS[this.subId].cost / this.inkK;
       if (this.ink >= bc) {
-        this.ink -= bc; this.bombCd = 0.6; this.lastShot = T;
+        this.ink -= bc; this.bombCd = 0.6; this.lastShot = T; Director.onBomb(this);
         const dir = I.aimDir ? I.aimDir.clone() : new THREE.Vector3(Math.sin(this.aimYaw) * Math.cos(this.aimPitch), Math.sin(this.aimPitch), Math.cos(this.aimYaw) * Math.cos(this.aimPitch));
         if (this.subId === 'curling') Proj.curling(this, dir); else if (this.subId === 'cover') Cover.place(this, dir); else Proj.bomb(this, this.muzzle(), dir);
       } else if (this.isPlayer) HUD.lowInk();
@@ -4624,7 +4646,7 @@ class Character {
     this.fireCd = W.interval; this.ink -= W.cost / this.inkK; this.lastShot = T; this.recoil = 2;
     const m = this.muzzle(), dir = I.aimDir ? I.aimDir.clone() : aimVec(this), sp = this.grounded ? W.spread : W.airSpread;
     dir.x += rand(-sp, sp); dir.y += rand(-sp, sp) * 0.6; dir.z += rand(-sp, sp); dir.normalize();
-    Proj.shot(this, m, dir, null, null, { style: 'shell', blast: true, hitR: 0.2 });
+    Proj.shot(this, m, dir, null, null, { style: 'shell', blast: true, hitR: 0.2 }); Director.onShot(this);
     const col = TEAM_HEX[this.team];
     Fx.add(m.x, m.y, m.z, dir.x * 2, dir.y * 2, dir.z * 2, 0.2, 0.08, col, 0);
     Fx.burstDir(m.x, m.y, m.z, col, 8, 6, 0.07, dir.x, dir.y, dir.z, 0.45);
@@ -4639,7 +4661,7 @@ class Character {
     const m = this.muzzle(), dir = I.aimDir ? I.aimDir.clone() : aimVec(this);
     if (c < 1) { const s = 0.01 * (1 - c); dir.x += rand(-s, s); dir.y += rand(-s, s); dir.z += rand(-s, s); dir.normalize(); }
     const range = lerp(W.minRange, W.maxRange, ct);
-    const tr = traceRay(this, m, dir, range, 0.2);
+    const tr = traceRay(this, m, dir, range, 0.2); Director.onShot(this);
     // ink line along the path
     const full = c >= 0.999;
     let gained = 0; const lr = full ? W.lineRFull : W.lineR * (0.7 + 0.3 * c), stepL = full ? 0.6 : 0.75;
@@ -5824,7 +5846,12 @@ function initTactics() {
 }
 // difficulty of one team's bots (tests can pit two different levels against each other with G.aiLevels)
 const aiStat = (team, k) => { const a = G.aiStat || (G.aiStat = [{}, {}]); a[team][k] = (a[team][k] || 0) + 1; };
-function botDiff(team) { return DIFF[G.aiLevels ? G.aiLevels[team] : GAME.diff]; }
+// smart mode (SMART): each bot's own level, from the Director.  G.pilotLevel: the bot standing in for the player in tests
+function botDiff(team, bot) {
+  if (bot && bot.c.isPlayer && G.pilotLevel != null) return DIFF[G.pilotLevel];
+  const lv = G.aiLevels ? G.aiLevels[team] : GAME.diff;
+  return lv === SMART ? Director.row(team, bot) : DIFF[lv];
+}
 const depthOf = (team, z) => team === 0 ? -z : z;          // how far toward the enemy's end a spot is (0 = the middle of the map)
 
 /* ============================================================== SQUAD
@@ -5843,7 +5870,7 @@ class Squad {
     const D = botDiff(this.team), bots = this.bots(), T = G.time, tm = this.team;
     for (const [e, s] of this.seen) if (!e.alive || T - s.t > 5) this.seen.delete(e);
     this.lead = (Paint.teamCells[tm] - Paint.teamCells[1 - tm]) / Math.max(1, Paint.total);
-    this.posture = D.endgame && G.left < 30 ? 'allout' : D.team >= 2 ? (this.lead < -0.05 ? 'push' : this.lead > 0.12 ? 'hold' : 'even') : 'even';
+    this.posture = D.endgame && G.left < Director.endWindow() ? 'allout' : D.team >= 2 ? (this.lead < -0.05 ? 'push' : this.lead > 0.12 ? 'hold' : 'even') : 'even';
     // the front: a little short of the nearest enemy anyone has seen, else just past the middle
     const fr = this.fresh(3); let fd = ZH * 0.12; if (fr.length) fd = Math.min(...fr.map(([, s]) => depthOf(tm, s.z))) - 4;
     this.frontD = lerp(this.frontD, clamp(fd + (this.posture === 'push' ? 7 : this.posture === 'hold' ? -5 : 0), -ZH * 0.55, ZH * 0.6), 0.35);
@@ -5885,7 +5912,7 @@ class Squad {
 /* ================================================================= BOT */
 class Bot {
   constructor(c, role) {
-    this.c = c; this.role = this.role0 = role; this.path = []; this.target = null; this.retarget = 0; this.enemy = null; this.scanT = rand(0, 0.2);
+    this.c = c; c.bot = this; this.role = this.role0 = role; this.path = []; this.target = null; this.retarget = 0; this.enemy = null; this.scanT = rand(0, 0.2);
     this.reactT = 0; this.strafe = 1; this.strafeT = 0; this.err = new THREE.Vector3(); this.errT = 0; this.stuckT = 0; this.lastPos = new THREE.Vector3();
     this.mode = 'paint'; this.sweep = rand(0, 6); this.linger = 0; this.swimT = 0; this.jitter = rand(0.8, 1.2);
     this.wpT = 0; this.fails = 0; this.climb = null; this.noClimbT = 0; this.diveCd = 0; this.footCd = 0; this.footT = 0; this.lurkT = 0; this.lurkCd = 0; this.bombCd = 0; this.retreatT = 0;
@@ -5894,9 +5921,11 @@ class Bot {
   canSee(e) { const a = this.c.eye(), b = e.chest(); return !segBlocked(a.x, a.y, a.z, b.x, b.y, b.z, 0.5); }
   findEnemy() {
     const c = this.c, e0 = c.eye(); let best = null, bd = 1e9;
+    // smart mode: a team told to paint only takes on enemies close by, one easing off does not go looking either (both still answer whoever shoots them)
+    const pf = Director.paintFocus(c.team), rk = G.time - c.lastHurt < 1.5 ? 1 : pf > 0 ? lerp(1, 0.45, pf) : lerp(1, 0.6, -pf);
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
-      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) || d > bd) continue;
+      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk || d > bd) continue;
       // hidden in ink: only seen up close (2.5 m), or roughly up to 7 m if swimming fast (ripples); shooting gives you away
       let fuzzy = false;
       if (e.hiddenInInk() && !(G.time - e.lastShot < 0.4)) { const fast = Math.hypot(e.vel.x, e.vel.z) > 6; if (d > (fast ? 7 : 2.5)) continue; fuzzy = fast && d > 2.5; }
@@ -5917,7 +5946,7 @@ class Bot {
       for (let a = 0; a < 5; a++) { const o = ownerAt(p.x + Math.cos(a * 1.26) * 2, p.y, p.z + Math.sin(a * 1.26) * 2); if (o !== c.team && o !== -2) s += 0.6; }
       const zRel = (c.team === 0 ? -p.z : p.z) / ZH;
       s += this.role === 'front' ? zRel * 3 : this.role === 'mid' ? 1 - Math.abs(zRel) * 2.2 : -zRel * 2.2;
-      s -= p.distanceTo(c.pos) * 0.04; s += rand(0, 1.6);
+      s -= p.distanceTo(c.pos) * 0.04; s += rand(0, 1.6) + Director.turfBias(c.team, own, zRel);
       if (c.weapon.type === 'charge') s += NAV.h[k] * 0.9 - (this.role === 'front' ? zRel * 1.5 : 0);
       if (s > bs) { bs = s; best = k; }
     }
@@ -5947,7 +5976,7 @@ class Bot {
         if (role === 'home') s -= 1.5 * foes.filter(([, f]) => Math.hypot(f.x - p.x, f.z - p.z) < 8).length;
       }
       for (const o of others) if (Math.hypot(o.x - p.x, o.z - p.z) < 8) s -= 1.2;
-      s += rand(0, 1.4);
+      s += rand(0, 1.4) + Director.turfBias(tm, own, zRel);
       if (s > bs) { bs = s; best = n; }
     };
     for (let i = 0; i < 46; i++) { const k = randi(0, NAV.N - 1); if (reach[k] >= 0) consider(k, 0); }
@@ -5970,7 +5999,7 @@ class Bot {
     return best;
   }
   chooseTarget() {
-    const c = this.c, D = botDiff(c.team), S = this.squad;
+    const c = this.c, D = botDiff(c.team, this), S = this.squad;
     this.allowNext = NF.SWIM | NF.JUMP | NF.DROP;
     const best = D.team && S ? this.chooseTargetTeam(D, S) : this.chooseTargetSimple();
     if (best < 0) { this.retarget = 0.5; return; }
@@ -6107,7 +6136,7 @@ class Bot {
     return yawErr;
   }
   update(dt) {
-    const c = this.c, I = c.intent, D = botDiff(c.team), T = G.time, S = this.squad;
+    const c = this.c, I = c.intent, D = botDiff(c.team, this), T = G.time, S = this.squad;
     if (!c.alive || c.state !== 'play') { I.fire = I.swim = false; I.mx = I.mz = 0; this.path = []; this.enemy = null; this.climb = null; this.mode = 'paint'; this.lurkT = 0; return; }
     this.scanT -= dt;
     if (this.scanT <= 0) {
@@ -6229,7 +6258,7 @@ class Bot {
         // arrived by a choke point with our ink underfoot: sometimes dive and wait there
         if (D.ambush && onOwn && T > this.lurkCd && !chg && !allout && (this.ambushAt != null || TAC.chokes.some(k => Math.hypot(k.x - c.pos.x, k.z - c.pos.z) < 7))) { this.lurkCd = T + rand(8, 14); if (this.ambushAt != null || Math.random() < D.ambush * 0.6) { this.lurkT = rand(3, 6); this.ambushAt = null; aiStat(c.team, 'lurk'); } }
       }
-      else if ((this.replanT = (this.replanT || 0) - dt) <= 0) { this.replanT = 0.3; if (D.dawdle && !this.dawdled && Math.random() < D.dawdle) { this.dawdled = true; this.dawdleT = rand(0.8, 1.8); return; } this.dawdled = false; this.chooseTarget(); }      // nothing to walk to (a fight or a dead end emptied the route): pick again straight away
+      else if ((this.replanT = (this.replanT || 0) - dt) <= 0) { this.replanT = 0.3; if (D.dawdle && !this.dawdled && Director.paintFocus(c.team) < 0.3 && Math.random() < D.dawdle) { this.dawdled = true; this.dawdleT = rand(0.8, 1.8); return; } this.dawdled = false; this.chooseTarget(); }      // nothing to walk to (a fight or a dead end emptied the route): pick again straight away
     }
     const moving = this.followPath(I, dt);
     if (this.climb) return;
@@ -6265,6 +6294,7 @@ function initInput() {
     if (e.code === 'KeyE') Input.bombHoldKey = true;
     if (e.code === 'KeyQ') Input.spQ = true;
     if (e.code === 'KeyM') toggleMap();
+    if (e.code === 'Backquote' && G.state !== 'title') Director.toggle();
     if (G.mapOpen && /^Digit[1-3]$/.test(e.code)) HUD.pickAlly(+e.code.slice(5) - 1);
     if (G.mapOpen && e.code === 'Escape') toggleMap(false);
     if (e.code === 'Tab') e.preventDefault();
@@ -6416,6 +6446,239 @@ function updateCamera(dt) {
   Cam.kick = (Cam.kick || 0) * Math.exp(-dt * 22);
   camera.lookAt(pivot.x + dir.x * 30 + shoulder.x, pivot.y + dir.y * 30 + Cam.kick * 30, pivot.z + dir.z * 30 + shoulder.z);
 }
+/* ============================================================ DIRECTOR
+   The smart difficulty (智能).  Watches how the player is doing and works out a level for them on the
+   same scale as DIFF (0 easy · 1 normal · 2 hell, anything in between, and a little past hell).  Every bot
+   carries its own level and moves toward a target: at once while it is dead or flying in, quickly while the
+   player cannot see it, slowly while the two are fighting - so nobody turns into a sharpshooter mid-duel.
+   The whole lobby follows the player (teammates too, or three normal teammates would carry a beginner).
+   A score running away moves the enemies against it, and the teammates a little the other way - more when
+   the enemies are already at the top or bottom - and since aim alone hardly moves the turf, the side behind
+   is also told to keep to painting while the side ahead eases off.  It watches in every mode (so the saved estimate is ready
+   for the next match), but only steers the bots in smart mode.                                              */
+const SMART = -1, LV_MAX = 2.5;
+const DIFF_DEF = { swimK: 0.9, dawdle: 0 };
+// past hell, the hands only (level 2.5): sharper aim, quicker reflexes; what a bot knows stays hell's
+const DIFF_TOP = { err: 0.025, react: 0.14, fireHold: 1, turn: 16, dodge: 0.9, swimK: 0.99, dawdle: 0 };
+const DIFF_HANDS = ['err', 'react', 'fireHold', 'turn', 'dodge', 'swimK', 'dawdle'];
+const DIFF_KNOW = ['team', 'focus', 'retreat', 'combo', 'ambush', 'bombSmart', 'sjump', 'climb', 'endgame', 'share', 'inkCare'];
+// a difficulty row for any level: aim and reflexes blend between the tiers; what a bot knows (teamwork, focus fire, combos...) comes
+// from the tier below or the tier above - `hi` - so that a 1.3 thinks like hell about 30 % of the time (Director.brain picks it)
+function diffAt(lv, hi) {
+  lv = clamp(lv, 0, LV_MAX); const r = Math.round(lv); if (r <= 2 && Math.abs(lv - r) < 1e-6) return DIFF[r];
+  const top = lv > 2, i = top ? 2 : Math.floor(lv), a = DIFF[i], b = top ? DIFF_TOP : DIFF[i + 1], t = top ? (lv - 2) / (LV_MAX - 2) : lv - i;
+  const know = DIFF[top ? 2 : hi ? i + 1 : i], o = {};
+  for (const k of DIFF_HANDS) o[k] = lerp(a[k] ?? DIFF_DEF[k], b[k] ?? DIFF_DEF[k], t);
+  for (const k of DIFF_KNOW) o[k] = know[k] ?? 0;
+  return o;
+}
+const avgOf = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
+const Director = {
+  K: 0.8,                                                                  // how sharply a level gap turns into duel odds: p = 1 / (1 + e^(-K·gap))
+  PAINT_K: { rifle: 1, smg: 0.82, charger: 0.49, splatling: 0.58, blaster: 0.9 },   // how much each weapon paints, relative to the rifle
+  HIT: { rifle: 0.45, smg: 0.3, charger: 0.4, splatling: 0.25, blaster: 0.4 },   // share of shots on target for a normal bot (a level is worth about 0.15 more)
+  RATE: { fight: 0.012, seen: 0.03, away: 0.08 },                          // how fast a bot's level may move (per second, at 3:00; shorter matches move faster)
+  PF: { start: 0.04, span: 0.08, mates: 0.8 },                             // paint / ease off: from how far apart, fully by how much further, teammates' share
+  shown: false, st: null,
+  get on() { return !!PLAYER && (G.aiLevels ? G.aiLevels[1 - PLAYER.team] : GAME.diff) === SMART; },
+  // the saved levels, one per character + weapon (石墩's double health makes the same hands a different player).  An old single value
+  // from before (key '*') belongs to no loadout; it only seeds the ones never played
+  skillBook() {
+    let b = Profile.data.skill;
+    if (!b || typeof b !== 'object') b = {}; else if (typeof b.s === 'number') b = { '*': { s: b.s, m: b.m || 1 } };
+    for (const k in b) if (!b[k] || !isFinite(b[k].s)) delete b[k];
+    return (Profile.data.skill = b);
+  },
+  loadoutKey(c) { return c.cs.id + '-' + c.weapon.id; },
+  loadoutName(key) { const [ch, w] = key.split('-'); return (CHARACTERS[ch] ? CHARACTERS[ch].name : ch) + '·' + (WEAPONS[w] ? WEAPONS[w].name : w); },
+  reset() {
+    // this loadout's own saved level; never played with it: the others' average (weighted by how many matches each has), as a start only
+    const book = this.skillBook(), key = this.key = this.loadoutKey(PLAYER), own = book[key], rest = Object.values(book), wsum = rest.reduce((a, r) => a + (r.m || 1), 0);
+    this.seed = !own && rest.length ? rest.reduce((a, r) => a + r.s * (r.m || 1), 0) / wsum : null;
+    const prior = clamp(own ? own.s : this.seed ?? 1, 0, LV_MAX);
+    this.mem = own || null; this.elo = prior; this.n = own ? Math.min(4, (own.m || 1) * 1.5) : 0; this.nm = 0;
+    this.skill = this.target = this.mateGoal = prior; this.conf = 0; this.corrE = this.corrM = 0; this.lead = 0; this.boost = 1; this.sig = {}; this.sigT = 0; this.panelT = 0;
+    this.wasClimb = false; this.cheat = false; this.saved = null;
+    this.fights = new Map(); this.log = []; this.trace = []; this.allDuels = [];
+    this.st = { alive: 0, shots: 0, hits: 0, swimT: 0, refillT: 0, climbs: 0, bombs: 0, idleT: 0 };
+    this.calibT = Math.min(60, 15 + GAME.dur / 6); this.endWin = clamp(Math.round(10 + GAME.dur / 9), 20, 40);
+    this.squadBrain = [{}, {}]; this.teamRow = [diffAt(prior), diffAt(prior)];
+    for (const b of G.bots) b.lv = prior;
+  },
+  bots() { return G.bots.filter(b => !b.c.isPlayer); },
+  enemies() { return G.bots.filter(b => b.c.team !== PLAYER.team); },
+  // tier below or above for what it knows, re-picked every 8-14 s.  The draw is kept for the whole stretch, so as the level climbs
+  // a bot switches up once and stays there instead of flickering
+  brain(o, lv) { if (G.time >= (o.brainT || 0)) { o.brainT = G.time + rand(8, 14); o.brainU = Math.random(); } return lv <= 2 && o.brainU < lv - Math.floor(lv); },
+  // the difficulty a bot plays at (smart mode).  Without a bot: the team as a whole, for the squad's decisions
+  row(team, bot) {
+    if (!bot) return this.teamRow[team];
+    if (bot.lv === undefined) bot.lv = this.goal(bot);
+    const hi = this.brain(bot, bot.lv);
+    if (bot.dRowLv !== bot.lv || bot.dRowHi !== hi) { bot.dRowLv = bot.lv; bot.dRowHi = hi; bot.dRow = diffAt(bot.lv, hi); }
+    return bot.dRow;
+  },
+  goal(b) { return b.c.team === PLAYER.team ? this.mateGoal : this.target; },
+  // the level a bot is playing at right now (fixed modes: the chosen tier)
+  lvOf(c) { if (this.on) return c.bot && c.bot.lv !== undefined ? c.bot.lv : c.team === PLAYER.team ? this.mateGoal : this.target; const l = G.aiLevels ? G.aiLevels[c.team] : GAME.diff; return l >= 0 && l <= 2 ? l : 1; },
+  endWindow() { return this.on ? this.endWin : 30; },
+  idle() { return !G.pilot && this.st.idleT > 10; },
+  inView(c, from) {
+    if (!from) return false; const e = from.eye(), ch = c.chest(), dx = ch.x - e.x, dz = ch.z - e.z, d = Math.hypot(dx, dz);
+    if (d > 40) return false; if (d > 2 && Math.abs(angDiff(from.aimYaw, Math.atan2(dx, dz))) > 0.95) return false;
+    return !segBlocked(e.x, e.y, e.z, ch.x, ch.y, ch.z, 0.4);
+  },
+  // ---------------------------------------------------------------- what happened
+  fight(e) { let f = this.fights.get(e); if (!f) { f = { e, t0: G.time, last: G.time, dealt: 0, taken: 0, lv: this.lvOf(e), help: -99, out: 0 }; this.fights.set(e, f); } return f; },
+  onDamage(v, amount, src, via) {
+    const P = PLAYER; if (!P || !this.st || !src) return;
+    if (src.team !== v.team) { src.dDealt = (src.dDealt || 0) + amount / v.maxHp; v.dTaken = (v.dTaken || 0) + amount / v.maxHp; }
+    if (v === P && src.team !== P.team) { const f = this.fight(src); f.taken += amount / v.maxHp; f.last = G.time; f.out = Math.max(f.out, CHARS.filter(o => o.team !== P.team && P.dmgBy.get(o) > G.time - 4).length); }
+    else if (src === P && v.team !== P.team) { const f = this.fight(v); f.dealt += amount / v.maxHp; f.last = G.time; if (via === P.weapon.id) this.st.hits++; }
+    else if (src.team === P.team && v.team !== P.team && this.fights.has(v)) this.fights.get(v).help = G.time;
+  },
+  onDeath(v, killer, via) {
+    const P = PLAYER; if (!P || !this.st) return; const T = G.time;
+    if (v.team !== P.team) {
+      const f = this.fights.get(v); if (!f) return; this.fights.delete(v);
+      if (killer !== P && f.dealt < 0.4) return;                           // a teammate's knock-out we barely touched: not our duel
+      this.resolve(f, 1, (T - f.help < 4 ? 0.5 : 1) * (f.out >= 2 ? 1.5 : 1));
+    } else if (v === P) {
+      const by = CHARS.filter(o => o.team !== P.team && P.dmgBy.get(o) > T - 4), n = Math.max(1, by.length);
+      const w = (n === 1 ? 1 : n === 2 ? 0.2 : 0.05) * (via === 'surge' || via === 'bomb' || via === 'curling' ? 0.3 : 1) * (this.idle() ? 0 : 1);
+      for (const [e, f] of this.fights) if (by.includes(e)) this.resolve(f, 0, w);
+      this.fights.clear();
+    }
+  },
+  onShot(c) {
+    if (c !== PLAYER || !this.st) return;
+    const m = c.muzzle(), dir = c.intent.aimDir || aimVec(c), R = (c.weapon.maxRange || c.weapon.range) + 2;
+    for (const e of CHARS) {
+      if (e.team === c.team || !e.alive || e.state !== 'play' || e.hiddenInInk()) continue;
+      const ch = e.chest(), dx = ch.x - m.x, dy = ch.y - m.y, dz = ch.z - m.z, d = Math.hypot(dx, dy, dz); if (d > R || d < 0.5) continue;
+      if ((dx * dir.x + dy * dir.y + dz * dir.z) / d > Math.cos(Math.max(0.1, Math.atan(1.2 / d)))) { this.st.shots++; return; }
+    }
+  },
+  onBomb(c) { if (c === PLAYER && this.st) this.st.bombs++; },
+  // one duel settled: move the estimate by how surprising the result was, given the level the enemy was playing at
+  resolve(f, o, w) {
+    if (w <= 0) return;
+    const p = 1 / (1 + Math.exp(-this.K * (this.elo - f.lv))), step = Math.min(G.time < this.calibT ? 1 : 0.2, Math.max(0.12, 0.7 / (1 + this.n * 0.35)));   // big steps while calibrating, small ones after
+    this.elo = clamp(this.elo + step * w * (o - p), 0, LV_MAX); this.n += w; this.nm += w;
+    this.log.unshift({ o, p, w, lv: f.lv, name: f.e.name, t: G.time }); if (this.log.length > 6) this.log.pop();
+    if (G.dirTrace) this.allDuels.push([o, w, f.lv, f.out]);
+  },
+  // ---------------------------------------------------------------- the estimate
+  paintK(c) { return this.PAINT_K[c.weapon.id] || 1; },
+  signals() {
+    const P = PLAYER, st = this.st, S = this.sig = {}, aliveM = st.alive / 60, R = this.raw = {};
+    const mates = CHARS.filter(c => c.team === P.team && c !== P && (c.dirAlive || 0) > 5);
+    if (st.alive > 20 && mates.length) {
+      // compared with the teammates, who play the same enemies at a level we know: turf painted per minute alive
+      // (allowing for how much each weapon paints), damage dealt against damage taken, and knock-outs suffered
+      const base = avgOf(mates.map(c => this.lvOf(c))), grow = Math.min(1, st.alive / 60), lr = c => Math.log2(((c.dDealt || 0) + 0.5) / ((c.dTaken || 0) + 0.5));
+      const pr = P.paint / this.paintK(P) / aliveM, mr = avgOf(mates.map(c => c.paint / this.paintK(c) / (c.dirAlive / 60)));
+      if (mr > 0) { R.paint = Math.log2(Math.max(0.05, pr / mr)); S.paint = { v: base + 1.6 * R.paint, w: 0.7 * grow }; }
+      R.dmg = lr(P) - avgOf(mates.map(lr)); S.dmg = { v: base + 0.7 * R.dmg, w: 0.6 * grow };
+      const pd = (P.deaths + 0.5) / (aliveM + 0.5), md = avgOf(mates.map(c => (c.deaths + 0.5) / (c.dirAlive / 60 + 0.5)));
+      R.surv = Math.log2(md / pd); S.surv = { v: base + 0.5 * R.surv, w: 0.4 * grow };
+    }
+    if (st.shots >= 12) S.hit = { v: 1 + (Math.min(1, st.hits / st.shots) - (this.HIT[P.weapon.id] || 0.4)) / 0.15, w: 0.3 * Math.min(1, st.shots / 50) };
+    // the basics a beginner has not found yet: swimming to travel, topping up under the ink, climbing, super jumps, bombs.
+    // Only ever a sign of a beginner - knowing three or more says nothing about how good someone is
+    if (st.alive > 25) { const sc = (st.swimT > 2) + (st.refillT > 1.5) + (st.climbs > 0) + (P.sjumps > 0) + (st.bombs > 0); if (sc < 3) S.know = { v: 0.1 + sc * 0.25, w: this.mem ? 0.3 : 0.8 }; }
+    let sw = 0.6 + this.n * 0.5, sv = this.elo * sw;
+    for (const k in S) { S[k].v = clamp(S[k].v, 0, LV_MAX); sv += S[k].v * S[k].w; sw += S[k].w; }
+    // smoothed, so one duel does not jolt the whole lobby; after calibration it may move at most 0.012 a second
+    const cal = G.time < this.calibT, d = (clamp(sv / sw, 0, LV_MAX) - this.skill) * (1 - Math.exp(-0.5 / (cal ? 2.5 : 10)));
+    this.skill += cal ? d : clamp(d, -0.006, 0.006); this.conf = 1 - 1 / (1 + 0.35 * (sw - 0.6));
+  },
+  // a score running away (more than 6 % of the map apart, at full strength by 24 %): the enemies move against it; whatever they
+  // cannot take - already at the top or the bottom - goes to the teammates, who otherwise move 40 % as far the other way, 0.5 at most
+  steer() {
+    const tc = Paint.teamCells, P = PLAYER; this.lead = (tc[P.team] - tc[1 - P.team]) / Math.max(1, Paint.total);
+    const sg = Math.sign(this.lead), c = Math.min(0.9, Math.max(0, Math.abs(this.lead) - 0.06) * 5);
+    this.target = clamp(this.skill + sg * c, 0, LV_MAX); this.corrE = this.target - this.skill;
+    this.corrM = -sg * Math.min(0.5, c * 0.4 + Math.abs(sg * c - this.corrE)); this.mateGoal = clamp(this.skill + this.corrM, 0, LV_MAX);
+    this.boost = 1 + clamp((Math.abs(this.lead) - 0.08) / 0.06, 0, 2);      // and the bots out of sight close in up to three times as fast
+    // aim alone hardly moves the turf, so the teams are also told what to spend their time on: once apart (PF) the side behind keeps
+    // to painting what is not theirs, and the side ahead eases off - hangs back and stops chasing, leaving the others room; teammates get a share
+    const fE = sg * clamp((Math.abs(this.lead) - this.PF.start) / this.PF.span, 0, 1); this.pf = []; this.pf[1 - P.team] = fE; this.pf[P.team] = -fE * this.PF.mates;
+  },
+  // -1 ease off · 0 as usual · 1 keep to painting (smart mode only)
+  paintFocus(team) { return this.on && this.pf ? this.pf[team] : 0; },
+  // extra score for a spot to paint: a painting team wants what is not ours yet; a team easing off keeps to its own half
+  turfBias(team, own, zRel) { const f = this.paintFocus(team); return f > 0 ? (own !== team ? 2 * f : 0) : f < 0 ? f * zRel * 2.5 : 0; },
+  // ---------------------------------------------------------------- every frame of play
+  update(dt) {
+    const P = PLAYER; if (!P || !this.st) return; const T = G.time, st = this.st;
+    if (devGod() || vipOn()) this.cheat = true;
+    if (P.alive && P.state === 'play') {
+      const sp = Math.hypot(P.vel.x, P.vel.z);
+      st.idleT = sp > 0.5 || T - P.lastShot < 0.3 ? 0 : st.idleT + dt;
+      if (!this.idle()) {
+        st.alive += dt;
+        if (P.submerged && sp > 7) st.swimT += dt;
+        if (P.submerged && sp < 2 && P.ink < 70) st.refillT += dt;
+        if (P.climbing && !this.wasClimb) st.climbs++;
+      }
+      this.wasClimb = P.climbing;
+    }
+    for (const c of CHARS) if (c.team === P.team && c !== P && c.alive && c.state === 'play') c.dirAlive = (c.dirAlive || 0) + dt;
+    // a fight nobody has followed up for four seconds: settle it on the damage traded, at low weight
+    for (const [e, f] of this.fights) if (T - f.last > 4) { this.fights.delete(e); if (f.dealt + f.taken > 0.5) this.resolve(f, clamp(0.5 + (f.dealt - f.taken) * 0.5, 0, 1), 0.3); }
+    if ((this.sigT -= dt) <= 0) { this.sigT = 0.5; this.signals(); }
+    this.steer();
+    // every bot moves toward its goal at a pace that depends on whether the player could notice
+    const kd = Math.sqrt(180 / GAME.dur), from = P.alive ? P : Cam.spec, all = this.bots();
+    for (const b of all) {
+      const c = b.c, goal = this.goal(b); if (b.lv === undefined) b.lv = goal;
+      let s; const f = this.fights.get(c);
+      if (!c.alive || c.state !== 'play') s = 'respawn';
+      else if (c.team !== P.team && (b.enemy === P || (f && T - f.last < 2.5))) s = 'fight';
+      else { if ((b.seeT = (b.seeT || 0) - dt) <= 0) { b.seeT = 0.25; b.seen = this.inView(c, from); } s = b.seen ? 'seen' : 'away'; }
+      b.dState = s;
+      if (!this.on) continue;
+      if (s === 'respawn') b.lv = goal;
+      else { const r = this.RATE[s] * (s === 'away' ? this.boost : 1) * kd * dt; b.lv += clamp(goal - b.lv, -r, r); }
+    }
+    for (const tm of [0, 1]) {
+      const tb = all.filter(b => b.c.team === tm); if (!tb.length) continue;
+      const tl = Math.round(avgOf(tb.map(b => b.lv)) * 100) / 100, sb = this.squadBrain[tm], hi = this.brain(sb, tl);
+      if (sb.lv !== tl || sb.hi !== hi) { sb.lv = tl; sb.hi = hi; this.teamRow[tm] = diffAt(tl, hi); }
+    }
+    if (G.dirTrace) this.trace.push([T, this.skill, this.target, ...this.enemies().map(b => b.lv)]);
+    this.panel(dt);
+  },
+  // end of a match: fold this match into this loadout's saved level - a rolling average, 0.6 old + 0.4 new, the new part counting for less after
+  // a short match or few fights.  Not with a name-box mode on (that is cheating), nor in tests where a bot plays for the player
+  save() {
+    if (G.pilot || G.aiLevels || !PLAYER || !this.st || this.cheat || this.st.alive < 30) return;
+    const sv = this.mem, q = Math.min(1, this.st.alive / 120) * Math.min(1, (this.nm + 1) / 6), s = sv ? lerp(sv.s, this.skill, 0.4 * q) : this.skill;
+    this.saved = this.skillBook()[this.key] = { s: Math.round(s * 100) / 100, m: Math.min(10, (sv ? sv.m || 1 : 0) + 1) }; Profile.save();
+  },
+  // ---------------------------------------------------------------- the panel (press ` during a match)
+  toggle() { this.shown = !this.shown; $('dirPanel').classList.toggle('show', this.shown); this.panelT = 0; },
+  tier(v) { if (v > 2.15) return '地狱+'; const r = clamp(Math.round(v), 0, 2), d = v - r; return ['轻松', '普通', '地狱'][r] + (d > 0.15 ? '·偏强' : d < -0.15 ? '·偏弱' : ''); },
+  panel(dt) {
+    if (!this.shown || (this.panelT -= dt) > 0) return; this.panelT = 0.25;
+    const f2 = v => v.toFixed(2), pc = v => Math.round(v * 100) + '%', sgn = v => (v >= 0 ? '+' : '−') + f2(Math.abs(v));
+    const SN = { paint: '涂地', dmg: '伤害比', surv: '存活', hit: '命中', know: '熟练' }, STN = { fight: '交火中', seen: '视野内', away: '视野外', respawn: '复活中' };
+    const left = Math.max(0, this.calibT - G.time), mode = this.on ? '智能模式' : '观察中 · 固定难度「' + (['轻松', '普通', '地狱'][this.lvOf(CHARS.find(c => c.team !== PLAYER.team))] || '?') + '」';
+    const ln = this.loadoutName(this.key), mem = this.saved ? `${ln} 存档已更新为 ${f2(this.saved.s)}` : this.mem ? `${ln} 存档 ${f2(this.mem.s)}（${this.mem.m || 1} 局）` : this.seed != null ? `首次用${ln}（参考其他组合 ${f2(this.seed)}）` : '无存档';
+    let h = `<b>导演台</b><span>${mode}</span>${this.cheat ? '<i class="l">后门模式 · 本局不计入存档</i>' : ''}`;
+    h += `<div class="big">玩家水平 <em>${f2(this.skill)}</em> ${this.tier(this.skill)} <small>可信度 ${pc(this.conf)} · ${left > 0 ? '校准中 ' + Math.ceil(left) + 's' : this.conf < 0.3 ? '数据不足' : '已校准'} · ${mem}${this.idle() ? ' · 挂机不计' : ''}</small></div>`;
+    h += `<div>交火积分 ${f2(this.elo)}（本局 ${this.nm.toFixed(1)} 次）` + Object.keys(SN).filter(k => this.sig[k]).map(k => ` · ${SN[k]} ${f2(this.sig[k].v)}<small>×${this.sig[k].w.toFixed(1)}</small>`).join('') + '</div>';
+    const pfs = f => Math.abs(f) < 0.05 ? '正常' : (f > 0 ? '专心涂地 ' : '收着打 ') + pc(Math.abs(f)), pf = this.pf || [0, 0];
+    h += `<div>比分 ${this.lead >= 0 ? '我方领先' : '我方落后'} ${pc(Math.abs(this.lead))} → 局势修正 敌 ${sgn(this.corrE)} · 友 ${sgn(this.corrM)}${this.boost > 1.01 ? `<small>（视野外加速 ×${this.boost.toFixed(1)}）</small>` : ''}</div>`;
+    h += `<div>打法倾向 敌：${pfs(pf[1 - PLAYER.team] || 0)} · 友：${pfs(pf[PLAYER.team] || 0)}</div>`;
+    h += '<div>最近交火 ' + (this.log.length ? this.log.map(l => `<i class="${l.o > 0.5 ? 'w' : l.o < 0.5 ? 'l' : ''}">${l.o > 0.5 ? '赢' : l.o < 0.5 ? '输' : '平'}</i><small>预期${pc(l.p)}${l.w < 1 ? '×' + l.w.toFixed(1) : ''}</small>`).join(' ') : '—') + '</div>';
+    const row = (b, goal) => `<tr><td>${b.c.name}</td><td>${b.lv === undefined ? '—' : f2(b.lv)}</td><td>→ ${f2(goal)}</td><td>${this.tier(b.lv ?? goal)}</td><td>${STN[b.dState] || ''}</td></tr>`;
+    h += '<table><tr><th colspan="5">队友</th></tr>' + this.bots().filter(b => b.c.team === PLAYER.team).map(b => row(b, this.mateGoal)).join('');
+    h += '<tr><th colspan="5">对手</th></tr>' + this.enemies().map(b => row(b, this.target)).join('') + '</table>';
+    $('dirPanel').innerHTML = h;
+  }
+};
 /* ================================================================ HUD */
 const TIPS = ['潜进自己的墨水里，墨水和体力都会飞快恢复', '把墙涂成自己的颜色，潜墨朝墙走就能爬上去', '踩在敌方墨水里会减速掉血——先把脚下涂掉', '涂地可以给必杀技充能，满了按 Q', '炸弹会弹一下再爆炸，适合扔到掩体后面', '获胜看的是地面覆盖率，不是击倒数'];
 const HUD = {
@@ -6723,7 +6986,7 @@ function applyPalette() {
   setTeamColors(p[0], p[1]); setTeamMats(p[0], p[1]);
 }
 function clearChars() {
-  CHARS.forEach(c => { scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot); if (c.sjMarker) scene.remove(c.sjMarker); }); CHARS.length = 0; G.bots = []; G.squads = [new Squad(0), new Squad(1)]; G.pilot = null; PLAYER = null;
+  CHARS.forEach(c => { scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot); if (c.sjMarker) scene.remove(c.sjMarker); }); CHARS.length = 0; G.bots = []; G.squads = [new Squad(0), new Squad(1)]; G.pilot = null; G.pilotLevel = null; PLAYER = null;
 }
 // roster = who plays with what; rolled when entering the lobby so it can be shown before the match
 function rollRoster() {
@@ -6760,7 +7023,7 @@ function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProj
 function startMatch() {
   Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Wake.clear(); Proj.clear();
-  spawnTeams(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
+  spawnTeams(); Director.reset(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
@@ -6780,6 +7043,7 @@ function quitToTitle() {
   gotoTitle();
 }
 function endMatch() {
+  Director.save();
   G.state = 'end'; G.endT = 0; Sfx.whistle(); Sfx.stopMusic(); flash(0.6);
   HUD.center('比赛结束！', '', 0);
   CHARS.forEach(c => { c.intent.fire = false; c.intent.swim = false; c.intent.mx = c.intent.mz = 0; });
@@ -7471,6 +7735,7 @@ function updatePlay(dt) {
   if (G.left <= 0) { G.left = 0; endMatch(); return; }
   if (G.time > 8) $('hint').style.display = 'none';
   if (!G.pilot) playerControl(dt);                // (G.pilot: an all-bot match for the AI benchmark; the player is driven by a Bot in G.bots)
+  Director.update(dt);
   if (G.squads) for (const q of G.squads) q.update(dt);
   for (const b of G.bots) b.update(dt);
 }

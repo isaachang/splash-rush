@@ -235,7 +235,12 @@ function initTactics() {
 }
 // difficulty of one team's bots (tests can pit two different levels against each other with G.aiLevels)
 const aiStat = (team, k) => { const a = G.aiStat || (G.aiStat = [{}, {}]); a[team][k] = (a[team][k] || 0) + 1; };
-function botDiff(team) { return DIFF[G.aiLevels ? G.aiLevels[team] : GAME.diff]; }
+// smart mode (SMART): each bot's own level, from the Director.  G.pilotLevel: the bot standing in for the player in tests
+function botDiff(team, bot) {
+  if (bot && bot.c.isPlayer && G.pilotLevel != null) return DIFF[G.pilotLevel];
+  const lv = G.aiLevels ? G.aiLevels[team] : GAME.diff;
+  return lv === SMART ? Director.row(team, bot) : DIFF[lv];
+}
 const depthOf = (team, z) => team === 0 ? -z : z;          // how far toward the enemy's end a spot is (0 = the middle of the map)
 
 /* ============================================================== SQUAD
@@ -254,7 +259,7 @@ class Squad {
     const D = botDiff(this.team), bots = this.bots(), T = G.time, tm = this.team;
     for (const [e, s] of this.seen) if (!e.alive || T - s.t > 5) this.seen.delete(e);
     this.lead = (Paint.teamCells[tm] - Paint.teamCells[1 - tm]) / Math.max(1, Paint.total);
-    this.posture = D.endgame && G.left < 30 ? 'allout' : D.team >= 2 ? (this.lead < -0.05 ? 'push' : this.lead > 0.12 ? 'hold' : 'even') : 'even';
+    this.posture = D.endgame && G.left < Director.endWindow() ? 'allout' : D.team >= 2 ? (this.lead < -0.05 ? 'push' : this.lead > 0.12 ? 'hold' : 'even') : 'even';
     // the front: a little short of the nearest enemy anyone has seen, else just past the middle
     const fr = this.fresh(3); let fd = ZH * 0.12; if (fr.length) fd = Math.min(...fr.map(([, s]) => depthOf(tm, s.z))) - 4;
     this.frontD = lerp(this.frontD, clamp(fd + (this.posture === 'push' ? 7 : this.posture === 'hold' ? -5 : 0), -ZH * 0.55, ZH * 0.6), 0.35);
@@ -296,7 +301,7 @@ class Squad {
 /* ================================================================= BOT */
 class Bot {
   constructor(c, role) {
-    this.c = c; this.role = this.role0 = role; this.path = []; this.target = null; this.retarget = 0; this.enemy = null; this.scanT = rand(0, 0.2);
+    this.c = c; c.bot = this; this.role = this.role0 = role; this.path = []; this.target = null; this.retarget = 0; this.enemy = null; this.scanT = rand(0, 0.2);
     this.reactT = 0; this.strafe = 1; this.strafeT = 0; this.err = new THREE.Vector3(); this.errT = 0; this.stuckT = 0; this.lastPos = new THREE.Vector3();
     this.mode = 'paint'; this.sweep = rand(0, 6); this.linger = 0; this.swimT = 0; this.jitter = rand(0.8, 1.2);
     this.wpT = 0; this.fails = 0; this.climb = null; this.noClimbT = 0; this.diveCd = 0; this.footCd = 0; this.footT = 0; this.lurkT = 0; this.lurkCd = 0; this.bombCd = 0; this.retreatT = 0;
@@ -305,9 +310,11 @@ class Bot {
   canSee(e) { const a = this.c.eye(), b = e.chest(); return !segBlocked(a.x, a.y, a.z, b.x, b.y, b.z, 0.5); }
   findEnemy() {
     const c = this.c, e0 = c.eye(); let best = null, bd = 1e9;
+    // smart mode: a team told to paint only takes on enemies close by, one easing off does not go looking either (both still answer whoever shoots them)
+    const pf = Director.paintFocus(c.team), rk = G.time - c.lastHurt < 1.5 ? 1 : pf > 0 ? lerp(1, 0.45, pf) : lerp(1, 0.6, -pf);
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
-      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) || d > bd) continue;
+      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk || d > bd) continue;
       // hidden in ink: only seen up close (2.5 m), or roughly up to 7 m if swimming fast (ripples); shooting gives you away
       let fuzzy = false;
       if (e.hiddenInInk() && !(G.time - e.lastShot < 0.4)) { const fast = Math.hypot(e.vel.x, e.vel.z) > 6; if (d > (fast ? 7 : 2.5)) continue; fuzzy = fast && d > 2.5; }
@@ -328,7 +335,7 @@ class Bot {
       for (let a = 0; a < 5; a++) { const o = ownerAt(p.x + Math.cos(a * 1.26) * 2, p.y, p.z + Math.sin(a * 1.26) * 2); if (o !== c.team && o !== -2) s += 0.6; }
       const zRel = (c.team === 0 ? -p.z : p.z) / ZH;
       s += this.role === 'front' ? zRel * 3 : this.role === 'mid' ? 1 - Math.abs(zRel) * 2.2 : -zRel * 2.2;
-      s -= p.distanceTo(c.pos) * 0.04; s += rand(0, 1.6);
+      s -= p.distanceTo(c.pos) * 0.04; s += rand(0, 1.6) + Director.turfBias(c.team, own, zRel);
       if (c.weapon.type === 'charge') s += NAV.h[k] * 0.9 - (this.role === 'front' ? zRel * 1.5 : 0);
       if (s > bs) { bs = s; best = k; }
     }
@@ -358,7 +365,7 @@ class Bot {
         if (role === 'home') s -= 1.5 * foes.filter(([, f]) => Math.hypot(f.x - p.x, f.z - p.z) < 8).length;
       }
       for (const o of others) if (Math.hypot(o.x - p.x, o.z - p.z) < 8) s -= 1.2;
-      s += rand(0, 1.4);
+      s += rand(0, 1.4) + Director.turfBias(tm, own, zRel);
       if (s > bs) { bs = s; best = n; }
     };
     for (let i = 0; i < 46; i++) { const k = randi(0, NAV.N - 1); if (reach[k] >= 0) consider(k, 0); }
@@ -381,7 +388,7 @@ class Bot {
     return best;
   }
   chooseTarget() {
-    const c = this.c, D = botDiff(c.team), S = this.squad;
+    const c = this.c, D = botDiff(c.team, this), S = this.squad;
     this.allowNext = NF.SWIM | NF.JUMP | NF.DROP;
     const best = D.team && S ? this.chooseTargetTeam(D, S) : this.chooseTargetSimple();
     if (best < 0) { this.retarget = 0.5; return; }
@@ -518,7 +525,7 @@ class Bot {
     return yawErr;
   }
   update(dt) {
-    const c = this.c, I = c.intent, D = botDiff(c.team), T = G.time, S = this.squad;
+    const c = this.c, I = c.intent, D = botDiff(c.team, this), T = G.time, S = this.squad;
     if (!c.alive || c.state !== 'play') { I.fire = I.swim = false; I.mx = I.mz = 0; this.path = []; this.enemy = null; this.climb = null; this.mode = 'paint'; this.lurkT = 0; return; }
     this.scanT -= dt;
     if (this.scanT <= 0) {
@@ -640,7 +647,7 @@ class Bot {
         // arrived by a choke point with our ink underfoot: sometimes dive and wait there
         if (D.ambush && onOwn && T > this.lurkCd && !chg && !allout && (this.ambushAt != null || TAC.chokes.some(k => Math.hypot(k.x - c.pos.x, k.z - c.pos.z) < 7))) { this.lurkCd = T + rand(8, 14); if (this.ambushAt != null || Math.random() < D.ambush * 0.6) { this.lurkT = rand(3, 6); this.ambushAt = null; aiStat(c.team, 'lurk'); } }
       }
-      else if ((this.replanT = (this.replanT || 0) - dt) <= 0) { this.replanT = 0.3; if (D.dawdle && !this.dawdled && Math.random() < D.dawdle) { this.dawdled = true; this.dawdleT = rand(0.8, 1.8); return; } this.dawdled = false; this.chooseTarget(); }      // nothing to walk to (a fight or a dead end emptied the route): pick again straight away
+      else if ((this.replanT = (this.replanT || 0) - dt) <= 0) { this.replanT = 0.3; if (D.dawdle && !this.dawdled && Director.paintFocus(c.team) < 0.3 && Math.random() < D.dawdle) { this.dawdled = true; this.dawdleT = rand(0.8, 1.8); return; } this.dawdled = false; this.chooseTarget(); }      // nothing to walk to (a fight or a dead end emptied the route): pick again straight away
     }
     const moving = this.followPath(I, dt);
     if (this.climb) return;
@@ -676,6 +683,7 @@ function initInput() {
     if (e.code === 'KeyE') Input.bombHoldKey = true;
     if (e.code === 'KeyQ') Input.spQ = true;
     if (e.code === 'KeyM') toggleMap();
+    if (e.code === 'Backquote' && G.state !== 'title') Director.toggle();
     if (G.mapOpen && /^Digit[1-3]$/.test(e.code)) HUD.pickAlly(+e.code.slice(5) - 1);
     if (G.mapOpen && e.code === 'Escape') toggleMap(false);
     if (e.code === 'Tab') e.preventDefault();

@@ -37,6 +37,8 @@ node tools/feature-test.js    # 逐项验证核心机制，必须全部 PASS
 node tools/map-test.js        # 改了滑板场（或地形代码）时跑，必须 ALL MAP TESTS PASSED
 node tools/canton-test.js     # 改了西關大屋（或悬空方块、涂地分层）时跑，必须 ALL CANTON TESTS PASSED
 node tools/ai-test.js         # 改了机器人、寻路或地图地形时跑，必须 ALL AI TESTS PASSED
+node tools/director-test.js   # 改了导演台（智能难度）或机器人难度表时跑，必须 ALL DIRECTOR TESTS PASSED（约 2 分钟）
+node tools/director-bench.js canton 0 s 8 180   # 调导演台时用：机器人假扮玩家（0/1/2 档），对面智能（s）或固定档，看胜负、涂地差和判断（不是必过项）
 node tools/ai-bench.js canton 2 1 12   # 调机器人强弱时用：全电脑对打，看胜场、涂地、击倒和卡住的秒数（不是必过项）
 open index.html               # 自己打开试玩
 

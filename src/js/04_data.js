@@ -165,7 +165,7 @@ const Profile = {
     if (!WEAPON_ORDER.includes(this.data.weapon)) this.data.weapon = 'rifle';
     if (!CHAR_ORDER.includes(this.data.char)) this.data.char = 'sa';
     if (!CHARACTERS[this.data.char].weapons.includes(this.data.weapon)) this.data.weapon = CHARACTERS[this.data.char].weapons[0];
-    const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
+    const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = d.diff === SMART ? SMART : clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
   },
   save() {
     Object.assign(this.data, { name: GAME.name, pal: GAME.pal, diff: GAME.diff, dur: GAME.dur });
@@ -177,6 +177,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.13.0', date: '2026-10-04', time: '13:27', title: '智能对手', items: [
+    '「对手强度」新增一档「智能」',
+    '选「智能」时，机器人最后全员冲刺抢地的时间跟着对战时长走：1:30 局最后 20 秒，3:00 局 30 秒，5:00 局 40 秒',
+    '「对手强度」和「对战时长」各占一整行，四个选项不再挤成两行字'
+  ] },
   { v: 'v0.12.0', date: '2026-10-03', time: '02:30', title: '变身小鱿鱼', items: [
     '潜墨形态从一团墨球换成了一只小鱿鱼：有眼睛、有尾鳍，触手会跟着摆',
     '按下潜墨不再是瞬间换模型：人会压扁、染成墨色沉下去，溅起一圈墨滴；松开时从墨里鼓出来再弹回人形（只是画面过渡，操作还是立刻生效）',

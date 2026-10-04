@@ -312,6 +312,20 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .st-r .sp{font-size:13px;opacity:.8}.st-r .sp.on b{color:#ffe45c;animation:blink .5s infinite}
 #specTag{position:absolute;left:50%;top:140px;transform:translateX(-50%);display:none;font-weight:900;font-size:16px;background:rgba(0,0,0,.6);border:3px solid #111;border-radius:16px;padding:5px 16px;color:#fff;text-shadow:0 2px 0 #000}
 #specTag.on{display:block}
+#dirPanel{position:absolute;left:14px;top:96px;width:400px;display:none;z-index:30;pointer-events:none;background:rgba(10,12,24,.8);border:2px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 12px;color:#e8ecff;font:12px/1.55 ui-monospace,Menlo,Consolas,monospace}
+#dirPanel.show{display:block}
+#dirPanel b{font-size:14px;color:#ffe45c;margin-right:8px}
+#dirPanel span{opacity:.75}
+#dirPanel em{font-style:normal;font-weight:900;color:#fff;font-size:14px}
+#dirPanel .big em{font-size:18px;color:#7dffb2}
+#dirPanel small{opacity:.6;margin-left:2px}
+#dirPanel i{font-style:normal;font-weight:900;padding:0 3px;border-radius:4px;background:#555}
+#dirPanel i.w{background:#2e9d5b}
+#dirPanel i.l{background:#b8404a}
+#dirPanel table{width:100%;margin-top:4px;border-collapse:collapse}
+#dirPanel td{padding:1px 4px 1px 0}
+#dirPanel th{text-align:left;font-weight:900;color:#ffe45c;padding-top:4px}
+#dirPanel b + span + i{margin-left:8px}
 /* roast badge: a cracked, grubby medal */
 .md b.x,.mdl.x b{background:linear-gradient(135deg,transparent 46%,#111 47%,#111 53%,transparent 54%),radial-gradient(circle at 35% 30%,#b9a58a,#7a6546 55%,#3e3322)}
 .mdl.x span{color:#ff9aa8}
