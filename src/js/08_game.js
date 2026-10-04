@@ -305,7 +305,7 @@ function applyPalette() {
   setTeamColors(p[0], p[1]); setTeamMats(p[0], p[1]);
 }
 function clearChars() {
-  CHARS.forEach(c => { scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot); if (c.sjMarker) scene.remove(c.sjMarker); }); CHARS.length = 0; G.bots = []; G.squads = [new Squad(0), new Squad(1)]; G.pilot = null; PLAYER = null;
+  CHARS.forEach(c => { scene.remove(c.root); scene.remove(c.ghost); if (c.laser) scene.remove(c.laser, c.laserDot); if (c.sjMarker) scene.remove(c.sjMarker); }); CHARS.length = 0; G.bots = []; G.squads = [new Squad(0), new Squad(1)]; G.pilot = null; G.pilotLevel = null; PLAYER = null;
 }
 // roster = who plays with what; rolled when entering the lobby so it can be shown before the match
 function rollRoster() {
@@ -342,7 +342,7 @@ function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProj
 function startMatch() {
   Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Wake.clear(); Proj.clear();
-  spawnTeams(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
+  spawnTeams(); Director.reset(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
@@ -362,6 +362,7 @@ function quitToTitle() {
   gotoTitle();
 }
 function endMatch() {
+  Director.save();
   G.state = 'end'; G.endT = 0; Sfx.whistle(); Sfx.stopMusic(); flash(0.6);
   HUD.center('比赛结束！', '', 0);
   CHARS.forEach(c => { c.intent.fire = false; c.intent.swim = false; c.intent.mx = c.intent.mz = 0; });
@@ -1053,6 +1054,7 @@ function updatePlay(dt) {
   if (G.left <= 0) { G.left = 0; endMatch(); return; }
   if (G.time > 8) $('hint').style.display = 'none';
   if (!G.pilot) playerControl(dt);                // (G.pilot: an all-bot match for the AI benchmark; the player is driven by a Bot in G.bots)
+  Director.update(dt);
   if (G.squads) for (const q of G.squads) q.update(dt);
   for (const b of G.bots) b.update(dt);
 }

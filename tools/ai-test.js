@@ -77,6 +77,48 @@ const tests = function (DEVC, VIPC) {
   }
   // the tiers differ in what they know, not only in aim
   ok(DIFF[0].team === 0 && !DIFF[0].retreat && !DIFF[0].focus && DIFF[1].team === 1 && DIFF[1].retreat > 0 && !DIFF[1].focus && !DIFF[1].combo && DIFF[2].team === 2 && DIFF[2].focus && DIFF[2].combo > 0 && DIFF[2].ambush > DIFF[1].ambush && DIFF[2].err < DIFF[1].err && DIFF[1].err < DIFF[0].err, 'difficulty tiers: easy = every bot for itself, normal = retreats / basic teamwork, hell = focus fire, ambushes and combos');
+  // ---------------- smart difficulty (the Director)
+  {
+    const same = [0, 1, 2].every(k => diffAt(k) === DIFF[k]), mid = diffAt(0.5);
+    const between = ['err', 'react', 'turn', 'fireHold', 'dodge'].every(k => mid[k] >= Math.min(DIFF[0][k], DIFF[1][k]) - 1e-9 && mid[k] <= Math.max(DIFF[0][k], DIFF[1][k]) + 1e-9);
+    let mono = true; for (let l = 0; l < 1.99; l += 0.05) { const a = diffAt(l), b = diffAt(l + 0.05); if (b.err > a.err + 1e-9 || b.react > a.react + 1e-9 || b.turn < a.turn - 1e-9) mono = false; }
+    const steps = !diffAt(0.45).retreat && diffAt(0.55).retreat > 0 && !diffAt(1.45).focus && diffAt(1.55).focus && diffAt(1.45).team === 1 && diffAt(1.55).team === 2;
+    ok(same && between && mono && steps, 'smart difficulty: levels 0 / 1 / 2 are exactly the three tiers; in between, aim and reflexes blend smoothly and know-how switches on in steps (retreat from 0.5, focus fire from 1.5)');
+  }
+  {
+    const { B } = setup(1); const E = G.bots.find(b => b.c.team === 1);
+    ok(botDiff(0, B) === DIFF[1] && botDiff(1, E) === DIFF[1] && botDiff(1) === DIFF[1] && !Director.on && Director.endWindow() === 30, 'fixed tiers untouched: with 普通 chosen every bot plays the normal row and the all-out push still starts with 30 s left');
+  }
+  {
+    const r = [90, 180, 300].map(d => { GAME.dur = d; Director.reset(); return [Director.calibT, Director.endWin]; }); GAME.dur = 180;
+    ok(JSON.stringify(r) === '[[30,20],[45,30],[60,40]]', 'match length: calibration window 30 / 45 / 60 s and the all-out push 20 / 30 / 40 s for 1:30 / 3:00 / 5:00 (' + JSON.stringify(r) + ')');
+  }
+  // how fast each enemy moves toward the target: slowly in a fight with the player, quickly out of sight, at once when knocked out
+  {
+    GAME.dur = 180; setup(SMART); const D = Director, sig = D.signals; D.signals = function () { this.skill = 2; }; D.skill = 2;
+    const en = G.bots.filter(b => b.c.team === 1), [f, a, k] = en; for (const b of G.bots) b.lv = 1;
+    f.enemy = PLAYER; k.c.die(null);
+    run(30); D.signals = sig;
+    const df = f.lv - 1, da = a.lv - 1, kd = Math.sqrt(180 / GAME.dur);
+    ok(f.dState === 'fight' && df > 0 && df <= D.RATE.fight * kd * 1.05 + 1e-3 && a.dState === 'away' && da > df * 4 && Math.abs(k.lv - 2) < 1e-9, 'smart: in 1 s toward a harder target, the enemy fighting the player moves ' + df.toFixed(3) + ', one out of sight ' + da.toFixed(3) + ', a knocked-out one jumps straight to it (' + k.lv.toFixed(2) + ')');
+  }
+  // judging duels: beating an equal is worth more than beating someone the Director had already made weaker; losing 1 v 2 barely counts
+  {
+    const D = Director, f = lv => ({ e: { name: 'x' }, lv, out: 1 }), go = (lv, o, w) => { D.elo = 1; D.n = 4; D.resolve(f(lv), o, w); return D.elo - 1; };
+    const up = go(1, 1, 1), down = -go(1, 0, 1), upWeak = go(0.3, 1, 1), downStrong = -go(1.7, 0, 1);
+    const { E } = setup(SMART); const E2 = CHARS.find(c => c.team === 1 && c !== E), P = PLAYER; P.invulnT = 0; P.pos.set(0, 2.2, 20); for (let i = 0; i < 3; i++) loop();
+    P.damage(40, E); P.damage(40, E2); P.damage(200, E); const w2 = D.log.slice(0, 2).map(l => l.w);
+    ok(up > 0 && down > 0 && upWeak < up * 0.8 && downStrong < down * 0.8 && w2.length === 2 && w2.every(w => w === 0.2), 'judging duels: a win over an equal moves the estimate ' + up.toFixed(3) + ', over a weakened enemy only ' + upWeak.toFixed(3) + '; a loss to a stronger enemy costs less than to an equal; a knock-out by two at once counts 0.2 each' + (w2.length === 2 && w2.every(w => w === 0.2) ? '' : ' [got ' + JSON.stringify(w2) + ', loss vs stronger ' + downStrong.toFixed(3) + ' vs equal ' + down.toFixed(3) + ']'));
+  }
+  // the estimate is kept between matches and the next one starts from it
+  {
+    setup(SMART); const D = Director, gd = GAME.diff; G.aiLevels = null; GAME.diff = SMART; Profile.data.skill = undefined;
+    D.skill = 0.62; D.n = 6; D.st.alive = 120; D.save(); const saved = Profile.data.skill ? Profile.data.skill.s : null;
+    quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby(); startMatch(); while (G.state !== 'play') loop();
+    const start = D.skill, lvs = G.bots.map(b => b.lv);
+    ok(saved === 0.62 && start === 0.62 && D.mem && lvs.every(v => v === 0.62), 'memory: the estimate (' + saved + ') is saved with the profile at the end of a match and the next match - every bot included - starts from it');
+    Profile.data.skill = undefined; GAME.diff = gd;
+  }
   // ---------------- the two name-box modes (only when the names are supplied)
   if (!DEVC || !VIPC) res.push('SKIP name-box modes (set SR_CODES to check them)');
   if (DEVC) {

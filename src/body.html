@@ -50,8 +50,8 @@
       <h3>对阵阵容</h3>
       <div class="rosterWrap"><div class="roster" id="rosterA"></div><div class="vs">VS</div><div class="roster" id="rosterB"></div></div>
       <div class="opts">
-        <div><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">地狱</button></div></div>
-        <div><h3>对战时长</h3><div class="seg" id="dur"><button data-v="90">1:30</button><button data-v="180" class="sel">3:00</button><button data-v="300">5:00</button></div></div>
+        <div class="full"><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">地狱</button><button data-v="-1">智能</button></div></div>
+        <div class="full"><h3>对战时长</h3><div class="seg" id="dur"><button data-v="90">1:30</button><button data-v="180" class="sel">3:00</button><button data-v="300">5:00</button></div></div>
         <div class="full"><h3>队伍配色</h3><div class="swatches" id="swatches"></div></div>
       </div>
     </div>
@@ -90,6 +90,7 @@
   <div id="cineSkip" class="ck"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="4"/><circle id="cineRing" cx="18" cy="18" r="14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="88" stroke-dashoffset="88" transform="rotate(-90 18 18)"/></svg>长按 <kbd>空格</kbd> 跳过</div>
   <div id="death"><div class="by" id="deathBy"></div><div class="cd" id="deathCd">5</div><div class="tip" id="deathTip"></div></div>
   <div id="specTag"></div>
+  <div id="dirPanel"></div>
   <div id="hint"><kbd>WASD</kbd>移动 <kbd>鼠标左键</kbd>射击 <kbd>Shift</kbd>潜墨 <kbd>空格</kbd>跳 <kbd>右键/E</kbd>炸弹 <kbd>Q</kbd>必杀 <kbd>M</kbd>地图/超级跳 <kbd>Tab</kbd>战况</div>
   <div id="scoreTab"><div class="st-head"><b>战况</b><span id="stTime"></span><small>松开 Tab 关闭</small></div>
     <div class="st-cols"><span></span><span>名字</span><span>击倒</span><span>助攻</span><span>阵亡</span><span>涂地</span><span>必杀</span></div>

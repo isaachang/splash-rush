@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.12.0-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.13.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -48,7 +48,7 @@
   - **重型加特林**：按住先转约 0.3 秒，转起来后一直扫射、松手就停；射速极快、射程远，但一罐墨只够约 40 发
 - **潜墨与爬墙**：在自己的墨水里游动、隐身、1 秒回满血，还能沿着涂过的墙往上爬
 - **超级跳**：打开地图点队友，从天而降直接跳到他身边
-- **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分三档
+- **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分轻松、普通、地狱三档，另有一档「智能」
 - **完整对局流程**：选场地 → 战前准备（选角色和武器、看阵容）→ 开局飞行镜头 → 对局 → 裁判判定 → 结算
 - **原版风格结算**：俯视判定、比例条拉锯、WIN! / LOSE…，计分板、奖牌和毒舌吐槽奖
 - **阵亡观战**：先看是谁打倒了你，再切到队友视角，等复活时也不无聊
@@ -74,6 +74,7 @@ node tools/smoke-test.js     # 无浏览器自动跑完整对局，检查有没�
 node tools/feature-test.js   # 逐项验证核心机制（蓄力、准星、炸弹、防护罩……）
 node tools/map-test.js       # 滑板场专项检查（泳池地形、外墙、铁网桥和围栏、爬塔、AI 路线）
 node tools/canton-test.js    # 西關大屋专项检查（悬空方块、上下两层涂地、河涌、镇海楼、窄缝、AI 路线）
+node tools/director-test.js  # 智能难度：让机器人假扮玩家打整局，检查导演台的判断（约 2 分钟）
 SR_MAP=skate node tools/smoke-test.js   # 在滑板场上跑完整对局
 SR_MAP=canton node tools/smoke-test.js  # 在西關大屋上跑完整对局
 ```
@@ -88,6 +89,7 @@ src/
   js/05_character.js         角色模型、移动、潜墨、武器逻辑
   js/06_fx.js                粒子、子弹、炸弹、飞溅
   js/07_ai_input.js          寻路、AI、输入、镜头
+  js/07b_director.js         导演台：智能难度（观察玩家水平、调整机器人难度）
   js/08_game.js              界面、对局流程、启动
 vendor/three.min.js          Three.js r158（MIT）
 tools/                       构建与测试脚本

@@ -235,7 +235,12 @@ function initTactics() {
 }
 // difficulty of one team's bots (tests can pit two different levels against each other with G.aiLevels)
 const aiStat = (team, k) => { const a = G.aiStat || (G.aiStat = [{}, {}]); a[team][k] = (a[team][k] || 0) + 1; };
-function botDiff(team) { return DIFF[G.aiLevels ? G.aiLevels[team] : GAME.diff]; }
+// smart mode (SMART): each bot's own level, from the Director.  G.pilotLevel: the bot standing in for the player in tests
+function botDiff(team, bot) {
+  if (bot && bot.c.isPlayer && G.pilotLevel != null) return DIFF[G.pilotLevel];
+  const lv = G.aiLevels ? G.aiLevels[team] : GAME.diff;
+  return lv === SMART ? Director.row(team, bot) : DIFF[lv];
+}
 const depthOf = (team, z) => team === 0 ? -z : z;          // how far toward the enemy's end a spot is (0 = the middle of the map)
 
 /* ============================================================== SQUAD
@@ -254,7 +259,7 @@ class Squad {
     const D = botDiff(this.team), bots = this.bots(), T = G.time, tm = this.team;
     for (const [e, s] of this.seen) if (!e.alive || T - s.t > 5) this.seen.delete(e);
     this.lead = (Paint.teamCells[tm] - Paint.teamCells[1 - tm]) / Math.max(1, Paint.total);
-    this.posture = D.endgame && G.left < 30 ? 'allout' : D.team >= 2 ? (this.lead < -0.05 ? 'push' : this.lead > 0.12 ? 'hold' : 'even') : 'even';
+    this.posture = D.endgame && G.left < Director.endWindow() ? 'allout' : D.team >= 2 ? (this.lead < -0.05 ? 'push' : this.lead > 0.12 ? 'hold' : 'even') : 'even';
     // the front: a little short of the nearest enemy anyone has seen, else just past the middle
     const fr = this.fresh(3); let fd = ZH * 0.12; if (fr.length) fd = Math.min(...fr.map(([, s]) => depthOf(tm, s.z))) - 4;
     this.frontD = lerp(this.frontD, clamp(fd + (this.posture === 'push' ? 7 : this.posture === 'hold' ? -5 : 0), -ZH * 0.55, ZH * 0.6), 0.35);
@@ -296,7 +301,7 @@ class Squad {
 /* ================================================================= BOT */
 class Bot {
   constructor(c, role) {
-    this.c = c; this.role = this.role0 = role; this.path = []; this.target = null; this.retarget = 0; this.enemy = null; this.scanT = rand(0, 0.2);
+    this.c = c; c.bot = this; this.role = this.role0 = role; this.path = []; this.target = null; this.retarget = 0; this.enemy = null; this.scanT = rand(0, 0.2);
     this.reactT = 0; this.strafe = 1; this.strafeT = 0; this.err = new THREE.Vector3(); this.errT = 0; this.stuckT = 0; this.lastPos = new THREE.Vector3();
     this.mode = 'paint'; this.sweep = rand(0, 6); this.linger = 0; this.swimT = 0; this.jitter = rand(0.8, 1.2);
     this.wpT = 0; this.fails = 0; this.climb = null; this.noClimbT = 0; this.diveCd = 0; this.footCd = 0; this.footT = 0; this.lurkT = 0; this.lurkCd = 0; this.bombCd = 0; this.retreatT = 0;
@@ -381,7 +386,7 @@ class Bot {
     return best;
   }
   chooseTarget() {
-    const c = this.c, D = botDiff(c.team), S = this.squad;
+    const c = this.c, D = botDiff(c.team, this), S = this.squad;
     this.allowNext = NF.SWIM | NF.JUMP | NF.DROP;
     const best = D.team && S ? this.chooseTargetTeam(D, S) : this.chooseTargetSimple();
     if (best < 0) { this.retarget = 0.5; return; }
@@ -518,7 +523,7 @@ class Bot {
     return yawErr;
   }
   update(dt) {
-    const c = this.c, I = c.intent, D = botDiff(c.team), T = G.time, S = this.squad;
+    const c = this.c, I = c.intent, D = botDiff(c.team, this), T = G.time, S = this.squad;
     if (!c.alive || c.state !== 'play') { I.fire = I.swim = false; I.mx = I.mz = 0; this.path = []; this.enemy = null; this.climb = null; this.mode = 'paint'; this.lurkT = 0; return; }
     this.scanT -= dt;
     if (this.scanT <= 0) {
@@ -676,6 +681,7 @@ function initInput() {
     if (e.code === 'KeyE') Input.bombHoldKey = true;
     if (e.code === 'KeyQ') Input.spQ = true;
     if (e.code === 'KeyM') toggleMap();
+    if (e.code === 'Backquote' && G.state !== 'title') Director.toggle();
     if (G.mapOpen && /^Digit[1-3]$/.test(e.code)) HUD.pickAlly(+e.code.slice(5) - 1);
     if (G.mapOpen && e.code === 'Escape') toggleMap(false);
     if (e.code === 'Tab') e.preventDefault();
