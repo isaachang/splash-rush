@@ -437,7 +437,7 @@ class Character {
     const kc = killer ? killer.team : 1 - this.team;
     if (killer) killer.kills++;
     // assist: anyone else on the other team who hurt us in the last 4 s
-    for (const [c, t] of this.dmgBy) if (c !== killer && c.team !== this.team && G.time - t < 4 && c.assists !== undefined) c.assists++;
+    for (const [c, t] of this.dmgBy) if (c !== killer && c.team !== this.team && G.time - t < 4 && c.assists !== undefined) { c.assists++; if (c.isPlayer) KillFX.onAssist(this); }
     this.dmgBy.clear();
     const gy = groundBelow(this.pos.x, this.pos.z, this.pos.y + 0.2, 0.3);
     splatFloor(this.pos.x, gy, this.pos.z, 2.2, kc, 1.0);
@@ -448,7 +448,7 @@ class Character {
     this.ghost.visible = true; this.ghost.position.set(this.pos.x, this.pos.y + 1, this.pos.z); this.ghostT = 0;
     const v = sndVol(this.pos); Sfx.death && v > 0.05 && Sfx.death();
     HUD.killfeed(killer, this, via);
-    if (killer && killer.isPlayer) { Sfx.kill(); HUD.hitmark(true); }
+    if (killer && killer.isPlayer) KillFX.onKill(this, via);
     if (this.isPlayer) HUD.died(killer, via);
   }
   respawn() {

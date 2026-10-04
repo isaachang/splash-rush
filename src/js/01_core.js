@@ -140,11 +140,16 @@ const Sfx = (() => {
       tone('triangle', 1750 * k, 2350 * k, 0.05, 0.13); tone('sine', 3200 * k, null, 0.03, 0.05, null, t + 0.01);
       noise(0.07, 0.12, 'bandpass', 1300 * k, 2.2, 600); tone('sine', 240, 110, 0.07, heavy ? 0.14 : 0.08);
     },
-    kill() {
-      if (!ctx) return; const t = ctx.currentTime;
-      tone('square', 520, 1040, 0.09, 0.09); tone('triangle', 1560, 2600, 0.24, 0.11, null, t + 0.06); tone('sine', 2600, 3400, 0.18, 0.06, null, t + 0.12);
-      noise(0.35, 0.3, 'lowpass', 1800, 0.9, 180); tone('sine', 140, 50, 0.3, 0.25);
+    // knock-out: a rising zap, a wet splat and a thump; each kill in a streak a minor third higher
+    kill(streak = 1) {
+      if (!ctx) return; const t = ctx.currentTime, k = Math.pow(2, (Math.min(streak, 5) - 1) * 3 / 12);
+      tone('square', 520 * k, 1040 * k, 0.09, 0.09); tone('triangle', 1560 * k, 2600 * k, 0.24, 0.11, null, t + 0.06); tone('sine', 2600 * k, 3400 * k, 0.18, 0.06, null, t + 0.12);
+      noise(0.35, 0.3, 'lowpass', 1800, 0.9, 180); tone('sine', 140, 50, 0.3, 0.25); noise(0.16, 0.16, 'bandpass', 900, 1.4, 260, null, t + 0.03);
+      if (streak >= 2) tone('square', 1040 * k, 2080 * k, 0.16, 0.05, null, t + 0.18);
     },
+    // the whole other team down at once: a quick fanfare on top
+    wipe() { if (!ctx) return; const t = ctx.currentTime; [76, 79, 83, 88].forEach((m, i) => tone('square', mtof(m), null, 0.16, 0.06, null, t + 0.2 + i * 0.07)); },
+    assist() { if (!ctx) return; const t = ctx.currentTime; tone('sine', 900, 1200, 0.07, 0.06); tone('sine', 1350, 1700, 0.09, 0.05, null, t + 0.06); },
     hurt() { tone('sawtooth', 240, 110, 0.14, 0.09); noise(0.1, 0.12, 'lowpass', 700, 1); },
     swimIn() { tone('sine', 280, 950, 0.12, 0.14); noise(0.16, 0.12, 'bandpass', 900, 2, 300); },
     swimOut() { tone('sine', 820, 300, 0.1, 0.1); },

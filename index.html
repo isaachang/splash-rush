@@ -584,6 +584,50 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 @keyframes vipWordIn{0%{opacity:1}86%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-24px)}}
 @keyframes vipFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes vipGlow{0%{opacity:0}12%{opacity:1}85%{opacity:1}100%{opacity:0}}
+/* ---- kill feedback (KillFX): everything in the player's team ink, --kc */
+#kxFlash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 46%,var(--kc) 118%)}
+#kxFlash.on{animation:kxFlash .4s ease-out}
+#kxFlash.big{animation:kxFlash .7s ease-out}
+@keyframes kxFlash{0%{opacity:.9}100%{opacity:0}}
+#hitmark.kill g{stroke:var(--kc)}
+#hitmark.kill path{filter:drop-shadow(0 0 0 #111) drop-shadow(0 0 3px rgba(0,0,0,.9))}
+#kxBurst{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none}
+#kxBurst i{position:absolute;left:-6px;top:-6px;width:12px;height:12px;border-radius:50% 50% 50% 0;background:var(--kc);border:2px solid #111;opacity:0}
+#kxBurst.on i{animation:kxDrop .52s cubic-bezier(.2,.75,.3,1) forwards}
+@keyframes kxDrop{0%{opacity:1;transform:rotate(var(--a)) translateY(-10px) rotate(-45deg) scale(1.3)}100%{opacity:0;transform:rotate(var(--a)) translateY(-64px) rotate(-45deg) scale(.25)}}
+#kxBurst b{position:absolute;left:-30px;top:-30px;width:60px;height:60px;border-radius:50%;border:5px solid var(--kc);box-sizing:border-box;opacity:0}
+#kxBurst.on b{animation:kxRing .45s ease-out forwards}
+@keyframes kxRing{0%{opacity:1;transform:scale(.3)}100%{opacity:0;transform:scale(1.9);border-width:1px}}
+#kxBanner{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none}
+#kxWord{position:relative;height:0;width:0}
+#kxWord span{position:absolute;left:0;bottom:14px;transform:translateX(-50%);white-space:nowrap;font-size:58px;font-weight:900;font-style:italic;color:var(--kc);-webkit-text-stroke:5px #111;paint-order:stroke fill;text-shadow:0 6px 0 #111;animation:kxSlam 1.4s both}
+#kxWord span.wipe{font-size:74px;color:#fff;-webkit-text-stroke:6px var(--kc)}
+@keyframes kxSlam{0%{transform:translateX(-50%) scale(2.6) rotate(-14deg);opacity:0}14%{transform:translateX(-50%) scale(.9) rotate(-6deg);opacity:1}22%{transform:translateX(-50%) scale(1.07) rotate(-6deg)}32%{transform:translateX(-50%) scale(1) rotate(-6deg)}80%{opacity:1;transform:translateX(-50%) scale(1) rotate(-6deg)}100%{transform:translateX(-50%) translateY(-26px) scale(1) rotate(-6deg);opacity:0}}
+#kxList{display:flex;flex-direction:column;align-items:center;gap:8px}
+.kxb{position:relative;isolation:isolate;display:flex;align-items:center;gap:10px;padding:9px 28px 9px 20px;font-weight:900;color:#fff;transform-origin:50% 60%;animation:kxIn .45s cubic-bezier(.2,1.5,.4,1) both;transition:transform .2s,opacity .2s}
+.kxb svg.bg{position:absolute;left:-10px;top:-12px;width:calc(100% + 20px);height:calc(100% + 24px);z-index:-1;overflow:visible;fill:var(--kc);stroke:#111;stroke-width:3;stroke-linejoin:round;filter:drop-shadow(0 4px 0 rgba(0,0,0,.55))}
+.kxb svg.bg circle{stroke-width:2.5}
+.kxb b{font-size:22px;letter-spacing:3px;-webkit-text-stroke:1px #111;text-shadow:0 2px 0 #111}
+.kxb .nm{font-size:21px;-webkit-text-stroke:.8px #111;text-shadow:0 2px 0 #111}
+.kxb .ic svg{display:block;filter:drop-shadow(0 2px 0 #111)}
+.kxb.old{transform:scale(.8);opacity:.7}
+.kxb.assist{padding:5px 20px 5px 16px;color:#eee}
+.kxb.assist svg.bg{fill:#4a4a5a}
+.kxb.assist b,.kxb.assist .nm{font-size:15px}
+.kxb.out{animation:kxOut .45s ease-in forwards}
+@keyframes kxIn{0%{transform:scale(.2,.5) translateY(24px);opacity:0}55%{transform:scale(1.14,.88);opacity:1}78%{transform:scale(.95,1.06)}100%{transform:scale(1)}}
+@keyframes kxOut{0%{opacity:1}100%{transform:scale(1.05,.3) translateY(26px);opacity:0}}
+#kxMarks{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.kxm{position:absolute;left:0;top:0;width:0;height:0}
+.kxm .in{position:absolute;left:-26px;top:-26px;width:52px;height:52px;animation:kxMark 1.9s both}
+.kxm svg{width:52px;height:52px;overflow:visible;filter:drop-shadow(0 3px 0 rgba(0,0,0,.6))}
+.kxm small{position:absolute;left:50%;top:54px;transform:translateX(-50%);white-space:nowrap;font-weight:900;font-size:13px;color:#fff;text-shadow:0 2px 0 #000,0 0 4px #000}
+.kxm .arr{display:none;position:absolute;left:-9px;top:-44px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:14px solid #fff;transform-origin:9px 44px;transform:rotate(var(--ar,0deg))}
+.kxm.edge .arr{display:block}
+.kxm.edge .in{transform:scale(.8)}
+@keyframes kxMark{0%{transform:scale(0) rotate(-35deg);opacity:0}14%{transform:scale(1.3) rotate(10deg);opacity:1}26%{transform:scale(1) rotate(0)}82%{opacity:1}100%{transform:translateY(-12px) scale(.9);opacity:0}}
+.kf.me{border-color:#ffe45c;box-shadow:0 0 0 2px rgba(255,228,92,.4)}
+.kf.dead{border-color:#ff5a6a}
 </style></head><body>
 <canvas id="gl"></canvas>
 <canvas id="glFade"></canvas>
@@ -658,7 +702,9 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   <div id="vignette"></div>
   <canvas id="inkCanvas"></canvas>
   <div id="topbar"><div class="team" id="teamA"></div><div id="timer">3:00</div><div class="team" id="teamB"></div></div>
-  <div id="crosshair"><div class="ring"></div><div class="dot"></div>
+  <div id="kxFlash"></div>
+  <div id="kxMarks"></div>
+  <div id="crosshair"><div class="ring"></div><div class="dot"></div><div id="kxBurst"></div>
     <svg id="chargeRing" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="9"/><circle id="chargeArc" cx="50" cy="50" r="40" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="251.3" stroke-dashoffset="251.3" stroke-linecap="round"/></svg>
     <svg id="hitmark" viewBox="0 0 44 44"><g stroke="#fff" stroke-width="4" stroke-linecap="round"><path d="M6 6l9 9M38 6l-9 9M6 38l9-9M38 38l-9-9"/></g></svg></div>
   <div id="inkbar"><div id="inkfill"></div></div>
@@ -668,6 +714,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
   <div id="weapTag"></div>
   <div id="special"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="rgba(0,0,0,.55)" stroke="#111" stroke-width="10"/><circle id="spRing" cx="50" cy="50" r="42" fill="none" stroke="#fff" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round"/></svg><div class="lbl"><b>Q</b>墨浪冲击</div></div>
   <div id="killfeed"></div>
+  <div id="kxBanner"><div id="kxWord"></div><div id="kxList"></div></div>
   <canvas id="minimap" width="150" height="246"></canvas>
   <div id="mapHint">点击队友（或按 1 / 2 / 3）超级跳过去 · 再按 M 关闭地图</div>
   <div id="center"></div>
@@ -900,11 +947,16 @@ const Sfx = (() => {
       tone('triangle', 1750 * k, 2350 * k, 0.05, 0.13); tone('sine', 3200 * k, null, 0.03, 0.05, null, t + 0.01);
       noise(0.07, 0.12, 'bandpass', 1300 * k, 2.2, 600); tone('sine', 240, 110, 0.07, heavy ? 0.14 : 0.08);
     },
-    kill() {
-      if (!ctx) return; const t = ctx.currentTime;
-      tone('square', 520, 1040, 0.09, 0.09); tone('triangle', 1560, 2600, 0.24, 0.11, null, t + 0.06); tone('sine', 2600, 3400, 0.18, 0.06, null, t + 0.12);
-      noise(0.35, 0.3, 'lowpass', 1800, 0.9, 180); tone('sine', 140, 50, 0.3, 0.25);
+    // knock-out: a rising zap, a wet splat and a thump; each kill in a streak a minor third higher
+    kill(streak = 1) {
+      if (!ctx) return; const t = ctx.currentTime, k = Math.pow(2, (Math.min(streak, 5) - 1) * 3 / 12);
+      tone('square', 520 * k, 1040 * k, 0.09, 0.09); tone('triangle', 1560 * k, 2600 * k, 0.24, 0.11, null, t + 0.06); tone('sine', 2600 * k, 3400 * k, 0.18, 0.06, null, t + 0.12);
+      noise(0.35, 0.3, 'lowpass', 1800, 0.9, 180); tone('sine', 140, 50, 0.3, 0.25); noise(0.16, 0.16, 'bandpass', 900, 1.4, 260, null, t + 0.03);
+      if (streak >= 2) tone('square', 1040 * k, 2080 * k, 0.16, 0.05, null, t + 0.18);
     },
+    // the whole other team down at once: a quick fanfare on top
+    wipe() { if (!ctx) return; const t = ctx.currentTime; [76, 79, 83, 88].forEach((m, i) => tone('square', mtof(m), null, 0.16, 0.06, null, t + 0.2 + i * 0.07)); },
+    assist() { if (!ctx) return; const t = ctx.currentTime; tone('sine', 900, 1200, 0.07, 0.06); tone('sine', 1350, 1700, 0.09, 0.05, null, t + 0.06); },
     hurt() { tone('sawtooth', 240, 110, 0.14, 0.09); noise(0.1, 0.12, 'lowpass', 700, 1); },
     swimIn() { tone('sine', 280, 950, 0.12, 0.14); noise(0.16, 0.12, 'bandpass', 900, 2, 300); },
     swimOut() { tone('sine', 820, 300, 0.1, 0.1); },
@@ -3776,6 +3828,12 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.16.0', date: '2026-10-04', time: '16:31', title: '击倒反馈', items: [
+    '打倒对手时，准星变成你的墨色，墨点四溅；屏幕下方弹出一块墨渍牌子，写着你用的武器和对手的名字',
+    '对手倒下的地方会冒出一个穿墙可见的标记；在屏幕外（比如炸弹炸到的）会贴在屏幕边上，箭头指着方向',
+    '短时间里连续打倒会喊出「双杀！」「三杀！」「四杀！」，把对面全队打倒是「团灭！」，音效也一次比一次高',
+    '打倒的瞬间画面会轻轻一顿、镜头往里收一下；助攻会有一块小牌子；击杀记录里你打倒的那条是黄框，你被打倒的是红框'
+  ] },
   { v: 'v0.15.0', date: '2026-10-04', time: '16:05', title: '三档难度更贴手', items: [
     '轻松、普通、地狱三档的对手手感更细腻，同一档里也会有强有弱',
     '地狱档始终是地狱，只会更难，不会变简单',
@@ -4382,7 +4440,7 @@ class Character {
     const kc = killer ? killer.team : 1 - this.team;
     if (killer) killer.kills++;
     // assist: anyone else on the other team who hurt us in the last 4 s
-    for (const [c, t] of this.dmgBy) if (c !== killer && c.team !== this.team && G.time - t < 4 && c.assists !== undefined) c.assists++;
+    for (const [c, t] of this.dmgBy) if (c !== killer && c.team !== this.team && G.time - t < 4 && c.assists !== undefined) { c.assists++; if (c.isPlayer) KillFX.onAssist(this); }
     this.dmgBy.clear();
     const gy = groundBelow(this.pos.x, this.pos.z, this.pos.y + 0.2, 0.3);
     splatFloor(this.pos.x, gy, this.pos.z, 2.2, kc, 1.0);
@@ -4393,7 +4451,7 @@ class Character {
     this.ghost.visible = true; this.ghost.position.set(this.pos.x, this.pos.y + 1, this.pos.z); this.ghostT = 0;
     const v = sndVol(this.pos); Sfx.death && v > 0.05 && Sfx.death();
     HUD.killfeed(killer, this, via);
-    if (killer && killer.isPlayer) { Sfx.kill(); HUD.hitmark(true); }
+    if (killer && killer.isPlayer) KillFX.onKill(this, via);
     if (this.isPlayer) HUD.died(killer, via);
   }
   respawn() {
@@ -6442,7 +6500,8 @@ function updateCamera(dt) {
   Cam.spec = null; Cam.specYaw = undefined;
   const zt = c.charging ? 1 - 0.24 * c.charge : 1;
   Cam.zoom = damp(Cam.zoom, zt, 10, dt);
-  const fv = SETTINGS.fov * Cam.zoom; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }
+  Cam.punch = (Cam.punch || 0) * Math.exp(-dt * 9);                       // (a knock-out pulls the view in a few degrees, then lets go)
+  const fv = SETTINGS.fov * Cam.zoom - Cam.punch; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }
   const targetY = py + (c.swim ? 1.0 : 1.5);
   Cam.pivotY = c.state === 'drop' || c.state === 'sjfly' ? targetY : damp(Cam.pivotY, targetY, 14, dt);
   const cp = Math.cos(Cam.pitch), sp = Math.sin(Cam.pitch);
@@ -6870,6 +6929,81 @@ const Strategist = {
     return `<div>对面看你：${tags.length ? tags.join(' · ') : '还看不出明显习惯'}</div><div>对面对策：${plan} · 力度 ${pc(this.k)}${Object.keys(jobs).length ? '（' + Object.entries(jobs).map(([k, n]) => PLAN_NAME[k] + ' ' + n + ' 人').join('，') + '）' : ''}</div>`;
   }
 };
+/* ============================================================ KILL FEEDBACK
+   What the player gets for knocking someone out, all in their own team's ink:
+     · at the crosshair: the ✕ turns team colour, eight drops fly out and a ring rolls away
+     · a splat-shaped badge at the bottom: the weapon (or bomb / special) and the name; up to three stack
+     · streaks inside 4.5 s slam a word above it - 双杀 / 三杀 / 四杀, and 团灭 when the whole other team is down
+     · where they fell: a team-colour ✕ that shows through walls, pinned to the screen edge with an arrow when out of view
+     · the feel: an ink crown at the victim, a quick zoom punch, a tiny hit-stop, the screen edge glowing
+   Assists get a small grey badge.  Only the player's own kills - never everyone's.                       */
+const KillFX = {
+  WINDOW: 4.5, LIFE: 1.8, MARK: 1.9, WORDS: ['', '', '双杀！', '三杀！', '四杀！'],
+  reset() {
+    this.streak = 0; this.lastT = -99; this.badges = []; this.marks = []; this.wordT = 0;
+    $('kxList').innerHTML = ''; $('kxWord').innerHTML = ''; $('kxMarks').innerHTML = '';
+    $('hud').style.setProperty('--kc', TEAM_HEX[PLAYER ? PLAYER.team : 0]);
+    const b = $('kxBurst'); if (!b.children.length) { let h = ''; for (let i = 0; i < 8; i++) h += `<i style="--a:${i * 45 + 22}deg"></i>`; b.innerHTML = h + '<b></b>'; }
+  },
+  esc(s) { return String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';'); },
+  // an ink splat stretched into a badge (viewBox 200 x 60): a wobbly outline, a drip or two hanging off the bottom, loose drops
+  blob(seed) {
+    let d = ''; const n = 30;
+    for (let i = 0; i <= n; i++) {
+      const a = i / n * Math.PI * 2, k = 1 + 0.06 * Math.sin(a * 5 + seed) + 0.04 * Math.sin(a * 11 + seed * 2) + (hash(seed + i) > 0.88 ? 0.12 : 0);
+      const drip = Math.sin(a) > 0.55 && hash(seed * 3 + i) > 0.72 ? 9 + hash(seed + i * 7) * 8 : 0;
+      d += (i ? 'L' : 'M') + (100 + Math.cos(a) * 94 * k).toFixed(1) + ' ' + (30 + Math.sin(a) * 25 * k + drip).toFixed(1);
+    }
+    let dots = ''; for (let i = 0; i < 3; i++) { const a = hash(seed + i * 13) * Math.PI * 2; dots += `<circle cx="${(100 + Math.cos(a) * 108).toFixed(1)}" cy="${(30 + Math.sin(a) * 34).toFixed(1)}" r="${(3 + hash(seed + i) * 4).toFixed(1)}"/>`; }
+    return `<svg class="bg" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="${d}Z"/>${dots}</svg>`;
+  },
+  badge(html, cls) {
+    const el = document.createElement('div'); el.className = 'kxb' + (cls ? ' ' + cls : ''); el.innerHTML = this.blob(Math.random() * 100) + html;
+    $('kxList').appendChild(el); this.badges.push({ el, t: 0, out: false });
+    // keep three at most: the older ones shrink back, the oldest goes
+    while (this.badges.length > 3) { const o = this.badges.shift(); o.el.remove(); }
+    this.badges.forEach((b, i) => b.el.classList.toggle('old', i < this.badges.length - 1));
+  },
+  restart(id, cls) { const e = $(id); e.classList.remove(cls); void e.offsetWidth; e.classList.add(cls); },
+  onKill(v, via) {
+    const P = PLAYER, T = G.time, col = TEAM_HEX[P.team];
+    this.streak = T - this.lastT <= this.WINDOW ? this.streak + 1 : 1; this.lastT = T;
+    const wipe = CHARS.every(c => c.team === P.team || !c.alive), big = this.streak >= 2 || wipe;
+    Sfx.kill(this.streak); if (wipe) Sfx.wipe && Sfx.wipe();
+    HUD.hitmark(true); this.restart('kxBurst', 'on'); this.restart('kxFlash', big ? 'big' : 'on');
+    this.badge(`<span class="ic">${weaponIcon(via || P.weapon.id, '#fff', 46, col)}</span><b>击倒</b><span class="nm">${this.esc(v.name)}</span>`);
+    const word = wipe ? '团灭！' : this.WORDS[Math.min(this.streak, 4)];
+    if (word) { $('kxWord').innerHTML = `<span class="${wipe ? 'wipe' : ''}">${word}</span>`; this.wordT = 1.4; }
+    // where they fell
+    const el = document.createElement('div'); el.className = 'kxm';
+    el.innerHTML = `<div class="in"><svg viewBox="0 0 60 60"><path d="${this.markPath()}" style="fill:${col}" stroke="#111" stroke-width="3.5" stroke-linejoin="round"/><path d="M21 21 L39 39 M39 21 L21 39" stroke="#111" stroke-width="7" stroke-linecap="round"/><path d="M21 21 L39 39 M39 21 L21 39" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg><small>${this.esc(v.name)}</small></div><i class="arr" style="border-bottom-color:${col}"></i>`;
+    $('kxMarks').appendChild(el); this.marks.push({ el, x: v.pos.x, y: v.pos.y + 1.1, z: v.pos.z, t: 0 });
+    // the ink crown at the victim, a punch of the camera, a moment's hit-stop
+    const p = v.pos, gy = groundBelow(p.x, p.z, p.y + 0.2, 0.3);
+    Fx.burstDir(p.x, p.y + 0.5, p.z, col, big ? 40 : 26, big ? 13 : 10, 0.12, 0, 1, 0, 0.45);
+    Fx.ring(p.x, gy + 0.06, p.z, col, big ? 6 : 4.6); Fx.ball(p.x, p.y + 0.9, p.z, '#ffffff', 0.7);
+    Cam.punch = Math.max(Cam.punch || 0, big ? 6 : 3.5); G.shake(big ? 0.25 : 0.12);
+    G.hitStop = Math.max(G.hitStop || 0, wipe ? 0.14 : big ? 0.09 : 0.05);
+  },
+  onAssist(v) { this.badge(`<b>助攻</b><span class="nm">${this.esc(v.name)}</span>`, 'assist'); if (Sfx.assist) Sfx.assist(); },
+  markPath() { let d = ''; const s = Math.random() * 50; for (let i = 0; i <= 16; i++) { const a = i / 16 * Math.PI * 2, r = 25 * (1 + 0.12 * Math.sin(a * 3 + s) + (hash(s + i) > 0.8 ? 0.2 : 0)); d += (i ? 'L' : 'M') + (30 + Math.cos(a) * r).toFixed(1) + ' ' + (30 + Math.sin(a) * r).toFixed(1); } return d + 'Z'; },
+  update(dt) {
+    for (const b of this.badges) { b.t += dt; if (!b.out && b.t > this.LIFE) { b.out = true; b.el.classList.add('out'); } }
+    while (this.badges.length && this.badges[0].t > this.LIFE + 0.45) this.badges.shift().el.remove();
+    if (this.wordT > 0 && (this.wordT -= dt) <= 0) $('kxWord').innerHTML = '';
+    // markers: projected each frame; out of view (or behind) they sit on the edge of the screen with an arrow pointing at the spot
+    const W = innerWidth, H = innerHeight, m = 74;
+    for (const k of this.marks) {
+      k.t += dt; k.y += dt * 0.25;
+      const v = new THREE.Vector3(k.x, k.y, k.z).project(camera), behind = v.z > 1;
+      let x = (v.x + 1) / 2 * W, y = (1 - v.y) / 2 * H; if (behind) { x = W - x; y = H - y; }
+      const edge = behind || x < m || x > W - m || y < m || y > H - m;
+      if (edge) { const cx = W / 2, cy = H / 2, dx = x - cx, dy = y - cy, s = Math.min((W / 2 - m) / Math.max(1e-3, Math.abs(dx)), (H / 2 - m) / Math.max(1e-3, Math.abs(dy))); x = cx + dx * s; y = cy + dy * s; k.el.style.setProperty('--ar', Math.atan2(dy, dx) * 180 / Math.PI + 90 + 'deg'); }
+      k.el.classList.toggle('edge', edge); k.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+    }
+    while (this.marks.length && this.marks[0].t > this.MARK) this.marks.shift().el.remove();
+  }
+};
 /* ================================================================ HUD */
 const TIPS = ['潜进自己的墨水里，墨水和体力都会飞快恢复', '把墙涂成自己的颜色，潜墨朝墙走就能爬上去', '踩在敌方墨水里会减速掉血——先把脚下涂掉', '涂地可以给必杀技充能，满了按 Q', '炸弹会弹一下再爆炸，适合扔到掩体后面', '获胜看的是地面覆盖率，不是击倒数'];
 const HUD = {
@@ -6936,6 +7070,7 @@ const HUD = {
     }
     if (!c.alive) { $('deathCd').textContent = Math.max(1, Math.ceil(c.respawnT)); }
     this.mmT -= dt; if (this.mmT <= 0) { this.mmT = 0.2; this.drawMap(); }
+    KillFX.update(dt);
     // hold Tab: live scoreboard
     const tabOn = !!Input.keys.Tab && (G.state === 'play' || G.state === 'intro') && !G.paused;
     $('scoreTab').classList.toggle('show', tabOn);
@@ -7004,7 +7139,7 @@ const HUD = {
   },
   lowInk() { if (this.lowInkT <= 0) Sfx.beep(false); this.lowInkT = 0.8; },
   killfeed(k, v, via) {
-    const el = document.createElement('div'); el.className = 'kf';
+    const el = document.createElement('div'); el.className = 'kf' + (k && k.isPlayer ? ' me' : '') + (v.isPlayer ? ' dead' : '');      // (yours stand out)
     const nm = c => `<span style="color:${TEAM_HEX[c.team]};-webkit-text-stroke:.5px #000">${c.name}</span>`;
     el.innerHTML = (k ? nm(k) : '???') + (via ? weaponIcon(via, '#fff', 34, TEAM_HEX[k ? k.team : 1 - v.team]) : '') + '<span class="x">✕</span>' + nm(v);
     const f = $('killfeed'); f.prepend(el); while (f.children.length > 5) f.lastChild.remove();
@@ -7214,7 +7349,7 @@ function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProj
 function startMatch() {
   Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Wake.clear(); Proj.clear();
-  spawnTeams(); Director.reset(); Strategist.reset(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
+  spawnTeams(); Director.reset(); Strategist.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
@@ -7942,7 +8077,8 @@ function updateTitle(dt) {
 }
 function loop() {
   requestAnimationFrame(loop);
-  const dt = Math.min(clock.getDelta(), 1 / 30), t = clock.elapsedTime;
+  let dt = Math.min(clock.getDelta(), 1 / 30); const t = clock.elapsedTime;
+  if (G.hitStop > 0) { G.hitStop -= dt; if (G.state === 'play') dt *= 0.25; }       // a knock-out holds the world for a blink
   if (!G.paused) {
     Preview.update(dt);
     if (G.state === 'title') updateTitle(dt);

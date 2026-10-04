@@ -821,7 +821,8 @@ function updateCamera(dt) {
   Cam.spec = null; Cam.specYaw = undefined;
   const zt = c.charging ? 1 - 0.24 * c.charge : 1;
   Cam.zoom = damp(Cam.zoom, zt, 10, dt);
-  const fv = SETTINGS.fov * Cam.zoom; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }
+  Cam.punch = (Cam.punch || 0) * Math.exp(-dt * 9);                       // (a knock-out pulls the view in a few degrees, then lets go)
+  const fv = SETTINGS.fov * Cam.zoom - Cam.punch; if (Math.abs(camera.fov - fv) > 0.02) { camera.fov = fv; camera.updateProjectionMatrix(); }
   const targetY = py + (c.swim ? 1.0 : 1.5);
   Cam.pivotY = c.state === 'drop' || c.state === 'sjfly' ? targetY : damp(Cam.pivotY, targetY, 14, dt);
   const cp = Math.cos(Cam.pitch), sp = Math.sin(Cam.pitch);
