@@ -64,6 +64,7 @@ const HUD = {
     }
     if (!c.alive) { $('deathCd').textContent = Math.max(1, Math.ceil(c.respawnT)); }
     this.mmT -= dt; if (this.mmT <= 0) { this.mmT = 0.2; this.drawMap(); }
+    KillFX.update(dt);
     // hold Tab: live scoreboard
     const tabOn = !!Input.keys.Tab && (G.state === 'play' || G.state === 'intro') && !G.paused;
     $('scoreTab').classList.toggle('show', tabOn);
@@ -132,7 +133,7 @@ const HUD = {
   },
   lowInk() { if (this.lowInkT <= 0) Sfx.beep(false); this.lowInkT = 0.8; },
   killfeed(k, v, via) {
-    const el = document.createElement('div'); el.className = 'kf';
+    const el = document.createElement('div'); el.className = 'kf' + (k && k.isPlayer ? ' me' : '') + (v.isPlayer ? ' dead' : '');      // (yours stand out)
     const nm = c => `<span style="color:${TEAM_HEX[c.team]};-webkit-text-stroke:.5px #000">${c.name}</span>`;
     el.innerHTML = (k ? nm(k) : '???') + (via ? weaponIcon(via, '#fff', 34, TEAM_HEX[k ? k.team : 1 - v.team]) : '') + '<span class="x">✕</span>' + nm(v);
     const f = $('killfeed'); f.prepend(el); while (f.children.length > 5) f.lastChild.remove();
@@ -342,7 +343,7 @@ function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProj
 function startMatch() {
   Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Wake.clear(); Proj.clear();
-  spawnTeams(); Director.reset(); Strategist.reset(); HUD.buildTeams(); ScreenInk.reset(TEAM_HEX[1]);
+  spawnTeams(); Director.reset(); Strategist.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
@@ -1070,7 +1071,8 @@ function updateTitle(dt) {
 }
 function loop() {
   requestAnimationFrame(loop);
-  const dt = Math.min(clock.getDelta(), 1 / 30), t = clock.elapsedTime;
+  let dt = Math.min(clock.getDelta(), 1 / 30); const t = clock.elapsedTime;
+  if (G.hitStop > 0) { G.hitStop -= dt; if (G.state === 'play') dt *= 0.25; }       // a knock-out holds the world for a blink
   if (!G.paused) {
     Preview.update(dt);
     if (G.state === 'title') updateTitle(dt);

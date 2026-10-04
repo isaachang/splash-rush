@@ -7,7 +7,7 @@
 const vm = require('vm'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 const read = f => fs.readFileSync(path.join(root, f), 'utf8');
-const JS = ['01_core', '02_world', '03_env', '03b_canton_design', '04_data', '05_character', '06_fx', '07_ai_input', '07b_director', '07c_strategy', '08_game'].map(n => read(`src/js/${n}.js`)).join('\n');
+const JS = ['01_core', '02_world', '03_env', '03b_canton_design', '04_data', '05_character', '06_fx', '07_ai_input', '07b_director', '07c_strategy', '07d_killfx', '08_game'].map(n => read(`src/js/${n}.js`)).join('\n');
 
 function makeSandbox() {
   const ctx2d = new Proxy({}, { get(t, k) { if (k === 'createImageData') return (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }); if (k === 'createLinearGradient' || k === 'createRadialGradient') return () => ({ addColorStop() { } }); if (k in t) return t[k]; return () => { }; }, set(t, k, v) { t[k] = v; return true; } });
@@ -378,6 +378,23 @@ vm.runInContext(`(() => {
       for (let i = 0; i < 30; i++) loop(); Pw.pos.set(cx, 0, bx.z1 + 0.6); Pw.vel.set(0, 0, 0); for (let i = 0; i < 3; i++) loop(); Input.keys.KeyW = true; let fr = 0; while (fr++ < 90 && Pw.pos.y < bx.h - 0.05) loop(); for (let i = 0; i < 20; i++) loop(); Input.keys.KeyW = false;
       ok(Pw.pos.y > bx.h - 0.1 && !Pw.wall, 'wall climb: at the top the squid pops out onto it (y ' + Pw.pos.y.toFixed(2) + ' / ' + bx.h + ')');
       Input.keys = {}; quitToTitle(); for (let i = 0; i < 3; i++) loop();
+    }
+    // kill feedback: the player's own knock-outs get the badge, the marker, the streak words and the punch; a teammate's kill does not
+    quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby('turf'); startMatch(); while (G.state !== 'play') loop();
+    {
+      const P = PLAYER, foes = CHARS.filter(c => c.team === 1), mate = CHARS.find(c => c.team === 0 && !c.isPlayer); G.bots.forEach(b => b.update = () => {});
+      foes.forEach((f, i) => { f.pos.set(-6 + i * 4, 0, -10); f.invulnT = 0; }); P.pos.set(0, 0, 10); for (let i = 0; i < 3; i++) loop();
+      const fresh = KillFX.badges.length === 0 && KillFX.marks.length === 0;
+      foes[0].damage(999, P, 'rifle');
+      const one = { b: KillFX.badges.length, m: KillFX.marks.length, s: KillFX.streak, word: $('kxWord').innerHTML, stop: G.hitStop > 0, punch: Cam.punch > 0, feed: $('killfeed').children[0].className };
+      const t0 = G.time; loop(); const slow = G.time - t0;
+      for (let i = 0; i < 9; i++) loop();
+      foes[1].damage(30, P, 'rifle'); foes[1].damage(999, mate, 'rifle'); const assist = KillFX.badges.length === 2 && KillFX.badges[1].el.className.includes('assist') && KillFX.streak === 1 && KillFX.marks.length === 1;
+      foes[2].damage(999, P, 'bomb'); const dbl = KillFX.streak === 2 && $('kxWord').innerHTML.includes('双杀');
+      foes[3].damage(999, P, 'rifle'); const wipe = KillFX.streak === 3 && $('kxWord').innerHTML.includes('团灭') && KillFX.badges.length === 3;
+      for (let i = 0; i < 90; i++) loop(); const gone = KillFX.badges.length === 0 && KillFX.marks.length === 0 && $('kxWord').innerHTML === '';
+      ok(fresh && one.b === 1 && one.m === 1 && one.s === 1 && !one.word && one.stop && one.punch && one.feed.includes('me') && slow < 0.012 && assist && dbl && wipe && gone,
+        'kill feedback: your knock-out gets a badge, a marker where they fell, a zoom punch and a blink of hit-stop (' + (slow * 1000).toFixed(0) + ' ms of game time in a 33 ms frame), and stands out in the feed; a chipped kill a teammate finishes is a small assist badge; a second kill says 双杀, the whole team down says 团灭; it all clears after ~2 s');
     }
     // knocked out: killer cam first, then watch a teammate, back to yourself on respawn
     quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby('turf'); startMatch(); while (G.state !== 'play') loop();

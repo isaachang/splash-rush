@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.15.0-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.16.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -48,6 +48,7 @@
   - **重型加特林**：按住先转约 0.3 秒，转起来后一直扫射、松手就停；射速极快、射程远，但一罐墨只够约 40 发
 - **潜墨与爬墙**：在自己的墨水里游动、隐身、1 秒回满血，还能沿着涂过的墙往上爬
 - **超级跳**：打开地图点队友，从天而降直接跳到他身边
+- **击倒反馈**：墨渍牌子、穿墙的倒地标记、双杀 / 三杀 / 团灭，画面一顿、镜头一收
 - **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分轻松、普通、地狱三档（每档内会细调，地狱只升不降），另有一档「智能」
 - **完整对局流程**：选场地 → 战前准备（选角色和武器、看阵容）→ 开局飞行镜头 → 对局 → 裁判判定 → 结算
 - **原版风格结算**：俯视判定、比例条拉锯、WIN! / LOSE…，计分板、奖牌和毒舌吐槽奖
@@ -91,6 +92,7 @@ src/
   js/07_ai_input.js          寻路、AI、输入、镜头
   js/07b_director.js         导演台：智能难度（观察玩家水平、调整机器人难度）
   js/07c_strategy.js         智能难度下对手读你的打法、选对策
+  js/07d_killfx.js           击倒反馈（牌子、标记、连杀、画面顿挫）
   js/08_game.js              界面、对局流程、启动
 vendor/three.min.js          Three.js r158（MIT）
 tools/                       构建与测试脚本
