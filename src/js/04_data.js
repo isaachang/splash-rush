@@ -177,7 +177,7 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
-  { v: 'v0.15.0', date: '2026-10-04', time: '15:37', title: '三档难度更贴手', items: [
+  { v: 'v0.15.0', date: '2026-10-04', time: '16:05', title: '三档难度更贴手', items: [
     '轻松、普通、地狱三档的对手手感更细腻，同一档里也会有强有弱',
     '地狱档始终是地狱，只会更难，不会变简单',
     '三档难度下，机器人最后全员冲刺抢地的时间也跟着对战时长走：1:30 局最后 20 秒，3:00 局 30 秒，5:00 局 40 秒'
