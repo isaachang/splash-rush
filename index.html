@@ -6481,9 +6481,22 @@ const Director = {
   PF: { start: 0.04, span: 0.08, mates: 0.8 },                             // paint / ease off: from how far apart, fully by how much further, teammates' share
   shown: false, st: null,
   get on() { return !!PLAYER && (G.aiLevels ? G.aiLevels[1 - PLAYER.team] : GAME.diff) === SMART; },
+  // the saved levels, one per character + weapon (石墩's double health makes the same hands a different player).  An old single value
+  // from before (key '*') belongs to no loadout; it only seeds the ones never played
+  skillBook() {
+    let b = Profile.data.skill;
+    if (!b || typeof b !== 'object') b = {}; else if (typeof b.s === 'number') b = { '*': { s: b.s, m: b.m || 1 } };
+    for (const k in b) if (!b[k] || !isFinite(b[k].s)) delete b[k];
+    return (Profile.data.skill = b);
+  },
+  loadoutKey(c) { return c.cs.id + '-' + c.weapon.id; },
+  loadoutName(key) { const [ch, w] = key.split('-'); return (CHARACTERS[ch] ? CHARACTERS[ch].name : ch) + '·' + (WEAPONS[w] ? WEAPONS[w].name : w); },
   reset() {
-    const sv = Profile.data.skill, prior = sv && isFinite(sv.s) ? clamp(sv.s, 0, LV_MAX) : 1;
-    this.mem = sv && isFinite(sv.s) ? sv : null; this.elo = prior; this.n = this.mem ? Math.min(4, (sv.m || 1) * 1.5) : 0; this.nm = 0;
+    // this loadout's own saved level; never played with it: the others' average (weighted by how many matches each has), as a start only
+    const book = this.skillBook(), key = this.key = this.loadoutKey(PLAYER), own = book[key], rest = Object.values(book), wsum = rest.reduce((a, r) => a + (r.m || 1), 0);
+    this.seed = !own && rest.length ? rest.reduce((a, r) => a + r.s * (r.m || 1), 0) / wsum : null;
+    const prior = clamp(own ? own.s : this.seed ?? 1, 0, LV_MAX);
+    this.mem = own || null; this.elo = prior; this.n = own ? Math.min(4, (own.m || 1) * 1.5) : 0; this.nm = 0;
     this.skill = this.target = this.mateGoal = prior; this.conf = 0; this.corrE = this.corrM = 0; this.lead = 0; this.boost = 1; this.sig = {}; this.sigT = 0; this.panelT = 0;
     this.wasClimb = false; this.cheat = false; this.saved = null;
     this.fights = new Map(); this.log = []; this.trace = []; this.allDuels = [];
@@ -6637,12 +6650,12 @@ const Director = {
     if (G.dirTrace) this.trace.push([T, this.skill, this.target, ...this.enemies().map(b => b.lv)]);
     this.panel(dt);
   },
-  // end of a match: fold this match into the saved level - a rolling average, 0.6 old + 0.4 new, the new part counting for less after
+  // end of a match: fold this match into this loadout's saved level - a rolling average, 0.6 old + 0.4 new, the new part counting for less after
   // a short match or few fights.  Not with a name-box mode on (that is cheating), nor in tests where a bot plays for the player
   save() {
     if (G.pilot || G.aiLevels || !PLAYER || !this.st || this.cheat || this.st.alive < 30) return;
     const sv = this.mem, q = Math.min(1, this.st.alive / 120) * Math.min(1, (this.nm + 1) / 6), s = sv ? lerp(sv.s, this.skill, 0.4 * q) : this.skill;
-    this.saved = Profile.data.skill = { s: Math.round(s * 100) / 100, m: Math.min(10, (sv ? sv.m || 1 : 0) + 1) }; Profile.save();
+    this.saved = this.skillBook()[this.key] = { s: Math.round(s * 100) / 100, m: Math.min(10, (sv ? sv.m || 1 : 0) + 1) }; Profile.save();
   },
   // ---------------------------------------------------------------- the panel (press ` during a match)
   toggle() { this.shown = !this.shown; $('dirPanel').classList.toggle('show', this.shown); this.panelT = 0; },
@@ -6652,7 +6665,7 @@ const Director = {
     const f2 = v => v.toFixed(2), pc = v => Math.round(v * 100) + '%', sgn = v => (v >= 0 ? '+' : '−') + f2(Math.abs(v));
     const SN = { paint: '涂地', dmg: '伤害比', surv: '存活', hit: '命中', know: '熟练' }, STN = { fight: '交火中', seen: '视野内', away: '视野外', respawn: '复活中' };
     const left = Math.max(0, this.calibT - G.time), mode = this.on ? '智能模式' : '观察中 · 固定难度「' + (['轻松', '普通', '地狱'][this.lvOf(CHARS.find(c => c.team !== PLAYER.team))] || '?') + '」';
-    const mem = this.saved ? `存档已更新为 ${f2(this.saved.s)}` : this.mem ? `存档 ${f2(this.mem.s)}（${this.mem.m || 1} 局）` : '无存档';
+    const ln = this.loadoutName(this.key), mem = this.saved ? `${ln} 存档已更新为 ${f2(this.saved.s)}` : this.mem ? `${ln} 存档 ${f2(this.mem.s)}（${this.mem.m || 1} 局）` : this.seed != null ? `首次用${ln}（参考其他组合 ${f2(this.seed)}）` : '无存档';
     let h = `<b>导演台</b><span>${mode}</span>${this.cheat ? '<i class="l">后门模式 · 本局不计入存档</i>' : ''}`;
     h += `<div class="big">玩家水平 <em>${f2(this.skill)}</em> ${this.tier(this.skill)} <small>可信度 ${pc(this.conf)} · ${left > 0 ? '校准中 ' + Math.ceil(left) + 's' : this.conf < 0.3 ? '数据不足' : '已校准'} · ${mem}${this.idle() ? ' · 挂机不计' : ''}</small></div>`;
     h += `<div>交火积分 ${f2(this.elo)}（本局 ${this.nm.toFixed(1)} 次）` + Object.keys(SN).filter(k => this.sig[k]).map(k => ` · ${SN[k]} ${f2(this.sig[k].v)}<small>×${this.sig[k].w.toFixed(1)}</small>`).join('') + '</div>';

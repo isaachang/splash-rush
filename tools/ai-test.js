@@ -114,17 +114,26 @@ const tests = function (DEVC, VIPC) {
   }
   // the estimate is kept between matches and the next one starts from it
   {
-    setup(SMART); const D = Director, gd = GAME.diff; G.aiLevels = null; GAME.diff = SMART; Profile.data.skill = undefined;
-    D.skill = 0.62; D.nm = 6; D.st.alive = 120; D.save(); const saved = Profile.data.skill ? Profile.data.skill.s : null;
+    setup(SMART); const D = Director, gd = GAME.diff; G.aiLevels = null; GAME.diff = SMART; Profile.data.skill = undefined; const key = D.key, rec = () => Profile.data.skill[key].s;
+    D.skill = 0.62; D.nm = 6; D.st.alive = 120; D.save(); const saved = Profile.data.skill && Profile.data.skill[key] ? rec() : null;
     const next = () => { quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby(); startMatch(); while (G.state !== 'play') loop(); G.aiLevels = null; };
     next(); const start = D.skill, lvs = G.bots.map(b => b.lv);
     // second match: a full one judged 1.2 -> 0.6 x 0.62 + 0.4 x 1.2; a short one with few fights counts for less
-    D.skill = 1.2; D.nm = 8; D.st.alive = 150; D.save(); const second = Profile.data.skill.s;
-    next(); D.skill = 2.0; D.nm = 1; D.st.alive = 45; D.save(); const short = Profile.data.skill.s;
+    D.skill = 1.2; D.nm = 8; D.st.alive = 150; D.save(); const second = rec();
+    next(); D.skill = 2.0; D.nm = 1; D.st.alive = 45; D.save(); const short = rec();
     // a match with a name-box mode on: judged as usual on the panel, kept out of the saved level
-    next(); const nm = GAME.name, vip = Profile.data.vip; Profile.data.vip = VIP_NAME; GAME.name = VIP_NAME; loop(); D.skill = 2.3; D.nm = 9; D.st.alive = 150; D.save(); const cheat = Profile.data.skill.s, flagged = D.cheat;
+    next(); const nm = GAME.name, vip = Profile.data.vip; Profile.data.vip = VIP_NAME; GAME.name = VIP_NAME; loop(); D.skill = 2.3; D.nm = 9; D.st.alive = 150; D.save(); const cheat = rec(), flagged = D.cheat;
     GAME.name = nm; Profile.data.vip = vip;
     ok(saved === 0.62 && start === 0.62 && D.mem && lvs.every(v => v === 0.62) && second === 0.85 && short > second && short < 0.95 && flagged && cheat === short, 'memory: the first match is saved as it is (' + saved + ') and the next match - every bot included - starts from it; after that a rolling average (a full match judged 1.2 -> ' + second + ', a short one judged 2.0 -> only ' + short + '); a match with a name-box mode on is left out (' + cheat + ')');
+    // a different character + weapon keeps its own level: the first match with it starts from the others, then it goes its own way
+    const ch0 = Profile.data.char, w0 = Profile.data.weapon; Profile.data.char = 'dun'; Profile.data.weapon = 'splatling';
+    next(); const dunKey = D.key, dunStart = D.skill, dunSeed = D.seed, dunMem = D.mem; D.skill = 1.7; D.nm = 8; D.st.alive = 150; D.save();
+    Profile.data.char = ch0; Profile.data.weapon = w0; next(); const backKey = D.key, back = D.skill;
+    // a save from before (one value for everything) only seeds loadouts never played
+    Profile.data.skill = { s: 1.3, m: 3 }; Profile.data.char = 'sa'; Profile.data.weapon = 'smg'; next(); const oldSeed = D.skill, oldMem = D.mem;
+    Profile.data.char = ch0; Profile.data.weapon = w0;
+    ok(dunKey === 'dun-splatling' && !dunMem && Math.abs(dunStart - short) < 1e-9 && Math.abs(dunSeed - short) < 1e-9 && backKey === key && Math.abs(back - short) < 1e-9 && Math.abs(oldSeed - 1.3) < 1e-9 && !oldMem,
+      'per loadout: 石墩·加特林 starts from the other loadouts (' + dunStart.toFixed(2) + ') and is then saved on its own (1.7); going back, ' + key + ' still starts from ' + back.toFixed(2) + '; an old single save only seeds new loadouts');
     Profile.data.skill = undefined; GAME.diff = gd;
   }
   // ---------------- the two name-box modes (only when the names are supplied)
