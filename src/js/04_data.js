@@ -177,7 +177,7 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
-  { v: 'v0.13.0', date: '2026-10-04', time: '08:40', title: '智能对手', items: [
+  { v: 'v0.13.0', date: '2026-10-04', time: '13:27', title: '智能对手', items: [
     '「对手强度」新增一档「智能」',
     '选「智能」时，机器人最后全员冲刺抢地的时间跟着对战时长走：1:30 局最后 20 秒，3:00 局 30 秒，5:00 局 40 秒',
     '「对手强度」和「对战时长」各占一整行，四个选项不再挤成两行字'
