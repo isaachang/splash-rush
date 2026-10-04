@@ -3828,6 +3828,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.17.0', date: '2026-10-04', time: '17:21', title: '交火更讲理', items: [
+    '被一群人盯上时，不会再同时被三四把枪一起扫倒，总有空隙让你反应、还手',
+    '对手刚瞄上你时，墨水会先溅在你身前，看到就知道有人在打你，赶紧找掩护',
+    '被两个人围住时，附近的队友会赶过来帮你打'
+  ] },
   { v: 'v0.16.0', date: '2026-10-04', time: '16:31', title: '击倒反馈', items: [
     '打倒对手时，准星变成你的墨色，墨点四溅；屏幕下方弹出一块墨渍牌子，写着你用的武器和对手的名字',
     '对手倒下的地方会冒出一个穿墙可见的标记；在屏幕外（比如炸弹炸到的）会贴在屏幕边上，箭头指着方向',
@@ -4425,14 +4430,14 @@ class Character {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
     if (src && src.team !== this.team) this.dmgBy.set(src, G.time);
-    Director.onDamage(this, amount, src, this.lastVia);
+    Director.onDamage(this, amount, src, this.lastVia); Combat.onDamage(this, amount, src, this.lastVia);
     if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
     if (src && src.isPlayer) { Sfx.hit(amount >= 50); HUD.hitmark(false, amount); }
     if (this.hp <= 0) this.die(src, this.lastVia);
     return true;
   }
   die(killer, via) {
-    Director.onDeath(this, killer, via);
+    Director.onDeath(this, killer, via); Combat.onDeath(this);
     this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0;
     this.setSwim(false); this.sp = null; this.climbing = false; this.wall = null; this.stopCharge(); this.stored = 0;
     this.sj = null; this.fly = null; this.dropY = null; this.dropSJ = false; this.hideSJMarker();
@@ -5995,15 +6000,16 @@ class Bot {
     let rk = hurt ? 1 : pf > 0 ? lerp(1, 0.45, pf) : lerp(1, 0.6, -pf);
     // a job from the strategist: hunters look further and go for the player first; painters and flankers keep out of fights on the way
     if (job === 'hunt') rk = Math.max(rk, 1.2); else if (!hurt && job === 'paint') rk = Math.min(rk, 0.6); else if (!hurt && job === 'flank') rk = Math.min(rk, 0.8);
+    const foes = Combat.attackers(this); if (foes.length) rk = Math.max(rk, 1.2);                // (backing the player up: whoever is shooting at them comes first)
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
-      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk || (d > bd && !(job === 'hunt' && e.isPlayer))) continue;
+      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk || (d > bd && !(job === 'hunt' && e.isPlayer) && !foes.includes(e))) continue;
       // hidden in ink: only seen up close (2.5 m), or roughly up to 7 m if swimming fast (ripples); shooting gives you away
       let fuzzy = false;
       if (e.hiddenInInk() && !(G.time - e.lastShot < 0.4)) { const fast = Math.hypot(e.vel.x, e.vel.z) > 6; if (d > (fast ? 7 : 2.5)) continue; fuzzy = fast && d > 2.5; }
       const ch = e.chest(); if (segBlocked(e0.x, e0.y, e0.z, ch.x, ch.y, ch.z, 0.5)) continue;
       best = e; bd = d; this.fuzzyNext = fuzzy;
-      if (job === 'hunt' && e.isPlayer) break;
+      if ((job === 'hunt' && e.isPlayer) || foes.includes(e)) break;
     }
     this.fuzzy = best ? this.fuzzyNext : false;
     return best;
@@ -6076,6 +6082,7 @@ class Bot {
   }
   chooseTarget() {
     const c = this.c, D = botDiff(c.team, this), S = this.squad;
+    if (Combat.supportOf(this)) { const P = PLAYER, n = navStart(P.pos.x, P.pos.y, P.pos.z); if (this.goTo(n)) { this.target = navPos(n); this.retarget = 1.5; this.linger = 0; return; } }
     this.allowNext = NF.SWIM | NF.JUMP | NF.DROP;
     const best = D.team && S ? this.chooseTargetTeam(D, S) : this.chooseTargetSimple();
     if (best < 0) { this.retarget = 0.5; return; }
@@ -6123,7 +6130,7 @@ class Bot {
   chargerFight(dt, e, d, D) {
     const c = this.c, I = c.intent;
     this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.3, 0.6); const m = D.err * d * 0.75 * (this.fuzzy ? 2.5 : 1); this.err.set(rand(-m, m), rand(-m, m) * 0.5, rand(-m, m)); }
-    const tp = e.chest().addScaledVector(e.vel, 0.08).add(this.err);
+    const tp = Combat.aimPoint(this, e, e.chest().addScaledVector(e.vel, 0.08).addScaledVector(this.err, Combat.errK(e)));
     const m = c.muzzle(); const dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
     const wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd);
     const yawErr = angDiff(c.aimYaw, wantYaw);
@@ -6147,6 +6154,7 @@ class Bot {
     if (c.special >= 100 && d < 7 && Math.random() < dt * 2) I.special = true; else I.special = false;
     if (close && c.hp < 50 && ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team && Math.random() < D.dodge * dt * 3) this.swimT = 0.6;
     if (this.swimT > 0) { this.swimT -= dt; I.swim = true; I.fire = false; I.mx = -fx; I.mz = -fz; }
+    if (!(this.swimT > 0) && !Combat.canShoot(this, e)) Combat.holdOff(this, I, e, d);
   }
   // after throwing a curling bomb: swim along its ink path right behind it
   curlFollow(dt, e, d) {
@@ -6224,7 +6232,7 @@ class Bot {
       if (!e && D.share && T - c.lastHurt < 0.6 && c.lastAttacker && c.lastAttacker.alive && c.lastAttacker.team !== c.team && c.lastAttacker.pos.distanceTo(c.pos) < c.weapon.range + 6 && this.canSee(c.lastAttacker)) e = c.lastAttacker;
       // the squad's shared target, when this bot can hit it too
       if (D.focus && S && S.focus && S.focus !== e && S.focus.alive && S.focus.pos.distanceTo(c.pos) < c.weapon.range + 2 && this.canSee(S.focus) && !S.focus.hiddenInInk()) { e = S.focus; if (e !== this.enemy) aiStat(c.team, 'focus'); }
-      if (e && e !== this.enemy) { this.reactT = (this.lurkT > 0 ? 0.3 : 1) * D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0); this.coverWant = c.subId === 'cover' && Math.random() < 0.7; }
+      if (e && e !== this.enemy) { this.reactT = (this.lurkT > 0 ? 0.3 : 1) * D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0); this.coverWant = c.subId === 'cover' && Math.random() < 0.7; if (e === PLAYER) Combat.onAcquire(this); }
       this.enemy = e; if (S && D.share) { if (e) S.note(e); if (found && found !== e) S.note(found); }
     }
     const e = this.enemy, chg = !!c.weapon.charges, onOwn = ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team, allout = S && S.posture === 'allout';
@@ -6272,7 +6280,7 @@ class Bot {
       if (c.weapon.charges) { this.chargerFight(dt, e, d, D); this.path = []; return; }
       if (c.subId === 'curling' && this.curlFollow(dt, e, d)) { this.path = []; return; }
       this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.25, 0.5); const m = D.err * d * (this.fuzzy ? 2.5 : 1); this.err.set(rand(-m, m), rand(-m, m) * 0.6, rand(-m, m)); }
-      const wid = c.weapon.id, tt = shotTime(d, wid); const tp = e.chest().addScaledVector(e.vel, tt * 0.9).add(this.err);
+      const wid = c.weapon.id, tt = shotTime(d, wid), may = Combat.canShoot(this, e), tp = Combat.aimPoint(this, e, e.chest().addScaledVector(e.vel, tt * 0.9).addScaledVector(this.err, Combat.errK(e)));
       const dy_ = this.aimAt(tp, dt, D.turn, wid);
       this.reactT -= dt;
       if (this.reactT <= 0 && Math.abs(dy_) < 0.25 && d < c.weapon.range + 1.5 && Math.random() < D.fireHold + 0.1) I.fire = true;
@@ -6298,6 +6306,7 @@ class Bot {
         const near = CHARS.filter(o => o.team !== c.team && o.alive && o.state === 'play' && o.pos.distanceTo(c.pos) < 6.5).length;
         I.special = D.team ? (near >= 2 || (d < 5 && c.hp < c.maxHp * 0.5) || (d < 4 && Math.random() < dt * 0.8)) : (d < 7 && Math.random() < dt * 2);
       } else I.special = false;
+      if (!may && !(this.swimT > 0)) Combat.holdOff(this, I, e, d);              // no token on the player: circle and paint instead of shooting
       this.path = [];
       return;
     }
@@ -6325,6 +6334,7 @@ class Bot {
       c.aimYaw += angDiff(c.aimYaw, Math.atan2(ax - c.pos.x, az - c.pos.z)) * Math.min(1, dt * 4); c.aimPitch = damp(c.aimPitch, -0.05, 5, dt);
       return;
     }
+    if (this.support && (this.supRe = (this.supRe || 0) - dt) <= 0) { this.supRe = 1.5; this.path = []; this.replanT = 0; }     // backing the player up: keep heading for them
     // -------- paint / roam
     if (this.dawdleT > 0) { this.dawdleT -= dt; c.aimYaw += dt * 1.6 * (this.sweep > 3 ? 1 : -1); I.mx = I.mz = 0; return; }      // beginners stop and look around
     this.retarget -= dt;
@@ -6761,7 +6771,7 @@ const Director = {
     const pfs = f => Math.abs(f) < 0.05 ? '正常' : (f > 0 ? '专心涂地 ' : '收着打 ') + pc(Math.abs(f)), pf = this.pf || [0, 0];
     h += `<div>比分 ${this.lead >= 0 ? '我方领先' : '我方落后'} ${pc(Math.abs(this.lead))} → 局势修正 敌 ${sgn(this.corrE)} · 友 ${sgn(this.corrM)}${this.boost > 1.01 ? `<small>（视野外加速 ×${this.boost.toFixed(1)}）</small>` : ''}</div>`;
     h += `<div>打法倾向 敌：${pfs(pf[1 - PLAYER.team] || 0)} · 友：${pfs(pf[PLAYER.team] || 0)}</div>`;
-    h += Strategist.panelLines();
+    h += Strategist.panelLines() + Combat.panelLine();
     h += '<div>最近交火 ' + (this.log.length ? this.log.map(l => `<i class="${l.o > 0.5 ? 'w' : l.o < 0.5 ? 'l' : ''}">${l.o > 0.5 ? '赢' : l.o < 0.5 ? '输' : '平'}</i><small>预期${pc(l.p)}${l.w < 1 ? '×' + l.w.toFixed(1) : ''}</small>`).join(' ') : '—') + '</div>';
     const row = (b, goal) => `<tr><td>${b.c.name}</td><td>${b.lv === undefined ? '—' : f2(b.lv)}</td><td>→ ${f2(goal)}</td><td>${this.tier(b.lv ?? goal)}</td><td>${STN[b.dState] || ''}</td></tr>`;
     h += '<table><tr><th colspan="5">队友</th></tr>' + this.bots().filter(b => b.c.team === PLAYER.team).map(b => row(b, this.mateGoal)).join('');
@@ -7002,6 +7012,128 @@ const KillFX = {
       k.el.classList.toggle('edge', edge); k.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     }
     while (this.marks.length && this.marks[0].t > this.MARK) this.marks.shift().el.remove();
+  }
+};
+/* ============================================================ COMBAT FEEL
+   Fights the player can read and answer, on every tier (the Director's framework; not in tests with
+   fixed rows):
+     · attack tokens: only so many enemies shoot at the player at once (1 easy · 2 normal · 3 hell, smart by
+       level); the rest circle round and paint about, and the tokens change hands every couple of seconds
+     · warning shots: an enemy that has just taken aim at the player puts its first shots into the ground
+       in front of them - the ink splashing up says "you are being shot at"; always so (and slower to fire)
+       when it comes from where the player is not looking; on hell only then
+     · a breather: low on health and just hit, the player is harder to hit for a moment (not on hell)
+     · backup: set on by two or more, or low and still under fire, the nearest teammates come over and go
+       for whoever is shooting                                                                                  */
+const Combat = {
+  SLOT: 2.5,
+  get on() { return Director.on && !this.off; },                           // (off: benchmarks comparing with and without)
+  reset() {
+    this.holders = new Map(); this.waiting = new Map(); this.supT = 0; this.engT = null; this.graceT = -99;
+    this.stats = { deaths: 0, multi: 0, multi15: 0, ttd: [], tta: [], warned: 0, graced: 0, supported: 0, fireFrames: 0, twoFrames: 0, overFrames: 0, rogue: 0, gunHits: 0, rogueHits: 0, pairHits: 0 }; this.aimT = null; this.lastHit = new Map();
+    for (const b of G.bots) { b.support = null; b.warnUntil = 0; b.tokCd = 0; }
+  },
+  level() { return Director.teamLevel(1 - PLAYER.team); },
+  tokens() { const m = Director.mode(); if (typeof m === 'number') return m + 1; const lv = this.level(); return lv < 0.7 ? 1 : lv < 1.7 ? 2 : 3; },
+  warnTime(behind) {
+    const m = Director.mode(), lv = this.level();
+    const w = m === 0 ? 0.8 : m === 1 ? 0.5 : m === 2 ? 0 : lv <= 0.3 ? 0.8 : lv <= 1 ? lerp(0.8, 0.5, (lv - 0.3) / 0.7) : lv < 1.7 ? lerp(0.5, 0, (lv - 1) / 0.7) : 0;
+    return behind ? Math.max(w, 0.25) : w;
+  },
+  graceStrength() { const m = Director.mode(); return m === 2 ? 0 : typeof m === 'number' ? 1 : clamp(2 - this.level(), 0, 1); },
+  // ---------------------------------------------------------------- tokens
+  canShoot(b, e) {
+    if (!this.on || e !== PLAYER) return true;
+    const T = G.time, h = this.holders;
+    if (h.has(b)) { h.get(b).last = T; return true; }
+    for (const [o, s] of h) if (!o.c.alive || o.c.state !== 'play' || o.enemy !== PLAYER || T - s.last > 0.6) h.delete(o);
+    if (h.size < this.tokens() && T >= (b.tokCd || 0)) { h.set(b, { t0: T, last: T }); return true; }
+    this.waiting.set(b, T); return false;
+  },
+  // ---------------------------------------------------------------- warning shots and the breather
+  onAcquire(b) {
+    if (this.aimT == null && this.stats) this.aimT = G.time;
+    if (!this.on) return;
+    const behind = !Director.inView(b.c, PLAYER), w = this.warnTime(behind);
+    if (behind) b.reactT *= 1.4;
+    b.warnUntil = w > 0 ? G.time + b.reactT + w : 0; if (w > 0) this.stats.warned++;
+  },
+  warning(b, e) { return this.on && e === PLAYER && G.time < (b.warnUntil || 0); },
+  // where to aim: during the warning, the ground a step or two in front of the player, on the side the shot comes from
+  aimPoint(b, e, tp) {
+    if (!this.warning(b, e)) return tp;
+    const dx = b.c.pos.x - e.pos.x, dz = b.c.pos.z - e.pos.z, l = Math.hypot(dx, dz) || 1, k = Math.min(1.8, l * 0.4);
+    const x = e.pos.x + dx / l * k, z = e.pos.z + dz / l * k; return new THREE.Vector3(x, groundBelow(x, z, e.pos.y + 0.5, 0.6) + 0.05, z);
+  },
+  // aim error multiplier: low and just hit, the player is harder to hit for a moment
+  errK(e) {
+    if (!this.on || e !== PLAYER) return 1;
+    const P = PLAYER, g = this.graceStrength();
+    if (g > 0 && P.hp < P.maxHp * 0.3 && G.time - P.lastHurt < 1) { if (G.time - this.graceT > 2) this.stats.graced++; this.graceT = G.time; return 1 + 1.4 * g; }
+    return 1;
+  },
+  // while waiting for a token: keep the distance, circle, and paint the ground short of the player
+  holdOff(b, I, e, d) {
+    const c = b.c, fx = Math.sin(c.aimYaw), fz = Math.cos(c.aimYaw), R = c.weapon.range || 10, adv = d < R * 0.6 ? -0.6 : d > R ? 0.5 : 0;
+    I.mx = -fz * b.strafe * 0.9 + fx * adv; I.mz = fx * b.strafe * 0.9 + fz * adv;
+    if (c.weapon.charges) { I.fire = c.charging; b.holdT = G.time; return; }                  // (a sniper keeps its charge - and its laser - on the player)
+    const k = clamp((d - 4) / Math.max(d, 1), 0, 1), x = c.pos.x + (e.pos.x - c.pos.x) * k, z = c.pos.z + (e.pos.z - c.pos.z) * k;
+    b.aimAt(new THREE.Vector3(x, groundBelow(x, z, c.pos.y + 1, 0.6), z), 1 / 60, 12, c.weapon.id);
+    I.fire = c.ink > 45 && d > 5; b.holdT = G.time;
+  },
+  // ---------------------------------------------------------------- backup
+  supportOf(b) { return this.on && b.support ? b.support : null; },
+  attackers(b) { return b.support && b.support.att || []; },
+  updateSupport() {
+    const P = PLAYER, T = G.time, mates = G.bots.filter(b => b.c.team === P.team && !b.c.isPlayer);
+    const att = P.alive && P.state === 'play' ? CHARS.filter(o => o.team !== P.team && o.alive && o.state === 'play' && P.dmgBy.get(o) > T - 2) : [];
+    if (att.length >= 2 || (att.length && P.hp < P.maxHp * 0.4)) this.supT = T + 3;
+    const want = T < this.supT && att.length ? Math.min(2, att.length) : 0, cur = mates.filter(b => b.support);
+    if (!want) { cur.forEach(b => b.support = null); return; }
+    const cand = mates.filter(b => !b.support && b.c.alive && b.c.state === 'play' && b.mode !== 'retreat' && b.c.pos.distanceTo(P.pos) < 40).sort((a, b) => a.c.pos.distanceTo(P.pos) - b.c.pos.distanceTo(P.pos));
+    while (cur.length < want && cand.length) { const b = cand.shift(); b.support = { t: T }; b.path = []; b.retarget = 0; b.supRe = 0; cur.push(b); this.stats.supported++; }
+    while (cur.length > want) cur.pop().support = null;
+    for (const b of cur) { if (!b.c.alive) b.support = null; else b.support.att = att; }
+  },
+  // ---------------------------------------------------------------- bookkeeping (kept in every mode, for the benchmarks)
+  onDamage(v, amount, src, via) {
+    if (v !== PLAYER || !src || src.team === v.team || !this.stats) return;
+    if (this.engT == null || v.hp + amount >= v.maxHp - 0.5) this.engT = G.time;
+    // (measuring) gun hits on the player: from someone without a token, and from two shooters inside 0.6 s of each other
+    if (via === src.weapon.id && src.bot) {
+      const T = G.time; this.stats.gunHits++;
+      if (this.on && !this.holders.has(src.bot)) this.stats.rogueHits++;
+      for (const [o, t] of this.lastHit) if (o !== src && T - t < 0.6) { this.stats.pairHits++; break; }
+      this.lastHit.set(src, T);
+    }
+  },
+  onDeath(v) {
+    if (v !== PLAYER || !this.stats) return; const T = G.time;
+    this.stats.deaths++; if (CHARS.filter(o => o.team !== v.team && v.dmgBy.get(o) > T - 4).length >= 2) this.stats.multi++; if (CHARS.filter(o => o.team !== v.team && v.dmgBy.get(o) > T - 1.5).length >= 2) this.stats.multi15++;
+    if (this.engT != null) this.stats.ttd.push(T - this.engT); if (this.aimT != null) this.stats.tta.push(T - this.aimT); this.engT = this.aimT = null;
+  },
+  update(dt) {
+    if (!PLAYER || !this.stats) return; const P = PLAYER, T = G.time;
+    if (P.alive && P.hp >= P.maxHp - 0.5) this.engT = null;
+    if (!G.bots.some(b => b.enemy === PLAYER) && P.hp >= P.maxHp - 0.5) this.aimT = null;
+    if (!this.on) return;
+    // a holder that has had its turn gives way to someone waiting
+    for (const [b, w] of this.waiting) if (T - w > 0.5) this.waiting.delete(b);
+    if (this.waiting.size) for (const [b, s] of this.holders) if (T - s.t0 > this.SLOT) { this.holders.delete(b); b.tokCd = T + 1.5; break; }
+    this.updateSupport();
+  },
+  // (measuring, after the bots have moved: how many are really firing at the player - those painting the ground while they wait do not count)
+  measure() {
+    const P = PLAYER, T = G.time; if (!P || !this.stats || !P.alive || P.state !== 'play') return;
+    const on = G.bots.filter(b => b.enemy === PLAYER && b.c.intent.fire && b.c.alive && T - (b.holdT ?? -9) > 0.05);
+    if (on.length) this.stats.fireFrames++; if (on.length >= 2) this.stats.twoFrames++; if (on.length > this.tokens()) this.stats.overFrames++; if (this.on) this.stats.rogue += on.filter(b => !this.holders.has(b)).length;
+  },
+  panelLine() {
+    if (!this.on) return '';
+    const T = G.time, warn = G.bots.filter(b => b.enemy === PLAYER && this.warning(b, PLAYER)).length, sup = G.bots.filter(b => b.support).length;
+    const bits = [`正在打你：${this.holders.size}/${this.tokens()} 名额${this.waiting.size ? '（' + this.waiting.size + ' 人在等）' : ''}`];
+    if (warn) bits.push(warn + ' 人在警告射击'); if (T - this.graceT < 0.3) bits.push('残血喘息中'); if (sup) bits.push('队友支援 ' + sup + ' 人');
+    return `<div>${bits.join(' · ')}</div>`;
   }
 };
 /* ================================================================ HUD */
@@ -7349,7 +7481,7 @@ function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProj
 function startMatch() {
   Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Wake.clear(); Proj.clear();
-  spawnTeams(); Director.reset(); Strategist.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
+  spawnTeams(); Director.reset(); Strategist.reset(); Combat.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
@@ -8061,9 +8193,10 @@ function updatePlay(dt) {
   if (G.left <= 0) { G.left = 0; endMatch(); return; }
   if (G.time > 8) $('hint').style.display = 'none';
   if (!G.pilot) playerControl(dt);                // (G.pilot: an all-bot match for the AI benchmark; the player is driven by a Bot in G.bots)
-  Director.update(dt); Strategist.update(dt);
+  Director.update(dt); Strategist.update(dt); Combat.update(dt);
   if (G.squads) for (const q of G.squads) q.update(dt);
   for (const b of G.bots) b.update(dt);
+  Combat.measure();
 }
 function updateTitle(dt) {
   G.titleT += dt; const t = G.titleT;

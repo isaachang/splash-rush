@@ -38,7 +38,7 @@ node tools/map-test.js        # 改了滑板场（或地形代码）时跑，必
 node tools/canton-test.js     # 改了西關大屋（或悬空方块、涂地分层）时跑，必须 ALL CANTON TESTS PASSED
 node tools/ai-test.js         # 改了机器人、寻路或地图地形时跑，必须 ALL AI TESTS PASSED
 node tools/director-test.js   # 改了导演台（智能难度）或机器人难度表时跑，必须 ALL DIRECTOR TESTS PASSED（约 2 分钟）
-node tools/director-bench.js canton 0 s 8 180   # 调导演台时用：机器人假扮玩家（0/1/2 档），对面智能（s）或固定档，看胜负、涂地差和判断（不是必过项）；加 NOSTRAT=1 关掉对策只看导演台，DIRO='{"PF":{"span":0.1}}' 临时换参数；对面写 t0 / t1 / t2 是玩家选三档时的样子，f0 / f1 / f2 是 v0.15 之前写死的三档（用来对比）
+node tools/director-bench.js canton 0 s 8 180   # 调导演台时用：机器人假扮玩家（0/1/2 档），对面智能（s）或固定档，看胜负、涂地差和判断（不是必过项）；加 NOSTRAT=1 关掉对策只看导演台，DIRO='{"PF":{"span":0.1}}' 临时换参数；对面写 t0 / t1 / t2 是玩家选三档时的样子，f0 / f1 / f2 是 v0.15 之前写死的三档（用来对比）；NOCOMBAT=1 关掉交火手感（攻击名额、警告射击、残血喘息、队友支援）对比
 node tools/ai-bench.js canton 2 1 12   # 调机器人强弱时用：全电脑对打，看胜场、涂地、击倒和卡住的秒数（不是必过项）
 open index.html               # 自己打开试玩
 

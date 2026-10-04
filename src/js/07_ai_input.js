@@ -316,15 +316,16 @@ class Bot {
     let rk = hurt ? 1 : pf > 0 ? lerp(1, 0.45, pf) : lerp(1, 0.6, -pf);
     // a job from the strategist: hunters look further and go for the player first; painters and flankers keep out of fights on the way
     if (job === 'hunt') rk = Math.max(rk, 1.2); else if (!hurt && job === 'paint') rk = Math.min(rk, 0.6); else if (!hurt && job === 'flank') rk = Math.min(rk, 0.8);
+    const foes = Combat.attackers(this); if (foes.length) rk = Math.max(rk, 1.2);                // (backing the player up: whoever is shooting at them comes first)
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
-      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk || (d > bd && !(job === 'hunt' && e.isPlayer))) continue;
+      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk || (d > bd && !(job === 'hunt' && e.isPlayer) && !foes.includes(e))) continue;
       // hidden in ink: only seen up close (2.5 m), or roughly up to 7 m if swimming fast (ripples); shooting gives you away
       let fuzzy = false;
       if (e.hiddenInInk() && !(G.time - e.lastShot < 0.4)) { const fast = Math.hypot(e.vel.x, e.vel.z) > 6; if (d > (fast ? 7 : 2.5)) continue; fuzzy = fast && d > 2.5; }
       const ch = e.chest(); if (segBlocked(e0.x, e0.y, e0.z, ch.x, ch.y, ch.z, 0.5)) continue;
       best = e; bd = d; this.fuzzyNext = fuzzy;
-      if (job === 'hunt' && e.isPlayer) break;
+      if ((job === 'hunt' && e.isPlayer) || foes.includes(e)) break;
     }
     this.fuzzy = best ? this.fuzzyNext : false;
     return best;
@@ -397,6 +398,7 @@ class Bot {
   }
   chooseTarget() {
     const c = this.c, D = botDiff(c.team, this), S = this.squad;
+    if (Combat.supportOf(this)) { const P = PLAYER, n = navStart(P.pos.x, P.pos.y, P.pos.z); if (this.goTo(n)) { this.target = navPos(n); this.retarget = 1.5; this.linger = 0; return; } }
     this.allowNext = NF.SWIM | NF.JUMP | NF.DROP;
     const best = D.team && S ? this.chooseTargetTeam(D, S) : this.chooseTargetSimple();
     if (best < 0) { this.retarget = 0.5; return; }
@@ -444,7 +446,7 @@ class Bot {
   chargerFight(dt, e, d, D) {
     const c = this.c, I = c.intent;
     this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.3, 0.6); const m = D.err * d * 0.75 * (this.fuzzy ? 2.5 : 1); this.err.set(rand(-m, m), rand(-m, m) * 0.5, rand(-m, m)); }
-    const tp = e.chest().addScaledVector(e.vel, 0.08).add(this.err);
+    const tp = Combat.aimPoint(this, e, e.chest().addScaledVector(e.vel, 0.08).addScaledVector(this.err, Combat.errK(e)));
     const m = c.muzzle(); const dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
     const wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd);
     const yawErr = angDiff(c.aimYaw, wantYaw);
@@ -468,6 +470,7 @@ class Bot {
     if (c.special >= 100 && d < 7 && Math.random() < dt * 2) I.special = true; else I.special = false;
     if (close && c.hp < 50 && ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team && Math.random() < D.dodge * dt * 3) this.swimT = 0.6;
     if (this.swimT > 0) { this.swimT -= dt; I.swim = true; I.fire = false; I.mx = -fx; I.mz = -fz; }
+    if (!(this.swimT > 0) && !Combat.canShoot(this, e)) Combat.holdOff(this, I, e, d);
   }
   // after throwing a curling bomb: swim along its ink path right behind it
   curlFollow(dt, e, d) {
@@ -545,7 +548,7 @@ class Bot {
       if (!e && D.share && T - c.lastHurt < 0.6 && c.lastAttacker && c.lastAttacker.alive && c.lastAttacker.team !== c.team && c.lastAttacker.pos.distanceTo(c.pos) < c.weapon.range + 6 && this.canSee(c.lastAttacker)) e = c.lastAttacker;
       // the squad's shared target, when this bot can hit it too
       if (D.focus && S && S.focus && S.focus !== e && S.focus.alive && S.focus.pos.distanceTo(c.pos) < c.weapon.range + 2 && this.canSee(S.focus) && !S.focus.hiddenInInk()) { e = S.focus; if (e !== this.enemy) aiStat(c.team, 'focus'); }
-      if (e && e !== this.enemy) { this.reactT = (this.lurkT > 0 ? 0.3 : 1) * D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0); this.coverWant = c.subId === 'cover' && Math.random() < 0.7; }
+      if (e && e !== this.enemy) { this.reactT = (this.lurkT > 0 ? 0.3 : 1) * D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0); this.coverWant = c.subId === 'cover' && Math.random() < 0.7; if (e === PLAYER) Combat.onAcquire(this); }
       this.enemy = e; if (S && D.share) { if (e) S.note(e); if (found && found !== e) S.note(found); }
     }
     const e = this.enemy, chg = !!c.weapon.charges, onOwn = ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team, allout = S && S.posture === 'allout';
@@ -593,7 +596,7 @@ class Bot {
       if (c.weapon.charges) { this.chargerFight(dt, e, d, D); this.path = []; return; }
       if (c.subId === 'curling' && this.curlFollow(dt, e, d)) { this.path = []; return; }
       this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.25, 0.5); const m = D.err * d * (this.fuzzy ? 2.5 : 1); this.err.set(rand(-m, m), rand(-m, m) * 0.6, rand(-m, m)); }
-      const wid = c.weapon.id, tt = shotTime(d, wid); const tp = e.chest().addScaledVector(e.vel, tt * 0.9).add(this.err);
+      const wid = c.weapon.id, tt = shotTime(d, wid), may = Combat.canShoot(this, e), tp = Combat.aimPoint(this, e, e.chest().addScaledVector(e.vel, tt * 0.9).addScaledVector(this.err, Combat.errK(e)));
       const dy_ = this.aimAt(tp, dt, D.turn, wid);
       this.reactT -= dt;
       if (this.reactT <= 0 && Math.abs(dy_) < 0.25 && d < c.weapon.range + 1.5 && Math.random() < D.fireHold + 0.1) I.fire = true;
@@ -619,6 +622,7 @@ class Bot {
         const near = CHARS.filter(o => o.team !== c.team && o.alive && o.state === 'play' && o.pos.distanceTo(c.pos) < 6.5).length;
         I.special = D.team ? (near >= 2 || (d < 5 && c.hp < c.maxHp * 0.5) || (d < 4 && Math.random() < dt * 0.8)) : (d < 7 && Math.random() < dt * 2);
       } else I.special = false;
+      if (!may && !(this.swimT > 0)) Combat.holdOff(this, I, e, d);              // no token on the player: circle and paint instead of shooting
       this.path = [];
       return;
     }
@@ -646,6 +650,7 @@ class Bot {
       c.aimYaw += angDiff(c.aimYaw, Math.atan2(ax - c.pos.x, az - c.pos.z)) * Math.min(1, dt * 4); c.aimPitch = damp(c.aimPitch, -0.05, 5, dt);
       return;
     }
+    if (this.support && (this.supRe = (this.supRe || 0) - dt) <= 0) { this.supRe = 1.5; this.path = []; this.replanT = 0; }     // backing the player up: keep heading for them
     // -------- paint / roam
     if (this.dawdleT > 0) { this.dawdleT -= dt; c.aimYaw += dt * 1.6 * (this.sweep > 3 ? 1 : -1); I.mx = I.mz = 0; return; }      // beginners stop and look around
     this.retarget -= dt;
