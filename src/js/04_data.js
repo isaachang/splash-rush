@@ -177,7 +177,7 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
-  { v: 'v0.17.0', date: '2026-10-04', time: '17:21', title: '交火更讲理', items: [
+  { v: 'v0.17.0', date: '2026-10-04', time: '17:56', title: '交火更讲理', items: [
     '被一群人盯上时，不会再同时被三四把枪一起扫倒，总有空隙让你反应、还手',
     '对手刚瞄上你时，墨水会先溅在你身前，看到就知道有人在打你，赶紧找掩护',
     '被两个人围住时，附近的队友会赶过来帮你打'
