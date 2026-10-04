@@ -1,5 +1,7 @@
 /* ============================================================ DIRECTOR
-   The smart difficulty (智能).  Watches how the player is doing and works out a level for them on the
+   The difficulty levels.  Every tier runs on this: smart (智能) may go anywhere from 0 to 2.5, easy stays
+   within 0-0.6, normal within 0.7-1.3, hell within 2-2.5 and never goes easier.  (Tests that set G.aiLevels
+   to a tier still get that tier's fixed row.)  Watches how the player is doing and works out a level for them on the
    same scale as DIFF (0 easy · 1 normal · 2 hell, anything in between, and a little past hell).  Every bot
    carries its own level and moves toward a target: at once while it is dead or flying in, quickly while the
    player cannot see it, slowly while the two are fighting - so nobody turns into a sharpshooter mid-duel.
@@ -32,7 +34,11 @@ const Director = {
   RATE: { fight: 0.012, seen: 0.03, away: 0.08 },                          // how fast a bot's level may move (per second, at 3:00; shorter matches move faster)
   PF: { start: 0.04, span: 0.08, mates: 0.8 },                             // paint / ease off: from how far apart, fully by how much further, teammates' share
   shown: false, st: null,
-  get on() { return !!PLAYER && (G.aiLevels ? G.aiLevels[1 - PLAYER.team] : GAME.diff) === SMART; },
+  // 'smart', a tier (0 easy · 1 normal · 2 hell), or 'fixed' - a test pitting fixed rows against each other (G.aiLevels)
+  mode() { if (!PLAYER) return 'fixed'; if (G.aiLevels) return G.aiLevels[1 - PLAYER.team] === SMART ? 'smart' : 'fixed'; return GAME.diff === SMART ? 'smart' : GAME.diff; },
+  get on() { return this.mode() !== 'fixed'; },
+  BANDS: [[0, 0.6], [0.7, 1.3], [2, LV_MAX]],                              // the room each tier has; smart has all of it
+  band() { const m = this.mode(); return typeof m === 'number' ? this.BANDS[m] : [0, LV_MAX]; },
   // the saved levels, one per character + weapon (石墩's double health makes the same hands a different player).  An old single value
   // from before (key '*') belongs to no loadout; it only seeds the ones never played
   skillBook() {
@@ -49,13 +55,14 @@ const Director = {
     this.seed = !own && rest.length ? rest.reduce((a, r) => a + r.s * (r.m || 1), 0) / wsum : null;
     const prior = clamp(own ? own.s : this.seed ?? 1, 0, LV_MAX);
     this.mem = own || null; this.elo = prior; this.n = own ? Math.min(4, (own.m || 1) * 1.5) : 0; this.nm = 0;
-    this.skill = this.target = this.mateGoal = prior; this.conf = 0; this.corrE = this.corrM = 0; this.planBonus = 0; this.lead = 0; this.boost = 1; this.sig = {}; this.sigT = 0; this.panelT = 0;
+    const [lo, hi] = this.band(), start = clamp(prior, lo, hi);           // a tier starts from the saved level, kept within the tier
+    this.skill = prior; this.target = this.mateGoal = start; this.conf = 0; this.corrE = this.corrM = 0; this.planBonus = 0; this.lead = 0; this.boost = 1; this.sig = {}; this.sigT = 0; this.panelT = 0;
     this.wasClimb = false; this.cheat = false; this.saved = null;
     this.fights = new Map(); this.log = []; this.trace = []; this.allDuels = [];
     this.st = { alive: 0, shots: 0, hits: 0, swimT: 0, refillT: 0, climbs: 0, bombs: 0, idleT: 0 };
     this.calibT = Math.min(60, 15 + GAME.dur / 6); this.endWin = clamp(Math.round(10 + GAME.dur / 9), 20, 40);
-    this.squadBrain = [{}, {}]; this.teamRow = [diffAt(prior), diffAt(prior)];
-    for (const b of G.bots) b.lv = prior;
+    this.squadBrain = [{}, {}]; this.teamRow = [diffAt(start), diffAt(start)];
+    for (const b of G.bots) b.lv = start;
   },
   bots() { return G.bots.filter(b => !b.c.isPlayer); },
   enemies() { return G.bots.filter(b => b.c.team !== PLAYER.team); },
@@ -147,20 +154,22 @@ const Director = {
     this.skill += cal ? d : clamp(d, -0.006, 0.006); this.conf = 1 - 1 / (1 + 0.35 * (sw - 0.6));
   },
   // a score running away (more than 6 % of the map apart, at full strength by 24 %): the enemies move against it; whatever they
-  // cannot take - already at the top or the bottom - goes to the teammates, who otherwise move 40 % as far the other way, 0.5 at most
+  // cannot take - already at the edge of the tier - goes to the teammates, who otherwise move 40 % as far the other way, 0.5 at most.
+  // Everything stays within the tier; and hell never goes easy on a player who is behind - no easing off, no help from teammates
   steer() {
-    const tc = Paint.teamCells, P = PLAYER; this.lead = (tc[P.team] - tc[1 - P.team]) / Math.max(1, Paint.total);
-    const sg = Math.sign(this.lead), c = Math.min(0.9, Math.max(0, Math.abs(this.lead) - 0.06) * 5), te = clamp(this.skill + sg * c, 0, LV_MAX);
-    this.corrM = -sg * Math.min(0.5, c * 0.4 + Math.abs(sg * c - (te - this.skill))); this.mateGoal = clamp(this.skill + this.corrM, 0, LV_MAX);
+    const tc = Paint.teamCells, P = PLAYER, [lo, hi] = this.band(), hell = this.mode() === 2, sk = clamp(this.skill, lo, hi);
+    this.lead = (tc[P.team] - tc[1 - P.team]) / Math.max(1, Paint.total);
+    const sg = Math.sign(this.lead), c = hell && sg < 0 ? 0 : Math.min(0.9, Math.max(0, Math.abs(this.lead) - 0.06) * 5), te = clamp(sk + sg * c, lo, hi);
+    this.corrM = -sg * Math.min(0.5, c * 0.4 + Math.abs(sg * c - (te - sk))); this.mateGoal = clamp(sk + this.corrM, lo, hi);
     // bots busy countering the player play a little less efficiently; slightly sharper hands make up for it (only in a close game)
     this.planBonus = Strategist.on ? 0.15 * Strategist.k : 0;
-    this.target = clamp(te + this.planBonus, 0, LV_MAX); this.corrE = this.target - this.skill;
+    this.target = clamp(te + this.planBonus, lo, hi); this.corrE = this.target - sk;
     this.boost = 1 + clamp((Math.abs(this.lead) - 0.08) / 0.06, 0, 2);      // and the bots out of sight close in up to three times as fast
     // aim alone hardly moves the turf, so the teams are also told what to spend their time on: once apart (PF) the side behind keeps
     // to painting what is not theirs, and the side ahead eases off - hangs back and stops chasing, leaving the others room; teammates get a share
-    const fE = sg * clamp((Math.abs(this.lead) - this.PF.start) / this.PF.span, 0, 1); this.pf = []; this.pf[1 - P.team] = fE; this.pf[P.team] = -fE * this.PF.mates;
+    const fE = hell && sg < 0 ? 0 : sg * clamp((Math.abs(this.lead) - this.PF.start) / this.PF.span, 0, 1); this.pf = []; this.pf[1 - P.team] = fE; this.pf[P.team] = -fE * this.PF.mates;
   },
-  // -1 ease off · 0 as usual · 1 keep to painting (smart mode only)
+  // -1 ease off · 0 as usual · 1 keep to painting
   paintFocus(team) { return this.on && this.pf ? this.pf[team] : 0; },
   // extra score for a spot to paint: a painting team wants what is not ours yet; a team easing off keeps to its own half
   turfBias(team, own, zRel) { const f = this.paintFocus(team); return f > 0 ? (own !== team ? 2 * f : 0) : f < 0 ? f * zRel * 2.5 : 0; },
@@ -219,7 +228,7 @@ const Director = {
     if (!this.shown || (this.panelT -= dt) > 0) return; this.panelT = 0.25;
     const f2 = v => v.toFixed(2), pc = v => Math.round(v * 100) + '%', sgn = v => (v >= 0 ? '+' : '−') + f2(Math.abs(v));
     const SN = { paint: '涂地', dmg: '伤害比', surv: '存活', hit: '命中', know: '熟练' }, STN = { fight: '交火中', seen: '视野内', away: '视野外', respawn: '复活中' };
-    const left = Math.max(0, this.calibT - G.time), mode = this.on ? '智能模式' : '观察中 · 固定难度「' + (['轻松', '普通', '地狱'][this.lvOf(CHARS.find(c => c.team !== PLAYER.team))] || '?') + '」';
+    const left = Math.max(0, this.calibT - G.time), md = this.mode(), [blo, bhi] = this.band(), mode = md === 'smart' ? '智能模式（0~2.5）' : md === 'fixed' ? '固定难度（测试用）' : ['轻松', '普通', '地狱'][md] + `（${blo}~${bhi}）` + (md === 2 ? ' · 只升不降' : '');
     const ln = this.loadoutName(this.key), mem = this.saved ? `${ln} 存档已更新为 ${f2(this.saved.s)}` : this.mem ? `${ln} 存档 ${f2(this.mem.s)}（${this.mem.m || 1} 局）` : this.seed != null ? `首次用${ln}（参考其他组合 ${f2(this.seed)}）` : '无存档';
     let h = `<b>导演台</b><span>${mode}</span>${this.cheat ? '<i class="l">后门模式 · 本局不计入存档</i>' : ''}`;
     h += `<div class="big">玩家水平 <em>${f2(this.skill)}</em> ${this.tier(this.skill)} <small>可信度 ${pc(this.conf)} · ${left > 0 ? '校准中 ' + Math.ceil(left) + 's' : this.conf < 0.3 ? '数据不足' : '已校准'} · ${mem}${this.idle() ? ' · 挂机不计' : ''}</small></div>`;

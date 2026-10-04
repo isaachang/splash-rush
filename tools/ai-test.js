@@ -89,7 +89,7 @@ const tests = function (DEVC, VIPC) {
   }
   {
     const { B } = setup(1); const E = G.bots.find(b => b.c.team === 1);
-    ok(botDiff(0, B) === DIFF[1] && botDiff(1, E) === DIFF[1] && botDiff(1) === DIFF[1] && !Director.on && Director.endWindow() === 30, 'fixed tiers untouched: with 普通 chosen every bot plays the normal row and the all-out push still starts with 30 s left');
+    ok(botDiff(0, B) === DIFF[1] && botDiff(1, E) === DIFF[1] && botDiff(1) === DIFF[1] && !Director.on && Director.endWindow() === 30, 'fixed rows for tests: with G.aiLevels set to normal every bot plays the normal row and the all-out push stays at 30 s');
   }
   {
     const r = [90, 180, 300].map(d => { GAME.dur = d; Director.reset(); return [Director.calibT, Director.endWin]; }); GAME.dur = 180;
@@ -134,6 +134,26 @@ const tests = function (DEVC, VIPC) {
     Profile.data.char = ch0; Profile.data.weapon = w0;
     ok(dunKey === 'dun-splatling' && !dunMem && Math.abs(dunStart - short) < 1e-9 && Math.abs(dunSeed - short) < 1e-9 && backKey === key && Math.abs(back - short) < 1e-9 && Math.abs(oldSeed - 1.3) < 1e-9 && !oldMem,
       'per loadout: 石墩·加特林 starts from the other loadouts (' + dunStart.toFixed(2) + ') and is then saved on its own (1.7); going back, ' + key + ' still starts from ' + back.toFixed(2) + '; an old single save only seeds new loadouts');
+    Profile.data.skill = undefined; GAME.diff = gd;
+  }
+  // ---------------- the tiers: each moves within its own range; hell never goes easy on a player who is behind
+  {
+    setup(SMART); const D = Director, S = Strategist, gd = GAME.diff, sig = D.signals, tc = Paint.teamCells.slice(), tot = Paint.total, me = PLAYER.team; G.aiLevels = null; D.signals = function () { };
+    const at = (t, skill, lead) => { GAME.diff = t; D.skill = skill; S.k = 0; Paint.teamCells[me] = Math.round(tot * (0.4 + lead / 2)); Paint.teamCells[1 - me] = Math.round(tot * (0.4 - lead / 2)); D.steer(); return { t: D.target, m: D.mateGoal, pfE: D.paintFocus(1 - me), pfM: D.paintFocus(me) }; };
+    let inside = true; for (const [t, lo, hi] of [[0, 0, 0.6], [1, 0.7, 1.3], [2, 2, 2.5]]) for (const sk of [0.1, 1.0, 2.4]) for (const ld of [-0.3, 0, 0.3]) { const r = at(t, sk, ld); if (r.t < lo - 1e-9 || r.t > hi + 1e-9 || r.m < lo - 1e-9 || r.m > hi + 1e-9) inside = false; }
+    const hellBehind = at(2, 0.3, -0.3), hellAhead = at(2, 2.2, 0.3), normBehind = at(1, 1, -0.3), easyCounters = (at(0, 0.6, 0), S.intensity());
+    Paint.teamCells[0] = tc[0]; Paint.teamCells[1] = tc[1];
+    ok(inside && hellBehind.t === 2 && hellBehind.m === 2 && hellBehind.pfE === 0 && hellBehind.pfM === 0 && hellAhead.t > 2.2 && normBehind.t < 1 && normBehind.pfE < 0 && normBehind.m > 1 && easyCounters === 0,
+      'tiers: every goal stays inside its tier (easy 0-0.6, normal 0.7-1.3, hell 2-2.5) whatever the level and score; normal and behind -> enemies ' + normBehind.t.toFixed(2) + ' easing off, teammates ' + normBehind.m.toFixed(2) + '; hell and behind -> nobody eases off or helps (enemies ' + hellBehind.t.toFixed(2) + '); hell and well ahead -> up to ' + hellAhead.t.toFixed(2) + '; easy never counters');
+    // and the bots themselves, over a few seconds of play on normal with a player judged far above it
+    GAME.diff = 1; D.signals = function () { this.skill = 2.4; }; run(150); const lvs = G.bots.filter(b => !b.c.isPlayer).map(b => b.lv);
+    ok(lvs.every(v => v >= 0.7 - 1e-9 && v <= 1.3 + 1e-9) && Math.max(...lvs) > 1.2, 'tiers: on normal, a player judged 2.4 gets bots at the top of normal and no further (' + Math.min(...lvs).toFixed(2) + '-' + Math.max(...lvs).toFixed(2) + ')');
+    D.signals = sig;
+    // each tier starts from the saved level, kept within the tier
+    const next = t => { GAME.diff = t; quitToTitle(); for (let i = 0; i < 3; i++) loop(); openLobby(); startMatch(); while (G.state !== 'play') loop(); return G.bots.filter(b => !b.c.isPlayer).map(b => b.lv); };
+    Profile.data.skill = {}; Profile.data.skill[D.loadoutKey(PLAYER)] = { s: 1.6, m: 3 };
+    const n16 = next(1), e16 = next(0), s16 = next(SMART); Profile.data.skill[D.loadoutKey(PLAYER)] = { s: 0.4, m: 3 }; const h04 = next(2);
+    ok(n16.every(v => v === 1.3) && e16.every(v => v === 0.6) && s16.every(v => v === 1.6) && h04.every(v => v === 2), 'tiers: a saved level of 1.6 starts normal at 1.3, easy at 0.6 and smart at 1.6; a saved 0.4 starts hell at 2.0');
     Profile.data.skill = undefined; GAME.diff = gd;
   }
   // ---------------- the strategist (smart mode): reading the player and picking a plan against it
