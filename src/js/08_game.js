@@ -343,7 +343,7 @@ function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProj
 function startMatch() {
   Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Wake.clear(); Proj.clear();
-  spawnTeams(); Director.reset(); Strategist.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
+  spawnTeams(); Director.reset(); Strategist.reset(); Combat.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
@@ -1055,9 +1055,10 @@ function updatePlay(dt) {
   if (G.left <= 0) { G.left = 0; endMatch(); return; }
   if (G.time > 8) $('hint').style.display = 'none';
   if (!G.pilot) playerControl(dt);                // (G.pilot: an all-bot match for the AI benchmark; the player is driven by a Bot in G.bots)
-  Director.update(dt); Strategist.update(dt);
+  Director.update(dt); Strategist.update(dt); Combat.update(dt);
   if (G.squads) for (const q of G.squads) q.update(dt);
   for (const b of G.bots) b.update(dt);
+  Combat.measure();
 }
 function updateTitle(dt) {
   G.titleT += dt; const t = G.titleT;

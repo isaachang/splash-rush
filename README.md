@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.16.0-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.17.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -93,6 +93,7 @@ src/
   js/07b_director.js         导演台：智能难度（观察玩家水平、调整机器人难度）
   js/07c_strategy.js         智能难度下对手读你的打法、选对策
   js/07d_killfx.js           击倒反馈（牌子、标记、连杀、画面顿挫）
+  js/07e_combat.js           交火手感（攻击名额、警告射击、残血喘息、队友支援）
   js/08_game.js              界面、对局流程、启动
 vendor/three.min.js          Three.js r158（MIT）
 tools/                       构建与测试脚本

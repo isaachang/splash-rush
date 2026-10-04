@@ -2,14 +2,16 @@
 /*  Smart-difficulty checks with whole matches (headless, about 2 minutes).  A rifle bot stands in for the player
     at a fixed tier, the Director runs the lobby, and we look at what it concluded.  Bot tiers differ less from
     one another than real players do (hell bots win mostly through teamwork), so the bars are set on averages
-    of four matches, and only the gaps the stand-ins really have are asked for.
+    of four to eight matches, and only the gaps the stand-ins really have are asked for.  The combat aids (attack tokens, warning shots, the
+    breather - which make the player harder to kill and so are rightly judged as strength) are switched off here: this checks the
+    estimate itself; tools/ai-test.js checks the aids.
     Usage:  node tools/director-test.js                                                                        */
 const { execFile } = require('child_process'), path = require('path');
-const bench = (p, secs) => new Promise((ok, no) => execFile(process.execPath, [path.join(__dirname, 'director-bench.js'), 'canton', String(p), 's', '4', String(secs)],
-  { env: Object.assign({}, process.env, { JSON: '1', WEAPON: 'rifle' }), maxBuffer: 1 << 26 }, (e, out) => e ? no(e) : ok(JSON.parse(out))));
+const bench = (p, secs, n = 4) => new Promise((ok, no) => execFile(process.execPath, [path.join(__dirname, 'director-bench.js'), 'canton', String(p), 's', String(n), String(secs)],
+  { env: Object.assign({}, process.env, { JSON: '1', WEAPON: 'rifle', NOCOMBAT: '1' }), maxBuffer: 1 << 26 }, (e, out) => e ? no(e) : ok(JSON.parse(out))));
 const avg = a => a.reduce((s, v) => s + v, 0) / a.length, f2 = v => v.toFixed(2), list = r => '[' + r.map(x => f2(x.skill)).join(' ') + ']';
 (async () => {
-  const [weak, mid, strong] = await Promise.all([bench(0, 90), bench(1, 300), bench(2, 180)]);
+  const [weak, mid, strong] = await Promise.all([bench(0, 90, 8), bench(1, 300), bench(2, 180)]);          // (the short weak runs get eight matches: one odd match would swing four)
   const res = [], ok = (c, m) => res.push((c ? 'PASS ' : 'FAIL ') + m);
   const wCal = avg(weak.map(x => x.atCal)), wEnd = avg(weak.map(x => x.skill)), mEnd = avg(mid.map(x => x.skill)), sEnd = avg(strong.map(x => x.skill));
   ok(wCal <= 0.85 && wEnd <= 0.85, 'weak stand-in (easy rifle, 1:30): judged ' + f2(wCal) + ' by the end of the 30 s calibration window and ' + f2(wEnd) + ' at the end ' + list(weak) + ' (bar: 0.85 or lower)');

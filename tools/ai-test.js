@@ -156,6 +156,37 @@ const tests = function (DEVC, VIPC) {
     ok(n16.every(v => v === 1.3) && e16.every(v => v === 0.6) && s16.every(v => v === 1.6) && h04.every(v => v === 2), 'tiers: a saved level of 1.6 starts normal at 1.3, easy at 0.6 and smart at 1.6; a saved 0.4 starts hell at 2.0');
     Profile.data.skill = undefined; GAME.diff = gd;
   }
+  // ---------------- combat feel: attack tokens, warning shots, the breather, backup
+  {
+    setup(SMART); const C = Combat, D = Director, gd = GAME.diff; G.aiLevels = null; GAME.diff = 1; C.reset(); const P = PLAYER, T = G.time;
+    const en = G.bots.filter(b => b.c.team !== P.team); en.forEach(b => { b.enemy = P; b.tokCd = 0; });
+    const got = en.map(b => C.canShoot(b, P)), cap = got.filter(Boolean).length;
+    const holder = en.find((b, i) => got[i]), waiter = en.find((b, i) => !got[i]);
+    [...C.holders.values()].forEach(s => s.t0 = T - 3); C.waiting.set(waiter, G.time); C.update(0);
+    const handed = C.holders.size === cap - 1 && C.canShoot(waiter, P) && holder.tokCd > G.time;
+    GAME.diff = 0; const easyCap = C.tokens(); GAME.diff = 2; const hellCap = C.tokens(); GAME.diff = 1;
+    ok(cap === 2 && handed && easyCap === 1 && hellCap === 3 && C.canShoot(en[0], CHARS.find(c => c.team === P.team && c !== P)), 'attack tokens: on normal 2 of ' + en.length + ' enemies may shoot at the player at once (easy 1, hell 3); after its turn a holder hands over to one that is waiting; shooting at teammates is not limited');
+    // warning shots: in front of the player, on the side the shot comes from
+    const B = en[0]; B.c.pos.set(P.pos.x, P.pos.y, P.pos.z - 10); Cam.yaw = P.aimYaw = Math.PI; B.reactT = 0.4; C.onAcquire(B);
+    const front = B.warnUntil - G.time, ap = C.aimPoint(B, P, P.chest()), off = Math.hypot(ap.x - P.pos.x, ap.z - P.pos.z), toward = (ap.z - P.pos.z) < 0;
+    P.aimYaw = 0; B.reactT = 0.4; C.onAcquire(B); const behindReact = B.reactT, behindW = B.warnUntil - G.time;
+    GAME.diff = 2; P.aimYaw = Math.PI; B.reactT = 0.4; C.onAcquire(B); const hellFront = B.warnUntil; P.aimYaw = 0; B.reactT = 0.4; C.onAcquire(B); const hellBehind = B.warnUntil - G.time; GAME.diff = 1;
+    ok(Math.abs(front - 0.9) < 0.01 && off > 1 && off < 2.2 && toward && Math.abs(behindReact - 0.56) < 0.01 && hellFront === 0 && hellBehind > 0.5, 'warning shots: an enemy that takes aim at the player first puts ' + (front - 0.4).toFixed(1) + ' s of shots into the ground ' + off.toFixed(1) + ' m in front of them, on its side; from behind it is also slower to fire; on hell only from behind');
+    // the breather
+    P.hp = P.maxHp * 0.2; P.lastHurt = G.time; const kNorm = C.errK(P); GAME.diff = 2; const kHell = C.errK(P); GAME.diff = 1; P.hp = P.maxHp; const kFull = C.errK(P);
+    ok(kNorm > 2 && kHell === 1 && kFull === 1, 'breather: low and just hit, the player is ' + kNorm.toFixed(1) + 'x harder to hit for a moment (not on hell, not at full health)');
+    // backup: set on by two, the nearest teammates come and go for whoever is shooting
+    const mates = G.bots.filter(b => b.c.team === P.team && !b.c.isPlayer); mates.forEach((b, i) => { b.support = null; b.mode = 'paint'; b.c.pos.set(P.pos.x + 3 + i * 6, P.pos.y, P.pos.z + 2); });
+    P.dmgBy.set(en[0].c, G.time); P.dmgBy.set(en[1].c, G.time); C.supT = 0; C.updateSupport();
+    const sup = mates.filter(b => b.support), nearest = sup.includes(mates[0]) && sup.includes(mates[1]);
+    en[0].c.pos.set(P.pos.x + 3, P.pos.y, P.pos.z - 8); const other = en[2].c; other.pos.set(P.pos.x + 3, P.pos.y, P.pos.z - 2); const pickA = mates[0].findEnemy();
+    P.dmgBy.clear(); C.supT = 0; C.updateSupport(); const off2 = mates.every(b => !b.support);
+    ok(sup.length === 2 && nearest && pickA === en[0].c && off2, 'backup: shot at by two, the 2 nearest teammates come over and go for an attacker before a nearer enemy; once it is over they go back to their own jobs');
+    // tests with fixed rows: none of it
+    G.aiLevels = [1, 1]; const fixedOk = en.every(b => C.canShoot(b, P)) && C.errK(P) === 1;
+    ok(fixedOk, 'combat feel: off for the fixed rows used by tests');
+    G.aiLevels = null; GAME.diff = gd;
+  }
   // ---------------- the strategist (smart mode): reading the player and picking a plan against it
   {
     setup(SMART); const S = Strategist, D = Director, sig = D.signals; D.signals = function () { this.skill = 1.6; }; for (let i = 0; i < 3; i++) loop();

@@ -422,14 +422,14 @@ class Character {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
     if (src && src.team !== this.team) this.dmgBy.set(src, G.time);
-    Director.onDamage(this, amount, src, this.lastVia);
+    Director.onDamage(this, amount, src, this.lastVia); Combat.onDamage(this, amount, src, this.lastVia);
     if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
     if (src && src.isPlayer) { Sfx.hit(amount >= 50); HUD.hitmark(false, amount); }
     if (this.hp <= 0) this.die(src, this.lastVia);
     return true;
   }
   die(killer, via) {
-    Director.onDeath(this, killer, via);
+    Director.onDeath(this, killer, via); Combat.onDeath(this);
     this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0;
     this.setSwim(false); this.sp = null; this.climbing = false; this.wall = null; this.stopCharge(); this.stored = 0;
     this.sj = null; this.fly = null; this.dropY = null; this.dropSJ = false; this.hideSJMarker();

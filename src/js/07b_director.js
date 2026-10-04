@@ -236,7 +236,7 @@ const Director = {
     const pfs = f => Math.abs(f) < 0.05 ? '正常' : (f > 0 ? '专心涂地 ' : '收着打 ') + pc(Math.abs(f)), pf = this.pf || [0, 0];
     h += `<div>比分 ${this.lead >= 0 ? '我方领先' : '我方落后'} ${pc(Math.abs(this.lead))} → 局势修正 敌 ${sgn(this.corrE)} · 友 ${sgn(this.corrM)}${this.boost > 1.01 ? `<small>（视野外加速 ×${this.boost.toFixed(1)}）</small>` : ''}</div>`;
     h += `<div>打法倾向 敌：${pfs(pf[1 - PLAYER.team] || 0)} · 友：${pfs(pf[PLAYER.team] || 0)}</div>`;
-    h += Strategist.panelLines();
+    h += Strategist.panelLines() + Combat.panelLine();
     h += '<div>最近交火 ' + (this.log.length ? this.log.map(l => `<i class="${l.o > 0.5 ? 'w' : l.o < 0.5 ? 'l' : ''}">${l.o > 0.5 ? '赢' : l.o < 0.5 ? '输' : '平'}</i><small>预期${pc(l.p)}${l.w < 1 ? '×' + l.w.toFixed(1) : ''}</small>`).join(' ') : '—') + '</div>';
     const row = (b, goal) => `<tr><td>${b.c.name}</td><td>${b.lv === undefined ? '—' : f2(b.lv)}</td><td>→ ${f2(goal)}</td><td>${this.tier(b.lv ?? goal)}</td><td>${STN[b.dState] || ''}</td></tr>`;
     h += '<table><tr><th colspan="5">队友</th></tr>' + this.bots().filter(b => b.c.team === PLAYER.team).map(b => row(b, this.mateGoal)).join('');
