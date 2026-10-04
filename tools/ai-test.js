@@ -187,6 +187,27 @@ const tests = function (DEVC, VIPC) {
     ok(fixedOk, 'combat feel: off for the fixed rows used by tests');
     G.aiLevels = null; GAME.diff = gd;
   }
+  // ---------------- pacing: build-up -> wave -> lull, and the panel
+  {
+    setup(SMART); const Pc = Pacing, D = Director, gd = GAME.diff, P = PLAYER; G.aiLevels = null; GAME.diff = 1; GAME.dur = 180; Pc.reset(); D.pf = [0, 0];
+    const step = (n, f) => { for (let i = 0; i < n; i++) { if (f) f(); Pc.update(1 / 30); } };
+    Pc.tension = 0.7; step(30 * 10); const early = Pc.phase;                                   // tense, but too soon for a wave
+    step(30 * 25, () => { Pc.tension = Math.max(Pc.tension, 0.7); }); const wave = Pc.phase;    // a while later: the wave comes
+    step(30 * 6, () => { Pc.tension = 0.9; }); const after = Pc.phase;                         // held high a few seconds: the lull
+    step(30 * 3, () => { Pc.tension = 0.1; }); const tooSoon = Pc.phase; step(30 * 20, () => { Pc.tension = 0.1; }); const back = Pc.phase;
+    const L3 = Pc.len.relaxMax; GAME.diff = 2; Pc.reset(); const Lh = Pc.len.relaxMax; GAME.diff = 1; GAME.dur = 90; Pc.reset(); const L90 = Pc.len.buildMin; GAME.dur = 300; Pc.reset(); const L300 = Pc.len.buildMin; GAME.dur = 180; Pc.reset();
+    ok(early === 'build' && wave === 'peak' && after === 'relax' && tooSoon === 'relax' && back === 'build' && Lh < L3 && L90 < L300, 'pacing: build-up -> a wave once tense (not before ~30 s) -> a lull once the tension has stayed high -> build-up again once calm; hell lulls are shorter (' + Lh.toFixed(0) + ' vs ' + L3.toFixed(0) + ' s), and the lengths follow the match');
+    // what the bots do with it: in a lull an enemy 12 m away does not come for the player, in a build-up it does; paint spots avoid / approach the player
+    const B = G.bots.find(b => b.c.team !== P.team); P.pos.set(0, 2.2, 20); B.c.pos.set(0, 2.2, 8); B.c.lastHurt = -99;          // (off the spawn pad: nobody targets a player inside their own barrier)
+    Pc.set('build'); const inBuild = B.findEnemy() === P; Pc.set('relax'); const inLull = B.findEnemy() === P; const near = new THREE.Vector3(P.pos.x + 3, P.pos.y, P.pos.z), far = new THREE.Vector3(P.pos.x + 30, P.pos.y, P.pos.z);
+    const lullNear = Pc.turfBias(B.c.team, 0, near), lullFar = Pc.turfBias(B.c.team, 0, far); Pc.set('peak'); const waveNear = Pc.turfBias(B.c.team, 0, near), mates = Pc.turfBias(P.team, 0, near);
+    Pc.set('relax'); const tok = Combat.tokens(); Pc.set('build'); const tokB = Combat.tokens(); D.pf[B.c.team] = 0.6; Pc.set('relax'); const runaway = Pc.rangeK(B.c.team); D.pf = [0, 0];
+    ok(inBuild && !inLull && lullNear < -2 && lullFar === 0 && waveNear > 2 && mates === 0 && tok === tokB - 1 && runaway === 1, 'pacing: in a lull an enemy 12 m off leaves the player alone (it would come in a build-up), paints away from them, and one token fewer; in a wave they head for the player; teammates are not paced; a runaway score switches it off' + (inBuild && !inLull && lullNear < -2 && lullFar === 0 && waveNear > 2 && mates === 0 && tok === tokB - 1 && runaway === 1 ? '' : ' ' + JSON.stringify({ inBuild, inLull, lullNear, lullFar, waveNear, mates, tok, tokB, runaway })));
+    // the panel: both views render
+    DirPanel.view = 0; DirPanel.toggle(); const compact = DirPanel.render(); DirPanel.toggle(); const full = DirPanel.render(); DirPanel.toggle();
+    ok(['dp-ruler', '节奏', '紧张度', '比分', '对面'].every(k => compact.includes(k)) && !compact.includes('dp-bots') && ['dp-cols', '评分依据', '最近交火', 'dp-bots'].every(k => full.includes(k)) && DirPanel.view === 0, 'director panel: first press the essentials (level ruler, rhythm, tension, score, the other side), second press the details beside them, third press off');
+    GAME.diff = gd;
+  }
   // ---------------- the strategist (smart mode): reading the player and picking a plan against it
   {
     setup(SMART); const S = Strategist, D = Director, sig = D.signals; D.signals = function () { this.skill = 1.6; }; for (let i = 0; i < 3; i++) loop();

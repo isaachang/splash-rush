@@ -37,8 +37,8 @@ const DIFF = [
 
 /* --------------------------------------------------------------- audio */
 const Sfx = (() => {
-  let ctx = null, master, sfxG, musG, comp, noiseBuf, duckF, duckOn = false;
-  const M = { on: false, next: 0, step: 0, bpm: 124, mode: 'title', timer: null };
+  let ctx = null, master, sfxG, musG, musF, comp, noiseBuf, duckF, duckOn = false;
+  const M = { on: false, next: 0, step: 0, bpm: 124, mode: 'title', timer: null, energy: 0.5, e: 0.5 };
   function init() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; return; }
@@ -46,7 +46,8 @@ const Sfx = (() => {
     duckF = ctx.createBiquadFilter(); duckF.type = 'lowpass'; duckF.frequency.value = 20000; duckF.Q.value = 0.7; duckF.connect(comp);
     master = ctx.createGain(); master.connect(duckF);
     sfxG = ctx.createGain(); sfxG.connect(master);
-    musG = ctx.createGain(); musG.connect(master);
+    musF = ctx.createBiquadFilter(); musF.type = 'lowpass'; musF.frequency.value = 9000; musF.Q.value = 0.6; musF.connect(master);
+    musG = ctx.createGain(); musG.connect(musF);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     setVol();
@@ -89,14 +90,18 @@ const Sfx = (() => {
   }
   function playStep(s, t) {
     const bar = (s >> 4) & 3, i = s & 15, r = ROOTS[bar], mode = M.mode;
-    const title = mode === 'title', hurry = mode === 'hurry';
+    const title = mode === 'title', hurry = mode === 'hurry', game = !title;
+    // the match's energy (pacing): a lull drops the chord stabs and half the hats behind a muffled filter, a wave adds 16th hats and a lead
+    if (game && i === 0) { M.e += (M.energy - M.e) * 0.5; if (musF) musF.frequency.setTargetAtTime(lerp(1500, 16000, M.e), t, 0.4); }
+    const lull = game && !hurry && M.e < 0.3, wave = game && M.e > 0.75;
     // kick
     if (title ? (i === 0 || i === 10) : i % 4 === 0) tone('sine', 150, 42, 0.22, title ? 0.5 : 0.8, musG, t);
     if (i === 4 || i === 12) { noise(0.14, title ? 0.12 : 0.26, 'bandpass', 1900, 0.8, null, musG, t); tone('triangle', 230, 130, 0.08, 0.12, musG, t); }
-    if (hurry ? true : i % 2 === 0) noise(0.035, (i % 4 === 2 ? 0.1 : 0.05) * (title ? 0.6 : 1), 'highpass', 8000, 1, null, musG, t);
+    if (hurry || wave ? true : lull ? i % 4 === 2 : i % 2 === 0) noise(0.035, (i % 4 === 2 ? 0.1 : 0.05) * (title ? 0.6 : 1), 'highpass', 8000, 1, null, musG, t);
     if ([0, 3, 6, 8, 10, 11, 14].includes(i)) bass(r + (i === 6 || i === 14 ? 12 : i === 11 ? 7 : 0), t, 0.16);
-    if (!title && (i === 2 || i === 7 || i === 10)) stab(r, MAJ[bar], t);
-    if (title || hurry) {
+    if (!title && !lull && (i === 2 || i === 7 || i === 10)) stab(r, MAJ[bar], t);
+    if (wave && (i === 6 || i === 14)) tone('sine', 150, 42, 0.18, 0.5, musG, t);
+    if (title || hurry || wave) {
       const scale = [0, 3, 5, 7, 10, 12, 15];
       if (i % 2 === 0 && hash(s * 3.1 + bar) > 0.35) tone('triangle', mtof(r + 36 + scale[Math.floor(hash(s + 7.7) * 7)]), null, 0.12, title ? 0.05 : 0.04, musG, t);
     }
@@ -109,6 +114,7 @@ const Sfx = (() => {
   function stopMusic() { if (M.timer) clearInterval(M.timer); M.on = false; }
   return {
     init, setVol, music, stopMusic, duck, get ducked() { return duckOn; },
+    musicEnergy(e) { M.energy = clamp(e, 0, 1); },
     // pressurised "pshh" + low thump, 3 variants with random pitch, panned by direction
     shoot(v, pan = 0) {
       if (!ctx) return; const d = panNode(pan), k = rand(0.92, 1.08), var_ = Math.floor(Math.random() * 3);

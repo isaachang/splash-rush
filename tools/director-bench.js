@@ -11,10 +11,11 @@ const [map = 'canton', pl = '0', en = 's', n = '4', secs = '180'] = process.argv
 process.env.SR_MAP = map;
 eval(src.slice(src.indexOf('const root'), src.indexOf('const weapons')));
 const g = makeSandbox();
-const run = function (PL, EN, N, SECS, WPN, DIRO, NOSTRAT, NOCOMBAT) {
+const run = function (PL, EN, N, SECS, WPN, DIRO, NOSTRAT, NOCOMBAT, NOPACING) {
   clock.getDelta = () => 1 / 30; for (let i = 0; i < 5; i++) loop();
   if (NOSTRAT) Strategist.off = true;
-  if (NOCOMBAT) Combat.off = true;                                           // NOCOMBAT=1 : without the attack tokens, warning shots, breather and backup                                         // NOSTRAT=1 : the Director without the strategist's plans
+  if (NOCOMBAT) Combat.off = true;
+  if (NOPACING) Pacing.off = true;                                           // NOPACING=1 : without the pacing (rise and lull)                                           // NOCOMBAT=1 : without the attack tokens, warning shots, breather and backup                                         // NOSTRAT=1 : the Director without the strategist's plans
   if (DIRO) for (const k in DIRO) Director[k] = Object.assign({}, Director[k], DIRO[k]);      // DIRO='{"PF":{"span":0.08}}' : try other Director settings
   const out = [];
   for (let m = 0; m < N; m++) {
@@ -34,13 +35,13 @@ const run = function (PL, EN, N, SECS, WPN, DIRO, NOSTRAT, NOCOMBAT) {
     const mates = CHARS.filter(c => c.team === 0 && !c.isPlayer);
     out.push({ w, win: t[0] > t[1], turf: t, skill: D.skill, atCal, sd, swing, elo: D.elo, duels: D.n, sig: Object.fromEntries(Object.entries(D.sig).map(([k, v]) => [k, +v.v.toFixed(2)])),
       hit: D.st.shots ? D.st.hits / D.st.shots : null, shots: D.st.shots, paintMin: PLAYER.paint / Math.max(1, D.st.alive / 60), matePaintMin: mates.map(c => c.paint / Math.max(1, (c.dirAlive || 1) / 60)),
-      mateW: mates.map(c => c.weapon.id), raw: D.raw, combat: Object.assign({}, Combat.stats, { ttd: Combat.stats.ttd.slice() }), jobs, plans: Object.fromEntries(Object.entries((G.aiStat || [{}, {}])[1]).filter(([k]) => k.startsWith('plan_'))), prof: Strategist.prof && Object.fromEntries(Object.entries(Strategist.prof).filter(([, v]) => typeof v === 'number').map(([k, v]) => [k, +v.toFixed(2)])), k: PLAYER.kills, d: PLAYER.deaths, enemyLv, duelLog: D.allDuels || [] });
+      mateW: mates.map(c => c.weapon.id), raw: D.raw, combat: Object.assign({}, Combat.stats, { ttd: Combat.stats.ttd.slice() }), pacing: JSON.parse(JSON.stringify(Pacing.stats)), waves: Pacing.waves, jobs, plans: Object.fromEntries(Object.entries((G.aiStat || [{}, {}])[1]).filter(([k]) => k.startsWith('plan_'))), prof: Strategist.prof && Object.fromEntries(Object.entries(Strategist.prof).filter(([, v]) => typeof v === 'number').map(([k, v]) => [k, +v.toFixed(2)])), k: PLAYER.kills, d: PLAYER.deaths, enemyLv, duelLog: D.allDuels || [] });
     G.aiLevels = null; G.dirTrace = false; G.aiStat = null; for (let i = 0; i < 20; i++) loop(); quitToTitle(); for (let i = 0; i < 5; i++) loop();
   }
   return out;
 };
 const EN = en === 's' ? -1 : en[0] === 't' ? 10 + +en.slice(1) : en[0] === 'f' ? 20 + +en.slice(1) : +en;
-const res = vm.runInContext('(' + run.toString() + ')(' + [+pl, EN, +n, +secs, JSON.stringify(process.env.WEAPON || ''), process.env.DIRO || 'null', process.env.NOSTRAT ? 'true' : 'false', process.env.NOCOMBAT ? 'true' : 'false'].join(',') + ')', g);
+const res = vm.runInContext('(' + run.toString() + ')(' + [+pl, EN, +n, +secs, JSON.stringify(process.env.WEAPON || ''), process.env.DIRO || 'null', process.env.NOSTRAT ? 'true' : 'false', process.env.NOCOMBAT ? 'true' : 'false', process.env.NOPACING ? 'true' : 'false'].join(',') + ')', g);
 if (process.env.JSON) { console.log(JSON.stringify(res)); process.exit(0); }
 const avg = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length), f2 = v => v == null ? '-' : v.toFixed(2);
 const NAME = ['easy', 'normal', 'hell'], ENAME = EN === -1 ? 'SMART' : EN >= 20 ? 'old tier ' + NAME[EN - 20] : EN >= 10 ? 'tier ' + NAME[EN - 10] : 'fixed ' + NAME[EN];

@@ -261,6 +261,7 @@ class Squad {
     for (const [e, s] of this.seen) if (!e.alive || T - s.t > 5) this.seen.delete(e);
     this.lead = (Paint.teamCells[tm] - Paint.teamCells[1 - tm]) / Math.max(1, Paint.total);
     this.posture = D.endgame && G.left < Director.endWindow() ? 'allout' : D.team >= 2 ? (this.lead < -0.05 ? 'push' : this.lead > 0.12 ? 'hold' : 'even') : 'even';
+    const pp = Pacing.posture(tm); if (pp && this.posture !== 'allout') this.posture = pp;          // the pacing: push up in a wave, hang back in a lull
     // the front: a little short of the nearest enemy anyone has seen, else just past the middle
     const fr = this.fresh(3); let fd = ZH * 0.12; if (fr.length) fd = Math.min(...fr.map(([, s]) => depthOf(tm, s.z))) - 4;
     this.frontD = lerp(this.frontD, clamp(fd + (this.posture === 'push' ? 7 : this.posture === 'hold' ? -5 : 0), -ZH * 0.55, ZH * 0.6), 0.35);
@@ -313,7 +314,7 @@ class Bot {
     const c = this.c, e0 = c.eye(); let best = null, bd = 1e9;
     // smart mode: a team told to paint only takes on enemies close by, one easing off does not go looking either (both still answer whoever shoots them)
     const pf = Director.paintFocus(c.team), hurt = G.time - c.lastHurt < 1.5, job = Strategist.taskId(this);
-    let rk = hurt ? 1 : pf > 0 ? lerp(1, 0.45, pf) : lerp(1, 0.6, -pf);
+    let rk = (hurt ? 1 : pf > 0 ? lerp(1, 0.45, pf) : lerp(1, 0.6, -pf)) * (hurt ? 1 : Pacing.rangeK(c.team));     // (and in a lull of the pacing, nobody goes looking)
     // a job from the strategist: hunters look further and go for the player first; painters and flankers keep out of fights on the way
     if (job === 'hunt') rk = Math.max(rk, 1.2); else if (!hurt && job === 'paint') rk = Math.min(rk, 0.6); else if (!hurt && job === 'flank') rk = Math.min(rk, 0.8);
     const foes = Combat.attackers(this); if (foes.length) rk = Math.max(rk, 1.2);                // (backing the player up: whoever is shooting at them comes first)
@@ -341,7 +342,7 @@ class Bot {
       for (let a = 0; a < 5; a++) { const o = ownerAt(p.x + Math.cos(a * 1.26) * 2, p.y, p.z + Math.sin(a * 1.26) * 2); if (o !== c.team && o !== -2) s += 0.6; }
       const zRel = (c.team === 0 ? -p.z : p.z) / ZH;
       s += this.role === 'front' ? zRel * 3 : this.role === 'mid' ? 1 - Math.abs(zRel) * 2.2 : -zRel * 2.2;
-      s -= p.distanceTo(c.pos) * 0.04; s += rand(0, 1.6) + Director.turfBias(c.team, own, zRel);
+      s -= p.distanceTo(c.pos) * 0.04; s += rand(0, 1.6) + Director.turfBias(c.team, own, zRel) + Pacing.turfBias(c.team, zRel, p);
       if (c.weapon.type === 'charge') s += NAV.h[k] * 0.9 - (this.role === 'front' ? zRel * 1.5 : 0);
       if (s > bs) { bs = s; best = k; }
     }
@@ -371,7 +372,7 @@ class Bot {
         if (role === 'home') s -= 1.5 * foes.filter(([, f]) => Math.hypot(f.x - p.x, f.z - p.z) < 8).length;
       }
       for (const o of others) if (Math.hypot(o.x - p.x, o.z - p.z) < 8) s -= 1.2;
-      s += rand(0, 1.4) + Director.turfBias(tm, own, zRel);
+      s += rand(0, 1.4) + Director.turfBias(tm, own, zRel) + Pacing.turfBias(tm, zRel, p);
       if (s > bs) { bs = s; best = n; }
     };
     for (let i = 0; i < 46; i++) { const k = randi(0, NAV.N - 1); if (reach[k] >= 0) consider(k, 0); }

@@ -177,6 +177,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.18.0', date: '2026-10-04', time: '18:30', title: '对局有起伏', items: [
+    '对面会一阵一阵地压上来：先慢慢往前推，然后一起冲一波，打完会退开一阵，留给你回血、涂地、重新站好位置',
+    '一局 1:30 大概一波，3:00 两波左右，5:00 三波左右；比分咬得紧时，最后阶段一定是一场硬仗',
+    '音乐跟着走：对面退开时音乐变得闷而安静，压上来时鼓点和旋律一起变密'
+  ] },
   { v: 'v0.17.0', date: '2026-10-04', time: '17:56', title: '交火更讲理', items: [
     '被一群人盯上时，不会再同时被三四把枪一起扫倒，总有空隙让你反应、还手',
     '对手刚瞄上你时，墨水会先溅在你身前，看到就知道有人在打你，赶紧找掩护',

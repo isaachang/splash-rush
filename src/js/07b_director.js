@@ -33,7 +33,7 @@ const Director = {
   HIT: { rifle: 0.45, smg: 0.3, charger: 0.4, splatling: 0.25, blaster: 0.4 },   // share of shots on target for a normal bot (a level is worth about 0.15 more)
   RATE: { fight: 0.012, seen: 0.03, away: 0.08 },                          // how fast a bot's level may move (per second, at 3:00; shorter matches move faster)
   PF: { start: 0.04, span: 0.08, mates: 0.8 },                             // paint / ease off: from how far apart, fully by how much further, teammates' share
-  shown: false, st: null,
+  st: null,
   // 'smart', a tier (0 easy · 1 normal · 2 hell), or 'fixed' - a test pitting fixed rows against each other (G.aiLevels)
   mode() { if (!PLAYER) return 'fixed'; if (G.aiLevels) return G.aiLevels[1 - PLAYER.team] === SMART ? 'smart' : 'fixed'; return GAME.diff === SMART ? 'smart' : GAME.diff; },
   get on() { return this.mode() !== 'fixed'; },
@@ -212,7 +212,7 @@ const Director = {
       if (sb.lv !== tl || sb.hi !== hi) { sb.lv = tl; sb.hi = hi; this.teamRow[tm] = diffAt(tl, hi); }
     }
     if (G.dirTrace) this.trace.push([T, this.skill, this.target, ...this.enemies().map(b => b.lv)]);
-    this.panel(dt);
+    DirPanel.update(dt);
   },
   // end of a match: fold this match into this loadout's saved level - a rolling average, 0.6 old + 0.4 new, the new part counting for less after
   // a short match or few fights.  Not with a name-box mode on (that is cheating), nor in tests where a bot plays for the player
@@ -221,26 +221,7 @@ const Director = {
     const sv = this.mem, q = Math.min(1, this.st.alive / 120) * Math.min(1, (this.nm + 1) / 6), s = sv ? lerp(sv.s, this.skill, 0.4 * q) : this.skill;
     this.saved = this.skillBook()[this.key] = { s: Math.round(s * 100) / 100, m: Math.min(10, (sv ? sv.m || 1 : 0) + 1) }; Profile.save();
   },
-  // ---------------------------------------------------------------- the panel (press ` during a match)
-  toggle() { this.shown = !this.shown; $('dirPanel').classList.toggle('show', this.shown); this.panelT = 0; },
-  tier(v) { if (v > 2.15) return '地狱+'; const r = clamp(Math.round(v), 0, 2), d = v - r; return ['轻松', '普通', '地狱'][r] + (d > 0.15 ? '·偏强' : d < -0.15 ? '·偏弱' : ''); },
-  panel(dt) {
-    if (!this.shown || (this.panelT -= dt) > 0) return; this.panelT = 0.25;
-    const f2 = v => v.toFixed(2), pc = v => Math.round(v * 100) + '%', sgn = v => (v >= 0 ? '+' : '−') + f2(Math.abs(v));
-    const SN = { paint: '涂地', dmg: '伤害比', surv: '存活', hit: '命中', know: '熟练' }, STN = { fight: '交火中', seen: '视野内', away: '视野外', respawn: '复活中' };
-    const left = Math.max(0, this.calibT - G.time), md = this.mode(), [blo, bhi] = this.band(), mode = md === 'smart' ? '智能模式（0~2.5）' : md === 'fixed' ? '固定难度（测试用）' : ['轻松', '普通', '地狱'][md] + `（${blo}~${bhi}）` + (md === 2 ? ' · 只升不降' : '');
-    const ln = this.loadoutName(this.key), mem = this.saved ? `${ln} 存档已更新为 ${f2(this.saved.s)}` : this.mem ? `${ln} 存档 ${f2(this.mem.s)}（${this.mem.m || 1} 局）` : this.seed != null ? `首次用${ln}（参考其他组合 ${f2(this.seed)}）` : '无存档';
-    let h = `<b>导演台</b><span>${mode}</span>${this.cheat ? '<i class="l">后门模式 · 本局不计入存档</i>' : ''}`;
-    h += `<div class="big">玩家水平 <em>${f2(this.skill)}</em> ${this.tier(this.skill)} <small>可信度 ${pc(this.conf)} · ${left > 0 ? '校准中 ' + Math.ceil(left) + 's' : this.conf < 0.3 ? '数据不足' : '已校准'} · ${mem}${this.idle() ? ' · 挂机不计' : ''}</small></div>`;
-    h += `<div>交火积分 ${f2(this.elo)}（本局 ${this.nm.toFixed(1)} 次）` + Object.keys(SN).filter(k => this.sig[k]).map(k => ` · ${SN[k]} ${f2(this.sig[k].v)}<small>×${this.sig[k].w.toFixed(1)}</small>`).join('') + '</div>';
-    const pfs = f => Math.abs(f) < 0.05 ? '正常' : (f > 0 ? '专心涂地 ' : '收着打 ') + pc(Math.abs(f)), pf = this.pf || [0, 0];
-    h += `<div>比分 ${this.lead >= 0 ? '我方领先' : '我方落后'} ${pc(Math.abs(this.lead))} → 局势修正 敌 ${sgn(this.corrE)} · 友 ${sgn(this.corrM)}${this.boost > 1.01 ? `<small>（视野外加速 ×${this.boost.toFixed(1)}）</small>` : ''}</div>`;
-    h += `<div>打法倾向 敌：${pfs(pf[1 - PLAYER.team] || 0)} · 友：${pfs(pf[PLAYER.team] || 0)}</div>`;
-    h += Strategist.panelLines() + Combat.panelLine();
-    h += '<div>最近交火 ' + (this.log.length ? this.log.map(l => `<i class="${l.o > 0.5 ? 'w' : l.o < 0.5 ? 'l' : ''}">${l.o > 0.5 ? '赢' : l.o < 0.5 ? '输' : '平'}</i><small>预期${pc(l.p)}${l.w < 1 ? '×' + l.w.toFixed(1) : ''}</small>`).join(' ') : '—') + '</div>';
-    const row = (b, goal) => `<tr><td>${b.c.name}</td><td>${b.lv === undefined ? '—' : f2(b.lv)}</td><td>→ ${f2(goal)}</td><td>${this.tier(b.lv ?? goal)}</td><td>${STN[b.dState] || ''}</td></tr>`;
-    h += '<table><tr><th colspan="5">队友</th></tr>' + this.bots().filter(b => b.c.team === PLAYER.team).map(b => row(b, this.mateGoal)).join('');
-    h += '<tr><th colspan="5">对手</th></tr>' + this.enemies().map(b => row(b, this.target)).join('') + '</table>';
-    $('dirPanel').innerHTML = h;
-  }
+  // the panel lives in DirPanel (press ` during a match)
+  toggle() { DirPanel.toggle(); },
+  tier(v) { if (v > 2.15) return '地狱+'; const r = clamp(Math.round(v), 0, 2), d = v - r; return ['轻松', '普通', '地狱'][r] + (d > 0.15 ? '·偏强' : d < -0.15 ? '·偏弱' : ''); }
 };

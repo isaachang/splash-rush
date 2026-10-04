@@ -82,11 +82,13 @@ const Strategist = {
   },
   // ---------------------------------------------------------------- handing out the jobs
   assign() {
-    const tm = this.team(), k = this.k = this.intensity(), plan = this.plan, plan2 = this.plan2;
+    const tm = this.team(), k = this.k = this.intensity() * Pacing.counterK(tm), plan = this.plan, plan2 = this.plan2;
     // hunting goes in pairs (a strong player just picks off a lone hunter), and never after a beginner (being chased about is no fun)
     const count = id => id === 'hunt' ? (Director.skill >= 0.9 && k * 2.4 >= 1 ? 2 : 0) : Math.round(k * (id === 'paint' ? 4 : 1.6));
     const want = []; if (plan) for (let i = 0; i < count(plan); i++) want.push(plan);
     if (plan2 && plan2 !== 'hunt' && k >= 0.5) want.push(plan2);
+    // a wave (pacing): a couple of hunters come for the player on top of the plan
+    for (let i = want.filter(id => id === 'hunt').length, n = Pacing.waveHunters(tm); i < n; i++) want.push('hunt');
     this.live = [want.includes(plan) ? plan : null, want.includes(plan2) ? plan2 : null];
     this.give(tm, want);
   },
@@ -147,14 +149,16 @@ const Strategist = {
     if ((this.evalT -= dt) <= 0) this.choose();
     if ((this.assignT -= dt) <= 0) { this.assignT = 2; this.assign(); }
   },
-  panelLines() {
-    if (!this.on) return '';
+  // for the director panel: what has been read of the player, and the plan
+  view() {
+    if (!this.on) return null;
     const p = this.prof, pc = v => Math.round(v * 100) + '%';
-    if (!p) { const w = Math.ceil(20 - this.alive); return `<div>对面在观察你的打法…${w > 0 ? '（还需 ' + w + 's）' : '正在判断'}</div>`; }
-    const tags = [['打人', p.hunter], ['涂地', p.painter], ['冲得深', p.diver], ['常走' + ['左', '中', '右'][p.lane] + '路', p.steady], ['翻色热点', p.hot]].filter(t => t[1] >= 0.3).map(t => t[0] + ' ' + pc(t[1]));
+    if (!p) { const w = Math.ceil(20 - this.alive); return { tags: [], wait: w > 0 ? '在观察你的打法（还需 ' + w + 's）' : '正在判断…', plan: null, note: '' }; }
+    const tags = [['打人', p.hunter], ['涂地', p.painter], ['冲得深', p.diver], ['常走' + ['左', '中', '右'][p.lane] + '路', p.steady], ['翻色热点', p.hot]].filter(t => t[1] >= 0.3);
     const jobs = {}; for (const b of G.bots) if (b.c.team === this.team() && b.task) jobs[b.task.id] = (jobs[b.task.id] || 0) + 1;
-    const [lp, lp2] = this.live || [], why = Math.abs(Director.paintFocus(this.team())) >= 0.3 ? '比分拉开了，先按比分调' : this.plan === 'hunt' && Director.skill < 0.9 ? '不追着新手打' : '力度不够，暂不派人';
-    const plan = lp ? PLAN_NAME[lp] + (lp2 ? ' + ' + PLAN_NAME[lp2] : '') : this.plan ? PLAN_NAME[this.plan] + '·暂停（' + why + '）' : '无（按常规打）';
-    return `<div>对面看你：${tags.length ? tags.join(' · ') : '还看不出明显习惯'}</div><div>对面对策：${plan} · 力度 ${pc(this.k)}${Object.keys(jobs).length ? '（' + Object.entries(jobs).map(([k, n]) => PLAN_NAME[k] + ' ' + n + ' 人').join('，') + '）' : ''}</div>`;
+    const [lp, lp2] = this.live || [], why = Pacing.counterK(this.team()) === 0 ? '喘息中，先不针对' : Math.abs(Director.paintFocus(this.team())) >= 0.3 ? '比分拉开了，先按比分调' : this.plan === 'hunt' && Director.skill < 0.9 ? '不追着新手打' : '力度不够，暂不派人';
+    const plan = lp ? PLAN_NAME[lp] + (lp2 ? ' + ' + PLAN_NAME[lp2] : '') : this.plan ? PLAN_NAME[this.plan] + ' · 暂停' : null;
+    const note = lp ? '力度 ' + pc(this.k) + (Object.keys(jobs).length ? ' · ' + Object.entries(jobs).map(([k, n]) => PLAN_NAME[k] + ' ' + n + ' 人').join('，') : '') : this.plan ? why : '还看不出明显习惯';
+    return { tags, wait: '还看不出明显习惯', plan, note };
   }
 };

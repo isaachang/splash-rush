@@ -18,7 +18,7 @@ const Combat = {
     for (const b of G.bots) { b.support = null; b.warnUntil = 0; b.tokCd = 0; }
   },
   level() { return Director.teamLevel(1 - PLAYER.team); },
-  tokens() { const m = Director.mode(); if (typeof m === 'number') return m + 1; const lv = this.level(); return lv < 0.7 ? 1 : lv < 1.7 ? 2 : 3; },
+  tokens() { const m = Director.mode(), lv = this.level(), n = typeof m === 'number' ? m + 1 : lv < 0.7 ? 1 : lv < 1.7 ? 2 : 3; return Math.max(1, n + Pacing.tokenDelta(1 - PLAYER.team)); },   // (one fewer in a lull)
   warnTime(behind) {
     const m = Director.mode(), lv = this.level();
     const w = m === 0 ? 0.8 : m === 1 ? 0.5 : m === 2 ? 0 : lv <= 0.3 ? 0.8 : lv <= 1 ? lerp(0.8, 0.5, (lv - 0.3) / 0.7) : lv < 1.7 ? lerp(0.5, 0, (lv - 1) / 0.7) : 0;
@@ -37,6 +37,7 @@ const Combat = {
   // ---------------------------------------------------------------- warning shots and the breather
   onAcquire(b) {
     if (this.aimT == null && this.stats) this.aimT = G.time;
+    Pacing.onAcquire();
     if (!this.on) return;
     const behind = !Director.inView(b.c, PLAYER), w = this.warnTime(behind);
     if (behind) b.reactT *= 1.4;
@@ -112,11 +113,9 @@ const Combat = {
     const on = G.bots.filter(b => b.enemy === PLAYER && b.c.intent.fire && b.c.alive && T - (b.holdT ?? -9) > 0.05);
     if (on.length) this.stats.fireFrames++; if (on.length >= 2) this.stats.twoFrames++; if (on.length > this.tokens()) this.stats.overFrames++; if (this.on) this.stats.rogue += on.filter(b => !this.holders.has(b)).length;
   },
-  panelLine() {
-    if (!this.on) return '';
-    const T = G.time, warn = G.bots.filter(b => b.enemy === PLAYER && this.warning(b, PLAYER)).length, sup = G.bots.filter(b => b.support).length;
-    const bits = [`正在打你：${this.holders.size}/${this.tokens()} 名额${this.waiting.size ? '（' + this.waiting.size + ' 人在等）' : ''}`];
-    if (warn) bits.push(warn + ' 人在警告射击'); if (T - this.graceT < 0.3) bits.push('残血喘息中'); if (sup) bits.push('队友支援 ' + sup + ' 人');
-    return `<div>${bits.join(' · ')}</div>`;
+  // for the director panel
+  view() {
+    if (!this.on) return null; const T = G.time;
+    return { cap: this.tokens(), used: this.holders.size, waiting: this.waiting.size, warn: G.bots.filter(b => b.enemy === PLAYER && this.warning(b, PLAYER)).length, grace: T - this.graceT < 0.3, support: G.bots.filter(b => b.support).length };
   }
 };
