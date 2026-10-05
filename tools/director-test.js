@@ -19,7 +19,7 @@ const gap = r => avg(r.map(x => x.turf[0] - x.turf[1])), wins = r => r.filter(x 
   const kd = r => avg(r.map(x => x.k - x.d)), gE = gap(onEasy), gH = gap(onHell), kE = kd(onEasy), kH = kd(onHell);
   ok(kE > kH + 3, 'tiers: a normal stand-in goes ' + (kE >= 0 ? '+' : '') + kE.toFixed(1) + ' in knock-outs minus deaths a match on easy and ' + (kH >= 0 ? '+' : '') + kH.toFixed(1) + ' on hell (bar: at least 3 apart); wins ' + wins(onEasy) + ' / ' + wins(onHell) + ' of ' + onEasy.length + ', turf ' + (gE >= 0 ? '+' : '') + gE.toFixed(1) + ' / ' + (gH >= 0 ? '+' : '') + gH.toFixed(1));
   // the bots stay where the tier put them, whatever the stand-in does
-  const lvOk = mid.concat(strong, weak).every(x => x.enemyLv.every(v => v >= 0.85 - 1e-6 && v <= 1.15 + 1e-6) && x.mateLv.every(v => v >= 0.7 - 1e-6 && v <= 1 + 1e-6));
+  const lvOk = mid.concat(strong, weak).every(x => x.enemyLv.every(v => v >= 0.85 - 1e-6 && v <= 1.15 + 1e-6) && x.mateLv.every(v => v >= 0.7 - 1e-6 && v <= 1.0 + 1e-6));
   ok(lvOk, 'fixed levels: on normal every enemy ends the match within 0.85-1.15 and every teammate within 0.7-1.0, for a weak, a normal and a strong stand-in alike');
   const lw = wins(lazy);
   ok(lw <= 1, 'the player decides: a stand-in that wanders about and never shoots wins ' + lw + ' of ' + lazy.length + ' (bar: 1 at most - the teammates do not carry it)');

@@ -365,9 +365,10 @@ class Bot {
     return true;
   }
   // how far off its aim is right now: wide on someone it has only just picked out, settling in (quicker, the better it is), and thrown off by being hit
+  // (the player's teammates, the supporting cast, a little wider still)
   aimK(D) {
     const T = G.time, t = T - (this.acqT ?? -9);
-    return (1 + 1.5 * Math.exp(-t / (D.settle ?? 0.45))) * (T - this.c.lastHurt < 0.35 ? 1 + (D.flinch ?? 0.6) : 1);
+    return (1 + 1.5 * Math.exp(-t / (D.settle ?? 0.45))) * (T - this.c.lastHurt < 0.35 ? 1 + (D.flinch ?? 0.6) : 1) * Director.aimOf(this.c);
   }
   // easy bots (and the old behaviour): wander to a random unpainted spot in "their" third of the map
   chooseTargetSimple() {

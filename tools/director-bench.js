@@ -5,6 +5,7 @@
     Usage:  node tools/director-bench.js [map=canton] [player=1] [tier=t1] [matches=4] [seconds=180]
             player: a level - 0.3 plays like 轻松, 1 普通, 1.5 困难, 2 地狱 (any value 0..2.5)
             tier: t0 轻松 · t1 普通 · t2 困难 · t3 地狱 · f0 / f1 / f2 every bot on one fixed row (as before v0.15)
+            TIERO='{"1":{"mates":0.9,"mateAim":1}}' tries other tier settings (TIERS in 07b_director.js)
             LAZY=1 the stand-in idles about its spawn and never shoots, LAZY=2 wanders the map and never shoots
             JSON=1 prints the raw numbers as JSON instead                                                    */
 const vm = require('vm'), fs = require('fs'), path = require('path');
@@ -13,9 +14,10 @@ const [map = 'canton', pl = '1', en = 't1', n = '4', secs = '180'] = process.arg
 process.env.SR_MAP = map;
 eval(src.slice(src.indexOf('const root'), src.indexOf('const weapons')));
 const g = makeSandbox();
-const run = function (PL, EN, N, SECS, WPN, DIRO, NOSTRAT, LAZY) {
+const run = function (PL, EN, N, SECS, WPN, DIRO, NOSTRAT, LAZY, TIERO) {
   clock.getDelta = () => 1 / 30; for (let i = 0; i < 5; i++) loop();
   if (NOSTRAT) Strategist.off = true;                                        // NOSTRAT=1 : without the strategist's plans
+  if (TIERO) for (const i in TIERO) Object.assign(TIERS[i], TIERO[i]);     // TIERO='{"1":{"mates":0.9}}' : try other tier settings
   if (DIRO) for (const k in DIRO) Director[k] = Object.assign({}, Director[k], DIRO[k]);      // DIRO='{"PF":{"span":0.08}}' : try other Director settings
   const out = [];
   for (let m = 0; m < N; m++) {
@@ -45,7 +47,7 @@ const run = function (PL, EN, N, SECS, WPN, DIRO, NOSTRAT, LAZY) {
   return out;
 };
 const EN = en[0] === 'f' ? 20 + +en.slice(1) : 10 + +en.replace('t', '');
-const res = vm.runInContext('(' + run.toString() + ')(' + [+pl, EN, +n, +secs, JSON.stringify(process.env.WEAPON || ''), process.env.DIRO || 'null', process.env.NOSTRAT ? 'true' : 'false', +(process.env.LAZY || 0)].join(',') + ')', g);
+const res = vm.runInContext('(' + run.toString() + ')(' + [+pl, EN, +n, +secs, JSON.stringify(process.env.WEAPON || ''), process.env.DIRO || 'null', process.env.NOSTRAT ? 'true' : 'false', +(process.env.LAZY || 0), process.env.TIERO || 'null'].join(',') + ')', g);
 if (process.env.JSON) { console.log(JSON.stringify(res)); process.exit(0); }
 const avg = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length), f2 = v => v == null ? '-' : v.toFixed(2);
 const TN = ['easy', 'normal', 'hard', 'hell'], ENAME = EN >= 20 ? 'fixed row ' + (EN - 20) : 'tier ' + TN[EN - 10];

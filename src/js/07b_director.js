@@ -2,8 +2,11 @@
    The four tiers - 轻松 easy · 普通 normal · 困难 hard · 地狱 hell - and nothing that goes easy on anyone.
    A tier is simply how good the bots are (DIFF's scale: 0 easy, 1 normal, 2 hell, anything in between): the
    level is set when the match starts and stays.  Each bot is a person of its own within the tier - a little
-   better or worse than the tier (about ±0.15), more pushy or more careful - and the player's teammates sit a
-   little below the enemies, so the player is the one who has to make the difference.  Both sides play the score
+   better or worse than the tier (about ±0.15), more pushy or more careful.  The player's teammates do not climb
+   with the tier (hell's are a little above normal), and they are the supporting cast: they paint like anyone
+   but shoot a little wider - so on the hard tiers it is the player who has to make the difference (the way
+   Halo's marines or The Last of Us' companions are written, rather than CS or Rocket League, where the teammate
+   bots are as strong as the enemies and carry you).  Both sides play the score
    the way people do: behind, take ground; ahead, hold it.
    It also keeps an estimate of how well the player is playing, for the panel only - nothing is steered by it.
    (Tests that set G.aiLevels pit fixed rows against each other instead.)                                   */
@@ -24,19 +27,20 @@ function diffAt(lv, hi) {
   return o;
 }
 const avgOf = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
-// the tiers.  lv: how good the bots are; counter: how much they adapt to the player's habits (the strategist) - beginners do not
+// the tiers.  lv: how good the enemies are; mates: how good the player's teammates are; mateAim: how much wider the teammates shoot
+// (not on easy - a beginner needs the help); counter: how much the enemies adapt to the player's habits (the strategist)
 const TIERS = [
-  { name: '轻松', note: '放开打', lv: 0.3, counter: 0 },
-  { name: '普通', note: '有来有回', lv: 1.0, counter: 0.5 },
-  { name: '困难', note: '认真起来', lv: 1.5, counter: 0.75 },
-  { name: '地狱', note: '每一波都是硬仗', lv: 2.0, counter: 1 }
+  { name: '轻松', note: '放开打', lv: 0.3, mates: 0.2, mateAim: 1, counter: 0 },
+  { name: '普通', note: '有来有回', lv: 1.0, mates: 0.85, mateAim: 1.1, counter: 0.5 },
+  { name: '困难', note: '认真起来', lv: 1.5, mates: 1.2, mateAim: 1.15, counter: 0.75 },
+  { name: '地狱', note: '每一波都是硬仗', lv: 2.0, mates: 1.35, mateAim: 1.25, counter: 1 }
 ];
 const Director = {
   K: 0.8,                                                                  // how sharply a level gap turns into duel odds: p = 1 / (1 + e^(-K·gap))
   PAINT_K: { rifle: 1, smg: 0.82, charger: 0.49, splatling: 0.58, blaster: 0.9 },   // how much each weapon paints, relative to the rifle
   HIT: { rifle: 0.45, smg: 0.3, charger: 0.4, splatling: 0.25, blaster: 0.4 },   // share of shots on target for a normal bot (a level is worth about 0.15 more)
   PF: { start: 0.06, span: 0.12 },                                          // playing the score: from how far apart, fully by how much further
-  SPREAD: 0.15, MATES: 0.15,                                                // each bot's own level within the tier; teammates this far below the enemies
+  SPREAD: 0.15,                                                             // each bot's own level, around the tier's
   st: null,
   // a tier (0 easy · 1 normal · 2 hard · 3 hell), or 'fixed' - a test pitting fixed rows against each other (G.aiLevels)
   mode() { return !PLAYER || G.aiLevels ? 'fixed' : clamp(GAME.diff | 0, 0, TIERS.length - 1); },
@@ -60,11 +64,11 @@ const Director = {
     this.fights = new Map(); this.log = []; this.trace = []; this.allDuels = [];
     this.st = { alive: 0, shots: 0, hits: 0, swimT: 0, refillT: 0, climbs: 0, bombs: 0, idleT: 0 };
     this.calibT = Math.min(60, 15 + GAME.dur / 6); this.endWin = clamp(Math.round(10 + GAME.dur / 9), 20, 40);
-    // every bot a person: its own level around the tier's, and a temperament - pushy or careful
-    const L = this.tierOf().lv;
+    // every bot a person: its own level around the tier's (the teammates': around theirs), and a temperament - pushy or careful
+    const tr = this.tierOf();
     for (const b of G.bots) {
       if (b.c.isPlayer) continue;
-      b.lv = clamp(L + rand(-this.SPREAD, this.SPREAD) - (b.c.team === PLAYER.team ? this.MATES : 0), 0, LV_MAX);
+      b.lv = clamp((b.c.team === PLAYER.team ? tr.mates : tr.lv) + rand(-this.SPREAD, this.SPREAD), 0, LV_MAX);
       b.trait = { aggr: rand(-1, 1), care: rand(-1, 1) };
     }
     this.squadBrain = [{}, {}]; this.teamRow = [0, 1].map(tm => diffAt(this.teamLevel(tm)));
@@ -82,6 +86,8 @@ const Director = {
     return bot.dRow;
   },
   teamLevel(tm) { const tb = this.bots().filter(b => b.c.team === tm && b.lv !== undefined); return tb.length ? avgOf(tb.map(b => b.lv)) : this.tierOf().lv; },
+  // the player's teammates shoot this much wider than their level would (1 for everyone else, and in tests with fixed rows)
+  aimOf(c) { return this.on && PLAYER && c.team === PLAYER.team && !c.isPlayer ? this.tierOf().mateAim : 1; },
   // the level a bot is playing at (tests with fixed rows: that row)
   lvOf(c) { if (this.on) return c.bot && c.bot.lv !== undefined ? c.bot.lv : this.tierOf().lv; const l = G.aiLevels ? G.aiLevels[c.team] : 1; return l >= 0 && l <= 2 ? l : 1; },
   endWindow() { return this.on ? this.endWin : 30; },
@@ -137,8 +143,8 @@ const Director = {
     const P = PLAYER, st = this.st, S = this.sig = {}, aliveM = st.alive / 60, R = this.raw = {};
     const mates = CHARS.filter(c => c.team === P.team && c !== P && (c.dirAlive || 0) > 5);
     if (st.alive > 20 && mates.length) {
-      // compared with the teammates, who play the same enemies at a level we know (plus the step they sit below the enemies)
-      const base = avgOf(mates.map(c => this.lvOf(c))) + (this.on ? this.MATES : 0), grow = Math.min(1, st.alive / 60), lr = c => Math.log2(((c.dDealt || 0) + 0.5) / ((c.dTaken || 0) + 0.5));
+      // compared with the teammates, who play the same enemies at a level we know
+      const base = avgOf(mates.map(c => this.lvOf(c))), grow = Math.min(1, st.alive / 60), lr = c => Math.log2(((c.dDealt || 0) + 0.5) / ((c.dTaken || 0) + 0.5));
       const pr = P.paint / this.paintK(P) / aliveM, mr = avgOf(mates.map(c => c.paint / this.paintK(c) / (c.dirAlive / 60)));
       if (mr > 0) { R.paint = Math.log2(Math.max(0.05, pr / mr)); S.paint = { v: base + 1.6 * R.paint, w: 0.7 * grow }; }
       R.dmg = lr(P) - avgOf(mates.map(lr)); S.dmg = { v: base + 0.7 * R.dmg, w: 0.6 * grow };

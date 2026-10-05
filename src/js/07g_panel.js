@@ -22,7 +22,7 @@ const DirPanel = {
     const save = D.saved ? '已存 ' + f2(D.saved.s) : D.mem ? '存档 ' + f2(D.mem.s) + ' · ' + (D.mem.m || 1) + ' 局' : D.seed != null ? '首次 · 参考 ' + f2(D.seed) : '无存档';
     let h = `<div class="dp-head"><b>导演台</b><span class="dp-chip">${md === 'fixed' ? '测试固定档' : tier.name + ' ' + f2(tier.lv)}</span><span class="dp-chip dim">${this.esc(D.loadoutName(D.key))} · ${save}</span></div>`;
     // ---- the ruler: each tier's spread of bot levels, the bots, and the estimate of the player
-    const zones = TIERS.map((t, i) => `<i class="z ${this.tierCls(t.lv)}${md === i ? ' sel' : ''}" style="left:${this.x(t.lv - D.SPREAD)};width:calc(${this.x(t.lv + D.SPREAD)} - ${this.x(t.lv - D.SPREAD)})"></i>`).join('');
+    const zones = TIERS.map((t, i) => `<i class="z ${this.tierCls(t.lv)}${md === i ? ' sel' : ''}" style="left:${this.x(t.lv - D.SPREAD)};width:calc(${this.x(t.lv + D.SPREAD)} - ${this.x(t.lv - D.SPREAD)})"></i>`).join('') + (typeof md === 'number' ? `<i class="z mates" style="left:${this.x(tier.mates - D.SPREAD)};width:calc(${this.x(tier.mates + D.SPREAD)} - ${this.x(tier.mates - D.SPREAD)})"></i>` : '');
     const mk = (v, cls, lab) => `<em class="mk ${cls}" style="left:${this.x(v)}"><u>${lab}</u></em>`;
     h += `<div class="dp-lv"><div class="dp-big"><span class="${this.tierCls(D.skill)}">${f2(D.skill)}</span><small>你的发挥 · 约等于${D.tier(D.skill)}</small><i class="dp-state ${state[0]}">${state[1]}</i></div>
       <div class="dp-ruler">${zones}${mk(avg(foes), 'foe', '敌')}${mk(avg(mates), 'mate', '友')}${mk(D.skill, 'me', '你')}<b class="conf" style="width:${this.pct(D.conf)}"></b></div>
@@ -52,7 +52,7 @@ const DirPanel = {
     const STN = { fight: '交火', alert: '警觉', away: '巡逻', respawn: '复活' }, JOB = { paint: '抢地', hunt: '围猎', flank: '绕后', block: '封路', retake: '反推' };
     const temper = b => { const t = b.trait; return !t ? '' : t.aggr > 0.4 ? '冲' : t.aggr < -0.4 ? '稳' : t.care > 0.5 ? '惜命' : ''; };
     const bot = b => { const lv = D.lvOf(b.c), tp = temper(b); return `<div class="dp-bot"><i class="st ${b.dState || 'away'}" title="${STN[b.dState] || ''}"></i><span class="nm">${this.esc(b.c.name)}</span><span class="lvp ${this.tierCls(lv)}">${f2(lv)}</span>${tp ? `<em>${tp}</em>` : ''}${b.task ? `<em>${JOB[b.task.id] || ''}</em>` : ''}${b.enemy === PLAYER ? '<em class="tok">打你</em>' : ''}</div>`; };
-    h += `<div class="dp-sec">机器人 <small>本局固定 · 各有手感和脾气</small></div><div class="dp-bots"><div>${mates.map(bot).join('')}</div><div>${foes.map(bot).join('')}</div></div>`;
+    h += `<div class="dp-sec">机器人 <small>本局固定 · 各有手感和脾气${typeof md === 'number' && tier.mateAim > 1 ? ' · 队友枪法 ×' + tier.mateAim + ' 偏' : ''}</small></div><div class="dp-bots"><div>${mates.map(bot).join('')}</div><div>${foes.map(bot).join('')}</div></div>`;
     h += `<div class="dp-legend"><i class="st fight"></i>交火 <i class="st alert"></i>警觉（听到/刚跟丢）<i class="st away"></i>巡逻 <i class="st respawn"></i>复活</div>`;
     return `<div class="dp-cols"><div class="dp-col">${ess}</div><div class="dp-col">${h}</div></div><div class="dp-foot">再按 ` + '`' + ` 关闭</div>`;
   }

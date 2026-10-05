@@ -101,12 +101,17 @@ const tests = function (DEVC, VIPC) {
     const names = TIERS.map(t => t.name).join(), lvls = TIERS.map(t => t.lv).join();
     let inside = true, gap = 0, n = 0, spread = 0, traits = true;
     for (let t = 0; t < 4; t++) for (let k = 0; k < 12; k++) {
-      GAME.diff = t; D.reset(); const L = TIERS[t].lv, foes = D.enemies().map(b => b.lv), mates = D.bots().filter(b => b.c.team === P.team).map(b => b.lv);
-      if (foes.some(v => v < L - 0.15 - 1e-9 || v > L + 0.15 + 1e-9) || mates.some(v => v < L - 0.3 - 1e-9 || v > L + 1e-9)) inside = false;
+      GAME.diff = t; D.reset(); const L = TIERS[t].lv, M = TIERS[t].mates, foes = D.enemies().map(b => b.lv), mates = D.bots().filter(b => b.c.team === P.team).map(b => b.lv);
+      if (foes.some(v => v < L - 0.15 - 1e-9 || v > L + 0.15 + 1e-9) || mates.some(v => v < M - 0.15 - 1e-9 || v > M + 0.15 + 1e-9)) inside = false;
       gap += avgOf(foes) - avgOf(mates); n++; spread += Math.max(...foes) - Math.min(...foes);
       if (!D.bots().every(b => b.trait && Math.abs(b.trait.aggr) <= 1 && Math.abs(b.trait.care) <= 1)) traits = false;
     }
-    ok(names === '轻松,普通,困难,地狱' && lvls === '0.3,1,1.5,2' && inside && Math.abs(gap / n - 0.15) < 0.05 && spread / n > 0.1 && traits, 'tiers: 轻松 0.3 · 普通 1.0 · 困难 1.5 · 地狱 2.0; each enemy within ±0.15 of its tier, teammates 0.15 below (on average ' + (gap / n).toFixed(2) + '), every bot with its own level and temperament');
+    const mlv = TIERS.map(t => t.mates).join(), maim = TIERS.map(t => t.mateAim).join();
+    ok(names === '轻松,普通,困难,地狱' && lvls === '0.3,1,1.5,2' && mlv === '0.2,0.85,1.2,1.35' && inside && Math.abs(gap / n - avgOf(TIERS.map(t => t.lv - t.mates))) < 0.05 && spread / n > 0.1 && traits, 'tiers: enemies 轻松 0.3 · 普通 1.0 · 困难 1.5 · 地狱 2.0, the player\'s teammates 0.2 · 0.85 · 1.2 · 1.35 (they do not climb with the tier), each bot within ±0.15 of its own and with its own temperament');
+    // the teammates are the supporting cast: they shoot wider than their level would (not on easy); the enemies and the player do not
+    const aimBy = t => { GAME.diff = t; D.reset(); const m = D.bots().find(b => b.c.team === P.team), f = D.enemies()[0]; m.acqT = f.acqT = G.time - 9; m.c.lastHurt = f.c.lastHurt = -99; return [m.aimK(DIFF[1]), f.aimK(DIFF[1])]; };
+    const [mE, fE] = aimBy(0), [mH, fH] = aimBy(3);
+    ok(Math.abs(mE - fE) < 1e-6 && mH > fH * 1.2 && Math.abs(D.aimOf(P) - 1) < 1e-9, 'teammates: on hell they shoot ' + (mH / fH).toFixed(1) + 'x wider than an enemy of the same level (they still paint as usual); on easy as straight as anyone; the player is never touched');
     // the levels stay put: however the player is judged and whatever the score
     GAME.diff = 1; D.reset(); const before = D.bots().map(b => b.lv).join(), sig = D.signals;
     D.signals = function () { this.skill = 2.4; }; run(90); const vsStrong = D.bots().map(b => b.lv).join();
