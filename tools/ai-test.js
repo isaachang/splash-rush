@@ -139,12 +139,21 @@ const tests = function (DEVC, VIPC) {
   // ---------------- the tiers: each moves within its own range; hell never goes easy on a player who is behind
   {
     setup(SMART); const D = Director, S = Strategist, gd = GAME.diff, sig = D.signals, tc = Paint.teamCells.slice(), tot = Paint.total, me = PLAYER.team; G.aiLevels = null; D.signals = function () { };
-    const at = (t, skill, lead) => { GAME.diff = t; D.skill = skill; S.k = 0; Paint.teamCells[me] = Math.round(tot * (0.4 + lead / 2)); Paint.teamCells[1 - me] = Math.round(tot * (0.4 - lead / 2)); D.steer(); return { t: D.target, m: D.mateGoal, pfE: D.paintFocus(1 - me), pfM: D.paintFocus(me) }; };
-    let inside = true; for (const [t, lo, hi] of [[0, 0, 0.6], [1, 0.7, 1.3], [2, 2, 2.5]]) for (const sk of [0.1, 1.0, 2.4]) for (const ld of [-0.3, 0, 0.3]) { const r = at(t, sk, ld); if (r.t < lo - 1e-9 || r.t > hi + 1e-9 || r.m < lo - 1e-9 || r.m > hi + 1e-9) inside = false; }
-    const hellBehind = at(2, 0.3, -0.3), hellAhead = at(2, 2.2, 0.3), normBehind = at(1, 1, -0.3), easyCounters = (at(0, 0.6, 0), S.intensity());
+    const at = (t, skill, lead, effort = 0.9) => { GAME.diff = t; D.skill = skill; D.effort = effort; S.k = 0; Paint.teamCells[me] = Math.round(tot * (0.4 + lead / 2)); Paint.teamCells[1 - me] = Math.round(tot * (0.4 - lead / 2)); D.steer(); return { t: D.target, m: D.mateGoal, pfE: D.paintFocus(1 - me), pfM: D.paintFocus(me), ease: D.mateEaseOf(me) }; };
+    let inside = true; for (const [t, lo, hi] of [[0, 0, 0.6], [1, 0.7, 1.3], [2, 2, 2.5], [SMART, 0, 2.5]]) for (const sk of [0.1, 1.0, 2.4]) for (const ld of [-0.3, 0, 0.3]) { const r = at(t, sk, ld); if (r.t < lo - 1e-9 || r.t > hi + 1e-9 || r.m < lo - 1e-9 || r.m > hi + 1e-9) inside = false; }
+    // smart: teammates a step below, enemies level - whatever the score; nobody is propped up when losing
+    const even = at(SMART, 1.2, 0), behind = at(SMART, 1.2, -0.2), lowSk = at(SMART, 0.3, 0), midSk = at(SMART, 0.6, 0);
+    const sides = Math.abs(even.m - 1.0) < 1e-9 && Math.abs(even.t - 1.2) < 1e-9 && Math.abs(behind.m - 1.0) < 1e-9 && Math.abs(behind.t - 1.2) < 1e-9 && Math.abs(lowSk.m - 0.3) < 1e-9 && Math.abs(midSk.m - 0.5) < 1e-9;
+    ok(inside && sides, 'sides: teammates sit 0.2 below the player (' + even.m.toFixed(2) + ' for a 1.2; not below 0.5 unless the player is), enemies at the player\'s level, everything inside the tier; 20 % behind changes neither (' + behind.m.toFixed(2) + ' / ' + behind.t.toFixed(2) + ')');
+    // crushed: a small net only for a player who is trying; never on hell
+    const tryHard = at(SMART, 1.2, -0.35, 0.8), tryEase = D.mateEaseOf(1 - me), slack = at(SMART, 1.2, -0.35, 0.2), slackEase = D.mateEaseOf(1 - me), hellCrushed = at(2, 2.2, -0.35, 0.9), hellEase = D.mateEaseOf(1 - me);
+    ok(tryHard.t < 1.2 && tryHard.t >= 1.2 - 0.25 - 1e-9 && tryEase === 1 && Math.abs(slack.t - 1.2) < 1e-9 && slackEase === 0 && hellCrushed.t >= 2.2 - 1e-9 && hellEase === 0 && tryHard.m === slack.m, 'crushed 35 % behind: trying -> the enemies ease by ' + (1.2 - tryHard.t).toFixed(2) + ' (0.25 at most) and hold back; not trying -> nothing; hell -> nothing; teammates never change');
+    // running away: the enemies sharpen up and the teammates hold back - only that way round
+    const ahead = at(SMART, 1.2, 0.25), aheadN = at(1, 1.0, 0.3), lose = at(SMART, 1.2, -0.25);
+    ok(ahead.t > 1.7 && ahead.ease === 1 && ahead.pfE > 0 && Math.abs(aheadN.t - 1.3) < 1e-9 && lose.ease === 0 && lose.pfM > 0 && lose.pfE < 0, 'player\'s side 25 % ahead: enemies +' + (ahead.t - 1.2).toFixed(2) + ' and taking ground, teammates hold back; on normal capped at 1.3; behind: teammates take ground, enemies hold theirs - nobody eases off for the player');
+    const easyCounters = (at(0, 0.6, 0), S.intensity());
     Paint.teamCells[0] = tc[0]; Paint.teamCells[1] = tc[1];
-    ok(inside && hellBehind.t === 2 && hellBehind.m === 2 && hellBehind.pfE === 0 && hellBehind.pfM === 0 && hellAhead.t > 2.2 && normBehind.t < 1 && normBehind.pfE < 0 && normBehind.m > 1 && easyCounters === 0,
-      'tiers: every goal stays inside its tier (easy 0-0.6, normal 0.7-1.3, hell 2-2.5) whatever the level and score; normal and behind -> enemies ' + normBehind.t.toFixed(2) + ' easing off, teammates ' + normBehind.m.toFixed(2) + '; hell and behind -> nobody eases off or helps (enemies ' + hellBehind.t.toFixed(2) + '); hell and well ahead -> up to ' + hellAhead.t.toFixed(2) + '; easy never counters');
+    ok(easyCounters === 0, 'tiers: easy never counters');
     // and the bots themselves, over a few seconds of play on normal with a player judged far above it
     GAME.diff = 1; D.signals = function () { this.skill = 2.4; }; run(150); const lvs = G.bots.filter(b => !b.c.isPlayer).map(b => b.lv);
     ok(lvs.every(v => v >= 0.7 - 1e-9 && v <= 1.3 + 1e-9) && Math.max(...lvs) > 1.2, 'tiers: on normal, a player judged 2.4 gets bots at the top of normal and no further (' + Math.min(...lvs).toFixed(2) + '-' + Math.max(...lvs).toFixed(2) + ')');
@@ -186,6 +195,32 @@ const tests = function (DEVC, VIPC) {
     G.aiLevels = [1, 1]; const fixedOk = en.every(b => C.canShoot(b, P)) && C.errK(P) === 1;
     ok(fixedOk, 'combat feel: off for the fixed rows used by tests');
     G.aiLevels = null; GAME.diff = gd;
+  }
+  // ---------------- the player decides: effort, no reward for playing badly on purpose, the duel director, backup that leaves the kill
+  {
+    setup(SMART); const D = Director, C = Combat, P = PLAYER, gd = GAME.diff; G.aiLevels = null; GAME.diff = SMART; P.pos.set(0, 2.2, 20);
+    const mates = CHARS.filter(c => c.team === P.team && c !== P), tick = (n, f) => { for (let i = 0; i < n; i++) { f(); D.effT = 0; D.effortTick(0.5); } };
+    D.eff = []; tick(40, () => { const sp = SPAWN[P.team]; P.pos.set(sp.x, sp.y, sp.z); P.vel.set(0, 0, 0); P.lastShot = -99; mates.forEach(c => { c.paint += 3; c.dDealt = (c.dDealt || 0) + 0.05; }); });
+    const lazy = D.effort;
+    D.eff = []; P.pos.set(0, 2.2, 20); tick(40, () => { P.vel.set(4, 0, 0); P.lastShot = G.time; P.paint += 3; P.dDealt = (P.dDealt || 0) + 0.05; mates.forEach(c => { c.paint += 3; c.dDealt = (c.dDealt || 0) + 0.05; }); });
+    const keen = D.effort;
+    // not trying: the level may go up, never down; a duel lost while not trying does not count
+    const sig = D.signals; D.skill = 1.0; D.elo = 0.2; D.n = 6; D.effort = 0.2; G.time = Math.max(G.time, D.calibT + 1); D.signals(); const frozen = D.skill;
+    D.effort = 0.9; D.signals(); const drops = D.skill; D.elo = 1; D.effort = 0.2; D.resolve({ e: { name: 'x' }, lv: 1 }, 0, 1); const eloSlack = D.elo; D.signals = sig;
+    ok(lazy < 0.25 && keen > 0.85 && frozen === 1.0 && drops < 1.0 && eloSlack === 1, 'effort: idling at the spawn reads ' + lazy.toFixed(2) + ', moving, shooting, painting and hitting like the teammates ' + keen.toFixed(2) + '; while not trying the level does not drop and lost duels do not count (playing badly on purpose does not make it easier)');
+    // the duel director: losing duels - longer warnings, slower, wider, one fewer shooting; winning - the other way; hell only gets harder
+    C.reset(); const base = { tok: C.tokens(), err: C.duelErrK(), warn: C.warnTime(false) };
+    for (let i = 0; i < 6; i++) C.onDuel(0, 1); const cold = { h: C.heat, tok: C.tokens(), err: C.duelErrK(), react: C.duelReactK(), warn: C.warnTime(false) };
+    C.reset(); for (let i = 0; i < 6; i++) C.onDuel(1, 1); const hot = { h: C.heat, tok: C.tokens(), err: C.duelErrK(), react: C.duelReactK(), warn: C.warnTime(false) };
+    GAME.diff = 2; C.reset(); for (let i = 0; i < 6; i++) C.onDuel(0, 1); const hellCold = C.duelErrK(); GAME.diff = SMART;
+    ok(cold.h < -0.8 && cold.tok === base.tok - 1 && cold.err > 1.5 && cold.react > 1.4 && cold.warn > base.warn + 0.3 && hot.h > 0.8 && hot.tok === base.tok + 1 && hot.err < 0.75 && hot.react < 0.8 && hot.warn < base.warn * 0.4 && hellCold === 1,
+      'duel director: after a run of lost duels the enemies facing the player shoot ' + cold.err.toFixed(1) + 'x wider, ' + cold.react.toFixed(1) + 'x slower, warn ' + cold.warn.toFixed(1) + ' s and one fewer may shoot; after a run of wins ' + hot.err.toFixed(2) + 'x, ' + hot.react.toFixed(2) + 'x, ' + hot.warn.toFixed(2) + ' s and one more; on hell a losing run changes nothing');
+    // backup suppresses and leaves the knock-out to the player
+    const mb = G.bots.find(b => b.c.team === P.team && !b.c.isPlayer), foe = CHARS.find(c => c.team !== P.team);
+    mb.support = { t: G.time, att: [foe] }; foe.hp = foe.maxHp * 0.3; foe.dmgBy.set(P, G.time);
+    const hold = C.supportHold(mb, foe), wide = C.mateErrK(mb, foe); foe.hp = foe.maxHp; const fresh = C.supportHold(mb, foe); mb.support = null;
+    ok(hold && wide > 1.5 && !fresh && C.mateErrK(mb, foe) === 1, 'backup: a teammate covering the player shoots wide at the attackers (' + wide + 'x) and holds fire on one the player has nearly finished, so the knock-out is the player\'s');
+    GAME.diff = gd;
   }
   // ---------------- pacing: build-up -> wave -> lull, and the panel
   {

@@ -177,6 +177,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.19.0', date: '2026-10-05', time: '10:34', title: '你才是核心', items: [
+    '你是队伍的核心：认真抢地、认真交火的局更有机会赢；站着划水的局，队友扛不住',
+    '被围时赶来的队友会帮你压住对手，但最后那一下留给你',
+    '领先太多时，对面会认真起来抢地，比赛不会变成一边倒'
+  ] },
   { v: 'v0.18.0', date: '2026-10-04', time: '18:30', title: '对局有起伏', items: [
     '对面会一阵一阵地压上来：先慢慢往前推，然后一起冲一波，打完会退开一阵，留给你回血、涂地、重新站好位置',
     '一局 1:30 大概一波，3:00 两波左右，5:00 三波左右；比分咬得紧时，最后阶段一定是一场硬仗',

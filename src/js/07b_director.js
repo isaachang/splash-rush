@@ -5,10 +5,11 @@
    same scale as DIFF (0 easy · 1 normal · 2 hell, anything in between, and a little past hell).  Every bot
    carries its own level and moves toward a target: at once while it is dead or flying in, quickly while the
    player cannot see it, slowly while the two are fighting - so nobody turns into a sharpshooter mid-duel.
-   The whole lobby follows the player (teammates too, or three normal teammates would carry a beginner).
-   A score running away moves the enemies against it, and the teammates a little the other way - more when
-   the enemies are already at the top or bottom - and since aim alone hardly moves the turf, the side behind
-   is also told to keep to painting while the side ahead eases off.  It watches in every mode (so the saved estimate is ready
+   The player decides the match: teammates sit a step below the player and the enemies at the player's level, so
+   the player at their usual level is an even match and the player not pulling their weight is three weak
+   teammates against four.  Nothing props up a side that is losing (save a small net for a player who is
+   really trying and being crushed); a player's side running away with it makes the enemies sharpen up.
+   Both sides play the score the way people do - behind, take ground; ahead, hold it.  It watches in every mode (so the saved estimate is ready
    for the next match), but only steers the bots in smart mode.                                              */
 const SMART = -1, LV_MAX = 2.5;
 const DIFF_DEF = { swimK: 0.9, dawdle: 0 };
@@ -32,7 +33,8 @@ const Director = {
   PAINT_K: { rifle: 1, smg: 0.82, charger: 0.49, splatling: 0.58, blaster: 0.9 },   // how much each weapon paints, relative to the rifle
   HIT: { rifle: 0.45, smg: 0.3, charger: 0.4, splatling: 0.25, blaster: 0.4 },   // share of shots on target for a normal bot (a level is worth about 0.15 more)
   RATE: { fight: 0.012, seen: 0.03, away: 0.08 },                          // how fast a bot's level may move (per second, at 3:00; shorter matches move faster)
-  PF: { start: 0.04, span: 0.08, mates: 0.8 },                             // paint / ease off: from how far apart, fully by how much further, teammates' share
+  PF: { start: 0.06, span: 0.12 },                                          // playing the score: from how far apart, fully by how much further
+  OFF: { mates: 0.2, foes: 0 },                                              // teammates / enemies this far below the player
   st: null,
   // 'smart', a tier (0 easy · 1 normal · 2 hell), or 'fixed' - a test pitting fixed rows against each other (G.aiLevels)
   mode() { if (!PLAYER) return 'fixed'; if (G.aiLevels) return G.aiLevels[1 - PLAYER.team] === SMART ? 'smart' : 'fixed'; return GAME.diff === SMART ? 'smart' : GAME.diff; },
@@ -56,7 +58,7 @@ const Director = {
     const prior = clamp(own ? own.s : this.seed ?? 1, 0, LV_MAX);
     this.mem = own || null; this.elo = prior; this.n = own ? Math.min(4, (own.m || 1) * 1.5) : 0; this.nm = 0;
     const [lo, hi] = this.band(), start = clamp(prior, lo, hi);           // a tier starts from the saved level, kept within the tier
-    this.skill = prior; this.target = this.mateGoal = start; this.conf = 0; this.corrE = this.corrM = 0; this.planBonus = 0; this.lead = 0; this.boost = 1; this.sig = {}; this.sigT = 0; this.panelT = 0;
+    this.skill = prior; this.target = this.mateGoal = start; this.conf = 0; this.corrE = this.corrM = 0; this.planBonus = 0; this.stomp = this.net = this.mateEase = this.foeEase = 0; this.lead = 0; this.boost = 1; this.effort = 0.7; this.eff = []; this.effT = 0; this.sig = {}; this.sigT = 0; this.panelT = 0;
     this.wasClimb = false; this.cheat = false; this.saved = null;
     this.fights = new Map(); this.log = []; this.trace = []; this.allDuels = [];
     this.st = { alive: 0, shots: 0, hits: 0, swimT: 0, refillT: 0, climbs: 0, bombs: 0, idleT: 0 };
@@ -122,7 +124,8 @@ const Director = {
   onBomb(c) { if (c === PLAYER && this.st) this.st.bombs++; },
   // one duel settled: move the estimate by how surprising the result was, given the level the enemy was playing at
   resolve(f, o, w) {
-    if (w <= 0) return;
+    if (w <= 0 || (o < 0.5 && this.effort < 0.4)) return;                  // (a duel lost while not trying says nothing)
+    Combat.onDuel(o, w);
     const p = 1 / (1 + Math.exp(-this.K * (this.elo - f.lv))), step = Math.min(G.time < this.calibT ? 1 : 0.2, Math.max(0.12, 0.7 / (1 + this.n * 0.35)));   // big steps while calibrating, small ones after
     this.elo = clamp(this.elo + step * w * (o - p), 0, LV_MAX); this.n += w; this.nm += w;
     this.log.unshift({ o, p, w, lv: f.lv, name: f.e.name, t: G.time }); if (this.log.length > 6) this.log.pop();
@@ -136,7 +139,9 @@ const Director = {
     if (st.alive > 20 && mates.length) {
       // compared with the teammates, who play the same enemies at a level we know: turf painted per minute alive
       // (allowing for how much each weapon paints), damage dealt against damage taken, and knock-outs suffered
-      const base = avgOf(mates.map(c => this.lvOf(c))), grow = Math.min(1, st.alive / 60), lr = c => Math.log2(((c.dDealt || 0) + 0.5) / ((c.dTaken || 0) + 0.5));
+      // (measured against the teammates' level plus half the step they were set below the player: these signals barely tell levels apart
+      //  and would otherwise drag a strong player down toward the teammates; the full step reads a weak player too high early on)
+      const [blo, bhi] = this.band(), base = avgOf(mates.map(c => this.lvOf(c))) + (this.on ? 0.5 * Math.max(0, clamp(this.skill, blo, bhi) - this.mateGoal) : 0), grow = Math.min(1, st.alive / 60), lr = c => Math.log2(((c.dDealt || 0) + 0.5) / ((c.dTaken || 0) + 0.5));
       const pr = P.paint / this.paintK(P) / aliveM, mr = avgOf(mates.map(c => c.paint / this.paintK(c) / (c.dirAlive / 60)));
       if (mr > 0) { R.paint = Math.log2(Math.max(0.05, pr / mr)); S.paint = { v: base + 1.6 * R.paint, w: 0.7 * grow }; }
       R.dmg = lr(P) - avgOf(mates.map(lr)); S.dmg = { v: base + 0.7 * R.dmg, w: 0.6 * grow };
@@ -151,7 +156,8 @@ const Director = {
     for (const k in S) { S[k].v = clamp(S[k].v, 0, LV_MAX); sv += S[k].v * S[k].w; sw += S[k].w; }
     // smoothed, so one duel does not jolt the whole lobby; after calibration it may move at most 0.012 a second
     const cal = G.time < this.calibT, d = (clamp(sv / sw, 0, LV_MAX) - this.skill) * (1 - Math.exp(-0.5 / (cal ? 2.5 : 10)));
-    this.skill += cal ? d : clamp(d, -0.006, 0.006); this.conf = 1 - 1 / (1 + 0.35 * (sw - 0.6));
+    const dd = this.effort < 0.4 ? Math.max(0, d) : d;                   // (not trying: the level may go up, never down)
+    this.skill += cal ? dd : clamp(dd, -0.006, 0.006); this.conf = 1 - 1 / (1 + 0.35 * (sw - 0.6));
   },
   // a score running away (more than 6 % of the map apart, at full strength by 24 %): the enemies move against it; whatever they
   // cannot take - already at the edge of the tier - goes to the teammates, who otherwise move 40 % as far the other way, 0.5 at most.
@@ -159,24 +165,51 @@ const Director = {
   steer() {
     const tc = Paint.teamCells, P = PLAYER, [lo, hi] = this.band(), hell = this.mode() === 2, sk = clamp(this.skill, lo, hi);
     this.lead = (tc[P.team] - tc[1 - P.team]) / Math.max(1, Paint.total);
-    const sg = Math.sign(this.lead), c = hell && sg < 0 ? 0 : Math.min(0.9, Math.max(0, Math.abs(this.lead) - 0.06) * 5), te = clamp(sk + sg * c, lo, hi);
-    this.corrM = -sg * Math.min(0.5, c * 0.4 + Math.abs(sg * c - (te - sk))); this.mateGoal = clamp(sk + this.corrM, lo, hi);
+    // the sides: teammates a step below the player (not below 0.5 unless the player is), the enemies at the player's level - so the player at
+    // their usual level is an even match, and a player not pulling their weight is three weak teammates against four
+    this.mateGoal = clamp(Math.max(sk - this.OFF.mates, Math.min(sk, 0.5)), lo, hi);
+    // the player's side running away with it (past 5 %): the enemies sharpen up, up to +0.6 by 20 % ahead
+    this.stomp = Math.min(0.6, Math.max(0, this.lead - 0.05) * 4);
+    // the player's side crushed (past 25 %) while the player is really trying: a small net, never for one not pulling their weight, never on hell
+    this.net = !hell && this.effort >= 0.5 ? Math.min(0.25, Math.max(0, -this.lead - 0.25) * 2.5) : 0;
     // bots busy countering the player play a little less efficiently; slightly sharper hands make up for it (only in a close game)
     this.planBonus = Strategist.on ? 0.15 * Strategist.k : 0;
-    this.target = clamp(te + this.planBonus, lo, hi); this.corrE = this.target - sk;
-    this.boost = 1 + clamp((Math.abs(this.lead) - 0.08) / 0.06, 0, 2);      // and the bots out of sight close in up to three times as fast
-    // aim alone hardly moves the turf, so the teams are also told what to spend their time on: once apart (PF) the side behind keeps
-    // to painting what is not theirs, and the side ahead eases off - hangs back and stops chasing, leaving the others room; teammates get a share
-    const fE = hell && sg < 0 ? 0 : sg * clamp((Math.abs(this.lead) - this.PF.start) / this.PF.span, 0, 1); this.pf = []; this.pf[1 - P.team] = fE; this.pf[P.team] = -fE * this.PF.mates;
+    this.target = clamp(sk - this.OFF.foes + this.stomp - this.net + this.planBonus, lo, hi);
+    this.corrE = this.target - sk; this.corrM = this.mateGoal - sk;
+    this.boost = 1 + clamp((this.lead - 0.1) / 0.06, 0, 2);                   // (the enemies out of sight close in faster - only when the player's side is running away)
+    // both sides play the score the way people do: the side behind keeps to taking ground, the side ahead holds its own (retakes what was
+    // turned over, keeps an eye on the way in) - nobody is made stronger or weaker for it.  One exception, and only one way round: the
+    // player's side running away with it, the teammates ease off (hang back, stop chasing) - so the player's side does not stomp
+    const f = clamp((Math.abs(this.lead) - this.PF.start) / this.PF.span, 0, 1), sg = Math.sign(this.lead);
+    this.pf = []; this.pf[P.team] = -sg * f; this.pf[1 - P.team] = sg * f; this.mateEase = sg > 0 ? clamp((this.lead - 0.04) / 0.08, 0, 1) : 0;
+    // ...and the safety net's real lever (levels hardly move the turf): crushed past 15 % while really trying, the enemies ease off the same way
+    this.foeEase = !hell && this.effort >= 0.5 ? clamp((-this.lead - 0.15) / 0.1, 0, 1) : 0;
   },
-  // -1 ease off · 0 as usual · 1 keep to painting
+  // 1 take ground · 0 as usual · -1 hold what we have
   paintFocus(team) { return this.on && this.pf ? this.pf[team] : 0; },
-  // extra score for a spot to paint: a painting team wants what is not ours yet; a team easing off keeps to its own half
-  turfBias(team, own, zRel) { const f = this.paintFocus(team); return f > 0 ? (own !== team ? 2 * f : 0) : f < 0 ? f * zRel * 2.5 : 0; },
+  // holding back (0..1): the player's teammates while their side is well ahead; the enemies while a player who is trying is being crushed
+  mateEaseOf(team) { return this.on && PLAYER ? (team === PLAYER.team ? this.mateEase : this.foeEase) || 0 : 0; },
+  // extra score for a spot to paint: taking ground wants what is not ours yet; holding wants our own half back where it was turned over
+  turfBias(team, own, zRel) { const f = this.paintFocus(team), ease = this.mateEaseOf(team); if (ease) return -ease * zRel * 2.5; return f > 0 ? (own !== team ? 2 * f : 0) : f < 0 ? (own !== team && own !== -2 && zRel < 0.1 ? -2.5 * f : 0) + (zRel > 0.3 ? f * zRel * 1.5 : 0) : 0; },
+  // ---------------------------------------------------------------- how much the player is pulling their weight (last ~45 s, 0..1)
+  // moving and shooting, out of the spawn, painting and dealing damage like the teammates do.  Without it there is no safety net, and
+  // the level does not drop: playing badly on purpose must not make the match easier
+  effortTick(dt) {
+    const P = PLAYER; if ((this.effT -= dt) > 0) return; this.effT = 0.5;
+    if (!P.alive || P.state !== 'play') return;                           // (time dead is neither here nor there)
+    const mates = CHARS.filter(c => c.team === P.team && c !== P), sum = (f) => mates.reduce((s, c) => s + f(c), 0);
+    const sp = SPAWN[P.team], s = { act: Math.hypot(P.vel.x, P.vel.z) > 1 || G.time - P.lastShot < 0.6 ? 1 : 0, away: Math.hypot(P.pos.x - sp.x, P.pos.z - sp.z) > 16 ? 1 : 0,
+      paint: P.paint / this.paintK(P), dealt: P.dDealt || 0, mPaint: sum(c => c.paint / this.paintK(c)) / Math.max(1, mates.length), mDealt: sum(c => c.dDealt || 0) / Math.max(1, mates.length) };
+    this.eff.push(s); if (this.eff.length > 90) this.eff.shift(); if (this.eff.length < 8) return;
+    const a = this.eff[0], b = s, avg = k => this.eff.reduce((t, e) => t + e[k], 0) / this.eff.length;
+    const rel = (d, m) => m > 0.01 ? clamp(d / m, 0, 1) : d > 0 ? 1 : 0.3;
+    this.effort = clamp(0.2 * avg('act') + 0.1 * avg('away') + 0.35 * rel(b.paint - a.paint, b.mPaint - a.mPaint) + 0.35 * rel(b.dealt - a.dealt, b.mDealt - a.mDealt), 0, 1);
+  },
   // ---------------------------------------------------------------- every frame of play
   update(dt) {
     const P = PLAYER; if (!P || !this.st) return; const T = G.time, st = this.st;
     if (devGod() || vipOn()) this.cheat = true;
+    this.effortTick(dt);
     if (P.alive && P.state === 'play') {
       const sp = Math.hypot(P.vel.x, P.vel.z);
       st.idleT = sp > 0.5 || T - P.lastShot < 0.3 ? 0 : st.idleT + dt;

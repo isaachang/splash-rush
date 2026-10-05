@@ -7,22 +7,33 @@
        in front of them - the ink splashing up says "you are being shot at"; always so (and slower to fire)
        when it comes from where the player is not looking; on hell only then
      · a breather: low on health and just hit, the player is harder to hit for a moment (not on hell)
-     · backup: set on by two or more, or low and still under fire, the nearest teammates come over and go
-       for whoever is shooting                                                                                  */
+     · backup: set on by two or more, or low and still under fire, the nearest teammates come over and keep
+       whoever is shooting busy - suppressing, not finishing: the knock-out is left to the player
+     · the duel director: the player's last few duels make a "heat" from -1 (losing them) to 1 (winning them).
+       Losing: the enemies facing the player give longer warnings, are slower to fire, shoot wider, and one
+       fewer may shoot.  Winning: shorter warnings, quicker, sharper, and one more may join in.  Only what the
+       enemies do to the player - the rest of the match is left alone.  Hell only ever gets harder           */
 const Combat = {
   SLOT: 2.5,
   get on() { return Director.on && !this.off; },                           // (off: benchmarks comparing with and without)
   reset() {
-    this.holders = new Map(); this.waiting = new Map(); this.supT = 0; this.engT = null; this.graceT = -99;
+    this.holders = new Map(); this.waiting = new Map(); this.supT = 0; this.engT = null; this.graceT = -99; this.heat = 0;
     this.stats = { deaths: 0, multi: 0, multi15: 0, ttd: [], tta: [], warned: 0, graced: 0, supported: 0, fireFrames: 0, twoFrames: 0, overFrames: 0, rogue: 0, gunHits: 0, rogueHits: 0, pairHits: 0 }; this.aimT = null; this.lastHit = new Map();
     for (const b of G.bots) { b.support = null; b.warnUntil = 0; b.tokCd = 0; }
   },
   level() { return Director.teamLevel(1 - PLAYER.team); },
-  tokens() { const m = Director.mode(), lv = this.level(), n = typeof m === 'number' ? m + 1 : lv < 0.7 ? 1 : lv < 1.7 ? 2 : 3; return Math.max(1, n + Pacing.tokenDelta(1 - PLAYER.team)); },   // (one fewer in a lull)
+  tokens() { const m = Director.mode(), lv = this.level(), n = typeof m === 'number' ? m + 1 : lv < 0.7 ? 1 : lv < 1.7 ? 2 : 3, h = this.heatK(); return clamp(n + Pacing.tokenDelta(1 - PLAYER.team) + (h < -0.5 ? -1 : h > 0.6 ? 1 : 0), 1, 4); },
+  // ---------------------------------------------------------------- the duel director
+  onDuel(o, w) { if (!this.on) return; const x = (o - 0.5) * 2 * Math.min(1, w); this.heat = clamp(this.heat + (x - this.heat) * 0.35, -1, 1); },
+  // the heat as it is used: a little gentler on the tiers, and on hell only the harder half
+  heatK() { if (!this.on) return 0; const m = Director.mode(); let h = this.heat; if (m === 2) h = Math.max(0, h); else if (typeof m === 'number') h *= 0.7; return h; },
+  duelErrK() { const h = this.heatK(); return h < 0 ? 1 - 0.7 * h : 1 - 0.35 * h; },
+  duelReactK() { const h = this.heatK(); return h < 0 ? 1 - 0.6 * h : 1 - 0.3 * h; },   // (one fewer in a lull)
   warnTime(behind) {
     const m = Director.mode(), lv = this.level();
     const w = m === 0 ? 0.8 : m === 1 ? 0.5 : m === 2 ? 0 : lv <= 0.3 ? 0.8 : lv <= 1 ? lerp(0.8, 0.5, (lv - 0.3) / 0.7) : lv < 1.7 ? lerp(0.5, 0, (lv - 1) / 0.7) : 0;
-    return behind ? Math.max(w, 0.25) : w;
+    const h = this.heatK(), wh = h < 0 ? w - 0.5 * h : w * (1 - 0.8 * h);      // (losing duels: longer warnings; winning them: shorter)
+    return behind ? Math.max(wh, 0.25) : wh;
   },
   graceStrength() { const m = Director.mode(); return m === 2 ? 0 : typeof m === 'number' ? 1 : clamp(2 - this.level(), 0, 1); },
   // ---------------------------------------------------------------- tokens
@@ -41,6 +52,7 @@ const Combat = {
     if (!this.on) return;
     const behind = !Director.inView(b.c, PLAYER), w = this.warnTime(behind);
     if (behind) b.reactT *= 1.4;
+    b.reactT *= this.duelReactK();
     b.warnUntil = w > 0 ? G.time + b.reactT + w : 0; if (w > 0) this.stats.warned++;
   },
   warning(b, e) { return this.on && e === PLAYER && G.time < (b.warnUntil || 0); },
@@ -53,10 +65,13 @@ const Combat = {
   // aim error multiplier: low and just hit, the player is harder to hit for a moment
   errK(e) {
     if (!this.on || e !== PLAYER) return 1;
-    const P = PLAYER, g = this.graceStrength();
-    if (g > 0 && P.hp < P.maxHp * 0.3 && G.time - P.lastHurt < 1) { if (G.time - this.graceT > 2) this.stats.graced++; this.graceT = G.time; return 1 + 1.4 * g; }
-    return 1;
+    const P = PLAYER, g = this.graceStrength(), k = this.duelErrK();
+    if (g > 0 && P.hp < P.maxHp * 0.3 && G.time - P.lastHurt < 1) { if (G.time - this.graceT > 2) this.stats.graced++; this.graceT = G.time; return k * (1 + 1.4 * g); }
+    return k;
   },
+  // backup suppresses: a teammate covering the player shoots wide at the player's attackers, and holds off one the player is about to finish
+  mateErrK(b, e) { return this.on && b.support && this.attackers(b).includes(e) ? 1.6 : 1; },
+  supportHold(b, e) { return this.on && !!b.support && e.hp < e.maxHp * 0.35 && G.time - (e.dmgBy.get(PLAYER) ?? -9) < 2.5; },
   // while waiting for a token: keep the distance, circle, and paint the ground short of the player
   holdOff(b, I, e, d) {
     const c = b.c, fx = Math.sin(c.aimYaw), fz = Math.cos(c.aimYaw), R = c.weapon.range || 10, adv = d < R * 0.6 ? -0.6 : d > R ? 0.5 : 0;
@@ -102,6 +117,7 @@ const Combat = {
     if (P.alive && P.hp >= P.maxHp - 0.5) this.engT = null;
     if (!G.bots.some(b => b.enemy === PLAYER) && P.hp >= P.maxHp - 0.5) this.aimT = null;
     if (!this.on) return;
+    this.heat *= Math.exp(-dt / 30);                                         // (an old streak fades)
     // a holder that has had its turn gives way to someone waiting
     for (const [b, w] of this.waiting) if (T - w > 0.5) this.waiting.delete(b);
     if (this.waiting.size) for (const [b, s] of this.holders) if (T - s.t0 > this.SLOT) { this.holders.delete(b); b.tokCd = T + 1.5; break; }
@@ -116,6 +132,6 @@ const Combat = {
   // for the director panel
   view() {
     if (!this.on) return null; const T = G.time;
-    return { cap: this.tokens(), used: this.holders.size, waiting: this.waiting.size, warn: G.bots.filter(b => b.enemy === PLAYER && this.warning(b, PLAYER)).length, grace: T - this.graceT < 0.3, support: G.bots.filter(b => b.support).length };
+    return { heat: this.heatK(), cap: this.tokens(), used: this.holders.size, waiting: this.waiting.size, warn: G.bots.filter(b => b.enemy === PLAYER && this.warning(b, PLAYER)).length, grace: T - this.graceT < 0.3, support: G.bots.filter(b => b.support).length };
   }
 };

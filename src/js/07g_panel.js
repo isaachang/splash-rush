@@ -33,12 +33,18 @@ const DirPanel = {
     h += `<div class="dp-row"><label>节奏</label><div class="dp-phases">${['build', 'peak', 'relax'].map(k => `<span class="${k}${ph === k ? ' on' : ''}">${PHASE_NAME[k]}</span>`).join('<i>›</i>')}${ph === 'final' ? '<span class="final on">终局</span>' : ''}</div><small>${P.on ? (ph === 'final' ? '' : '还剩 ' + Math.ceil(P.remaining()) + 's') + ' · 第 ' + Math.max(1, P.waves) + ' 波' : '未启用'}</small></div>`;
     h += `<div class="dp-row"><label>紧张度</label><div class="dp-meter"><b style="width:${this.pct(P.tension)}"></b><svg viewBox="0 0 100 24" preserveAspectRatio="none"><polyline points="${spark}"/></svg></div><small>${f2(P.tension)}</small></div>`;
     // ---- the score and what is done about it
-    const lead = D.lead, w = clamp(50 + lead * 150, 4, 96), pf = D.pf || [0, 0], pfs = f => Math.abs(f) < 0.05 ? '' : f > 0 ? '专心涂地' : '收着打';
-    h += `<div class="dp-row"><label>比分</label><div class="dp-tug"><b style="width:${w}%"></b><span>${lead >= 0 ? '领先' : '落后'} ${this.pct(Math.abs(lead))}</span></div><small>敌 ${sgn(D.corrE)} 友 ${sgn(D.corrM)}</small></div>`;
-    const tags = [pfs(pf[1 - PLAYER.team]) && '敌：' + pfs(pf[1 - PLAYER.team]), pfs(pf[PLAYER.team]) && '友：' + pfs(pf[PLAYER.team]), D.boost > 1.01 && '视野外加速 ×' + D.boost.toFixed(1)].filter(Boolean);
+    const lead = D.lead, w = clamp(50 + lead * 150, 4, 96), pf = D.pf || [0, 0], pfs = f => Math.abs(f) < 0.05 ? '' : f > 0 ? '抢地' : '守地';
+    h += `<div class="dp-row"><label>比分</label><div class="dp-tug"><b style="width:${w}%"></b><span>${lead >= 0 ? '领先' : '落后'} ${this.pct(Math.abs(lead))}</span></div><small>友 ${f2(D.mateGoal)} · 敌 ${f2(D.target)}</small></div>`;
+    const tags = [D.stomp > 0.01 && '防碾压：敌 +' + f2(D.stomp), D.net > 0.01 && '兜底：敌 −' + f2(D.net) + (D.foeEase > 0.05 ? ' · 收着打' : ''), pfs(pf[1 - PLAYER.team]) && '敌在' + pfs(pf[1 - PLAYER.team]), D.mateEase > 0.05 ? '友收着打（防碾压）' : pfs(pf[PLAYER.team]) && '友在' + pfs(pf[PLAYER.team]), D.boost > 1.01 && '视野外加速 ×' + D.boost.toFixed(1)].filter(Boolean);
     if (tags.length) h += `<div class="dp-tags">${tags.map(t => `<span>${t}</span>`).join('')}</div>`;
+    // ---- how much the player is pulling their weight, and the duel director
+    const ef = D.effort ?? 0.7;
+    h += `<div class="dp-row"><label>投入</label><div class="dp-eff"><b class="${ef < 0.3 ? 'low' : ef < 0.6 ? 'mid' : 'hi'}" style="width:${this.pct(ef)}"></b></div><small>${ef < 0.3 ? '几乎没出力 · 没有兜底' : ef < 0.6 ? '出力一般' : '在认真打'}</small></div>`;
+    const Cv = Combat.view();
+    if (Cv) { const hv = Cv.heat, hl = hv < -0.25 ? '连输 · 对面给你反应时间' : hv > 0.25 ? '连赢 · 对面认真了' : '均势';
+      h += `<div class="dp-row"><label>对枪</label><div class="dp-heat"><i></i><b style="left:${hv < 0 ? 50 + hv * 50 : 50}%;width:${Math.abs(hv) * 50}%" class="${hv < 0 ? 'cold' : 'hot'}"></b></div><small>${hl}</small></div>`; }
     // ---- combat
-    const C = Combat.view();
+    const C = Cv;
     if (C) h += `<div class="dp-row"><label>打你</label><div class="dp-dots">${Array.from({ length: C.cap }, (_, i) => `<i class="${i < C.used ? 'on' : ''}"></i>`).join('')}${C.waiting ? `<small>+${C.waiting} 在等</small>` : ''}</div><div class="dp-tags tight">${[C.warn && `警告射击 ×${C.warn}`, C.grace && '残血喘息', C.support && `队友支援 ×${C.support}`].filter(Boolean).map(t => `<span>${t}</span>`).join('')}</div></div>`;
     // ---- what the other side has read, and its plan
     const S = Strategist.view();

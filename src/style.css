@@ -364,6 +364,13 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .dp-tags.tight{margin:0}
 .dp-tags span{background:rgba(255,255,255,.1);border-radius:6px;padding:0 6px;font-size:11px;font-weight:700}
 .dp-dots{display:flex;align-items:center;gap:4px}
+.dp-eff{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.dp-eff b{display:block;height:100%;border-radius:4px}
+.dp-eff b.low{background:#ff6b78}.dp-eff b.mid{background:#ffd34d}.dp-eff b.hi{background:#6fd3a8}
+.dp-heat{position:relative;flex:1;height:10px;border-radius:5px;background:linear-gradient(90deg,rgba(111,184,255,.18),rgba(255,255,255,.05) 50%,rgba(255,107,92,.18))}
+.dp-heat i{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:rgba(255,255,255,.5)}
+.dp-heat b{position:absolute;top:1px;bottom:1px;border-radius:4px}
+.dp-heat b.cold{background:#6fb8ff}.dp-heat b.hot{background:#ff6b5c}
 .dp-dots i{width:11px;height:11px;border-radius:50%;border:2px solid rgba(255,255,255,.5)}
 .dp-dots i.on{background:#ff6b5c;border-color:#ff6b5c}
 .dp-read{flex:1;display:flex;flex-direction:column;gap:3px}
