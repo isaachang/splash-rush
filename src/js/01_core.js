@@ -27,12 +27,18 @@ const GAME = { pal: 0, diff: 1, dur: 180, name: '新人墨仔', uniformChars: fa
 //   sjump    super-jump back to the front        climb   1 snipers ink walls to reach high ground · 2 anyone does
 //   endgame  all paint in the last 30 s          share   tell teammates who was seen, turn on an unseen shooter
 //   inkCare  top up ink between fights   dawdle  chance to stop and look about between jobs   swimK  how readily it swims through own ink to travel
+// fov: half-angle of what a bot notices (rad) · hear: how far off a shot or a fast swim is heard (m) · mem: how long it keeps looking
+// for someone it lost (s) · settle: how quickly its aim settles on someone new (s) · lead: how well it leads a moving target · flinch: how much being hit throws its aim
 const DIFF = [
-  { err: 0.13, react: 0.75, fireHold: 0.55, turn: 5, dodge: 0.2, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0, dawdle: 0.3, swimK: 0.7 },
-  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0.4, team: 1, focus: 0, ambush: 0.25, combo: 0, bombSmart: 1, sjump: 1, climb: 1, endgame: 1, share: 1, inkCare: 1 },
-  { err: 0.04, react: 0.2, fireHold: 0.95, turn: 13, dodge: 0.8, retreat: 0.55, team: 2, focus: 1, ambush: 0.7, combo: 0.8, bombSmart: 1, sjump: 1, climb: 2, endgame: 1, share: 1, inkCare: 1, swimK: 0.97 },
+  { err: 0.13, react: 0.75, fireHold: 0.55, turn: 5, dodge: 0.2, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0, dawdle: 0.3, swimK: 0.7,
+    fov: 0.87, hear: 10, mem: 1.5, settle: 0.7, lead: 0.35, flinch: 1 },
+  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0.4, team: 1, focus: 0, ambush: 0.25, combo: 0, bombSmart: 1, sjump: 1, climb: 1, endgame: 1, share: 1, inkCare: 1,
+    fov: 1.13, hear: 15, mem: 2.5, settle: 0.45, lead: 0.65, flinch: 0.6 },
+  { err: 0.04, react: 0.2, fireHold: 0.95, turn: 13, dodge: 0.8, retreat: 0.55, team: 2, focus: 1, ambush: 0.7, combo: 0.8, bombSmart: 1, sjump: 1, climb: 2, endgame: 1, share: 1, inkCare: 1, swimK: 0.97,
+    fov: 1.48, hear: 22, mem: 4, settle: 0.25, lead: 0.9, flinch: 0.25 },
   // (index 3, tests only: the pre-v0.11 "normal" bot - same aim as normal, none of the new know-how - as a yardstick)
-  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0 }
+  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0,
+    fov: 1.13, hear: 15, mem: 2.5, settle: 0.45, lead: 0.65, flinch: 0.6 }
 ];
 
 /* --------------------------------------------------------------- audio */

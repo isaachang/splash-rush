@@ -1,14 +1,13 @@
-/* ============================================================ STRATEGIST (smart mode)
+/* ============================================================ STRATEGIST
    The enemy team reads how the player plays and picks a plan against it, like rock-paper-scissors:
      the player hunts people        -> 抢地 paint: most of them avoid fights and take the map
      the player paints and avoids   -> 围猎 hunt: a couple of them go and make the player fight
      the player dives deep          -> 绕后 flank: someone slips round to the player's own half
      the player keeps to one route  -> 封路 block: someone lies in wait on it
      the player flips their side    -> 反推 retake: someone goes back and paints it again
-   Keeping the score close comes first, so the plans only run while the game is close: once one side pulls
-   away the Director's own lever takes over (the side behind keeps to painting, the side ahead eases off) -
-   measured against bots, every way of mixing the plans into that made runaways more likely, not less.
-   Within a close game stronger bots counter harder and read the player quicker.                        */
+   The plans run while the game is close: once one side pulls away, both play the score instead (the side
+   behind takes ground, the side ahead holds it).  How much they counter is the tier's: easy not at all,
+   normal at half strength, hard most of the way, hell fully - and stronger bots read the player quicker.  */
 const PLAN_NAME = { paint: '抢地', hunt: '围猎', flank: '绕后', block: '封路', retake: '反推' };
 const Strategist = {
   NX: 3, NZ: 4, zoneCache: {},
@@ -73,24 +72,22 @@ const Strategist = {
     const second = order.find(k => k !== this.plan && s[k] >= 0.45);
     this.plan2 = lv >= 1.3 && this.plan ? second || null : null;
     // and read the player more often
-    this.evalT = lerp(30, 10, clamp((lv - 0.5) / 1.5, 0, 1)) * clamp(Math.sqrt(GAME.dur / 180), 0.75, 1.2) * (Director.tp ? Director.tp.readK : 1);
+    this.evalT = lerp(30, 10, clamp((lv - 0.5) / 1.5, 0, 1)) * clamp(Math.sqrt(GAME.dur / 180), 0.75, 1.2);
   },
   // how hard to lean on it, 0..1: by level (a team that does not know teamwork yet does not counter at all), and only in a close
   // game - fading out as the Director starts telling either side to paint or ease off
   intensity() {
     const tm = this.team(), row = Director.teamRow ? Director.teamRow[tm] : DIFF[1], lv = Director.teamLevel(tm), pf = Math.abs(Director.paintFocus(tm));
-    if (!row.team || Director.mode() === 0) return 0;                       // (and never on easy)
-    return clamp(clamp((lv - 0.5) / 1.3, 0.25, 1) * clamp(1 - pf / 0.3, 0, 1) * (Director.tp ? Director.tp.counter : 1) * 1.6, 0, 1);    // (normal leans at half strength, hell fully)
+    if (!row.team) return 0;
+    return clamp(clamp((lv - 0.5) / 1.3, 0.25, 1) * clamp(1 - pf / 0.3, 0, 1) * Director.tierOf().counter * 1.6, 0, 1);
   },
   // ---------------------------------------------------------------- handing out the jobs
   assign() {
-    const tm = this.team(), k = this.k = this.intensity() * Pacing.counterK(tm), plan = this.plan, plan2 = this.plan2;
-    // hunting goes in pairs (a strong player just picks off a lone hunter), and never after a beginner (being chased about is no fun)
-    const count = id => id === 'hunt' ? (Director.skill >= 0.9 && k * 2.4 >= 1 ? 2 : 0) : Math.round(k * (id === 'paint' ? 4 : 1.6));
+    const tm = this.team(), k = this.k = this.intensity(), plan = this.plan, plan2 = this.plan2;
+    // hunting goes in pairs (a lone hunter just gets picked off)
+    const count = id => id === 'hunt' ? (k * 2.4 >= 1 ? 2 : 0) : Math.round(k * (id === 'paint' ? 4 : 1.6));
     const want = []; if (plan) for (let i = 0; i < count(plan); i++) want.push(plan);
     if (plan2 && plan2 !== 'hunt' && k >= 0.5) want.push(plan2);
-    // a wave (pacing): a couple of hunters come for the player on top of the plan
-    for (let i = want.filter(id => id === 'hunt').length, n = Pacing.waveHunters(tm); i < n; i++) want.push('hunt');
     this.live = [want.includes(plan) ? plan : null, want.includes(plan2) ? plan2 : null];
     this.give(tm, want);
   },
@@ -159,7 +156,7 @@ const Strategist = {
     if (!p) { const w = Math.ceil(this.warmup() - this.alive); return { tags: [], wait: w > 0 ? '在观察你的打法（还需 ' + w + 's）' : '正在判断…', plan: null, note: '' }; }
     const tags = [['打人', p.hunter], ['涂地', p.painter], ['冲得深', p.diver], ['常走' + ['左', '中', '右'][p.lane] + '路', p.steady], ['翻色热点', p.hot]].filter(t => t[1] >= 0.3);
     const jobs = {}; for (const b of G.bots) if (b.c.team === this.team() && b.task) jobs[b.task.id] = (jobs[b.task.id] || 0) + 1;
-    const [lp, lp2] = this.live || [], why = Pacing.counterK(this.team()) === 0 ? '喘息中，先不针对' : Math.abs(Director.paintFocus(this.team())) >= 0.3 ? '比分拉开了，先按比分调' : this.plan === 'hunt' && Director.skill < 0.9 ? '不追着新手打' : '力度不够，暂不派人';
+    const [lp, lp2] = this.live || [], why = Math.abs(Director.paintFocus(this.team())) >= 0.3 ? '比分拉开了，先按比分打' : '力度不够，暂不派人';
     const plan = lp ? PLAN_NAME[lp] + (lp2 ? ' + ' + PLAN_NAME[lp2] : '') : this.plan ? PLAN_NAME[this.plan] + ' · 暂停' : null;
     const note = lp ? '力度 ' + pc(this.k) + (Object.keys(jobs).length ? ' · ' + Object.entries(jobs).map(([k, n]) => PLAN_NAME[k] + ' ' + n + ' 人').join('，') : '') : this.plan ? why : '还看不出明显习惯';
     return { tags, wait: '还看不出明显习惯', plan, note };

@@ -1124,7 +1124,7 @@ function initUI() {
   const sw = $('swatches');
   PALETTES.forEach((p, i) => { const d = document.createElement('div'); d.className = 'sw' + (i === GAME.pal ? ' sel' : ''); d.innerHTML = `<span style="background:${p[0]}"></span><span style="background:${p[1]}"></span>`; d.onclick = () => { GAME.pal = i; [...sw.children].forEach((c, k) => c.classList.toggle('sel', k === i)); applyPalette(); Profile.save(); if ($('lobby').classList.contains('show')) renderLobby(); Sfx.init(); Sfx.click(); }; sw.appendChild(d); });
   const seg = (id, fn) => { const el = $(id); el.querySelectorAll('button').forEach(b => b.onclick = () => { el.querySelectorAll('button').forEach(x => x.classList.toggle('sel', x === b)); fn(+b.dataset.v); Sfx.init(); Sfx.click(); }); };
-  const DIFF_NOTE = { 0: '放开打', 1: '有来有回', 2: '每一波都是硬仗', [SMART]: '跟着你变' }, diffNote = () => { $('diffNote').textContent = DIFF_NOTE[GAME.diff] || ''; };
+  const diffNote = () => { $('diffNote').textContent = TIERS[GAME.diff] ? TIERS[GAME.diff].note : ''; };
   seg('diff', v => { GAME.diff = v; Profile.save(); diffNote(); }); diffNote(); seg('dur', v => { GAME.dur = v; Profile.save(); });
   const selSeg = (id, v) => $(id).querySelectorAll('button').forEach(b => b.classList.toggle('sel', +b.dataset.v === v));
   selSeg('diff', GAME.diff); selSeg('dur', GAME.dur);
