@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.17.0-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.18.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -49,7 +49,7 @@
 - **潜墨与爬墙**：在自己的墨水里游动、隐身、1 秒回满血，还能沿着涂过的墙往上爬
 - **超级跳**：打开地图点队友，从天而降直接跳到他身边
 - **击倒反馈**：墨渍牌子、穿墙的倒地标记、双杀 / 三杀 / 团灭，画面一顿、镜头一收
-- **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分轻松、普通、地狱三档（每档内会细调，地狱只升不降），另有一档「智能」
+- **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，按手上的武器分工（冲锋枪绕后、狙击占高点、加特林顶前排、步枪补位）；像真人一样会看、会听、会转身找你，刚瞄上你时枪会先偏、被打会慌；难度分轻松「放开打」、普通「有来有回」、困难「认真起来」、地狱「每一波都是硬仗」四档，每个机器人各有手感和脾气
 - **完整对局流程**：选场地 → 战前准备（选角色和武器、看阵容）→ 开局飞行镜头 → 对局 → 裁判判定 → 结算
 - **原版风格结算**：俯视判定、比例条拉锯、WIN! / LOSE…，计分板、奖牌和毒舌吐槽奖
 - **阵亡观战**：先看是谁打倒了你，再切到队友视角，等复活时也不无聊
@@ -75,7 +75,7 @@ node tools/smoke-test.js     # 无浏览器自动跑完整对局，检查有没�
 node tools/feature-test.js   # 逐项验证核心机制（蓄力、准星、炸弹、防护罩……）
 node tools/map-test.js       # 滑板场专项检查（泳池地形、外墙、铁网桥和围栏、爬塔、AI 路线）
 node tools/canton-test.js    # 西關大屋专项检查（悬空方块、上下两层涂地、河涌、镇海楼、窄缝、AI 路线）
-node tools/director-test.js  # 智能难度：让机器人假扮玩家打整局，检查导演台的判断（约 2 分钟）
+node tools/director-test.js  # 四档难度：让机器人假扮玩家打整局，检查各档强弱和发挥估计（约 3 分钟）
 SR_MAP=skate node tools/smoke-test.js   # 在滑板场上跑完整对局
 SR_MAP=canton node tools/smoke-test.js  # 在西關大屋上跑完整对局
 ```
@@ -90,10 +90,12 @@ src/
   js/05_character.js         角色模型、移动、潜墨、武器逻辑
   js/06_fx.js                粒子、子弹、炸弹、飞溅
   js/07_ai_input.js          寻路、AI、输入、镜头
-  js/07b_director.js         导演台：智能难度（观察玩家水平、调整机器人难度）
-  js/07c_strategy.js         智能难度下对手读你的打法、选对策
+  js/07b_director.js         导演台：四档难度（每个机器人的水平和脾气）、按比分换打法、玩家发挥估计（只显示）
+  js/07c_strategy.js         对手读你的打法、选对策（普通起，档越高越狠）
   js/07d_killfx.js           击倒反馈（牌子、标记、连杀、画面顿挫）
-  js/07e_combat.js           交火手感（攻击名额、警告射击、残血喘息、队友支援）
+  js/07e_combat.js           交火统计（只记录，给测试用）
+  js/07f_pacing.js           紧张度（音乐跟着变）
+  js/07g_panel.js            导演台面板（对局中按 ` 打开）
   js/08_game.js              界面、对局流程、启动
 vendor/three.min.js          Three.js r158（MIT）
 tools/                       构建与测试脚本

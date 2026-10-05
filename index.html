@@ -49,6 +49,7 @@ canvas#glFade{position:fixed;inset:0;width:100%;height:100%;display:none;z-index
 .seg{display:flex;gap:8px}
 .seg button{flex:1;cursor:pointer;font-family:inherit;font-weight:900;font-size:16px;padding:10px 6px;border-radius:14px;border:3px solid #111;background:#3a3760;color:#fff;box-shadow:0 4px 0 #111}
 .seg button.sel{background:#ffe45c;color:#111}
+.segNote{margin:6px 2px 0;font-size:13px;font-weight:700;opacity:.75;min-height:1em}
 .mapcard{display:flex;gap:12px;align-items:center;background:#0e0d20;border-radius:16px;padding:10px 12px;border:3px solid #111}
 .mapcard .thumb{width:62px;height:62px;border-radius:12px;background:linear-gradient(135deg,var(--c0) 0 45%,#555 45% 55%,var(--c1) 55%);border:3px solid #111}
 .mapcard b{font-size:18px}.mapcard small{display:block;opacity:.7;margin-top:4px}
@@ -313,20 +314,86 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
 .st-r .sp{font-size:13px;opacity:.8}.st-r .sp.on b{color:#ffe45c;animation:blink .5s infinite}
 #specTag{position:absolute;left:50%;top:140px;transform:translateX(-50%);display:none;font-weight:900;font-size:16px;background:rgba(0,0,0,.6);border:3px solid #111;border-radius:16px;padding:5px 16px;color:#fff;text-shadow:0 2px 0 #000}
 #specTag.on{display:block}
-#dirPanel{position:absolute;left:14px;top:96px;width:400px;display:none;z-index:30;pointer-events:none;background:rgba(10,12,24,.8);border:2px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 12px;color:#e8ecff;font:12px/1.55 ui-monospace,Menlo,Consolas,monospace}
+#dirPanel{position:absolute;left:14px;top:92px;width:372px;display:none;z-index:30;pointer-events:none;background:linear-gradient(180deg,rgba(18,20,38,.92),rgba(12,13,26,.9));border:2px solid rgba(255,255,255,.14);border-radius:16px;padding:12px 14px 10px;color:#e9ecff;font:12px/1.45 ui-sans-serif,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.45);font-variant-numeric:tabular-nums}
 #dirPanel.show{display:block}
-#dirPanel b{font-size:14px;color:#ffe45c;margin-right:8px}
-#dirPanel span{opacity:.75}
-#dirPanel em{font-style:normal;font-weight:900;color:#fff;font-size:14px}
-#dirPanel .big em{font-size:18px;color:#7dffb2}
-#dirPanel small{opacity:.6;margin-left:2px}
-#dirPanel i{font-style:normal;font-weight:900;padding:0 3px;border-radius:4px;background:#555}
-#dirPanel i.w{background:#2e9d5b}
-#dirPanel i.l{background:#b8404a}
-#dirPanel table{width:100%;margin-top:4px;border-collapse:collapse}
-#dirPanel td{padding:1px 4px 1px 0}
-#dirPanel th{text-align:left;font-weight:900;color:#ffe45c;padding-top:4px}
-#dirPanel b + span + i{margin-left:8px}
+#dirPanel.full{width:auto}
+.dp-cols{display:flex;gap:18px}
+.dp-col{width:344px}
+.dp-col + .dp-col{border-left:1px solid rgba(255,255,255,.1);padding-left:16px}
+.dp-col + .dp-col .dp-sec:first-child{margin-top:0;padding-top:0;border-top:0}
+#dirPanel small{opacity:.62;font-size:11px}
+.dp-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.dp-head b{font-size:15px;font-weight:900;color:#ffe45c;letter-spacing:1px;margin-right:2px}
+.dp-chip{background:rgba(255,255,255,.1);border-radius:999px;padding:1px 9px;font-weight:700;font-size:11px}
+.dp-chip.dim{opacity:.75}
+.dp-lv{margin-bottom:8px}
+.dp-big{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.dp-big span{font-size:28px;font-weight:900;line-height:1}
+.dp-big span.e{color:#7dffb2}.dp-big span.n{color:#7dc6ff}.dp-big span.k{color:#ffb35c}.dp-big span.h{color:#ff7d8a}
+.dp-big small{font-size:13px;opacity:.85;font-weight:700}
+.dp-state{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.dp-state.ok{background:rgba(70,200,120,.22);color:#9ff0bd}.dp-state.warm{background:rgba(255,200,80,.2);color:#ffd98a}.dp-state.bad{background:rgba(255,90,100,.22);color:#ffb0b6}
+.dp-ruler{position:relative;height:18px;border-radius:9px;background:rgba(255,255,255,.07);margin:16px 0 2px}
+.dp-ruler .z{position:absolute;top:4px;bottom:4px;border-radius:5px;opacity:.45}
+.dp-ruler .z.e{background:#3fbf7f}.dp-ruler .z.n{background:#3f8fdf}.dp-ruler .z.k{background:#df8f3f}.dp-ruler .z.h{background:#df4f5f}
+.dp-ruler .z.mates{top:auto;bottom:-3px;height:3px;background:#8ad0ff;opacity:.9}
+.dp-ruler .z.sel{opacity:.95;top:2px;bottom:2px;box-shadow:0 0 0 2px #fff}
+.dp-ruler .conf{position:absolute;left:0;bottom:-4px;height:2px;background:linear-gradient(90deg,#ffe45c,#fff);border-radius:2px;opacity:.7}
+.dp-ruler .mk{position:absolute;top:50%;width:0;height:0;font-style:normal}
+.dp-ruler .mk::before{content:"";position:absolute;left:-6px;top:-6px;width:12px;height:12px;border-radius:50%;border:2px solid #111}
+.dp-ruler .mk u{position:absolute;left:50%;top:-22px;transform:translateX(-50%);text-decoration:none;font-size:10px;font-weight:900;white-space:nowrap}
+.dp-ruler .mk.me::before{left:-8px;top:-8px;width:16px;height:16px;background:#ffe45c;z-index:2}
+.dp-ruler .mk.me u{color:#ffe45c;top:-25px}
+.dp-ruler .mk.foe::before{background:#ff8a96}.dp-ruler .mk.foe u{color:#ff8a96;top:auto;bottom:-24px;transform:translateX(1px)}
+.dp-ruler .mk.mate::before{background:#8ad0ff;border-radius:3px;transform:rotate(45deg)}.dp-ruler .mk.mate u{color:#8ad0ff;top:auto;bottom:-24px;transform:translateX(-13px)}
+.dp-scale{position:relative;height:12px;font-size:10px;opacity:.45;margin-top:10px}
+.dp-scale span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.dp-row{display:flex;align-items:center;gap:8px;margin:5px 0}
+.dp-row.top{align-items:flex-start}
+.dp-row>label{flex:0 0 40px;font-weight:900;opacity:.7;font-size:11px}
+.dp-row>small{margin-left:auto;white-space:nowrap}
+.dp-meter{position:relative;flex:1;height:22px;border-radius:7px;background:rgba(255,255,255,.06);overflow:hidden}
+.dp-meter b{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#3fbf7f,#ffd34d 55%,#ff5c5c);opacity:.35}
+.dp-meter svg{position:absolute;inset:0;width:100%;height:100%}
+.dp-meter polyline{fill:none;stroke:#fff;stroke-width:1.6;vector-effect:non-scaling-stroke;opacity:.85}
+.dp-tug{position:relative;flex:1;height:16px;border-radius:8px;background:var(--c1,#3346ff);overflow:hidden}
+.dp-tug b{position:absolute;left:0;top:0;bottom:0;background:var(--c0,#ff8a2a)}
+.dp-tug span{position:absolute;inset:0;text-align:center;font-weight:900;font-size:11px;line-height:16px;color:#fff;text-shadow:0 1px 2px #000}
+.dp-tags{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 4px 48px}
+.dp-tags.tight{margin:0}
+.dp-tags span{background:rgba(255,255,255,.1);border-radius:6px;padding:0 6px;font-size:11px;font-weight:700}
+.dp-read{flex:1;display:flex;flex-direction:column;gap:3px}
+.dp-bar{position:relative;display:block;height:16px;border-radius:5px;background:rgba(255,255,255,.06);padding:0 6px;font-size:11px;font-weight:700;line-height:16px;overflow:hidden}
+.dp-bar i{position:absolute;left:0;top:0;bottom:0;background:rgba(255,140,90,.35)}
+.dp-plan{display:flex;align-items:baseline;gap:6px;margin-top:1px}
+.dp-plan b{background:#ff6b5c;color:#fff;border-radius:6px;padding:0 7px;font-weight:900}
+.dp-plan b.dim{background:rgba(255,255,255,.12);color:#ccd}
+.dp-sec{margin:10px 0 4px;padding-top:7px;border-top:1px solid rgba(255,255,255,.1);font-weight:900;font-size:12px;color:#ffe45c}
+.dp-sec small{color:#e9ecff;font-weight:400;margin-left:4px}
+.dp-sig>div{display:flex;align-items:center;gap:6px;margin:2px 0}
+.dp-sig label{flex:0 0 52px;opacity:.75;font-size:11px}
+.dp-sig .tr{flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.dp-sig .tr i{display:block;height:100%;border-radius:4px}
+.dp-sig .tr i.e{background:#3fbf7f}.dp-sig .tr i.n{background:#3f8fdf}.dp-sig .tr i.k{background:#df8f3f}.dp-sig .tr i.h{background:#df4f5f}
+.dp-sig b{width:32px;text-align:right}
+.dp-sig small{width:28px}
+.dp-duels{display:flex;gap:4px;flex-wrap:wrap}
+.dp-duels span{display:flex;flex-direction:column;align-items:center;min-width:38px;border-radius:7px;padding:2px 4px;font-size:10px;background:rgba(255,255,255,.08)}
+.dp-duels span b{font-size:12px}
+.dp-duels span.w{background:rgba(70,200,120,.3)}.dp-duels span.l{background:rgba(255,90,100,.3)}
+.dp-duels span.lite{opacity:.55}
+.dp-bots{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dp-bot{display:flex;align-items:center;gap:4px;margin:2px 0;font-size:11px;white-space:nowrap}
+.dp-bot .nm{flex:1;overflow:hidden;text-overflow:ellipsis}
+.dp-bot .lvp{border-radius:5px;padding:0 4px;font-weight:900;color:#111}
+.dp-bot .lvp.e{background:#7dffb2}.dp-bot .lvp.n{background:#7dc6ff}.dp-bot .lvp.k{background:#ffb35c}.dp-bot .lvp.h{background:#ff8a96}
+.dp-bot em{font-style:normal;font-size:10px;background:rgba(255,255,255,.12);border-radius:4px;padding:0 3px}
+.dp-bot em.tok{background:rgba(255,107,92,.5)}
+.st{display:inline-block;width:8px;height:8px;border-radius:50%;background:#777}
+.st.fight{background:#ff5c5c}.st.alert{background:#ffd34d}.st.away{background:#6b7080}.st.respawn{background:#6fb8ff}
+.dp-legend{margin-top:6px;font-size:10px;opacity:.6;display:flex;align-items:center;gap:4px}
+.dp-legend .st{margin-left:6px}
+.dp-foot{margin-top:8px;font-size:10px;opacity:.4;text-align:right}
 /* roast badge: a cracked, grubby medal */
 .md b.x,.mdl.x b{background:linear-gradient(135deg,transparent 46%,#111 47%,#111 53%,transparent 54%),radial-gradient(circle at 35% 30%,#b9a58a,#7a6546 55%,#3e3322)}
 .mdl.x span{color:#ff9aa8}
@@ -681,7 +748,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
       <h3>对阵阵容</h3>
       <div class="rosterWrap"><div class="roster" id="rosterA"></div><div class="vs">VS</div><div class="roster" id="rosterB"></div></div>
       <div class="opts">
-        <div class="full"><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">地狱</button><button data-v="-1">智能</button></div></div>
+        <div class="full"><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">困难</button><button data-v="3">地狱</button></div><p class="segNote" id="diffNote"></p></div>
         <div class="full"><h3>对战时长</h3><div class="seg" id="dur"><button data-v="90">1:30</button><button data-v="180" class="sel">3:00</button><button data-v="300">5:00</button></div></div>
         <div class="full"><h3>队伍配色</h3><div class="swatches" id="swatches"></div></div>
       </div>
@@ -834,18 +901,24 @@ const GAME = { pal: 0, diff: 1, dur: 180, name: '新人墨仔', uniformChars: fa
 //   sjump    super-jump back to the front        climb   1 snipers ink walls to reach high ground · 2 anyone does
 //   endgame  all paint in the last 30 s          share   tell teammates who was seen, turn on an unseen shooter
 //   inkCare  top up ink between fights   dawdle  chance to stop and look about between jobs   swimK  how readily it swims through own ink to travel
+// fov: half-angle of what a bot notices (rad) · hear: how far off a shot or a fast swim is heard (m) · mem: how long it keeps looking
+// for someone it lost (s) · settle: how quickly its aim settles on someone new (s) · lead: how well it leads a moving target · flinch: how much being hit throws its aim
 const DIFF = [
-  { err: 0.13, react: 0.75, fireHold: 0.55, turn: 5, dodge: 0.2, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0, dawdle: 0.3, swimK: 0.7 },
-  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0.4, team: 1, focus: 0, ambush: 0.25, combo: 0, bombSmart: 1, sjump: 1, climb: 1, endgame: 1, share: 1, inkCare: 1 },
-  { err: 0.04, react: 0.2, fireHold: 0.95, turn: 13, dodge: 0.8, retreat: 0.55, team: 2, focus: 1, ambush: 0.7, combo: 0.8, bombSmart: 1, sjump: 1, climb: 2, endgame: 1, share: 1, inkCare: 1, swimK: 0.97 },
+  { err: 0.13, react: 0.75, fireHold: 0.55, turn: 5, dodge: 0.2, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0, dawdle: 0.3, swimK: 0.7,
+    fov: 0.87, hear: 10, mem: 1.5, settle: 0.7, lead: 0.35, flinch: 1 },
+  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0.4, team: 1, focus: 0, ambush: 0.25, combo: 0, bombSmart: 1, sjump: 1, climb: 1, endgame: 1, share: 1, inkCare: 1,
+    fov: 1.13, hear: 15, mem: 2.5, settle: 0.45, lead: 0.65, flinch: 0.6 },
+  { err: 0.04, react: 0.2, fireHold: 0.95, turn: 13, dodge: 0.8, retreat: 0.55, team: 2, focus: 1, ambush: 0.7, combo: 0.8, bombSmart: 1, sjump: 1, climb: 2, endgame: 1, share: 1, inkCare: 1, swimK: 0.97,
+    fov: 1.48, hear: 22, mem: 4, settle: 0.25, lead: 0.9, flinch: 0.25 },
   // (index 3, tests only: the pre-v0.11 "normal" bot - same aim as normal, none of the new know-how - as a yardstick)
-  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0 }
+  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0,
+    fov: 1.13, hear: 15, mem: 2.5, settle: 0.45, lead: 0.65, flinch: 0.6 }
 ];
 
 /* --------------------------------------------------------------- audio */
 const Sfx = (() => {
-  let ctx = null, master, sfxG, musG, comp, noiseBuf, duckF, duckOn = false;
-  const M = { on: false, next: 0, step: 0, bpm: 124, mode: 'title', timer: null };
+  let ctx = null, master, sfxG, musG, musF, comp, noiseBuf, duckF, duckOn = false;
+  const M = { on: false, next: 0, step: 0, bpm: 124, mode: 'title', timer: null, energy: 0.5, e: 0.5 };
   function init() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; return; }
@@ -853,7 +926,8 @@ const Sfx = (() => {
     duckF = ctx.createBiquadFilter(); duckF.type = 'lowpass'; duckF.frequency.value = 20000; duckF.Q.value = 0.7; duckF.connect(comp);
     master = ctx.createGain(); master.connect(duckF);
     sfxG = ctx.createGain(); sfxG.connect(master);
-    musG = ctx.createGain(); musG.connect(master);
+    musF = ctx.createBiquadFilter(); musF.type = 'lowpass'; musF.frequency.value = 9000; musF.Q.value = 0.6; musF.connect(master);
+    musG = ctx.createGain(); musG.connect(musF);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     setVol();
@@ -896,14 +970,18 @@ const Sfx = (() => {
   }
   function playStep(s, t) {
     const bar = (s >> 4) & 3, i = s & 15, r = ROOTS[bar], mode = M.mode;
-    const title = mode === 'title', hurry = mode === 'hurry';
+    const title = mode === 'title', hurry = mode === 'hurry', game = !title;
+    // the match's energy (pacing): a lull drops the chord stabs and half the hats behind a muffled filter, a wave adds 16th hats and a lead
+    if (game && i === 0) { M.e += (M.energy - M.e) * 0.5; if (musF) musF.frequency.setTargetAtTime(lerp(1500, 16000, M.e), t, 0.4); }
+    const lull = game && !hurry && M.e < 0.3, wave = game && M.e > 0.75;
     // kick
     if (title ? (i === 0 || i === 10) : i % 4 === 0) tone('sine', 150, 42, 0.22, title ? 0.5 : 0.8, musG, t);
     if (i === 4 || i === 12) { noise(0.14, title ? 0.12 : 0.26, 'bandpass', 1900, 0.8, null, musG, t); tone('triangle', 230, 130, 0.08, 0.12, musG, t); }
-    if (hurry ? true : i % 2 === 0) noise(0.035, (i % 4 === 2 ? 0.1 : 0.05) * (title ? 0.6 : 1), 'highpass', 8000, 1, null, musG, t);
+    if (hurry || wave ? true : lull ? i % 4 === 2 : i % 2 === 0) noise(0.035, (i % 4 === 2 ? 0.1 : 0.05) * (title ? 0.6 : 1), 'highpass', 8000, 1, null, musG, t);
     if ([0, 3, 6, 8, 10, 11, 14].includes(i)) bass(r + (i === 6 || i === 14 ? 12 : i === 11 ? 7 : 0), t, 0.16);
-    if (!title && (i === 2 || i === 7 || i === 10)) stab(r, MAJ[bar], t);
-    if (title || hurry) {
+    if (!title && !lull && (i === 2 || i === 7 || i === 10)) stab(r, MAJ[bar], t);
+    if (wave && (i === 6 || i === 14)) tone('sine', 150, 42, 0.18, 0.5, musG, t);
+    if (title || hurry || wave) {
       const scale = [0, 3, 5, 7, 10, 12, 15];
       if (i % 2 === 0 && hash(s * 3.1 + bar) > 0.35) tone('triangle', mtof(r + 36 + scale[Math.floor(hash(s + 7.7) * 7)]), null, 0.12, title ? 0.05 : 0.04, musG, t);
     }
@@ -916,6 +994,7 @@ const Sfx = (() => {
   function stopMusic() { if (M.timer) clearInterval(M.timer); M.on = false; }
   return {
     init, setVol, music, stopMusic, duck, get ducked() { return duckOn; },
+    musicEnergy(e) { M.energy = clamp(e, 0, 1); },
     // pressurised "pshh" + low thump, 3 variants with random pitch, panned by direction
     shoot(v, pan = 0) {
       if (!ctx) return; const d = panNode(pan), k = rand(0.92, 1.08), var_ = Math.floor(Math.random() * 3);
@@ -3809,14 +3888,14 @@ function vipOn() { return Profile.data.vip === VIP_NAME && GAME.name === VIP_NAM
 /* --------------------------------------------------------- profile */
 const PROFILE_KEY = 'splashrush.profile';
 const Profile = {
-  data: { v: 1, name: '新人墨仔', weapon: 'rifle', char: 'sa', pal: 0, diff: 1, dur: 180, look: null },
+  data: { v: 1, dv: 2, name: '新人墨仔', weapon: 'rifle', char: 'sa', pal: 0, diff: 1, dur: 180, look: null },
   load() {
-    try { const s = localStorage.getItem(PROFILE_KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) Object.assign(this.data, d); } } catch (e) { }
+    try { const s = localStorage.getItem(PROFILE_KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) { if (d.dv !== 2) { d.diff = d.diff === 2 ? 3 : d.diff === 0 ? 0 : 1; d.dv = 2; } Object.assign(this.data, d); } } } catch (e) { }     // (dv 2: four tiers - the old hell 2 is now 3, the old smart mode -1 becomes normal)
     if (!this.data.look) this.data.look = randomLook();
     if (!WEAPON_ORDER.includes(this.data.weapon)) this.data.weapon = 'rifle';
     if (!CHAR_ORDER.includes(this.data.char)) this.data.char = 'sa';
     if (!CHARACTERS[this.data.char].weapons.includes(this.data.weapon)) this.data.weapon = CHARACTERS[this.data.char].weapons[0];
-    const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = d.diff === SMART ? SMART : clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
+    const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = clamp(d.diff | 0, 0, TIERS.length - 1); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
   },
   save() {
     Object.assign(this.data, { name: GAME.name, pal: GAME.pal, diff: GAME.diff, dur: GAME.dur });
@@ -3828,6 +3907,17 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.18.0', date: '2026-10-05', time: '18:09', title: '像真人一样的对手', items: [
+    '难度改成四档：轻松「放开打」、普通「有来有回」、困难「认真起来」、地狱「每一波都是硬仗」；「智能」档去掉了，原来选智能的会变成普通',
+    '对手不再暗中让着你：没有了同时打你的人数限制、警告射击和残血喘息，也不会因为你打得好或打得差而变强变弱',
+    '对手像真人一样：只看得到面前的东西，听得到附近的枪声，背后中枪会转身找你，跟丢了会去你最后出现的地方看看',
+    '刚瞄上你时枪会先偏、然后越来越准，被打中会慌；横着走位、绕到背后都更有用',
+    '会挑软柿子：残血的、没墨的、刚打了它队友的人会先被盯上（轻松档的对手不会）',
+    '每个机器人各有手感和脾气，有的冲、有的稳',
+    '队友是配角：难度越高，对手越强，队友却不会跟着变猛，枪法也差一点 —— 困难和地狱要靠你自己赢下来',
+    '机器人各司其职：拿冲锋枪的阿飒绕后，满满占高点狙击，石墩顶在前排，拿步枪的补位',
+    '音乐跟着战况走：安静时稀疏，交火时变密'
+  ] },
   { v: 'v0.17.0', date: '2026-10-04', time: '17:56', title: '交火更讲理', items: [
     '被一群人盯上时，不会再同时被三四把枪一起扫倒，总有空隙让你反应、还手',
     '对手刚瞄上你时，墨水会先溅在你身前，看到就知道有人在打你，赶紧找掩护',
@@ -4430,14 +4520,14 @@ class Character {
     if (!this.alive || this.invuln() || G.state !== 'play') return false;
     this.hp -= amount; this.lastHurt = G.time; this.hurtFlash = 0.14; this.lastAttacker = src; this.lastVia = via || (src && src.weapon.id);
     if (src && src.team !== this.team) this.dmgBy.set(src, G.time);
-    Director.onDamage(this, amount, src, this.lastVia); Combat.onDamage(this, amount, src, this.lastVia);
+    Director.onDamage(this, amount, src, this.lastVia); Combat.onDamage(this, amount, src, this.lastVia); Pacing.onDamage(this, amount, src);
     if (this.isPlayer) { Sfx.hurt(); HUD.hurt(amount, src); }
     if (src && src.isPlayer) { Sfx.hit(amount >= 50); HUD.hitmark(false, amount); }
     if (this.hp <= 0) this.die(src, this.lastVia);
     return true;
   }
   die(killer, via) {
-    Director.onDeath(this, killer, via); Combat.onDeath(this);
+    Director.onDeath(this, killer, via); Combat.onDeath(this); Pacing.onDeath(this, killer);
     this.alive = false; this.state = 'dead'; this.respawnT = RESPAWN; this.deaths++; this.hp = 0;
     this.setSwim(false); this.sp = null; this.climbing = false; this.wall = null; this.stopCharge(); this.stored = 0;
     this.sj = null; this.fly = null; this.dropY = null; this.dropSJ = false; this.hideSJMarker();
@@ -5919,12 +6009,12 @@ function initTactics() {
 }
 // difficulty of one team's bots (tests can pit two different levels against each other with G.aiLevels)
 const aiStat = (team, k) => { const a = G.aiStat || (G.aiStat = [{}, {}]); a[team][k] = (a[team][k] || 0) + 1; };
-// every tier: each bot's own level, from the Director.  Tests can still pit fixed rows against each other with G.aiLevels
-// (SMART there means the Director); G.pilotLevel: the bot standing in for the player in tests
+// every tier: each bot's own level, from the Director.  Tests can still pit fixed rows against each other with G.aiLevels;
+// G.pilotLevel: the bot standing in for the player in tests (any level - 1.5 is hard)
 function botDiff(team, bot) {
-  if (bot && bot.c.isPlayer && G.pilotLevel != null) return DIFF[G.pilotLevel];
+  if (bot && bot.c.isPlayer && G.pilotLevel != null) return Number.isInteger(G.pilotLevel) ? DIFF[G.pilotLevel] : diffAt(G.pilotLevel, Director.brain(bot, G.pilotLevel));
   if (!G.aiLevels) return Director.row(team, bot);
-  const lv = G.aiLevels[team]; return lv === SMART ? Director.row(team, bot) : DIFF[lv];
+  return DIFF[G.aiLevels[team]];
 }
 const depthOf = (team, z) => team === 0 ? -z : z;          // how far toward the enemy's end a spot is (0 = the middle of the map)
 
@@ -5983,6 +6073,12 @@ class Squad {
   }
 }
 
+// what each bot is for, from what it carries: the SMG 阿飒 slips round the side (flank), the sniper 满满 holds the high ground over the
+// middle (mid - it climbs up to perch on its own), the gatling 石墩 holds the front line (front); rifles fill in - front, then middle, then home
+function rolesFor(weapons) {
+  const out = weapons.map(w => w === 'smg' ? 'flank' : w === 'charger' ? 'mid' : w === 'splatling' ? 'front' : null), taken = new Set(out.filter(Boolean));
+  return out.map(r => { if (r) return r; const f = ['front', 'mid', 'home'].find(x => !taken.has(x)) || 'mid'; taken.add(f); return f; });
+}
 /* ================================================================= BOT */
 class Bot {
   constructor(c, role) {
@@ -5993,26 +6089,60 @@ class Bot {
   }
   get squad() { return G.squads && G.squads[this.c.team]; }
   canSee(e) { const a = this.c.eye(), b = e.chest(); return !segBlocked(a.x, a.y, a.z, b.x, b.y, b.z, 0.5); }
-  findEnemy() {
-    const c = this.c, e0 = c.eye(); let best = null, bd = 1e9;
-    // smart mode: a team told to paint only takes on enemies close by, one easing off does not go looking either (both still answer whoever shoots them)
-    const pf = Director.paintFocus(c.team), hurt = G.time - c.lastHurt < 1.5, job = Strategist.taskId(this);
-    let rk = hurt ? 1 : pf > 0 ? lerp(1, 0.45, pf) : lerp(1, 0.6, -pf);
+  // what this bot notices: what is in front of it (its field of view, wider the better it is) or right beside it - through ink only up
+  // close.  Someone out of sight but heard (a shot, a bomb, a fast swim close by) is not a target yet: a noise to turn to (this.alert)
+  findEnemy(D = botDiff(this.c.team, this)) {
+    const c = this.c, e0 = c.eye(), T = G.time, tr = this.trait; let best = null, bs = 1e9;
+    // the score: the side taking ground only takes on enemies close by (still answering whoever shoots them); a pushy one looks further, a careful one less far
+    const pf = Director.paintFocus(c.team), hurt = T - c.lastHurt < 1.5, job = Strategist.taskId(this);
+    let rk = (hurt || pf <= 0 ? 1 : lerp(1, 0.45, pf)) * (tr ? 1 + 0.15 * tr.aggr : 1);
     // a job from the strategist: hunters look further and go for the player first; painters and flankers keep out of fights on the way
     if (job === 'hunt') rk = Math.max(rk, 1.2); else if (!hurt && job === 'paint') rk = Math.min(rk, 0.6); else if (!hurt && job === 'flank') rk = Math.min(rk, 0.8);
-    const foes = Combat.attackers(this); if (foes.length) rk = Math.max(rk, 1.2);                // (backing the player up: whoever is shooting at them comes first)
+    const fov = D.fov ?? 1.13, hear = D.hear ?? 15;
     for (const e of CHARS) {
       if (e.team === c.team || !e.alive || e.state !== 'play' || e.inOwnBarrier()) continue;
-      const d = e.pos.distanceTo(c.pos); if (d > (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk || (d > bd && !(job === 'hunt' && e.isPlayer) && !foes.includes(e))) continue;
+      const d = e.pos.distanceTo(c.pos), R = (c.weapon.type === 'charge' ? 30 : (c.weapon.id === 'rifle' || c.weapon.id === 'smg') ? 18 : Math.max(18, c.weapon.range + 4)) * rk;
+      if (d > Math.max(R, hear)) continue;
+      const ch = e.chest(), front = d < 2.5 || Math.abs(angDiff(c.aimYaw, Math.atan2(ch.x - e0.x, ch.z - e0.z))) < (e === this.enemy ? fov * 1.3 : fov);
       // hidden in ink: only seen up close (2.5 m), or roughly up to 7 m if swimming fast (ripples); shooting gives you away
-      let fuzzy = false;
-      if (e.hiddenInInk() && !(G.time - e.lastShot < 0.4)) { const fast = Math.hypot(e.vel.x, e.vel.z) > 6; if (d > (fast ? 7 : 2.5)) continue; fuzzy = fast && d > 2.5; }
-      const ch = e.chest(); if (segBlocked(e0.x, e0.y, e0.z, ch.x, ch.y, ch.z, 0.5)) continue;
-      best = e; bd = d; this.fuzzyNext = fuzzy;
-      if ((job === 'hunt' && e.isPlayer) || foes.includes(e)) break;
+      let fuzzy = false, seen = front && d <= R;
+      if (seen && e.hiddenInInk() && !(T - e.lastShot < 0.4)) { const fast = Math.hypot(e.vel.x, e.vel.z) > 6; if (d > (fast ? 7 : 2.5)) seen = false; fuzzy = fast && d > 2.5; }
+      if (seen && segBlocked(e0.x, e0.y, e0.z, ch.x, ch.y, ch.z, 0.5)) seen = false;
+      if (!seen) { if (d < hear && (T - e.lastShot < 0.3 || (e.submerged && Math.hypot(e.vel.x, e.vel.z) > 6 && d < hear * 0.4))) this.hearAt(e, d); continue; }
+      // who to take on: the nearest - and, past a beginner, the one worth it: hurt, out of ink, slowed in our ink, or the one who just hit a teammate
+      let s = d;
+      if (D.team) {
+        s -= (1 - e.hp / e.maxHp) * 6;
+        if (e.ink < 15) s -= 2;
+        if (!e.submerged && ownerAt(e.pos.x, e.pos.y, e.pos.z) === c.team) s -= 2;
+        if (CHARS.some(m => m.team === c.team && m !== c && (m.dmgBy.get(e) ?? -9) > T - 2)) s -= 3;
+      }
+      if (e === this.enemy) s -= 3;                                          // (nobody switches targets every moment)
+      if (job === 'hunt' && e.isPlayer) s -= 20;
+      if (s < bs) { bs = s; best = e; this.fuzzyNext = fuzzy; }
     }
     this.fuzzy = best ? this.fuzzyNext : false;
     return best;
+  }
+  // a noise from somewhere unseen: where it seems to come from - the further off, the vaguer
+  hearAt(e, d) {
+    const a = this.alert, T = G.time; if (a && a.e !== e && T - a.t < 0.6 && a.d < d) return;
+    const k = 0.15 * d, same = a && a.e === e && T - a.t < 1;
+    this.alert = { e, d, x: e.pos.x + rand(-k, k), y: e.pos.y, z: e.pos.z + rand(-k, k), t: T, t0: same ? a.t0 : T, went: same ? a.went : false };
+  }
+  // something heard, or someone just lost: turn toward it once the bot has reacted, and keep an eye there for a while (longer, the better it is)
+  faceAlert(dt, D) {
+    const a = this.alert, c = this.c, T = G.time;
+    if (!a || T - a.t > (D.mem ?? 2.5) || T - a.t0 < D.react * 0.8) return false;
+    const want = Math.atan2(a.x - c.pos.x, a.z - c.pos.z) + Math.sin(T * 3 + this.sweep) * 0.25;
+    c.aimYaw += clamp(angDiff(c.aimYaw, want), -D.turn * dt, D.turn * dt); c.aimPitch = damp(c.aimPitch, -0.1, 6, dt);
+    return true;
+  }
+  // how far off its aim is right now: wide on someone it has only just picked out, settling in (quicker, the better it is), and thrown off by being hit
+  // (the player's teammates, the supporting cast, a little wider still)
+  aimK(D) {
+    const T = G.time, t = T - (this.acqT ?? -9);
+    return (1 + 1.5 * Math.exp(-t / (D.settle ?? 0.45))) * (T - this.c.lastHurt < 0.35 ? 1 + (D.flinch ?? 0.6) : 1) * Director.aimOf(this.c);
   }
   // easy bots (and the old behaviour): wander to a random unpainted spot in "their" third of the map
   chooseTargetSimple() {
@@ -6074,7 +6204,7 @@ class Bot {
       for (const k of TAC.chokes) { const dep = depthOf(tm, k.z); if (dep < S.frontD - 12 || dep > S.frontD + 16 || reach[k.node] < 0 || others.some(o => Math.hypot(o.x - k.x, o.z - k.z) < 6)) continue; consider(k.node, 3.2); }
       if (best !== b0) this.ambushAt = best;
     }
-    // a job from the strategist (smart mode): its spots get a bonus; lying in wait on the player's route is an ambush
+    // a job from the strategist: its spots get a bonus; lying in wait on the player's route is an ambush
     const job = Strategist.taskId(this);
     if (job && !allout) { const b0 = best; for (const n of Strategist.taskNodes(this)) consider(n, this.task.bonus); if (job === 'block' && best !== b0) this.ambushAt = best; }
     this.allowNext = NF.SWIM | NF.JUMP | NF.DROP | (canClimb ? NF.CLIMB : 0);
@@ -6082,7 +6212,6 @@ class Bot {
   }
   chooseTarget() {
     const c = this.c, D = botDiff(c.team, this), S = this.squad;
-    if (Combat.supportOf(this)) { const P = PLAYER, n = navStart(P.pos.x, P.pos.y, P.pos.z); if (this.goTo(n)) { this.target = navPos(n); this.retarget = 1.5; this.linger = 0; return; } }
     this.allowNext = NF.SWIM | NF.JUMP | NF.DROP;
     const best = D.team && S ? this.chooseTargetTeam(D, S) : this.chooseTargetSimple();
     if (best < 0) { this.retarget = 0.5; return; }
@@ -6130,7 +6259,7 @@ class Bot {
   chargerFight(dt, e, d, D) {
     const c = this.c, I = c.intent;
     this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.3, 0.6); const m = D.err * d * 0.75 * (this.fuzzy ? 2.5 : 1); this.err.set(rand(-m, m), rand(-m, m) * 0.5, rand(-m, m)); }
-    const tp = Combat.aimPoint(this, e, e.chest().addScaledVector(e.vel, 0.08).addScaledVector(this.err, Combat.errK(e)));
+    const tp = e.chest().addScaledVector(e.vel, 0.08).addScaledVector(this.err, this.aimK(D));
     const m = c.muzzle(); const dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
     const wantYaw = Math.atan2(dx, dz), wantPitch = Math.atan2(dy, hd);
     const yawErr = angDiff(c.aimYaw, wantYaw);
@@ -6154,7 +6283,6 @@ class Bot {
     if (c.special >= 100 && d < 7 && Math.random() < dt * 2) I.special = true; else I.special = false;
     if (close && c.hp < 50 && ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team && Math.random() < D.dodge * dt * 3) this.swimT = 0.6;
     if (this.swimT > 0) { this.swimT -= dt; I.swim = true; I.fire = false; I.mx = -fx; I.mz = -fz; }
-    if (!(this.swimT > 0) && !Combat.canShoot(this, e)) Combat.holdOff(this, I, e, d);
   }
   // after throwing a curling bomb: swim along its ink path right behind it
   curlFollow(dt, e, d) {
@@ -6221,19 +6349,28 @@ class Bot {
   }
   update(dt) {
     const c = this.c, I = c.intent, D = botDiff(c.team, this), T = G.time, S = this.squad;
-    if (!c.alive || c.state !== 'play') { I.fire = I.swim = false; I.mx = I.mz = 0; this.path = []; this.enemy = null; this.climb = null; this.mode = 'paint'; this.lurkT = 0; return; }
+    if (!c.alive || c.state !== 'play') { I.fire = I.swim = false; I.mx = I.mz = 0; this.path = []; this.enemy = null; this.climb = null; this.mode = 'paint'; this.lurkT = 0; this.alert = null; this.dState = 'respawn'; return; }
     this.scanT -= dt;
     if (this.scanT <= 0) {
-      this.scanT = 0.2; const prev = this.enemy; let e = this.findEnemy(); const found = e;
+      this.scanT = 0.2; const prev = this.enemy; let e = this.findEnemy(D); const found = e;
       // lost them in the ink: keep spraying where they were last seen for ~0.5 s
       if (!e && prev && prev.alive && prev.state === 'play' && prev.hiddenInInk()) this.lastSeen = { p: prev.pos.clone(), t: T };
       if (e) this.lastSeen = null;
-      // shot from somewhere unseen: turn on whoever did it (teams that talk to each other)
-      if (!e && D.share && T - c.lastHurt < 0.6 && c.lastAttacker && c.lastAttacker.alive && c.lastAttacker.team !== c.team && c.lastAttacker.pos.distanceTo(c.pos) < c.weapon.range + 6 && this.canSee(c.lastAttacker)) e = c.lastAttacker;
-      // the squad's shared target, when this bot can hit it too
+      // lost sight of them: remember where they were, and keep an eye on it
+      if (!e && prev && prev.alive && prev.state === 'play') this.alert = { e: prev, d: prev.pos.distanceTo(c.pos), x: prev.pos.x, y: prev.pos.y, z: prev.pos.z, t: T, t0: T - 9, went: false };
+      // shot from somewhere unseen: turn toward where it came from (it takes a moment, and a slow one turns slowly)
+      if (!e && T - c.lastHurt < 0.6 && c.lastAttacker && c.lastAttacker.alive && c.lastAttacker.team !== c.team) this.hearAt(c.lastAttacker, c.lastAttacker.pos.distanceTo(c.pos) * 0.5);
+      // the squad's shared target, when this bot can hit it too (a teammate calling it out)
       if (D.focus && S && S.focus && S.focus !== e && S.focus.alive && S.focus.pos.distanceTo(c.pos) < c.weapon.range + 2 && this.canSee(S.focus) && !S.focus.hiddenInInk()) { e = S.focus; if (e !== this.enemy) aiStat(c.team, 'focus'); }
-      if (e && e !== this.enemy) { this.reactT = (this.lurkT > 0 ? 0.3 : 1) * D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0); this.coverWant = c.subId === 'cover' && Math.random() < 0.7; if (e === PLAYER) Combat.onAcquire(this); }
+      if (e && e !== this.enemy) {
+        // someone it was already looking for (lost a moment ago, or heard): quicker on the trigger, and already half lined up
+        const known = !!this.alert && this.alert.e === e && T - this.alert.t < (D.mem ?? 2.5);
+        this.reactT = (this.lurkT > 0 ? 0.3 : 1) * (known ? 0.5 : 1) * D.react * rand(0.7, 1.3) + (c.weapon.type === 'charge' ? 0.15 : 0); this.acqT = T - (known ? 0.3 : 0);
+        this.coverWant = c.subId === 'cover' && Math.random() < 0.7; if (e === PLAYER) Combat.onAcquire(this);
+      }
+      if (e) this.alert = null;
       this.enemy = e; if (S && D.share) { if (e) S.note(e); if (found && found !== e) S.note(found); }
+      this.dState = e ? 'fight' : this.alert && T - this.alert.t < (D.mem ?? 2.5) ? 'alert' : 'away';
     }
     const e = this.enemy, chg = !!c.weapon.charges, onOwn = ownerAt(c.pos.x, c.pos.y, c.pos.z) === c.team, allout = S && S.posture === 'allout';
     // ---- low on ink
@@ -6244,7 +6381,7 @@ class Bot {
     if (D.retreat && this.mode !== 'retreat' && T > this.retreatT) {
       const hurt = T - c.lastHurt < 1.6, foes = S ? S.fresh(1).filter(([, s]) => Math.hypot(s.x - c.pos.x, s.z - c.pos.z) < 10).length : (e ? 1 : 0);
       const alone = D.team >= 2 && foes >= 2 && !CHARS.some(m => m !== c && m.team === c.team && m.alive && m.pos.distanceTo(c.pos) < 9);
-      if (((e || hurt) && c.hp < c.maxHp * D.retreat * (allout ? 0.6 : 1)) || (e && c.ink < 7) || (alone && hurt)) {
+      if (((e || hurt) && c.hp < c.maxHp * D.retreat * (allout ? 0.6 : 1) * (this.trait ? 1 + 0.25 * this.trait.care : 1)) || (e && c.ink < 7) || (alone && hurt)) {
         aiStat(c.team, 'retreat'); this.mode = 'retreat'; this.retreatEnd = T + 7; this.climb = null; this.lurkT = 0; this.findRetreat(e || c.lastAttacker);
       }
     }
@@ -6280,14 +6417,14 @@ class Bot {
       if (c.weapon.charges) { this.chargerFight(dt, e, d, D); this.path = []; return; }
       if (c.subId === 'curling' && this.curlFollow(dt, e, d)) { this.path = []; return; }
       this.errT -= dt; if (this.errT <= 0) { this.errT = rand(0.25, 0.5); const m = D.err * d * (this.fuzzy ? 2.5 : 1); this.err.set(rand(-m, m), rand(-m, m) * 0.6, rand(-m, m)); }
-      const wid = c.weapon.id, tt = shotTime(d, wid), may = Combat.canShoot(this, e), tp = Combat.aimPoint(this, e, e.chest().addScaledVector(e.vel, tt * 0.9).addScaledVector(this.err, Combat.errK(e)));
+      const wid = c.weapon.id, tt = shotTime(d, wid), tp = e.chest().addScaledVector(e.vel, tt * (D.lead ?? 0.9)).addScaledVector(this.err, this.aimK(D));
       const dy_ = this.aimAt(tp, dt, D.turn, wid);
       this.reactT -= dt;
       if (this.reactT <= 0 && Math.abs(dy_) < 0.25 && d < c.weapon.range + 1.5 && Math.random() < D.fireHold + 0.1) I.fire = true;
       this.strafeT -= dt; if (this.strafeT <= 0) { this.strafe = Math.random() < 0.5 ? -1 : 1; this.strafeT = D.combo ? rand(0.3, 0.9) : rand(0.4, 1.3); }
       const fx = Math.sin(c.aimYaw), fz = Math.cos(c.aimYaw), rx = -fz, rz = fx;
       // keep the range this weapon likes (smarter bots); the old rule otherwise
-      const R = c.weapon.range, adv = D.team ? (d > R * 0.8 ? 0.9 : d < R * (wid === 'smg' ? 0.22 : 0.33) ? -0.6 : wid === 'smg' ? 0.35 : 0.1) : (d > 10 ? 0.9 : d < 4.5 ? -0.6 : 0.15);
+      const R = c.weapon.range, adv = (D.team ? (d > R * 0.8 ? 0.9 : d < R * (wid === 'smg' ? 0.22 : 0.33) ? -0.6 : wid === 'smg' ? 0.35 : 0.1) : (d > 10 ? 0.9 : d < 4.5 ? -0.6 : 0.15)) + (this.trait ? 0.15 * this.trait.aggr : 0);   // (a pushy one closes in, a careful one keeps its distance)
       I.mx = rx * this.strafe * 0.75 + fx * adv; I.mz = rz * this.strafe * 0.75 + fz * adv;
       const l = Math.hypot(I.mx, I.mz); if (l > 1) { I.mx /= l; I.mz /= l; }
       if (Math.random() < dt * 0.7 * D.dodge && c.grounded) I.jump = true;
@@ -6306,7 +6443,6 @@ class Bot {
         const near = CHARS.filter(o => o.team !== c.team && o.alive && o.state === 'play' && o.pos.distanceTo(c.pos) < 6.5).length;
         I.special = D.team ? (near >= 2 || (d < 5 && c.hp < c.maxHp * 0.5) || (d < 4 && Math.random() < dt * 0.8)) : (d < 7 && Math.random() < dt * 2);
       } else I.special = false;
-      if (!may && !(this.swimT > 0)) Combat.holdOff(this, I, e, d);              // no token on the player: circle and paint instead of shooting
       this.path = [];
       return;
     }
@@ -6322,7 +6458,7 @@ class Bot {
     if (this.mode === 'refill') {
       if (!this.path.length && !onOwn) { if (!this.findRefill()) { // paint own puddle
         if (c.ink > 4) { this.pull(I, 0.3); c.aimPitch = damp(c.aimPitch, -0.9, 8, dt); } I.mx = I.mz = 0; return; } }
-      if (onOwn && !this.path.length) { I.swim = true; if (D.inkCare) I.mx = I.mz = 0; else { I.mx = Math.sin(T * 0.8 + this.sweep) * 0.3; I.mz = Math.cos(T * 0.8 + this.sweep) * 0.3; } return; }   // (careful bots sit still under the ink; the others drift about and keep surfacing)
+      if (onOwn && !this.path.length) { I.swim = true; this.faceAlert(dt, D); if (D.inkCare) I.mx = I.mz = 0; else { I.mx = Math.sin(T * 0.8 + this.sweep) * 0.3; I.mz = Math.cos(T * 0.8 + this.sweep) * 0.3; } return; }   // (careful bots sit still under the ink; the others drift about and keep surfacing)
       this.followPath(I, dt); I.swim = I.swim || onOwn; if (D.inkCare && onOwn && c.submerged) { this.path = []; I.mx = I.mz = 0; } return;
     }
     // -------- lying in wait: under the ink at a choke point until someone walks into it
@@ -6334,7 +6470,12 @@ class Bot {
       c.aimYaw += angDiff(c.aimYaw, Math.atan2(ax - c.pos.x, az - c.pos.z)) * Math.min(1, dt * 4); c.aimPitch = damp(c.aimPitch, -0.05, 5, dt);
       return;
     }
-    if (this.support && (this.supRe = (this.supRe || 0) - dt) <= 0) { this.supRe = 1.5; this.path = []; this.replanT = 0; }     // backing the player up: keep heading for them
+    // something heard or someone just lost nearby: past a beginner, go and have a look (a pushy one more often)
+    const al = this.alert;
+    if (al && !al.went && D.team && !allout && T - al.t < (D.mem ?? 2.5) && T - al.t0 > D.react && al.d < 22) {
+      al.went = true;
+      if (Math.random() < 0.55 + 0.3 * (this.trait ? this.trait.aggr : 0)) { const n = navStart(al.x, al.y, al.z); if (this.goTo(n)) { this.target = navPos(n); this.retarget = D.mem ?? 2.5; this.linger = 0; aiStat(c.team, 'investigate'); } }
+    }
     // -------- paint / roam
     if (this.dawdleT > 0) { this.dawdleT -= dt; c.aimYaw += dt * 1.6 * (this.sweep > 3 ? 1 : -1); I.mx = I.mz = 0; return; }      // beginners stop and look around
     this.retarget -= dt;
@@ -6348,9 +6489,11 @@ class Bot {
     }
     const moving = this.followPath(I, dt);
     if (this.climb) return;
-    const baseYaw = moving ? Math.atan2(I.mx, I.mz) : c.aimYaw + dt * 2.5;
-    const wantYaw = baseYaw + Math.sin(T * 2.3 * this.jitter + this.sweep) * 0.6;
-    c.aimYaw += angDiff(c.aimYaw, wantYaw) * Math.min(1, dt * (chg ? 3 : 6)); c.aimPitch = damp(c.aimPitch, (chg ? -0.12 : -0.3) + Math.sin(T * 1.4 + this.sweep) * (chg ? 0.05 : 0.12), 5, dt);
+    if (!this.faceAlert(dt, D)) {
+      const baseYaw = moving ? Math.atan2(I.mx, I.mz) : c.aimYaw + dt * 2.5;
+      const wantYaw = baseYaw + Math.sin(T * 2.3 * this.jitter + this.sweep) * 0.6;
+      c.aimYaw += angDiff(c.aimYaw, wantYaw) * Math.min(1, dt * (chg ? 3 : 6));
+    } c.aimPitch = damp(c.aimPitch, (chg ? -0.12 : -0.3) + Math.sin(T * 1.4 + this.sweep) * (chg ? 0.05 : 0.12), 5, dt);
     const ax = c.pos.x + Math.sin(c.aimYaw) * 4, az = c.pos.z + Math.cos(c.aimYaw) * 4;
     const ah = ownerAt(ax, groundBelow(ax, az, c.pos.y + 1, 0), az);
     const nextOwn = this.path.length ? ownerAt(this.path[0].x, this.path[0].y, this.path[0].z) === c.team : false;
@@ -6534,22 +6677,22 @@ function updateCamera(dt) {
   camera.lookAt(pivot.x + dir.x * 30 + shoulder.x, pivot.y + dir.y * 30 + Cam.kick * 30, pivot.z + dir.z * 30 + shoulder.z);
 }
 /* ============================================================ DIRECTOR
-   The difficulty levels.  Every tier runs on this: smart (智能) may go anywhere from 0 to 2.5, easy stays
-   within 0-0.6, normal within 0.7-1.3, hell within 2-2.5 and never goes easier.  (Tests that set G.aiLevels
-   to a tier still get that tier's fixed row.)  Watches how the player is doing and works out a level for them on the
-   same scale as DIFF (0 easy · 1 normal · 2 hell, anything in between, and a little past hell).  Every bot
-   carries its own level and moves toward a target: at once while it is dead or flying in, quickly while the
-   player cannot see it, slowly while the two are fighting - so nobody turns into a sharpshooter mid-duel.
-   The whole lobby follows the player (teammates too, or three normal teammates would carry a beginner).
-   A score running away moves the enemies against it, and the teammates a little the other way - more when
-   the enemies are already at the top or bottom - and since aim alone hardly moves the turf, the side behind
-   is also told to keep to painting while the side ahead eases off.  It watches in every mode (so the saved estimate is ready
-   for the next match), but only steers the bots in smart mode.                                              */
-const SMART = -1, LV_MAX = 2.5;
+   The four tiers - 轻松 easy · 普通 normal · 困难 hard · 地狱 hell - and nothing that goes easy on anyone.
+   A tier is simply how good the bots are (DIFF's scale: 0 easy, 1 normal, 2 hell, anything in between): the
+   level is set when the match starts and stays.  Each bot is a person of its own within the tier - a little
+   better or worse than the tier (about ±0.15), more pushy or more careful.  The player's teammates do not climb
+   with the tier (hell's are a little above normal), and they are the supporting cast: they paint like anyone
+   but shoot a little wider - so on the hard tiers it is the player who has to make the difference (the way
+   Halo's marines or The Last of Us' companions are written, rather than CS or Rocket League, where the teammate
+   bots are as strong as the enemies and carry you).  Both sides play the score
+   the way people do: behind, take ground; ahead, hold it.
+   It also keeps an estimate of how well the player is playing, for the panel only - nothing is steered by it.
+   (Tests that set G.aiLevels pit fixed rows against each other instead.)                                   */
+const LV_MAX = 2.5;
 const DIFF_DEF = { swimK: 0.9, dawdle: 0 };
-// past hell, the hands only (level 2.5): sharper aim, quicker reflexes; what a bot knows stays hell's
-const DIFF_TOP = { err: 0.025, react: 0.14, fireHold: 1, turn: 16, dodge: 0.9, swimK: 0.99, dawdle: 0 };
-const DIFF_HANDS = ['err', 'react', 'fireHold', 'turn', 'dodge', 'swimK', 'dawdle'];
+// past hell, the hands only (level 2.5): sharper aim, quicker reflexes, keener senses; what a bot knows stays hell's
+const DIFF_TOP = { err: 0.025, react: 0.14, fireHold: 1, turn: 16, dodge: 0.9, swimK: 0.99, dawdle: 0, fov: 1.6, hear: 25, mem: 5, settle: 0.18, lead: 1, flinch: 0.15 };
+const DIFF_HANDS = ['err', 'react', 'fireHold', 'turn', 'dodge', 'swimK', 'dawdle', 'fov', 'hear', 'mem', 'settle', 'lead', 'flinch'];
 const DIFF_KNOW = ['team', 'focus', 'retreat', 'combo', 'ambush', 'bombSmart', 'sjump', 'climb', 'endgame', 'share', 'inkCare'];
 // a difficulty row for any level: aim and reflexes blend between the tiers; what a bot knows (teamwork, focus fire, combos...) comes
 // from the tier below or the tier above - `hi` - so that a 1.3 thinks like hell about 30 % of the time (Director.brain picks it)
@@ -6562,20 +6705,26 @@ function diffAt(lv, hi) {
   return o;
 }
 const avgOf = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
+// the tiers.  lv: how good the enemies are; mates: how good the player's teammates are; mateAim: how much wider the teammates shoot
+// (not on easy - a beginner needs the help); counter: how much the enemies adapt to the player's habits (the strategist)
+const TIERS = [
+  { name: '轻松', note: '放开打', lv: 0.3, mates: 0.2, mateAim: 1, counter: 0 },
+  { name: '普通', note: '有来有回', lv: 1.0, mates: 0.85, mateAim: 1.1, counter: 0.5 },
+  { name: '困难', note: '认真起来', lv: 1.5, mates: 1.2, mateAim: 1.15, counter: 0.75 },
+  { name: '地狱', note: '每一波都是硬仗', lv: 2.0, mates: 1.35, mateAim: 1.25, counter: 1 }
+];
 const Director = {
   K: 0.8,                                                                  // how sharply a level gap turns into duel odds: p = 1 / (1 + e^(-K·gap))
   PAINT_K: { rifle: 1, smg: 0.82, charger: 0.49, splatling: 0.58, blaster: 0.9 },   // how much each weapon paints, relative to the rifle
   HIT: { rifle: 0.45, smg: 0.3, charger: 0.4, splatling: 0.25, blaster: 0.4 },   // share of shots on target for a normal bot (a level is worth about 0.15 more)
-  RATE: { fight: 0.012, seen: 0.03, away: 0.08 },                          // how fast a bot's level may move (per second, at 3:00; shorter matches move faster)
-  PF: { start: 0.04, span: 0.08, mates: 0.8 },                             // paint / ease off: from how far apart, fully by how much further, teammates' share
-  shown: false, st: null,
-  // 'smart', a tier (0 easy · 1 normal · 2 hell), or 'fixed' - a test pitting fixed rows against each other (G.aiLevels)
-  mode() { if (!PLAYER) return 'fixed'; if (G.aiLevels) return G.aiLevels[1 - PLAYER.team] === SMART ? 'smart' : 'fixed'; return GAME.diff === SMART ? 'smart' : GAME.diff; },
+  PF: { start: 0.06, span: 0.12 },                                          // playing the score: from how far apart, fully by how much further
+  SPREAD: 0.15,                                                             // each bot's own level, around the tier's
+  st: null,
+  // a tier (0 easy · 1 normal · 2 hard · 3 hell), or 'fixed' - a test pitting fixed rows against each other (G.aiLevels)
+  mode() { return !PLAYER || G.aiLevels ? 'fixed' : clamp(GAME.diff | 0, 0, TIERS.length - 1); },
   get on() { return this.mode() !== 'fixed'; },
-  BANDS: [[0, 0.6], [0.7, 1.3], [2, LV_MAX]],                              // the room each tier has; smart has all of it
-  band() { const m = this.mode(); return typeof m === 'number' ? this.BANDS[m] : [0, LV_MAX]; },
-  // the saved levels, one per character + weapon (石墩's double health makes the same hands a different player).  An old single value
-  // from before (key '*') belongs to no loadout; it only seeds the ones never played
+  tierOf() { const m = this.mode(); return TIERS[typeof m === 'number' ? m : 1]; },
+  // the saved estimates, one per character + weapon (shown on the panel; 石墩's double health makes the same hands a different player)
   skillBook() {
     let b = Profile.data.skill;
     if (!b || typeof b !== 'object') b = {}; else if (typeof b.s === 'number') b = { '*': { s: b.s, m: b.m || 1 } };
@@ -6585,37 +6734,40 @@ const Director = {
   loadoutKey(c) { return c.cs.id + '-' + c.weapon.id; },
   loadoutName(key) { const [ch, w] = key.split('-'); return (CHARACTERS[ch] ? CHARACTERS[ch].name : ch) + '·' + (WEAPONS[w] ? WEAPONS[w].name : w); },
   reset() {
-    // this loadout's own saved level; never played with it: the others' average (weighted by how many matches each has), as a start only
     const book = this.skillBook(), key = this.key = this.loadoutKey(PLAYER), own = book[key], rest = Object.values(book), wsum = rest.reduce((a, r) => a + (r.m || 1), 0);
     this.seed = !own && rest.length ? rest.reduce((a, r) => a + r.s * (r.m || 1), 0) / wsum : null;
     const prior = clamp(own ? own.s : this.seed ?? 1, 0, LV_MAX);
     this.mem = own || null; this.elo = prior; this.n = own ? Math.min(4, (own.m || 1) * 1.5) : 0; this.nm = 0;
-    const [lo, hi] = this.band(), start = clamp(prior, lo, hi);           // a tier starts from the saved level, kept within the tier
-    this.skill = prior; this.target = this.mateGoal = start; this.conf = 0; this.corrE = this.corrM = 0; this.planBonus = 0; this.lead = 0; this.boost = 1; this.sig = {}; this.sigT = 0; this.panelT = 0;
-    this.wasClimb = false; this.cheat = false; this.saved = null;
+    this.skill = prior; this.conf = 0; this.lead = 0; this.sig = {}; this.sigT = 0; this.wasClimb = false; this.cheat = false; this.saved = null;
     this.fights = new Map(); this.log = []; this.trace = []; this.allDuels = [];
     this.st = { alive: 0, shots: 0, hits: 0, swimT: 0, refillT: 0, climbs: 0, bombs: 0, idleT: 0 };
     this.calibT = Math.min(60, 15 + GAME.dur / 6); this.endWin = clamp(Math.round(10 + GAME.dur / 9), 20, 40);
-    this.squadBrain = [{}, {}]; this.teamRow = [diffAt(start), diffAt(start)];
-    for (const b of G.bots) b.lv = start;
+    // every bot a person: its own level around the tier's (the teammates': around theirs), and a temperament - pushy or careful
+    const tr = this.tierOf();
+    for (const b of G.bots) {
+      if (b.c.isPlayer) continue;
+      b.lv = clamp((b.c.team === PLAYER.team ? tr.mates : tr.lv) + rand(-this.SPREAD, this.SPREAD), 0, LV_MAX);
+      b.trait = { aggr: rand(-1, 1), care: rand(-1, 1) };
+    }
+    this.squadBrain = [{}, {}]; this.teamRow = [0, 1].map(tm => diffAt(this.teamLevel(tm)));
   },
   bots() { return G.bots.filter(b => !b.c.isPlayer); },
   enemies() { return G.bots.filter(b => b.c.team !== PLAYER.team); },
-  // tier below or above for what it knows, re-picked every 8-14 s.  The draw is kept for the whole stretch, so as the level climbs
-  // a bot switches up once and stays there instead of flickering
+  // what a bot knows comes from the tier below or above, re-picked every 8-14 s (so a 1.5 plays like hell about half the time)
   brain(o, lv) { if (G.time >= (o.brainT || 0)) { o.brainT = G.time + rand(8, 14); o.brainU = Math.random(); } return lv <= 2 && o.brainU < lv - Math.floor(lv); },
-  // the difficulty a bot plays at (smart mode).  Without a bot: the team as a whole, for the squad's decisions
+  // the difficulty a bot plays at.  Without a bot: the team as a whole, for the squad's decisions
   row(team, bot) {
     if (!bot) return this.teamRow[team];
-    if (bot.lv === undefined) bot.lv = this.goal(bot);
+    if (bot.lv === undefined) bot.lv = this.tierOf().lv;
     const hi = this.brain(bot, bot.lv);
     if (bot.dRowLv !== bot.lv || bot.dRowHi !== hi) { bot.dRowLv = bot.lv; bot.dRowHi = hi; bot.dRow = diffAt(bot.lv, hi); }
     return bot.dRow;
   },
-  goal(b) { return b.c.team === PLAYER.team ? this.mateGoal : this.target; },
-  teamLevel(tm) { const sb = this.squadBrain && this.squadBrain[tm]; return sb && sb.lv != null ? sb.lv : this.skill; },
-  // the level a bot is playing at right now (fixed modes: the chosen tier)
-  lvOf(c) { if (this.on) return c.bot && c.bot.lv !== undefined ? c.bot.lv : c.team === PLAYER.team ? this.mateGoal : this.target; const l = G.aiLevels ? G.aiLevels[c.team] : GAME.diff; return l >= 0 && l <= 2 ? l : 1; },
+  teamLevel(tm) { const tb = this.bots().filter(b => b.c.team === tm && b.lv !== undefined); return tb.length ? avgOf(tb.map(b => b.lv)) : this.tierOf().lv; },
+  // the player's teammates shoot this much wider than their level would (1 for everyone else, and in tests with fixed rows)
+  aimOf(c) { return this.on && PLAYER && c.team === PLAYER.team && !c.isPlayer ? this.tierOf().mateAim : 1; },
+  // the level a bot is playing at (tests with fixed rows: that row)
+  lvOf(c) { if (this.on) return c.bot && c.bot.lv !== undefined ? c.bot.lv : this.tierOf().lv; const l = G.aiLevels ? G.aiLevels[c.team] : 1; return l >= 0 && l <= 2 ? l : 1; },
   endWindow() { return this.on ? this.endWin : 30; },
   idle() { return !G.pilot && this.st.idleT > 10; },
   inView(c, from) {
@@ -6623,7 +6775,7 @@ const Director = {
     if (d > 40) return false; if (d > 2 && Math.abs(angDiff(from.aimYaw, Math.atan2(dx, dz))) > 0.95) return false;
     return !segBlocked(e.x, e.y, e.z, ch.x, ch.y, ch.z, 0.4);
   },
-  // ---------------------------------------------------------------- what happened
+  // ---------------------------------------------------------------- what happened (for the estimate)
   fight(e) { let f = this.fights.get(e); if (!f) { f = { e, t0: G.time, last: G.time, dealt: 0, taken: 0, lv: this.lvOf(e), help: -99, out: 0 }; this.fights.set(e, f); } return f; },
   onDamage(v, amount, src, via) {
     const P = PLAYER; if (!P || !this.st || !src) return;
@@ -6658,19 +6810,18 @@ const Director = {
   // one duel settled: move the estimate by how surprising the result was, given the level the enemy was playing at
   resolve(f, o, w) {
     if (w <= 0) return;
-    const p = 1 / (1 + Math.exp(-this.K * (this.elo - f.lv))), step = Math.min(G.time < this.calibT ? 1 : 0.2, Math.max(0.12, 0.7 / (1 + this.n * 0.35)));   // big steps while calibrating, small ones after
+    const p = 1 / (1 + Math.exp(-this.K * (this.elo - f.lv))), step = Math.min(G.time < this.calibT ? 1 : 0.2, Math.max(0.12, 0.7 / (1 + this.n * 0.35)));
     this.elo = clamp(this.elo + step * w * (o - p), 0, LV_MAX); this.n += w; this.nm += w;
     this.log.unshift({ o, p, w, lv: f.lv, name: f.e.name, t: G.time }); if (this.log.length > 6) this.log.pop();
     if (G.dirTrace) this.allDuels.push([o, w, f.lv, f.out]);
   },
-  // ---------------------------------------------------------------- the estimate
+  // ---------------------------------------------------------------- the estimate (panel only)
   paintK(c) { return this.PAINT_K[c.weapon.id] || 1; },
   signals() {
     const P = PLAYER, st = this.st, S = this.sig = {}, aliveM = st.alive / 60, R = this.raw = {};
     const mates = CHARS.filter(c => c.team === P.team && c !== P && (c.dirAlive || 0) > 5);
     if (st.alive > 20 && mates.length) {
-      // compared with the teammates, who play the same enemies at a level we know: turf painted per minute alive
-      // (allowing for how much each weapon paints), damage dealt against damage taken, and knock-outs suffered
+      // compared with the teammates, who play the same enemies at a level we know
       const base = avgOf(mates.map(c => this.lvOf(c))), grow = Math.min(1, st.alive / 60), lr = c => Math.log2(((c.dDealt || 0) + 0.5) / ((c.dTaken || 0) + 0.5));
       const pr = P.paint / this.paintK(P) / aliveM, mr = avgOf(mates.map(c => c.paint / this.paintK(c) / (c.dirAlive / 60)));
       if (mr > 0) { R.paint = Math.log2(Math.max(0.05, pr / mr)); S.paint = { v: base + 1.6 * R.paint, w: 0.7 * grow }; }
@@ -6679,35 +6830,22 @@ const Director = {
       R.surv = Math.log2(md / pd); S.surv = { v: base + 0.5 * R.surv, w: 0.4 * grow };
     }
     if (st.shots >= 12) S.hit = { v: 1 + (Math.min(1, st.hits / st.shots) - (this.HIT[P.weapon.id] || 0.4)) / 0.15, w: 0.3 * Math.min(1, st.shots / 50) };
-    // the basics a beginner has not found yet: swimming to travel, topping up under the ink, climbing, super jumps, bombs.
-    // Only ever a sign of a beginner - knowing three or more says nothing about how good someone is
     if (st.alive > 25) { const sc = (st.swimT > 2) + (st.refillT > 1.5) + (st.climbs > 0) + (P.sjumps > 0) + (st.bombs > 0); if (sc < 3) S.know = { v: 0.1 + sc * 0.25, w: this.mem ? 0.3 : 0.8 }; }
     let sw = 0.6 + this.n * 0.5, sv = this.elo * sw;
     for (const k in S) { S[k].v = clamp(S[k].v, 0, LV_MAX); sv += S[k].v * S[k].w; sw += S[k].w; }
-    // smoothed, so one duel does not jolt the whole lobby; after calibration it may move at most 0.012 a second
     const cal = G.time < this.calibT, d = (clamp(sv / sw, 0, LV_MAX) - this.skill) * (1 - Math.exp(-0.5 / (cal ? 2.5 : 10)));
     this.skill += cal ? d : clamp(d, -0.006, 0.006); this.conf = 1 - 1 / (1 + 0.35 * (sw - 0.6));
   },
-  // a score running away (more than 6 % of the map apart, at full strength by 24 %): the enemies move against it; whatever they
-  // cannot take - already at the edge of the tier - goes to the teammates, who otherwise move 40 % as far the other way, 0.5 at most.
-  // Everything stays within the tier; and hell never goes easy on a player who is behind - no easing off, no help from teammates
+  // ---------------------------------------------------------------- playing the score, the way people do (both sides, nobody made stronger or weaker)
   steer() {
-    const tc = Paint.teamCells, P = PLAYER, [lo, hi] = this.band(), hell = this.mode() === 2, sk = clamp(this.skill, lo, hi);
-    this.lead = (tc[P.team] - tc[1 - P.team]) / Math.max(1, Paint.total);
-    const sg = Math.sign(this.lead), c = hell && sg < 0 ? 0 : Math.min(0.9, Math.max(0, Math.abs(this.lead) - 0.06) * 5), te = clamp(sk + sg * c, lo, hi);
-    this.corrM = -sg * Math.min(0.5, c * 0.4 + Math.abs(sg * c - (te - sk))); this.mateGoal = clamp(sk + this.corrM, lo, hi);
-    // bots busy countering the player play a little less efficiently; slightly sharper hands make up for it (only in a close game)
-    this.planBonus = Strategist.on ? 0.15 * Strategist.k : 0;
-    this.target = clamp(te + this.planBonus, lo, hi); this.corrE = this.target - sk;
-    this.boost = 1 + clamp((Math.abs(this.lead) - 0.08) / 0.06, 0, 2);      // and the bots out of sight close in up to three times as fast
-    // aim alone hardly moves the turf, so the teams are also told what to spend their time on: once apart (PF) the side behind keeps
-    // to painting what is not theirs, and the side ahead eases off - hangs back and stops chasing, leaving the others room; teammates get a share
-    const fE = hell && sg < 0 ? 0 : sg * clamp((Math.abs(this.lead) - this.PF.start) / this.PF.span, 0, 1); this.pf = []; this.pf[1 - P.team] = fE; this.pf[P.team] = -fE * this.PF.mates;
+    const tc = Paint.teamCells, P = PLAYER; this.lead = (tc[P.team] - tc[1 - P.team]) / Math.max(1, Paint.total);
+    const f = clamp((Math.abs(this.lead) - this.PF.start) / this.PF.span, 0, 1), sg = Math.sign(this.lead);
+    this.pf = []; this.pf[P.team] = -sg * f; this.pf[1 - P.team] = sg * f;
   },
-  // -1 ease off · 0 as usual · 1 keep to painting
+  // 1 take ground · 0 as usual · -1 hold what we have
   paintFocus(team) { return this.on && this.pf ? this.pf[team] : 0; },
-  // extra score for a spot to paint: a painting team wants what is not ours yet; a team easing off keeps to its own half
-  turfBias(team, own, zRel) { const f = this.paintFocus(team); return f > 0 ? (own !== team ? 2 * f : 0) : f < 0 ? f * zRel * 2.5 : 0; },
+  // extra score for a spot to paint: taking ground wants what is not ours yet; holding wants our own half back where it was turned over
+  turfBias(team, own, zRel) { const f = this.paintFocus(team); return f > 0 ? (own !== team ? 2 * f : 0) : f < 0 ? (own !== team && own !== -2 && zRel < 0.1 ? -2.5 * f : 0) + (zRel > 0.3 ? f * zRel * 1.5 : 0) : 0; },
   // ---------------------------------------------------------------- every frame of play
   update(dt) {
     const P = PLAYER; if (!P || !this.st) return; const T = G.time, st = this.st;
@@ -6724,72 +6862,34 @@ const Director = {
       this.wasClimb = P.climbing;
     }
     for (const c of CHARS) if (c.team === P.team && c !== P && c.alive && c.state === 'play') c.dirAlive = (c.dirAlive || 0) + dt;
-    // a fight nobody has followed up for four seconds: settle it on the damage traded, at low weight
     for (const [e, f] of this.fights) if (T - f.last > 4) { this.fights.delete(e); if (f.dealt + f.taken > 0.5) this.resolve(f, clamp(0.5 + (f.dealt - f.taken) * 0.5, 0, 1), 0.3); }
     if ((this.sigT -= dt) <= 0) { this.sigT = 0.5; this.signals(); }
     this.steer();
-    // every bot moves toward its goal at a pace that depends on whether the player could notice
-    const kd = Math.sqrt(180 / GAME.dur), from = P.alive ? P : Cam.spec, all = this.bots();
-    for (const b of all) {
-      const c = b.c, goal = this.goal(b); if (b.lv === undefined) b.lv = goal;
-      let s; const f = this.fights.get(c);
-      if (!c.alive || c.state !== 'play') s = 'respawn';
-      else if (c.team !== P.team && (b.enemy === P || (f && T - f.last < 2.5))) s = 'fight';
-      else { if ((b.seeT = (b.seeT || 0) - dt) <= 0) { b.seeT = 0.25; b.seen = this.inView(c, from); } s = b.seen ? 'seen' : 'away'; }
-      b.dState = s;
-      if (!this.on) continue;
-      if (s === 'respawn') b.lv = goal;
-      else { const r = this.RATE[s] * (s === 'away' ? this.boost : 1) * kd * dt; b.lv += clamp(goal - b.lv, -r, r); }
-    }
-    for (const tm of [0, 1]) {
-      const tb = all.filter(b => b.c.team === tm); if (!tb.length) continue;
-      const tl = Math.round(avgOf(tb.map(b => b.lv)) * 100) / 100, sb = this.squadBrain[tm], hi = this.brain(sb, tl);
-      if (sb.lv !== tl || sb.hi !== hi) { sb.lv = tl; sb.hi = hi; this.teamRow[tm] = diffAt(tl, hi); }
-    }
-    if (G.dirTrace) this.trace.push([T, this.skill, this.target, ...this.enemies().map(b => b.lv)]);
-    this.panel(dt);
+    // the squads' shared know-how: re-picked from the tier below / above now and then, like each bot's
+    for (const tm of [0, 1]) { const tl = Math.round(this.teamLevel(tm) * 100) / 100, sb = this.squadBrain[tm], hi = this.brain(sb, tl); if (sb.lv !== tl || sb.hi !== hi) { sb.lv = tl; sb.hi = hi; this.teamRow[tm] = diffAt(tl, hi); } }
+    if (G.dirTrace) this.trace.push([T, this.skill, this.tierOf().lv, ...this.enemies().map(b => b.lv)]);
+    DirPanel.update(dt);
   },
-  // end of a match: fold this match into this loadout's saved level - a rolling average, 0.6 old + 0.4 new, the new part counting for less after
-  // a short match or few fights.  Not with a name-box mode on (that is cheating), nor in tests where a bot plays for the player
+  // end of a match: fold this match into this loadout's saved estimate (a rolling average).  Not with a name-box mode on, nor in tests
   save() {
     if (G.pilot || G.aiLevels || !PLAYER || !this.st || this.cheat || this.st.alive < 30) return;
     const sv = this.mem, q = Math.min(1, this.st.alive / 120) * Math.min(1, (this.nm + 1) / 6), s = sv ? lerp(sv.s, this.skill, 0.4 * q) : this.skill;
     this.saved = this.skillBook()[this.key] = { s: Math.round(s * 100) / 100, m: Math.min(10, (sv ? sv.m || 1 : 0) + 1) }; Profile.save();
   },
-  // ---------------------------------------------------------------- the panel (press ` during a match)
-  toggle() { this.shown = !this.shown; $('dirPanel').classList.toggle('show', this.shown); this.panelT = 0; },
-  tier(v) { if (v > 2.15) return '地狱+'; const r = clamp(Math.round(v), 0, 2), d = v - r; return ['轻松', '普通', '地狱'][r] + (d > 0.15 ? '·偏强' : d < -0.15 ? '·偏弱' : ''); },
-  panel(dt) {
-    if (!this.shown || (this.panelT -= dt) > 0) return; this.panelT = 0.25;
-    const f2 = v => v.toFixed(2), pc = v => Math.round(v * 100) + '%', sgn = v => (v >= 0 ? '+' : '−') + f2(Math.abs(v));
-    const SN = { paint: '涂地', dmg: '伤害比', surv: '存活', hit: '命中', know: '熟练' }, STN = { fight: '交火中', seen: '视野内', away: '视野外', respawn: '复活中' };
-    const left = Math.max(0, this.calibT - G.time), md = this.mode(), [blo, bhi] = this.band(), mode = md === 'smart' ? '智能模式（0~2.5）' : md === 'fixed' ? '固定难度（测试用）' : ['轻松', '普通', '地狱'][md] + `（${blo}~${bhi}）` + (md === 2 ? ' · 只升不降' : '');
-    const ln = this.loadoutName(this.key), mem = this.saved ? `${ln} 存档已更新为 ${f2(this.saved.s)}` : this.mem ? `${ln} 存档 ${f2(this.mem.s)}（${this.mem.m || 1} 局）` : this.seed != null ? `首次用${ln}（参考其他组合 ${f2(this.seed)}）` : '无存档';
-    let h = `<b>导演台</b><span>${mode}</span>${this.cheat ? '<i class="l">后门模式 · 本局不计入存档</i>' : ''}`;
-    h += `<div class="big">玩家水平 <em>${f2(this.skill)}</em> ${this.tier(this.skill)} <small>可信度 ${pc(this.conf)} · ${left > 0 ? '校准中 ' + Math.ceil(left) + 's' : this.conf < 0.3 ? '数据不足' : '已校准'} · ${mem}${this.idle() ? ' · 挂机不计' : ''}</small></div>`;
-    h += `<div>交火积分 ${f2(this.elo)}（本局 ${this.nm.toFixed(1)} 次）` + Object.keys(SN).filter(k => this.sig[k]).map(k => ` · ${SN[k]} ${f2(this.sig[k].v)}<small>×${this.sig[k].w.toFixed(1)}</small>`).join('') + '</div>';
-    const pfs = f => Math.abs(f) < 0.05 ? '正常' : (f > 0 ? '专心涂地 ' : '收着打 ') + pc(Math.abs(f)), pf = this.pf || [0, 0];
-    h += `<div>比分 ${this.lead >= 0 ? '我方领先' : '我方落后'} ${pc(Math.abs(this.lead))} → 局势修正 敌 ${sgn(this.corrE)} · 友 ${sgn(this.corrM)}${this.boost > 1.01 ? `<small>（视野外加速 ×${this.boost.toFixed(1)}）</small>` : ''}</div>`;
-    h += `<div>打法倾向 敌：${pfs(pf[1 - PLAYER.team] || 0)} · 友：${pfs(pf[PLAYER.team] || 0)}</div>`;
-    h += Strategist.panelLines() + Combat.panelLine();
-    h += '<div>最近交火 ' + (this.log.length ? this.log.map(l => `<i class="${l.o > 0.5 ? 'w' : l.o < 0.5 ? 'l' : ''}">${l.o > 0.5 ? '赢' : l.o < 0.5 ? '输' : '平'}</i><small>预期${pc(l.p)}${l.w < 1 ? '×' + l.w.toFixed(1) : ''}</small>`).join(' ') : '—') + '</div>';
-    const row = (b, goal) => `<tr><td>${b.c.name}</td><td>${b.lv === undefined ? '—' : f2(b.lv)}</td><td>→ ${f2(goal)}</td><td>${this.tier(b.lv ?? goal)}</td><td>${STN[b.dState] || ''}</td></tr>`;
-    h += '<table><tr><th colspan="5">队友</th></tr>' + this.bots().filter(b => b.c.team === PLAYER.team).map(b => row(b, this.mateGoal)).join('');
-    h += '<tr><th colspan="5">对手</th></tr>' + this.enemies().map(b => row(b, this.target)).join('') + '</table>';
-    $('dirPanel').innerHTML = h;
-  }
+  toggle() { DirPanel.toggle(); },
+  // a level by name: the nearest tier, a little above or below it
+  tier(v) { if (v > 2.15) return '地狱+'; const pts = [0.3, 1, 1.5, 2], i = pts.reduce((b, p, k) => Math.abs(p - v) < Math.abs(pts[b] - v) ? k : b, 0), d = v - pts[i]; return TIERS[i].name + (d > 0.12 ? '·偏强' : d < -0.12 ? '·偏弱' : ''); }
 };
-/* ============================================================ STRATEGIST (smart mode)
+/* ============================================================ STRATEGIST
    The enemy team reads how the player plays and picks a plan against it, like rock-paper-scissors:
      the player hunts people        -> 抢地 paint: most of them avoid fights and take the map
      the player paints and avoids   -> 围猎 hunt: a couple of them go and make the player fight
      the player dives deep          -> 绕后 flank: someone slips round to the player's own half
      the player keeps to one route  -> 封路 block: someone lies in wait on it
      the player flips their side    -> 反推 retake: someone goes back and paints it again
-   Keeping the score close comes first, so the plans only run while the game is close: once one side pulls
-   away the Director's own lever takes over (the side behind keeps to painting, the side ahead eases off) -
-   measured against bots, every way of mixing the plans into that made runaways more likely, not less.
-   Within a close game stronger bots counter harder and read the player quicker.                        */
+   The plans run while the game is close: once one side pulls away, both play the score instead (the side
+   behind takes ground, the side ahead holds it).  How much they counter is the tier's: easy not at all,
+   normal at half strength, hard most of the way, hell fully - and stronger bots read the player quicker.  */
 const PLAN_NAME = { paint: '抢地', hunt: '围猎', flank: '绕后', block: '封路', retake: '反推' };
 const Strategist = {
   NX: 3, NZ: 4, zoneCache: {},
@@ -6799,6 +6899,8 @@ const Strategist = {
     this.hist = []; this.shareT = 0; this.evalT = 6; this.assignT = 0; this.plan = null; this.plan2 = null; this.planT = 0; this.k = 0; this.prof = null; this.scores = null;
     for (const b of G.bots) b.task = null;
   },
+  // watching the player before the first reading: 20 s at 3:00, shorter in a short match (14 s at 1:30)
+  warmup() { return 20 * clamp(Math.sqrt(GAME.dur / 180), 0.7, 1.3); },
   get on() { return Director.on && !this.off; },                          // (off: tests comparing with and without plans)
   team() { return 1 - PLAYER.team; },                                       // the side that reads and counters
   laneOf(x) { return clamp(Math.floor((x + XH) / (2 * XH) * this.NX), 0, this.NX - 1); },
@@ -6858,14 +6960,14 @@ const Strategist = {
   // game - fading out as the Director starts telling either side to paint or ease off
   intensity() {
     const tm = this.team(), row = Director.teamRow ? Director.teamRow[tm] : DIFF[1], lv = Director.teamLevel(tm), pf = Math.abs(Director.paintFocus(tm));
-    if (!row.team || Director.mode() === 0) return 0;                       // (and never on easy)
-    return clamp((lv - 0.5) / 1.3, 0.25, 1) * clamp(1 - pf / 0.3, 0, 1);
+    if (!row.team) return 0;
+    return clamp(clamp((lv - 0.5) / 1.3, 0.25, 1) * clamp(1 - pf / 0.3, 0, 1) * Director.tierOf().counter * 1.6, 0, 1);
   },
   // ---------------------------------------------------------------- handing out the jobs
   assign() {
     const tm = this.team(), k = this.k = this.intensity(), plan = this.plan, plan2 = this.plan2;
-    // hunting goes in pairs (a strong player just picks off a lone hunter), and never after a beginner (being chased about is no fun)
-    const count = id => id === 'hunt' ? (Director.skill >= 0.9 && k * 2.4 >= 1 ? 2 : 0) : Math.round(k * (id === 'paint' ? 4 : 1.6));
+    // hunting goes in pairs (a lone hunter just gets picked off)
+    const count = id => id === 'hunt' ? (k * 2.4 >= 1 ? 2 : 0) : Math.round(k * (id === 'paint' ? 4 : 1.6));
     const want = []; if (plan) for (let i = 0; i < count(plan); i++) want.push(plan);
     if (plan2 && plan2 !== 'hunt' && k >= 0.5) want.push(plan2);
     this.live = [want.includes(plan) ? plan : null, want.includes(plan2) ? plan2 : null];
@@ -6880,7 +6982,8 @@ const Strategist = {
       const pickBy = f => free.filter(b => id === 'paint' || !b.c.weapon.charges).sort((a, b) => f(a) - f(b))[0];
       const near = (x, z) => b => Math.hypot(b.c.pos.x - x, b.c.pos.z - z);
       const task = this.makeTask(id, tm); if (!task) continue;
-      const b = id === 'flank' ? pickBy(b => -b.c.cs.runK) : pickBy(near(task.x, task.z)); if (!b) continue;
+      // who suits the job: the SMG 阿飒 goes round the side and hunts; the gatling 石墩 is the last to be sent chasing; whoever minds the home retakes
+      const w = b => b.c.weapon.id, b = id === 'flank' ? pickBy(b => -(w(b) === 'smg' ? 10 : 0) - b.c.cs.runK) : id === 'hunt' ? pickBy(b => near(task.x, task.z)(b) - (w(b) === 'smg' ? 12 : 0) + (w(b) === 'splatling' ? 10 : 0)) : id === 'retake' ? pickBy(b => near(task.x, task.z)(b) - (b.role === 'home' ? 10 : 0)) : pickBy(near(task.x, task.z)); if (!b) continue;
       out.set(b, task); free.splice(free.indexOf(b), 1);
     }
     for (const b of bots) { const t = out.get(b) || null; if (t && b.task && b.task.id === t.id) Object.assign(b.task, this.refresh(t)); else b.task = t; }
@@ -6924,19 +7027,21 @@ const Strategist = {
   update(dt) {
     if (!this.on || !PLAYER || !this.zones) return;
     this.observe(dt);
-    if (this.alive < 20) return;
+    if (this.alive < this.warmup()) return;
     if ((this.evalT -= dt) <= 0) this.choose();
     if ((this.assignT -= dt) <= 0) { this.assignT = 2; this.assign(); }
   },
-  panelLines() {
-    if (!this.on) return '';
+  // for the director panel: what has been read of the player, and the plan
+  view() {
+    if (!this.on) return null;
     const p = this.prof, pc = v => Math.round(v * 100) + '%';
-    if (!p) { const w = Math.ceil(20 - this.alive); return `<div>对面在观察你的打法…${w > 0 ? '（还需 ' + w + 's）' : '正在判断'}</div>`; }
-    const tags = [['打人', p.hunter], ['涂地', p.painter], ['冲得深', p.diver], ['常走' + ['左', '中', '右'][p.lane] + '路', p.steady], ['翻色热点', p.hot]].filter(t => t[1] >= 0.3).map(t => t[0] + ' ' + pc(t[1]));
+    if (!p) { const w = Math.ceil(this.warmup() - this.alive); return { tags: [], wait: w > 0 ? '在观察你的打法（还需 ' + w + 's）' : '正在判断…', plan: null, note: '' }; }
+    const tags = [['打人', p.hunter], ['涂地', p.painter], ['冲得深', p.diver], ['常走' + ['左', '中', '右'][p.lane] + '路', p.steady], ['翻色热点', p.hot]].filter(t => t[1] >= 0.3);
     const jobs = {}; for (const b of G.bots) if (b.c.team === this.team() && b.task) jobs[b.task.id] = (jobs[b.task.id] || 0) + 1;
-    const [lp, lp2] = this.live || [], why = Math.abs(Director.paintFocus(this.team())) >= 0.3 ? '比分拉开了，先按比分调' : this.plan === 'hunt' && Director.skill < 0.9 ? '不追着新手打' : '力度不够，暂不派人';
-    const plan = lp ? PLAN_NAME[lp] + (lp2 ? ' + ' + PLAN_NAME[lp2] : '') : this.plan ? PLAN_NAME[this.plan] + '·暂停（' + why + '）' : '无（按常规打）';
-    return `<div>对面看你：${tags.length ? tags.join(' · ') : '还看不出明显习惯'}</div><div>对面对策：${plan} · 力度 ${pc(this.k)}${Object.keys(jobs).length ? '（' + Object.entries(jobs).map(([k, n]) => PLAN_NAME[k] + ' ' + n + ' 人').join('，') + '）' : ''}</div>`;
+    const [lp, lp2] = this.live || [], why = Math.abs(Director.paintFocus(this.team())) >= 0.3 ? '比分拉开了，先按比分打' : '力度不够，暂不派人';
+    const plan = lp ? PLAN_NAME[lp] + (lp2 ? ' + ' + PLAN_NAME[lp2] : '') : this.plan ? PLAN_NAME[this.plan] + ' · 暂停' : null;
+    const note = lp ? '力度 ' + pc(this.k) + (Object.keys(jobs).length ? ' · ' + Object.entries(jobs).map(([k, n]) => PLAN_NAME[k] + ' ' + n + ' 人').join('，') : '') : this.plan ? why : '还看不出明显习惯';
+    return { tags, wait: '还看不出明显习惯', plan, note };
   }
 };
 /* ============================================================ KILL FEEDBACK
@@ -7014,95 +7119,21 @@ const KillFX = {
     while (this.marks.length && this.marks[0].t > this.MARK) this.marks.shift().el.remove();
   }
 };
-/* ============================================================ COMBAT FEEL
-   Fights the player can read and answer, on every tier (the Director's framework; not in tests with
-   fixed rows):
-     · attack tokens: only so many enemies shoot at the player at once (1 easy · 2 normal · 3 hell, smart by
-       level); the rest circle round and paint about, and the tokens change hands every couple of seconds
-     · warning shots: an enemy that has just taken aim at the player puts its first shots into the ground
-       in front of them - the ink splashing up says "you are being shot at"; always so (and slower to fire)
-       when it comes from where the player is not looking; on hell only then
-     · a breather: low on health and just hit, the player is harder to hit for a moment (not on hell)
-     · backup: set on by two or more, or low and still under fire, the nearest teammates come over and go
-       for whoever is shooting                                                                                  */
+/* ============================================================ COMBAT (measuring only)
+   Nothing here changes how a fight goes - the bots see, hear, aim and decide on their own (Bot).  This only
+   keeps count of how the player's fights go, for the benchmarks: how long the player lasts once hit, how
+   often two of them are on the player at once, how many gun hits come from two shooters together.        */
 const Combat = {
-  SLOT: 2.5,
-  get on() { return Director.on && !this.off; },                           // (off: benchmarks comparing with and without)
   reset() {
-    this.holders = new Map(); this.waiting = new Map(); this.supT = 0; this.engT = null; this.graceT = -99;
-    this.stats = { deaths: 0, multi: 0, multi15: 0, ttd: [], tta: [], warned: 0, graced: 0, supported: 0, fireFrames: 0, twoFrames: 0, overFrames: 0, rogue: 0, gunHits: 0, rogueHits: 0, pairHits: 0 }; this.aimT = null; this.lastHit = new Map();
-    for (const b of G.bots) { b.support = null; b.warnUntil = 0; b.tokCd = 0; }
+    this.engT = null; this.aimT = null; this.lastHit = new Map();
+    this.stats = { deaths: 0, multi: 0, multi15: 0, ttd: [], tta: [], fireFrames: 0, twoFrames: 0, gunHits: 0, pairHits: 0 };
   },
-  level() { return Director.teamLevel(1 - PLAYER.team); },
-  tokens() { const m = Director.mode(); if (typeof m === 'number') return m + 1; const lv = this.level(); return lv < 0.7 ? 1 : lv < 1.7 ? 2 : 3; },
-  warnTime(behind) {
-    const m = Director.mode(), lv = this.level();
-    const w = m === 0 ? 0.8 : m === 1 ? 0.5 : m === 2 ? 0 : lv <= 0.3 ? 0.8 : lv <= 1 ? lerp(0.8, 0.5, (lv - 0.3) / 0.7) : lv < 1.7 ? lerp(0.5, 0, (lv - 1) / 0.7) : 0;
-    return behind ? Math.max(w, 0.25) : w;
-  },
-  graceStrength() { const m = Director.mode(); return m === 2 ? 0 : typeof m === 'number' ? 1 : clamp(2 - this.level(), 0, 1); },
-  // ---------------------------------------------------------------- tokens
-  canShoot(b, e) {
-    if (!this.on || e !== PLAYER) return true;
-    const T = G.time, h = this.holders;
-    if (h.has(b)) { h.get(b).last = T; return true; }
-    for (const [o, s] of h) if (!o.c.alive || o.c.state !== 'play' || o.enemy !== PLAYER || T - s.last > 0.6) h.delete(o);
-    if (h.size < this.tokens() && T >= (b.tokCd || 0)) { h.set(b, { t0: T, last: T }); return true; }
-    this.waiting.set(b, T); return false;
-  },
-  // ---------------------------------------------------------------- warning shots and the breather
-  onAcquire(b) {
-    if (this.aimT == null && this.stats) this.aimT = G.time;
-    if (!this.on) return;
-    const behind = !Director.inView(b.c, PLAYER), w = this.warnTime(behind);
-    if (behind) b.reactT *= 1.4;
-    b.warnUntil = w > 0 ? G.time + b.reactT + w : 0; if (w > 0) this.stats.warned++;
-  },
-  warning(b, e) { return this.on && e === PLAYER && G.time < (b.warnUntil || 0); },
-  // where to aim: during the warning, the ground a step or two in front of the player, on the side the shot comes from
-  aimPoint(b, e, tp) {
-    if (!this.warning(b, e)) return tp;
-    const dx = b.c.pos.x - e.pos.x, dz = b.c.pos.z - e.pos.z, l = Math.hypot(dx, dz) || 1, k = Math.min(1.8, l * 0.4);
-    const x = e.pos.x + dx / l * k, z = e.pos.z + dz / l * k; return new THREE.Vector3(x, groundBelow(x, z, e.pos.y + 0.5, 0.6) + 0.05, z);
-  },
-  // aim error multiplier: low and just hit, the player is harder to hit for a moment
-  errK(e) {
-    if (!this.on || e !== PLAYER) return 1;
-    const P = PLAYER, g = this.graceStrength();
-    if (g > 0 && P.hp < P.maxHp * 0.3 && G.time - P.lastHurt < 1) { if (G.time - this.graceT > 2) this.stats.graced++; this.graceT = G.time; return 1 + 1.4 * g; }
-    return 1;
-  },
-  // while waiting for a token: keep the distance, circle, and paint the ground short of the player
-  holdOff(b, I, e, d) {
-    const c = b.c, fx = Math.sin(c.aimYaw), fz = Math.cos(c.aimYaw), R = c.weapon.range || 10, adv = d < R * 0.6 ? -0.6 : d > R ? 0.5 : 0;
-    I.mx = -fz * b.strafe * 0.9 + fx * adv; I.mz = fx * b.strafe * 0.9 + fz * adv;
-    if (c.weapon.charges) { I.fire = c.charging; b.holdT = G.time; return; }                  // (a sniper keeps its charge - and its laser - on the player)
-    const k = clamp((d - 4) / Math.max(d, 1), 0, 1), x = c.pos.x + (e.pos.x - c.pos.x) * k, z = c.pos.z + (e.pos.z - c.pos.z) * k;
-    b.aimAt(new THREE.Vector3(x, groundBelow(x, z, c.pos.y + 1, 0.6), z), 1 / 60, 12, c.weapon.id);
-    I.fire = c.ink > 45 && d > 5; b.holdT = G.time;
-  },
-  // ---------------------------------------------------------------- backup
-  supportOf(b) { return this.on && b.support ? b.support : null; },
-  attackers(b) { return b.support && b.support.att || []; },
-  updateSupport() {
-    const P = PLAYER, T = G.time, mates = G.bots.filter(b => b.c.team === P.team && !b.c.isPlayer);
-    const att = P.alive && P.state === 'play' ? CHARS.filter(o => o.team !== P.team && o.alive && o.state === 'play' && P.dmgBy.get(o) > T - 2) : [];
-    if (att.length >= 2 || (att.length && P.hp < P.maxHp * 0.4)) this.supT = T + 3;
-    const want = T < this.supT && att.length ? Math.min(2, att.length) : 0, cur = mates.filter(b => b.support);
-    if (!want) { cur.forEach(b => b.support = null); return; }
-    const cand = mates.filter(b => !b.support && b.c.alive && b.c.state === 'play' && b.mode !== 'retreat' && b.c.pos.distanceTo(P.pos) < 40).sort((a, b) => a.c.pos.distanceTo(P.pos) - b.c.pos.distanceTo(P.pos));
-    while (cur.length < want && cand.length) { const b = cand.shift(); b.support = { t: T }; b.path = []; b.retarget = 0; b.supRe = 0; cur.push(b); this.stats.supported++; }
-    while (cur.length > want) cur.pop().support = null;
-    for (const b of cur) { if (!b.c.alive) b.support = null; else b.support.att = att; }
-  },
-  // ---------------------------------------------------------------- bookkeeping (kept in every mode, for the benchmarks)
+  onAcquire() { if (this.aimT == null && this.stats) this.aimT = G.time; },   // an enemy has just picked the player out
   onDamage(v, amount, src, via) {
     if (v !== PLAYER || !src || src.team === v.team || !this.stats) return;
     if (this.engT == null || v.hp + amount >= v.maxHp - 0.5) this.engT = G.time;
-    // (measuring) gun hits on the player: from someone without a token, and from two shooters inside 0.6 s of each other
     if (via === src.weapon.id && src.bot) {
       const T = G.time; this.stats.gunHits++;
-      if (this.on && !this.holders.has(src.bot)) this.stats.rogueHits++;
       for (const [o, t] of this.lastHit) if (o !== src && T - t < 0.6) { this.stats.pairHits++; break; }
       this.lastHit.set(src, T);
     }
@@ -7112,28 +7143,107 @@ const Combat = {
     this.stats.deaths++; if (CHARS.filter(o => o.team !== v.team && v.dmgBy.get(o) > T - 4).length >= 2) this.stats.multi++; if (CHARS.filter(o => o.team !== v.team && v.dmgBy.get(o) > T - 1.5).length >= 2) this.stats.multi15++;
     if (this.engT != null) this.stats.ttd.push(T - this.engT); if (this.aimT != null) this.stats.tta.push(T - this.aimT); this.engT = this.aimT = null;
   },
-  update(dt) {
-    if (!PLAYER || !this.stats) return; const P = PLAYER, T = G.time;
+  update() {
+    if (!PLAYER || !this.stats) return; const P = PLAYER;
     if (P.alive && P.hp >= P.maxHp - 0.5) this.engT = null;
     if (!G.bots.some(b => b.enemy === PLAYER) && P.hp >= P.maxHp - 0.5) this.aimT = null;
-    if (!this.on) return;
-    // a holder that has had its turn gives way to someone waiting
-    for (const [b, w] of this.waiting) if (T - w > 0.5) this.waiting.delete(b);
-    if (this.waiting.size) for (const [b, s] of this.holders) if (T - s.t0 > this.SLOT) { this.holders.delete(b); b.tokCd = T + 1.5; break; }
-    this.updateSupport();
   },
-  // (measuring, after the bots have moved: how many are really firing at the player - those painting the ground while they wait do not count)
+  // (after the bots have moved: how many are firing at the player right now)
   measure() {
-    const P = PLAYER, T = G.time; if (!P || !this.stats || !P.alive || P.state !== 'play') return;
-    const on = G.bots.filter(b => b.enemy === PLAYER && b.c.intent.fire && b.c.alive && T - (b.holdT ?? -9) > 0.05);
-    if (on.length) this.stats.fireFrames++; if (on.length >= 2) this.stats.twoFrames++; if (on.length > this.tokens()) this.stats.overFrames++; if (this.on) this.stats.rogue += on.filter(b => !this.holders.has(b)).length;
+    const P = PLAYER; if (!P || !this.stats || !P.alive || P.state !== 'play') return;
+    const on = G.bots.filter(b => b.enemy === PLAYER && b.c.intent.fire && b.c.alive).length;
+    if (on) this.stats.fireFrames++; if (on >= 2) this.stats.twoFrames++;
+  }
+};
+/* ============================================================ TENSION → MUSIC
+   The player's tension (0..1) goes up when hit, when low, with enemies close, on dying, on a close-range
+   knock-out, and drains away when things are quiet.  The music follows it - sparse when calm, full in a
+   fight, and full again in a close finish.  It only listens: the bots are never told to push or ease off.  */
+const Pacing = {
+  reset() {
+    this.tension = 0; this.hist = [];
+    this.stats = { curve: [], dmgT: [], aliveT: [] };                     // (measuring: the tension curve, damage taken and time alive per 10 s)
+    Sfx.musicEnergy && Sfx.musicEnergy(0.5);
   },
-  panelLine() {
-    if (!this.on) return '';
-    const T = G.time, warn = G.bots.filter(b => b.enemy === PLAYER && this.warning(b, PLAYER)).length, sup = G.bots.filter(b => b.support).length;
-    const bits = [`正在打你：${this.holders.size}/${this.tokens()} 名额${this.waiting.size ? '（' + this.waiting.size + ' 人在等）' : ''}`];
-    if (warn) bits.push(warn + ' 人在警告射击'); if (T - this.graceT < 0.3) bits.push('残血喘息中'); if (sup) bits.push('队友支援 ' + sup + ' 人');
-    return `<div>${bits.join(' · ')}</div>`;
+  onDamage(v, amount, src) { if (v === PLAYER && src && src.team !== v.team) { this.tension = Math.min(1, this.tension + amount / v.maxHp * 0.9); if (this.stats) { const k = Math.floor(G.time / 10); this.stats.dmgT[k] = (this.stats.dmgT[k] || 0) + amount / v.maxHp; } } },
+  onDeath(v, killer) {
+    if (v === PLAYER) this.tension = 1;
+    else if (killer === PLAYER && v.pos.distanceTo(PLAYER.pos) < 8) this.tension = Math.min(1, this.tension + 0.15);
+  },
+  near() { const P = PLAYER; return CHARS.filter(o => o.team !== P.team && o.alive && o.state === 'play' && o.pos.distanceTo(P.pos) < 13 && !o.hiddenInInk()).length; },
+  update(dt) {
+    const P = PLAYER; if (!P || !this.stats) return; const T = G.time;
+    if (P.alive && P.state === 'play') {
+      const n = this.near(), calm = T - P.lastHurt > 3 && n === 0;
+      if (P.hp < P.maxHp * 0.4) this.tension += dt * 0.15;
+      this.tension += dt * 0.06 * n;
+      this.tension -= dt * (calm ? 0.12 : 0.04);
+    } else this.tension -= dt * 0.08;
+    this.tension = clamp(this.tension, 0, 1);
+    if ((this.histT = (this.histT || 0) - dt) <= 0) { this.histT = 1; this.hist.push(this.tension); if (this.hist.length > 60) this.hist.shift(); this.stats.curve.push(this.tension); }
+    if (P.alive && P.state === 'play') { const k = Math.floor(T / 10); this.stats.aliveT[k] = (this.stats.aliveT[k] || 0) + dt; }
+    // the music: calm → sparse, a fight → full; a close finish is full whatever the player is doing
+    const close = Math.abs(Director.lead || 0) < 0.1 && G.left < Director.endWindow();
+    if (Sfx.musicEnergy) Sfx.musicEnergy(close ? 1 : 0.3 + this.tension * 0.7);
+  }
+};
+/* ============================================================ DIRECTOR PANEL  (press ` in a match)
+   First press: the essentials - the tier and where everyone sits on the 0-2.5 ruler (the bots' levels, and
+   an estimate of how the player is playing - shown only, nothing is steered by it), the player's tension
+   (the music follows it), the score and how each side is playing it, and what the other side has read and
+   is doing.  Second press: the details - every signal, the last duels, all seven bots and what each is up
+   to.  Third press: off.  Everything reads from the modules; nothing here decides anything.             */
+const DirPanel = {
+  view: 0, t: 0,
+  toggle() { this.view = (this.view + 1) % 3; const p = $('dirPanel'); p.classList.toggle('show', this.view > 0); p.classList.toggle('full', this.view === 2); this.t = 0; },
+  esc(s) { return String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';'); },
+  pct(v) { return Math.round(v * 100) + '%'; },
+  x(v) { return (clamp(v, 0, LV_MAX) / LV_MAX * 100).toFixed(1) + '%'; },        // a level as a position on the ruler
+  tierCls(v) { return v < 0.65 ? 'e' : v < 1.25 ? 'n' : v < 1.75 ? 'k' : 'h'; },
+  update(dt) {
+    if (!this.view || (this.t -= dt) > 0 || !PLAYER || !Director.st) return; this.t = 0.25;
+    $('dirPanel').innerHTML = this.render();
+  },
+  render() {
+    const D = Director, md = D.mode(), f2 = v => v.toFixed(2), tier = D.tierOf();
+    const mates = D.bots().filter(b => b.c.team === PLAYER.team), foes = D.enemies(), avg = a => a.length ? a.reduce((s, b) => s + D.lvOf(b.c), 0) / a.length : 1;
+    const left = Math.max(0, D.calibT - G.time), state = D.cheat ? ['bad', '后门 · 不计入存档'] : D.idle() ? ['bad', '挂机不计'] : left > 0 ? ['warm', '校准中 ' + Math.ceil(left) + 's'] : D.conf < 0.3 ? ['warm', '数据不足'] : ['ok', '已校准'];
+    const save = D.saved ? '已存 ' + f2(D.saved.s) : D.mem ? '存档 ' + f2(D.mem.s) + ' · ' + (D.mem.m || 1) + ' 局' : D.seed != null ? '首次 · 参考 ' + f2(D.seed) : '无存档';
+    let h = `<div class="dp-head"><b>导演台</b><span class="dp-chip">${md === 'fixed' ? '测试固定档' : tier.name + ' ' + f2(tier.lv)}</span><span class="dp-chip dim">${this.esc(D.loadoutName(D.key))} · ${save}</span></div>`;
+    // ---- the ruler: each tier's spread of bot levels, the bots, and the estimate of the player
+    const zones = TIERS.map((t, i) => `<i class="z ${this.tierCls(t.lv)}${md === i ? ' sel' : ''}" style="left:${this.x(t.lv - D.SPREAD)};width:calc(${this.x(t.lv + D.SPREAD)} - ${this.x(t.lv - D.SPREAD)})"></i>`).join('') + (typeof md === 'number' ? `<i class="z mates" style="left:${this.x(tier.mates - D.SPREAD)};width:calc(${this.x(tier.mates + D.SPREAD)} - ${this.x(tier.mates - D.SPREAD)})"></i>` : '');
+    const mk = (v, cls, lab) => `<em class="mk ${cls}" style="left:${this.x(v)}"><u>${lab}</u></em>`;
+    h += `<div class="dp-lv"><div class="dp-big"><span class="${this.tierCls(D.skill)}">${f2(D.skill)}</span><small>你的发挥 · 约等于${D.tier(D.skill)}</small><i class="dp-state ${state[0]}">${state[1]}</i></div>
+      <div class="dp-ruler">${zones}${mk(avg(foes), 'foe', '敌')}${mk(avg(mates), 'mate', '友')}${mk(D.skill, 'me', '你')}<b class="conf" style="width:${this.pct(D.conf)}"></b></div>
+      <div class="dp-scale">${TIERS.map(t => `<span style="left:${this.x(t.lv)}">${t.name}</span>`).join('')}</div></div>`;
+    // ---- tension (the music follows it)
+    const P = Pacing, spark = P.hist.length > 1 ? P.hist.map((v, i) => `${(i / (P.hist.length - 1) * 100).toFixed(1)},${(22 - v * 20).toFixed(1)}`).join(' ') : '';
+    h += `<div class="dp-row"><label>紧张度</label><div class="dp-meter"><b style="width:${this.pct(P.tension)}"></b><svg viewBox="0 0 100 24" preserveAspectRatio="none"><polyline points="${spark}"/></svg></div><small>${f2(P.tension)} · 音乐跟着走</small></div>`;
+    // ---- the score, and how each side plays it
+    const lead = D.lead, w = clamp(50 + lead * 150, 4, 96), pf = D.pf || [0, 0], pfs = f => Math.abs(f) < 0.05 ? '' : f > 0 ? '抢地' : '守地';
+    h += `<div class="dp-row"><label>比分</label><div class="dp-tug"><b style="width:${w}%"></b><span>${lead >= 0 ? '领先' : '落后'} ${this.pct(Math.abs(lead))}</span></div><small>敌 ${f2(avg(foes))} · 友 ${f2(avg(mates))}</small></div>`;
+    const tags = [pfs(pf[1 - PLAYER.team]) && '敌在' + pfs(pf[1 - PLAYER.team]), pfs(pf[PLAYER.team]) && '友在' + pfs(pf[PLAYER.team])].filter(Boolean);
+    if (tags.length) h += `<div class="dp-tags">${tags.map(t => `<span>${t}</span>`).join('')}</div>`;
+    // ---- who has the player in their sights, and who is looking for them
+    const on = foes.filter(b => b.enemy === PLAYER).length, look = foes.filter(b => b.dState === 'alert' && b.alert && b.alert.e === PLAYER).length;
+    h += `<div class="dp-row"><label>盯你</label><div class="dp-tags tight"><span>交火 ${on}</span><span>在找你 ${look}</span></div></div>`;
+    // ---- what the other side has read, and its plan
+    const S = Strategist.view();
+    if (S) h += `<div class="dp-row top"><label>对面</label><div class="dp-read">${S.tags.length ? S.tags.map(([n, v]) => `<span class="dp-bar"><i style="width:${this.pct(v)}"></i>${n}</span>`).join('') : `<small>${S.wait}</small>`}<div class="dp-plan">${S.plan ? `<b>${S.plan}</b>` : '<b class="dim">无对策</b>'}<small>${S.note}</small></div></div></div>`;
+    else if (md === 0) h += `<div class="dp-row"><label>对面</label><small style="margin-left:0">轻松档不针对你的打法</small></div>`;
+    if (this.view < 2) return h + '<div class="dp-foot">再按 ` 看详细 · 再按一次关闭</div>';
+    // ================= details, in a second column beside the essentials
+    const ess = h; h = '';
+    const SN = { paint: '涂地', dmg: '伤害比', surv: '存活', hit: '命中', know: '熟练' };
+    const sig = [['交火积分', D.elo, 0.6 + D.n * 0.5]].concat(Object.keys(SN).filter(k => D.sig[k]).map(k => [SN[k], D.sig[k].v, D.sig[k].w]));
+    h += `<div class="dp-sec">发挥估计 <small>只显示，不影响对局</small></div><div class="dp-sig">${sig.map(([n, v, wt]) => `<div><label>${n}</label><span class="tr"><i class="${this.tierCls(v)}" style="width:${this.x(v)}"></i></span><b>${f2(v)}</b><small>×${wt.toFixed(1)}</small></div>`).join('')}</div>`;
+    h += `<div class="dp-sec">最近交火 <small>本局 ${D.nm.toFixed(1)} 次 · 数字是事先估计你赢的概率</small></div><div class="dp-duels">${D.log.length ? D.log.slice().reverse().map(l => `<span class="${l.o > 0.5 ? 'w' : l.o < 0.5 ? 'l' : 'd'}${l.w < 1 ? ' lite' : ''}"><b>${l.o > 0.5 ? '赢' : l.o < 0.5 ? '输' : '平'}</b>${this.pct(l.p)}</span>`).join('') : '<small>还没有</small>'}</div>`;
+    const STN = { fight: '交火', alert: '警觉', away: '巡逻', respawn: '复活' }, JOB = { paint: '抢地', hunt: '围猎', flank: '绕后', block: '封路', retake: '反推' };
+    const temper = b => { const t = b.trait; return !t ? '' : t.aggr > 0.4 ? '冲' : t.aggr < -0.4 ? '稳' : t.care > 0.5 ? '惜命' : ''; };
+    const bot = b => { const lv = D.lvOf(b.c), tp = temper(b); return `<div class="dp-bot"><i class="st ${b.dState || 'away'}" title="${STN[b.dState] || ''}"></i><span class="nm">${this.esc(b.c.name)}</span><span class="lvp ${this.tierCls(lv)}">${f2(lv)}</span>${tp ? `<em>${tp}</em>` : ''}${b.task ? `<em>${JOB[b.task.id] || ''}</em>` : ''}${b.enemy === PLAYER ? '<em class="tok">打你</em>' : ''}</div>`; };
+    h += `<div class="dp-sec">机器人 <small>本局固定 · 各有手感和脾气${typeof md === 'number' && tier.mateAim > 1 ? ' · 队友枪法 ×' + tier.mateAim + ' 偏' : ''}</small></div><div class="dp-bots"><div>${mates.map(bot).join('')}</div><div>${foes.map(bot).join('')}</div></div>`;
+    h += `<div class="dp-legend"><i class="st fight"></i>交火 <i class="st alert"></i>警觉（听到/刚跟丢）<i class="st away"></i>巡逻 <i class="st respawn"></i>复活</div>`;
+    return `<div class="dp-cols"><div class="dp-col">${ess}</div><div class="dp-col">${h}</div></div><div class="dp-foot">再按 ` + '`' + ` 关闭</div>`;
   }
 };
 /* ================================================================ HUD */
@@ -7471,17 +7581,18 @@ function spawnTeams() {
   if (!G.roster) rollRoster();
   // where the four stand on the spawn pad: [sideways, back] from its centre (a narrow pad gets a tight 2 x 2)
   const slots = MAP.spawnSlots || [[-4.5, -0.4], [-1.5, 0.8], [1.5, -0.4], [4.5, 0.8]];
+  const roles = G.roster.map(team => { const bots = team.filter(m => !m.isPlayer), r = rolesFor(bots.map(m => m.weapon)); return new Map(bots.map((m, i) => [m, r[i]])); });     // (jobs by what each one carries)
   for (let t = 0; t < 2; t++) G.roster[t].forEach((m, i) => {
     const c = new Character(m.name, t, m.isPlayer, { weapon: m.weapon, look: m.look, char: m.char });
     const sp = SPAWN[t], sl = slots[i % slots.length]; c.pos.set(sp.x + sl[0] * (t ? -1 : 1), sp.y, sp.z + (t ? -1 : 1) * sl[1]); c.aimYaw = c.yaw = c.bodyYaw = sp.yaw;
-    CHARS.push(c); if (m.isPlayer) PLAYER = c; else G.bots.push(new Bot(c, m.role));
+    CHARS.push(c); if (m.isPlayer) PLAYER = c; else G.bots.push(new Bot(c, roles[t].get(m)));
   });
 }
 function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProjectionMatrix(); }
 function startMatch() {
   Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Wake.clear(); Proj.clear();
-  spawnTeams(); Director.reset(); Strategist.reset(); Combat.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
+  spawnTeams(); Director.reset(); Strategist.reset(); Combat.reset(); Pacing.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
@@ -8193,7 +8304,7 @@ function updatePlay(dt) {
   if (G.left <= 0) { G.left = 0; endMatch(); return; }
   if (G.time > 8) $('hint').style.display = 'none';
   if (!G.pilot) playerControl(dt);                // (G.pilot: an all-bot match for the AI benchmark; the player is driven by a Bot in G.bots)
-  Director.update(dt); Strategist.update(dt); Combat.update(dt);
+  Director.update(dt); Strategist.update(dt); Combat.update(dt); Pacing.update(dt);
   if (G.squads) for (const q of G.squads) q.update(dt);
   for (const b of G.bots) b.update(dt);
   Combat.measure();
@@ -8261,7 +8372,8 @@ function initUI() {
   const sw = $('swatches');
   PALETTES.forEach((p, i) => { const d = document.createElement('div'); d.className = 'sw' + (i === GAME.pal ? ' sel' : ''); d.innerHTML = `<span style="background:${p[0]}"></span><span style="background:${p[1]}"></span>`; d.onclick = () => { GAME.pal = i; [...sw.children].forEach((c, k) => c.classList.toggle('sel', k === i)); applyPalette(); Profile.save(); if ($('lobby').classList.contains('show')) renderLobby(); Sfx.init(); Sfx.click(); }; sw.appendChild(d); });
   const seg = (id, fn) => { const el = $(id); el.querySelectorAll('button').forEach(b => b.onclick = () => { el.querySelectorAll('button').forEach(x => x.classList.toggle('sel', x === b)); fn(+b.dataset.v); Sfx.init(); Sfx.click(); }); };
-  seg('diff', v => { GAME.diff = v; Profile.save(); }); seg('dur', v => { GAME.dur = v; Profile.save(); });
+  const diffNote = () => { $('diffNote').textContent = TIERS[GAME.diff] ? TIERS[GAME.diff].note : ''; };
+  seg('diff', v => { GAME.diff = v; Profile.save(); diffNote(); }); diffNote(); seg('dur', v => { GAME.dur = v; Profile.save(); });
   const selSeg = (id, v) => $(id).querySelectorAll('button').forEach(b => b.classList.toggle('sel', +b.dataset.v === v));
   selSeg('diff', GAME.diff); selSeg('dur', GAME.dur);
   seg('sQual', v => { SETTINGS.qual = v; applyQuality(); }); seg('sInv', v => SETTINGS.inv = v);

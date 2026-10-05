@@ -158,14 +158,14 @@ function vipOn() { return Profile.data.vip === VIP_NAME && GAME.name === VIP_NAM
 /* --------------------------------------------------------- profile */
 const PROFILE_KEY = 'splashrush.profile';
 const Profile = {
-  data: { v: 1, name: '新人墨仔', weapon: 'rifle', char: 'sa', pal: 0, diff: 1, dur: 180, look: null },
+  data: { v: 1, dv: 2, name: '新人墨仔', weapon: 'rifle', char: 'sa', pal: 0, diff: 1, dur: 180, look: null },
   load() {
-    try { const s = localStorage.getItem(PROFILE_KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) Object.assign(this.data, d); } } catch (e) { }
+    try { const s = localStorage.getItem(PROFILE_KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) { if (d.dv !== 2) { d.diff = d.diff === 2 ? 3 : d.diff === 0 ? 0 : 1; d.dv = 2; } Object.assign(this.data, d); } } } catch (e) { }     // (dv 2: four tiers - the old hell 2 is now 3, the old smart mode -1 becomes normal)
     if (!this.data.look) this.data.look = randomLook();
     if (!WEAPON_ORDER.includes(this.data.weapon)) this.data.weapon = 'rifle';
     if (!CHAR_ORDER.includes(this.data.char)) this.data.char = 'sa';
     if (!CHARACTERS[this.data.char].weapons.includes(this.data.weapon)) this.data.weapon = CHARACTERS[this.data.char].weapons[0];
-    const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = d.diff === SMART ? SMART : clamp(d.diff | 0, 0, 2); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
+    const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = clamp(d.diff | 0, 0, TIERS.length - 1); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
   },
   save() {
     Object.assign(this.data, { name: GAME.name, pal: GAME.pal, diff: GAME.diff, dur: GAME.dur });
@@ -177,6 +177,17 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.18.0', date: '2026-10-05', time: '18:09', title: '像真人一样的对手', items: [
+    '难度改成四档：轻松「放开打」、普通「有来有回」、困难「认真起来」、地狱「每一波都是硬仗」；「智能」档去掉了，原来选智能的会变成普通',
+    '对手不再暗中让着你：没有了同时打你的人数限制、警告射击和残血喘息，也不会因为你打得好或打得差而变强变弱',
+    '对手像真人一样：只看得到面前的东西，听得到附近的枪声，背后中枪会转身找你，跟丢了会去你最后出现的地方看看',
+    '刚瞄上你时枪会先偏、然后越来越准，被打中会慌；横着走位、绕到背后都更有用',
+    '会挑软柿子：残血的、没墨的、刚打了它队友的人会先被盯上（轻松档的对手不会）',
+    '每个机器人各有手感和脾气，有的冲、有的稳',
+    '队友是配角：难度越高，对手越强，队友却不会跟着变猛，枪法也差一点 —— 困难和地狱要靠你自己赢下来',
+    '机器人各司其职：拿冲锋枪的阿飒绕后，满满占高点狙击，石墩顶在前排，拿步枪的补位',
+    '音乐跟着战况走：安静时稀疏，交火时变密'
+  ] },
   { v: 'v0.17.0', date: '2026-10-04', time: '17:56', title: '交火更讲理', items: [
     '被一群人盯上时，不会再同时被三四把枪一起扫倒，总有空隙让你反应、还手',
     '对手刚瞄上你时，墨水会先溅在你身前，看到就知道有人在打你，赶紧找掩护',

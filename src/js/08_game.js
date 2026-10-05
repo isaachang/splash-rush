@@ -333,17 +333,18 @@ function spawnTeams() {
   if (!G.roster) rollRoster();
   // where the four stand on the spawn pad: [sideways, back] from its centre (a narrow pad gets a tight 2 x 2)
   const slots = MAP.spawnSlots || [[-4.5, -0.4], [-1.5, 0.8], [1.5, -0.4], [4.5, 0.8]];
+  const roles = G.roster.map(team => { const bots = team.filter(m => !m.isPlayer), r = rolesFor(bots.map(m => m.weapon)); return new Map(bots.map((m, i) => [m, r[i]])); });     // (jobs by what each one carries)
   for (let t = 0; t < 2; t++) G.roster[t].forEach((m, i) => {
     const c = new Character(m.name, t, m.isPlayer, { weapon: m.weapon, look: m.look, char: m.char });
     const sp = SPAWN[t], sl = slots[i % slots.length]; c.pos.set(sp.x + sl[0] * (t ? -1 : 1), sp.y, sp.z + (t ? -1 : 1) * sl[1]); c.aimYaw = c.yaw = c.bodyYaw = sp.yaw;
-    CHARS.push(c); if (m.isPlayer) PLAYER = c; else G.bots.push(new Bot(c, m.role));
+    CHARS.push(c); if (m.isPlayer) PLAYER = c; else G.bots.push(new Bot(c, roles[t].get(m)));
   });
 }
 function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProjectionMatrix(); }
 function startMatch() {
   Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Wake.clear(); Proj.clear();
-  spawnTeams(); Director.reset(); Strategist.reset(); Combat.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
+  spawnTeams(); Director.reset(); Strategist.reset(); Combat.reset(); Pacing.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
@@ -1055,7 +1056,7 @@ function updatePlay(dt) {
   if (G.left <= 0) { G.left = 0; endMatch(); return; }
   if (G.time > 8) $('hint').style.display = 'none';
   if (!G.pilot) playerControl(dt);                // (G.pilot: an all-bot match for the AI benchmark; the player is driven by a Bot in G.bots)
-  Director.update(dt); Strategist.update(dt); Combat.update(dt);
+  Director.update(dt); Strategist.update(dt); Combat.update(dt); Pacing.update(dt);
   if (G.squads) for (const q of G.squads) q.update(dt);
   for (const b of G.bots) b.update(dt);
   Combat.measure();
@@ -1123,7 +1124,8 @@ function initUI() {
   const sw = $('swatches');
   PALETTES.forEach((p, i) => { const d = document.createElement('div'); d.className = 'sw' + (i === GAME.pal ? ' sel' : ''); d.innerHTML = `<span style="background:${p[0]}"></span><span style="background:${p[1]}"></span>`; d.onclick = () => { GAME.pal = i; [...sw.children].forEach((c, k) => c.classList.toggle('sel', k === i)); applyPalette(); Profile.save(); if ($('lobby').classList.contains('show')) renderLobby(); Sfx.init(); Sfx.click(); }; sw.appendChild(d); });
   const seg = (id, fn) => { const el = $(id); el.querySelectorAll('button').forEach(b => b.onclick = () => { el.querySelectorAll('button').forEach(x => x.classList.toggle('sel', x === b)); fn(+b.dataset.v); Sfx.init(); Sfx.click(); }); };
-  seg('diff', v => { GAME.diff = v; Profile.save(); }); seg('dur', v => { GAME.dur = v; Profile.save(); });
+  const diffNote = () => { $('diffNote').textContent = TIERS[GAME.diff] ? TIERS[GAME.diff].note : ''; };
+  seg('diff', v => { GAME.diff = v; Profile.save(); diffNote(); }); diffNote(); seg('dur', v => { GAME.dur = v; Profile.save(); });
   const selSeg = (id, v) => $(id).querySelectorAll('button').forEach(b => b.classList.toggle('sel', +b.dataset.v === v));
   selSeg('diff', GAME.diff); selSeg('dur', GAME.dur);
   seg('sQual', v => { SETTINGS.qual = v; applyQuality(); }); seg('sInv', v => SETTINGS.inv = v);

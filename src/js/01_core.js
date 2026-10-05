@@ -27,18 +27,24 @@ const GAME = { pal: 0, diff: 1, dur: 180, name: '新人墨仔', uniformChars: fa
 //   sjump    super-jump back to the front        climb   1 snipers ink walls to reach high ground · 2 anyone does
 //   endgame  all paint in the last 30 s          share   tell teammates who was seen, turn on an unseen shooter
 //   inkCare  top up ink between fights   dawdle  chance to stop and look about between jobs   swimK  how readily it swims through own ink to travel
+// fov: half-angle of what a bot notices (rad) · hear: how far off a shot or a fast swim is heard (m) · mem: how long it keeps looking
+// for someone it lost (s) · settle: how quickly its aim settles on someone new (s) · lead: how well it leads a moving target · flinch: how much being hit throws its aim
 const DIFF = [
-  { err: 0.13, react: 0.75, fireHold: 0.55, turn: 5, dodge: 0.2, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0, dawdle: 0.3, swimK: 0.7 },
-  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0.4, team: 1, focus: 0, ambush: 0.25, combo: 0, bombSmart: 1, sjump: 1, climb: 1, endgame: 1, share: 1, inkCare: 1 },
-  { err: 0.04, react: 0.2, fireHold: 0.95, turn: 13, dodge: 0.8, retreat: 0.55, team: 2, focus: 1, ambush: 0.7, combo: 0.8, bombSmart: 1, sjump: 1, climb: 2, endgame: 1, share: 1, inkCare: 1, swimK: 0.97 },
+  { err: 0.13, react: 0.75, fireHold: 0.55, turn: 5, dodge: 0.2, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0, dawdle: 0.3, swimK: 0.7,
+    fov: 0.87, hear: 10, mem: 1.5, settle: 0.7, lead: 0.35, flinch: 1 },
+  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0.4, team: 1, focus: 0, ambush: 0.25, combo: 0, bombSmart: 1, sjump: 1, climb: 1, endgame: 1, share: 1, inkCare: 1,
+    fov: 1.13, hear: 15, mem: 2.5, settle: 0.45, lead: 0.65, flinch: 0.6 },
+  { err: 0.04, react: 0.2, fireHold: 0.95, turn: 13, dodge: 0.8, retreat: 0.55, team: 2, focus: 1, ambush: 0.7, combo: 0.8, bombSmart: 1, sjump: 1, climb: 2, endgame: 1, share: 1, inkCare: 1, swimK: 0.97,
+    fov: 1.48, hear: 22, mem: 4, settle: 0.25, lead: 0.9, flinch: 0.25 },
   // (index 3, tests only: the pre-v0.11 "normal" bot - same aim as normal, none of the new know-how - as a yardstick)
-  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0 }
+  { err: 0.075, react: 0.42, fireHold: 0.8, turn: 8, dodge: 0.45, retreat: 0, team: 0, focus: 0, ambush: 0, combo: 0, bombSmart: 0, sjump: 0, climb: 0, endgame: 0, share: 0, inkCare: 0,
+    fov: 1.13, hear: 15, mem: 2.5, settle: 0.45, lead: 0.65, flinch: 0.6 }
 ];
 
 /* --------------------------------------------------------------- audio */
 const Sfx = (() => {
-  let ctx = null, master, sfxG, musG, comp, noiseBuf, duckF, duckOn = false;
-  const M = { on: false, next: 0, step: 0, bpm: 124, mode: 'title', timer: null };
+  let ctx = null, master, sfxG, musG, musF, comp, noiseBuf, duckF, duckOn = false;
+  const M = { on: false, next: 0, step: 0, bpm: 124, mode: 'title', timer: null, energy: 0.5, e: 0.5 };
   function init() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; return; }
@@ -46,7 +52,8 @@ const Sfx = (() => {
     duckF = ctx.createBiquadFilter(); duckF.type = 'lowpass'; duckF.frequency.value = 20000; duckF.Q.value = 0.7; duckF.connect(comp);
     master = ctx.createGain(); master.connect(duckF);
     sfxG = ctx.createGain(); sfxG.connect(master);
-    musG = ctx.createGain(); musG.connect(master);
+    musF = ctx.createBiquadFilter(); musF.type = 'lowpass'; musF.frequency.value = 9000; musF.Q.value = 0.6; musF.connect(master);
+    musG = ctx.createGain(); musG.connect(musF);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     setVol();
@@ -89,14 +96,18 @@ const Sfx = (() => {
   }
   function playStep(s, t) {
     const bar = (s >> 4) & 3, i = s & 15, r = ROOTS[bar], mode = M.mode;
-    const title = mode === 'title', hurry = mode === 'hurry';
+    const title = mode === 'title', hurry = mode === 'hurry', game = !title;
+    // the match's energy (pacing): a lull drops the chord stabs and half the hats behind a muffled filter, a wave adds 16th hats and a lead
+    if (game && i === 0) { M.e += (M.energy - M.e) * 0.5; if (musF) musF.frequency.setTargetAtTime(lerp(1500, 16000, M.e), t, 0.4); }
+    const lull = game && !hurry && M.e < 0.3, wave = game && M.e > 0.75;
     // kick
     if (title ? (i === 0 || i === 10) : i % 4 === 0) tone('sine', 150, 42, 0.22, title ? 0.5 : 0.8, musG, t);
     if (i === 4 || i === 12) { noise(0.14, title ? 0.12 : 0.26, 'bandpass', 1900, 0.8, null, musG, t); tone('triangle', 230, 130, 0.08, 0.12, musG, t); }
-    if (hurry ? true : i % 2 === 0) noise(0.035, (i % 4 === 2 ? 0.1 : 0.05) * (title ? 0.6 : 1), 'highpass', 8000, 1, null, musG, t);
+    if (hurry || wave ? true : lull ? i % 4 === 2 : i % 2 === 0) noise(0.035, (i % 4 === 2 ? 0.1 : 0.05) * (title ? 0.6 : 1), 'highpass', 8000, 1, null, musG, t);
     if ([0, 3, 6, 8, 10, 11, 14].includes(i)) bass(r + (i === 6 || i === 14 ? 12 : i === 11 ? 7 : 0), t, 0.16);
-    if (!title && (i === 2 || i === 7 || i === 10)) stab(r, MAJ[bar], t);
-    if (title || hurry) {
+    if (!title && !lull && (i === 2 || i === 7 || i === 10)) stab(r, MAJ[bar], t);
+    if (wave && (i === 6 || i === 14)) tone('sine', 150, 42, 0.18, 0.5, musG, t);
+    if (title || hurry || wave) {
       const scale = [0, 3, 5, 7, 10, 12, 15];
       if (i % 2 === 0 && hash(s * 3.1 + bar) > 0.35) tone('triangle', mtof(r + 36 + scale[Math.floor(hash(s + 7.7) * 7)]), null, 0.12, title ? 0.05 : 0.04, musG, t);
     }
@@ -109,6 +120,7 @@ const Sfx = (() => {
   function stopMusic() { if (M.timer) clearInterval(M.timer); M.on = false; }
   return {
     init, setVol, music, stopMusic, duck, get ducked() { return duckOn; },
+    musicEnergy(e) { M.energy = clamp(e, 0, 1); },
     // pressurised "pshh" + low thump, 3 variants with random pitch, panned by direction
     shoot(v, pan = 0) {
       if (!ctx) return; const d = panNode(pan), k = rand(0.92, 1.08), var_ = Math.floor(Math.random() * 3);

@@ -1,14 +1,13 @@
-/* ============================================================ STRATEGIST (smart mode)
+/* ============================================================ STRATEGIST
    The enemy team reads how the player plays and picks a plan against it, like rock-paper-scissors:
      the player hunts people        -> 抢地 paint: most of them avoid fights and take the map
      the player paints and avoids   -> 围猎 hunt: a couple of them go and make the player fight
      the player dives deep          -> 绕后 flank: someone slips round to the player's own half
      the player keeps to one route  -> 封路 block: someone lies in wait on it
      the player flips their side    -> 反推 retake: someone goes back and paints it again
-   Keeping the score close comes first, so the plans only run while the game is close: once one side pulls
-   away the Director's own lever takes over (the side behind keeps to painting, the side ahead eases off) -
-   measured against bots, every way of mixing the plans into that made runaways more likely, not less.
-   Within a close game stronger bots counter harder and read the player quicker.                        */
+   The plans run while the game is close: once one side pulls away, both play the score instead (the side
+   behind takes ground, the side ahead holds it).  How much they counter is the tier's: easy not at all,
+   normal at half strength, hard most of the way, hell fully - and stronger bots read the player quicker.  */
 const PLAN_NAME = { paint: '抢地', hunt: '围猎', flank: '绕后', block: '封路', retake: '反推' };
 const Strategist = {
   NX: 3, NZ: 4, zoneCache: {},
@@ -18,6 +17,8 @@ const Strategist = {
     this.hist = []; this.shareT = 0; this.evalT = 6; this.assignT = 0; this.plan = null; this.plan2 = null; this.planT = 0; this.k = 0; this.prof = null; this.scores = null;
     for (const b of G.bots) b.task = null;
   },
+  // watching the player before the first reading: 20 s at 3:00, shorter in a short match (14 s at 1:30)
+  warmup() { return 20 * clamp(Math.sqrt(GAME.dur / 180), 0.7, 1.3); },
   get on() { return Director.on && !this.off; },                          // (off: tests comparing with and without plans)
   team() { return 1 - PLAYER.team; },                                       // the side that reads and counters
   laneOf(x) { return clamp(Math.floor((x + XH) / (2 * XH) * this.NX), 0, this.NX - 1); },
@@ -77,14 +78,14 @@ const Strategist = {
   // game - fading out as the Director starts telling either side to paint or ease off
   intensity() {
     const tm = this.team(), row = Director.teamRow ? Director.teamRow[tm] : DIFF[1], lv = Director.teamLevel(tm), pf = Math.abs(Director.paintFocus(tm));
-    if (!row.team || Director.mode() === 0) return 0;                       // (and never on easy)
-    return clamp((lv - 0.5) / 1.3, 0.25, 1) * clamp(1 - pf / 0.3, 0, 1);
+    if (!row.team) return 0;
+    return clamp(clamp((lv - 0.5) / 1.3, 0.25, 1) * clamp(1 - pf / 0.3, 0, 1) * Director.tierOf().counter * 1.6, 0, 1);
   },
   // ---------------------------------------------------------------- handing out the jobs
   assign() {
     const tm = this.team(), k = this.k = this.intensity(), plan = this.plan, plan2 = this.plan2;
-    // hunting goes in pairs (a strong player just picks off a lone hunter), and never after a beginner (being chased about is no fun)
-    const count = id => id === 'hunt' ? (Director.skill >= 0.9 && k * 2.4 >= 1 ? 2 : 0) : Math.round(k * (id === 'paint' ? 4 : 1.6));
+    // hunting goes in pairs (a lone hunter just gets picked off)
+    const count = id => id === 'hunt' ? (k * 2.4 >= 1 ? 2 : 0) : Math.round(k * (id === 'paint' ? 4 : 1.6));
     const want = []; if (plan) for (let i = 0; i < count(plan); i++) want.push(plan);
     if (plan2 && plan2 !== 'hunt' && k >= 0.5) want.push(plan2);
     this.live = [want.includes(plan) ? plan : null, want.includes(plan2) ? plan2 : null];
@@ -99,7 +100,8 @@ const Strategist = {
       const pickBy = f => free.filter(b => id === 'paint' || !b.c.weapon.charges).sort((a, b) => f(a) - f(b))[0];
       const near = (x, z) => b => Math.hypot(b.c.pos.x - x, b.c.pos.z - z);
       const task = this.makeTask(id, tm); if (!task) continue;
-      const b = id === 'flank' ? pickBy(b => -b.c.cs.runK) : pickBy(near(task.x, task.z)); if (!b) continue;
+      // who suits the job: the SMG 阿飒 goes round the side and hunts; the gatling 石墩 is the last to be sent chasing; whoever minds the home retakes
+      const w = b => b.c.weapon.id, b = id === 'flank' ? pickBy(b => -(w(b) === 'smg' ? 10 : 0) - b.c.cs.runK) : id === 'hunt' ? pickBy(b => near(task.x, task.z)(b) - (w(b) === 'smg' ? 12 : 0) + (w(b) === 'splatling' ? 10 : 0)) : id === 'retake' ? pickBy(b => near(task.x, task.z)(b) - (b.role === 'home' ? 10 : 0)) : pickBy(near(task.x, task.z)); if (!b) continue;
       out.set(b, task); free.splice(free.indexOf(b), 1);
     }
     for (const b of bots) { const t = out.get(b) || null; if (t && b.task && b.task.id === t.id) Object.assign(b.task, this.refresh(t)); else b.task = t; }
@@ -143,18 +145,20 @@ const Strategist = {
   update(dt) {
     if (!this.on || !PLAYER || !this.zones) return;
     this.observe(dt);
-    if (this.alive < 20) return;
+    if (this.alive < this.warmup()) return;
     if ((this.evalT -= dt) <= 0) this.choose();
     if ((this.assignT -= dt) <= 0) { this.assignT = 2; this.assign(); }
   },
-  panelLines() {
-    if (!this.on) return '';
+  // for the director panel: what has been read of the player, and the plan
+  view() {
+    if (!this.on) return null;
     const p = this.prof, pc = v => Math.round(v * 100) + '%';
-    if (!p) { const w = Math.ceil(20 - this.alive); return `<div>对面在观察你的打法…${w > 0 ? '（还需 ' + w + 's）' : '正在判断'}</div>`; }
-    const tags = [['打人', p.hunter], ['涂地', p.painter], ['冲得深', p.diver], ['常走' + ['左', '中', '右'][p.lane] + '路', p.steady], ['翻色热点', p.hot]].filter(t => t[1] >= 0.3).map(t => t[0] + ' ' + pc(t[1]));
+    if (!p) { const w = Math.ceil(this.warmup() - this.alive); return { tags: [], wait: w > 0 ? '在观察你的打法（还需 ' + w + 's）' : '正在判断…', plan: null, note: '' }; }
+    const tags = [['打人', p.hunter], ['涂地', p.painter], ['冲得深', p.diver], ['常走' + ['左', '中', '右'][p.lane] + '路', p.steady], ['翻色热点', p.hot]].filter(t => t[1] >= 0.3);
     const jobs = {}; for (const b of G.bots) if (b.c.team === this.team() && b.task) jobs[b.task.id] = (jobs[b.task.id] || 0) + 1;
-    const [lp, lp2] = this.live || [], why = Math.abs(Director.paintFocus(this.team())) >= 0.3 ? '比分拉开了，先按比分调' : this.plan === 'hunt' && Director.skill < 0.9 ? '不追着新手打' : '力度不够，暂不派人';
-    const plan = lp ? PLAN_NAME[lp] + (lp2 ? ' + ' + PLAN_NAME[lp2] : '') : this.plan ? PLAN_NAME[this.plan] + '·暂停（' + why + '）' : '无（按常规打）';
-    return `<div>对面看你：${tags.length ? tags.join(' · ') : '还看不出明显习惯'}</div><div>对面对策：${plan} · 力度 ${pc(this.k)}${Object.keys(jobs).length ? '（' + Object.entries(jobs).map(([k, n]) => PLAN_NAME[k] + ' ' + n + ' 人').join('，') + '）' : ''}</div>`;
+    const [lp, lp2] = this.live || [], why = Math.abs(Director.paintFocus(this.team())) >= 0.3 ? '比分拉开了，先按比分打' : '力度不够，暂不派人';
+    const plan = lp ? PLAN_NAME[lp] + (lp2 ? ' + ' + PLAN_NAME[lp2] : '') : this.plan ? PLAN_NAME[this.plan] + ' · 暂停' : null;
+    const note = lp ? '力度 ' + pc(this.k) + (Object.keys(jobs).length ? ' · ' + Object.entries(jobs).map(([k, n]) => PLAN_NAME[k] + ' ' + n + ' 人').join('，') : '') : this.plan ? why : '还看不出明显习惯';
+    return { tags, wait: '还看不出明显习惯', plan, note };
   }
 };
