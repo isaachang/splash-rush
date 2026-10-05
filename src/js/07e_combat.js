@@ -22,20 +22,18 @@ const Combat = {
     for (const b of G.bots) { b.support = null; b.warnUntil = 0; b.tokCd = 0; }
   },
   level() { return Director.teamLevel(1 - PLAYER.team); },
-  tokens() { const m = Director.mode(), lv = this.level(), n = typeof m === 'number' ? m + 1 : lv < 0.7 ? 1 : lv < 1.7 ? 2 : 3, h = this.heatK(); return clamp(n + Pacing.tokenDelta(1 - PLAYER.team) + (h < -0.5 ? -1 : h > 0.6 ? 1 : 0), 1, 4); },
+  tokens() { const n = Math.round(Director.tp ? Director.tp.tokens : 2), h = this.heatK(); return clamp(n + Pacing.tokenDelta(1 - PLAYER.team) + (h < -0.5 ? -1 : h > 0.6 ? 1 : 0), 1, 4); },
   // ---------------------------------------------------------------- the duel director
   onDuel(o, w) { if (!this.on) return; const x = (o - 0.5) * 2 * Math.min(1, w); this.heat = clamp(this.heat + (x - this.heat) * 0.35, -1, 1); },
   // the heat as it is used: a little gentler on the tiers, and on hell only the harder half
-  heatK() { if (!this.on) return 0; const m = Director.mode(); let h = this.heat; if (m === 2) h = Math.max(0, h); else if (typeof m === 'number') h *= 0.7; return h; },
+  heatK() { if (!this.on) return 0; const tp = Director.tp, h = this.heat; return h < 0 ? h * tp.heatEase : h * tp.heatHard; },
   duelErrK() { const h = this.heatK(); return h < 0 ? 1 - 0.7 * h : 1 - 0.35 * h; },
   duelReactK() { const h = this.heatK(); return h < 0 ? 1 - 0.6 * h : 1 - 0.3 * h; },   // (one fewer in a lull)
   warnTime(behind) {
-    const m = Director.mode(), lv = this.level();
-    const w = m === 0 ? 0.8 : m === 1 ? 0.5 : m === 2 ? 0 : lv <= 0.3 ? 0.8 : lv <= 1 ? lerp(0.8, 0.5, (lv - 0.3) / 0.7) : lv < 1.7 ? lerp(0.5, 0, (lv - 1) / 0.7) : 0;
-    const h = this.heatK(), wh = h < 0 ? w - 0.5 * h : w * (1 - 0.8 * h);      // (losing duels: longer warnings; winning them: shorter)
-    return behind ? Math.max(wh, 0.25) : wh;
+    const tp = Director.tp, w = tp.warn, h = this.heatK(), wh = Math.max(0, h < 0 ? w - 0.5 * h : w * (1 - 0.8 * h));     // (losing duels: longer warnings; winning them: shorter)
+    return behind ? Math.max(wh, tp.behindMin) : wh;
   },
-  graceStrength() { const m = Director.mode(); return m === 2 ? 0 : typeof m === 'number' ? 1 : clamp(2 - this.level(), 0, 1); },
+  graceStrength() { return Director.tp ? Director.tp.grace : 0; },
   // ---------------------------------------------------------------- tokens
   canShoot(b, e) {
     if (!this.on || e !== PLAYER) return true;
@@ -51,7 +49,7 @@ const Combat = {
     Pacing.onAcquire();
     if (!this.on) return;
     const behind = !Director.inView(b.c, PLAYER), w = this.warnTime(behind);
-    if (behind) b.reactT *= 1.4;
+    if (behind) b.reactT *= Director.tp.behindReact;
     b.reactT *= this.duelReactK();
     b.warnUntil = w > 0 ? G.time + b.reactT + w : 0; if (w > 0) this.stats.warned++;
   },

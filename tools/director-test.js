@@ -13,7 +13,7 @@ const avg = a => a.reduce((s, v) => s + v, 0) / a.length, f2 = v => v.toFixed(2)
 // the judgements go by the median: one odd match (a stand-in that happened to have a great or awful game) must not swing the result
 const med = a => { const b = a.slice().sort((x, y) => x - y), n = b.length; return n % 2 ? b[n >> 1] : (b[n / 2 - 1] + b[n / 2]) / 2; };
 (async () => {
-  const [weak, mid, strong, lazy] = await Promise.all([bench(0, 90, 8), bench(1, 300), bench(2, 180), bench(1, 120, 6, { LAZY: '2' })]);   // (lazy: wanders about and never shoots, with everything on as players get it)          // (the short weak runs get eight matches: one odd match would swing four)
+  const [weak, mid, strong, lazy] = await Promise.all([bench(0, 90, 8), bench(1, 300), bench(2, 180, 6), bench(1, 120, 6, { LAZY: '2' })]);   // (lazy: wanders about and never shoots, with everything on as players get it)          // (the short weak runs get eight matches: one odd match would swing four)
   const res = [], ok = (c, m) => res.push((c ? 'PASS ' : 'FAIL ') + m);
   const wCal = med(weak.map(x => x.atCal)), wEnd = med(weak.map(x => x.skill)), mEnd = med(mid.map(x => x.skill)), sEnd = med(strong.map(x => x.skill));
   ok(wCal <= 0.85 && wEnd <= 0.85, 'weak stand-in (easy rifle, 1:30): judged ' + f2(wCal) + ' by the end of the 30 s calibration window and ' + f2(wEnd) + ' at the end ' + list(weak) + ' (bar: 0.85 or lower)');

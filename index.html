@@ -49,6 +49,7 @@ canvas#glFade{position:fixed;inset:0;width:100%;height:100%;display:none;z-index
 .seg{display:flex;gap:8px}
 .seg button{flex:1;cursor:pointer;font-family:inherit;font-weight:900;font-size:16px;padding:10px 6px;border-radius:14px;border:3px solid #111;background:#3a3760;color:#fff;box-shadow:0 4px 0 #111}
 .seg button.sel{background:#ffe45c;color:#111}
+.segNote{margin:6px 2px 0;font-size:13px;font-weight:700;opacity:.75;min-height:1em}
 .mapcard{display:flex;gap:12px;align-items:center;background:#0e0d20;border-radius:16px;padding:10px 12px;border:3px solid #111}
 .mapcard .thumb{width:62px;height:62px;border-radius:12px;background:linear-gradient(135deg,var(--c0) 0 45%,#555 45% 55%,var(--c1) 55%);border:3px solid #111}
 .mapcard b{font-size:18px}.mapcard small{display:block;opacity:.7;margin-top:4px}
@@ -760,7 +761,7 @@ kbd{display:inline-block;min-width:38px;text-align:center;background:#fff;color:
       <h3>对阵阵容</h3>
       <div class="rosterWrap"><div class="roster" id="rosterA"></div><div class="vs">VS</div><div class="roster" id="rosterB"></div></div>
       <div class="opts">
-        <div class="full"><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">地狱</button><button data-v="-1">智能</button></div></div>
+        <div class="full"><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">地狱</button><button data-v="-1">智能</button></div><p class="segNote" id="diffNote"></p></div>
         <div class="full"><h3>对战时长</h3><div class="seg" id="dur"><button data-v="90">1:30</button><button data-v="180" class="sel">3:00</button><button data-v="300">5:00</button></div></div>
         <div class="full"><h3>队伍配色</h3><div class="swatches" id="swatches"></div></div>
       </div>
@@ -3913,6 +3914,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.20.0', date: '2026-10-05', time: '15:01', title: '四档各有味道', items: [
+    '轻松「放开打」、普通「有来有回」、地狱「每一波都是硬仗」、智能「跟着你变」—— 战前准备里选难度时能看到',
+    '地狱回到真地狱：没人会对你手下留情，被围就是被围，一波接一波几乎不给喘息',
+    '机器人各司其职：拿冲锋枪的阿飒绕后偷袭，满满占高点狙击，石墩顶在前排扛线，拿步枪的补位前线、中路和守家'
+  ] },
   { v: 'v0.19.0', date: '2026-10-05', time: '10:34', title: '你才是核心', items: [
     '你是队伍的核心：认真抢地、认真交火的局更有机会赢；站着划水的局，队友扛不住',
     '被围时赶来的队友会帮你压住对手，但最后那一下留给你',
@@ -6079,6 +6085,12 @@ class Squad {
   }
 }
 
+// what each bot is for, from what it carries: the SMG 阿飒 slips round the side (flank), the sniper 满满 holds the high ground over the
+// middle (mid - it climbs up to perch on its own), the gatling 石墩 holds the front line (front); rifles fill in - front, then middle, then home
+function rolesFor(weapons) {
+  const out = weapons.map(w => w === 'smg' ? 'flank' : w === 'charger' ? 'mid' : w === 'splatling' ? 'front' : null), taken = new Set(out.filter(Boolean));
+  return out.map(r => { if (r) return r; const f = ['front', 'mid', 'home'].find(x => !taken.has(x)) || 'mid'; taken.add(f); return f; });
+}
 /* ================================================================= BOT */
 class Bot {
   constructor(c, role) {
@@ -6659,6 +6671,24 @@ function diffAt(lv, hi) {
   return o;
 }
 const avgOf = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
+// what each tier is for, and every system's settings for it:  easy "let rip" · normal "give and take" · hell "every wave a hard fight".
+// Smart slides between them with the player's level - easy up to 0.5, normal at 1.3, hell from 2.3 (0.3 above the tiers: a judged level already
+// includes what the aids give, and keying on it straight would take them away too soon).  Lull lengths are for 3:00 (scaled with the match)
+//   tokens   how many may shoot at the player at once      warn / behindMin / behindReact   warning shots, and when shot from behind
+//   grace    the breather when low                          heatEase / heatHard   how much a losing / winning run of duels moves the enemies
+//   relax    lull length          counter / readK   how hard the counter-plans lean, how quickly the player is read (x the usual)
+//   hunters  sent after the player in a wave                stomp*/ease*   when the player's side running away starts to be checked
+//   net      a crushed player who is trying gets the safety net       foeOff   the enemies this far from the player's level
+const TIER_PROFILE = [
+  { tokens: 1, warn: 0.8, behindMin: 0.25, behindReact: 1.4, grace: 1, heatEase: 1, heatHard: 0.5, relax: 25, counter: 0, readK: 1.3, hunters: 0, stompStart: 0.12, stompSlope: 4, easeStart: 0.1, net: 1, foeOff: -0.2 },
+  { tokens: 2, warn: 0.5, behindMin: 0.25, behindReact: 1.4, grace: 0.6, heatEase: 0.7, heatHard: 0.7, relax: 13, counter: 0.5, readK: 1, hunters: 2, stompStart: 0.05, stompSlope: 4, easeStart: 0.04, net: 1, foeOff: 0 },
+  { tokens: 4, warn: 0, behindMin: 0, behindReact: 1, grace: 0, heatEase: 0, heatHard: 1, relax: 6, counter: 1, readK: 0.6, hunters: 3, stompStart: 0.04, stompSlope: 5, easeStart: 0.03, net: 0, foeOff: 0 }
+];
+function tierProfile(lv) {
+  const [a, b, t] = lv <= 0.5 ? [0, 0, 0] : lv < 1.3 ? [0, 1, (lv - 0.5) / 0.8] : lv < 2.3 ? [1, 2, lv - 1.3] : [2, 2, 0], A = TIER_PROFILE[a], B = TIER_PROFILE[b], o = {};
+  for (const k in A) o[k] = lerp(A[k], B[k], t);
+  return o;
+}
 const Director = {
   K: 0.8,                                                                  // how sharply a level gap turns into duel odds: p = 1 / (1 + e^(-K·gap))
   PAINT_K: { rifle: 1, smg: 0.82, charger: 0.49, splatling: 0.58, blaster: 0.9 },   // how much each weapon paints, relative to the rifle
@@ -6670,6 +6700,8 @@ const Director = {
   // 'smart', a tier (0 easy · 1 normal · 2 hell), or 'fixed' - a test pitting fixed rows against each other (G.aiLevels)
   mode() { if (!PLAYER) return 'fixed'; if (G.aiLevels) return G.aiLevels[1 - PLAYER.team] === SMART ? 'smart' : 'fixed'; return GAME.diff === SMART ? 'smart' : GAME.diff; },
   get on() { return this.mode() !== 'fixed'; },
+  // this match's tier profile (smart: from the player's level, re-read every frame)
+  profile() { const m = this.mode(); return typeof m === 'number' ? TIER_PROFILE[m] : m === 'smart' ? tierProfile(this.skill) : TIER_PROFILE[1]; },
   BANDS: [[0, 0.6], [0.7, 1.3], [2, LV_MAX]],                              // the room each tier has; smart has all of it
   band() { const m = this.mode(); return typeof m === 'number' ? this.BANDS[m] : [0, LV_MAX]; },
   // the saved levels, one per character + weapon (石墩's double health makes the same hands a different player).  An old single value
@@ -6690,7 +6722,7 @@ const Director = {
     this.mem = own || null; this.elo = prior; this.n = own ? Math.min(4, (own.m || 1) * 1.5) : 0; this.nm = 0;
     const [lo, hi] = this.band(), start = clamp(prior, lo, hi);           // a tier starts from the saved level, kept within the tier
     this.skill = prior; this.target = this.mateGoal = start; this.conf = 0; this.corrE = this.corrM = 0; this.planBonus = 0; this.stomp = this.net = this.mateEase = this.foeEase = 0; this.lead = 0; this.boost = 1; this.effort = 0.7; this.eff = []; this.effT = 0; this.sig = {}; this.sigT = 0; this.panelT = 0;
-    this.wasClimb = false; this.cheat = false; this.saved = null;
+    this.wasClimb = false; this.cheat = false; this.saved = null; this.tp = this.profile();
     this.fights = new Map(); this.log = []; this.trace = []; this.allDuels = [];
     this.st = { alive: 0, shots: 0, hits: 0, swimT: 0, refillT: 0, climbs: 0, bombs: 0, idleT: 0 };
     this.calibT = Math.min(60, 15 + GAME.dur / 6); this.endWin = clamp(Math.round(10 + GAME.dur / 9), 20, 40);
@@ -6800,21 +6832,21 @@ const Director = {
     // their usual level is an even match, and a player not pulling their weight is three weak teammates against four
     this.mateGoal = clamp(Math.max(sk - this.OFF.mates, Math.min(sk, 0.5)), lo, hi);
     // the player's side running away with it (past 5 %): the enemies sharpen up, up to +0.6 by 20 % ahead
-    this.stomp = Math.min(0.6, Math.max(0, this.lead - 0.05) * 4);
+    const tp = this.tp; this.stomp = Math.min(0.6, Math.max(0, this.lead - tp.stompStart) * tp.stompSlope);
     // the player's side crushed (past 25 %) while the player is really trying: a small net, never for one not pulling their weight, never on hell
-    this.net = !hell && this.effort >= 0.5 ? Math.min(0.25, Math.max(0, -this.lead - 0.25) * 2.5) : 0;
+    this.net = !hell && tp.net >= 0.5 && this.effort >= 0.5 ? Math.min(0.25, Math.max(0, -this.lead - 0.25) * 2.5) : 0;
     // bots busy countering the player play a little less efficiently; slightly sharper hands make up for it (only in a close game)
     this.planBonus = Strategist.on ? 0.15 * Strategist.k : 0;
-    this.target = clamp(sk - this.OFF.foes + this.stomp - this.net + this.planBonus, lo, hi);
+    this.target = clamp(sk - this.OFF.foes + tp.foeOff + this.stomp - this.net + this.planBonus, lo, hi);
     this.corrE = this.target - sk; this.corrM = this.mateGoal - sk;
     this.boost = 1 + clamp((this.lead - 0.1) / 0.06, 0, 2);                   // (the enemies out of sight close in faster - only when the player's side is running away)
     // both sides play the score the way people do: the side behind keeps to taking ground, the side ahead holds its own (retakes what was
     // turned over, keeps an eye on the way in) - nobody is made stronger or weaker for it.  One exception, and only one way round: the
     // player's side running away with it, the teammates ease off (hang back, stop chasing) - so the player's side does not stomp
     const f = clamp((Math.abs(this.lead) - this.PF.start) / this.PF.span, 0, 1), sg = Math.sign(this.lead);
-    this.pf = []; this.pf[P.team] = -sg * f; this.pf[1 - P.team] = sg * f; this.mateEase = sg > 0 ? clamp((this.lead - 0.04) / 0.08, 0, 1) : 0;
+    this.pf = []; this.pf[P.team] = -sg * f; this.pf[1 - P.team] = sg * f; this.mateEase = sg > 0 ? clamp((this.lead - tp.easeStart) / 0.08, 0, 1) : 0;
     // ...and the safety net's real lever (levels hardly move the turf): crushed past 15 % while really trying, the enemies ease off the same way
-    this.foeEase = !hell && this.effort >= 0.5 ? clamp((-this.lead - 0.15) / 0.1, 0, 1) : 0;
+    this.foeEase = !hell && tp.net >= 0.5 && this.effort >= 0.5 ? clamp((-this.lead - 0.15) / 0.1, 0, 1) : 0;
   },
   // 1 take ground · 0 as usual · -1 hold what we have
   paintFocus(team) { return this.on && this.pf ? this.pf[team] : 0; },
@@ -6840,6 +6872,7 @@ const Director = {
   update(dt) {
     const P = PLAYER; if (!P || !this.st) return; const T = G.time, st = this.st;
     if (devGod() || vipOn()) this.cheat = true;
+    this.tp = this.profile();
     this.effortTick(dt);
     if (P.alive && P.state === 'play') {
       const sp = Math.hypot(P.vel.x, P.vel.z);
@@ -6909,6 +6942,8 @@ const Strategist = {
     this.hist = []; this.shareT = 0; this.evalT = 6; this.assignT = 0; this.plan = null; this.plan2 = null; this.planT = 0; this.k = 0; this.prof = null; this.scores = null;
     for (const b of G.bots) b.task = null;
   },
+  // watching the player before the first reading: 20 s at 3:00, shorter in a short match (14 s at 1:30)
+  warmup() { return 20 * clamp(Math.sqrt(GAME.dur / 180), 0.7, 1.3); },
   get on() { return Director.on && !this.off; },                          // (off: tests comparing with and without plans)
   team() { return 1 - PLAYER.team; },                                       // the side that reads and counters
   laneOf(x) { return clamp(Math.floor((x + XH) / (2 * XH) * this.NX), 0, this.NX - 1); },
@@ -6962,14 +6997,14 @@ const Strategist = {
     const second = order.find(k => k !== this.plan && s[k] >= 0.45);
     this.plan2 = lv >= 1.3 && this.plan ? second || null : null;
     // and read the player more often
-    this.evalT = lerp(30, 10, clamp((lv - 0.5) / 1.5, 0, 1)) * clamp(Math.sqrt(GAME.dur / 180), 0.75, 1.2);
+    this.evalT = lerp(30, 10, clamp((lv - 0.5) / 1.5, 0, 1)) * clamp(Math.sqrt(GAME.dur / 180), 0.75, 1.2) * (Director.tp ? Director.tp.readK : 1);
   },
   // how hard to lean on it, 0..1: by level (a team that does not know teamwork yet does not counter at all), and only in a close
   // game - fading out as the Director starts telling either side to paint or ease off
   intensity() {
     const tm = this.team(), row = Director.teamRow ? Director.teamRow[tm] : DIFF[1], lv = Director.teamLevel(tm), pf = Math.abs(Director.paintFocus(tm));
     if (!row.team || Director.mode() === 0) return 0;                       // (and never on easy)
-    return clamp((lv - 0.5) / 1.3, 0.25, 1) * clamp(1 - pf / 0.3, 0, 1);
+    return clamp(clamp((lv - 0.5) / 1.3, 0.25, 1) * clamp(1 - pf / 0.3, 0, 1) * (Director.tp ? Director.tp.counter : 1) * 1.6, 0, 1);    // (normal leans at half strength, hell fully)
   },
   // ---------------------------------------------------------------- handing out the jobs
   assign() {
@@ -6992,7 +7027,8 @@ const Strategist = {
       const pickBy = f => free.filter(b => id === 'paint' || !b.c.weapon.charges).sort((a, b) => f(a) - f(b))[0];
       const near = (x, z) => b => Math.hypot(b.c.pos.x - x, b.c.pos.z - z);
       const task = this.makeTask(id, tm); if (!task) continue;
-      const b = id === 'flank' ? pickBy(b => -b.c.cs.runK) : pickBy(near(task.x, task.z)); if (!b) continue;
+      // who suits the job: the SMG 阿飒 goes round the side and hunts; the gatling 石墩 is the last to be sent chasing; whoever minds the home retakes
+      const w = b => b.c.weapon.id, b = id === 'flank' ? pickBy(b => -(w(b) === 'smg' ? 10 : 0) - b.c.cs.runK) : id === 'hunt' ? pickBy(b => near(task.x, task.z)(b) - (w(b) === 'smg' ? 12 : 0) + (w(b) === 'splatling' ? 10 : 0)) : id === 'retake' ? pickBy(b => near(task.x, task.z)(b) - (b.role === 'home' ? 10 : 0)) : pickBy(near(task.x, task.z)); if (!b) continue;
       out.set(b, task); free.splice(free.indexOf(b), 1);
     }
     for (const b of bots) { const t = out.get(b) || null; if (t && b.task && b.task.id === t.id) Object.assign(b.task, this.refresh(t)); else b.task = t; }
@@ -7036,7 +7072,7 @@ const Strategist = {
   update(dt) {
     if (!this.on || !PLAYER || !this.zones) return;
     this.observe(dt);
-    if (this.alive < 20) return;
+    if (this.alive < this.warmup()) return;
     if ((this.evalT -= dt) <= 0) this.choose();
     if ((this.assignT -= dt) <= 0) { this.assignT = 2; this.assign(); }
   },
@@ -7044,7 +7080,7 @@ const Strategist = {
   view() {
     if (!this.on) return null;
     const p = this.prof, pc = v => Math.round(v * 100) + '%';
-    if (!p) { const w = Math.ceil(20 - this.alive); return { tags: [], wait: w > 0 ? '在观察你的打法（还需 ' + w + 's）' : '正在判断…', plan: null, note: '' }; }
+    if (!p) { const w = Math.ceil(this.warmup() - this.alive); return { tags: [], wait: w > 0 ? '在观察你的打法（还需 ' + w + 's）' : '正在判断…', plan: null, note: '' }; }
     const tags = [['打人', p.hunter], ['涂地', p.painter], ['冲得深', p.diver], ['常走' + ['左', '中', '右'][p.lane] + '路', p.steady], ['翻色热点', p.hot]].filter(t => t[1] >= 0.3);
     const jobs = {}; for (const b of G.bots) if (b.c.team === this.team() && b.task) jobs[b.task.id] = (jobs[b.task.id] || 0) + 1;
     const [lp, lp2] = this.live || [], why = Pacing.counterK(this.team()) === 0 ? '喘息中，先不针对' : Math.abs(Director.paintFocus(this.team())) >= 0.3 ? '比分拉开了，先按比分调' : this.plan === 'hunt' && Director.skill < 0.9 ? '不追着新手打' : '力度不够，暂不派人';
@@ -7152,20 +7188,18 @@ const Combat = {
     for (const b of G.bots) { b.support = null; b.warnUntil = 0; b.tokCd = 0; }
   },
   level() { return Director.teamLevel(1 - PLAYER.team); },
-  tokens() { const m = Director.mode(), lv = this.level(), n = typeof m === 'number' ? m + 1 : lv < 0.7 ? 1 : lv < 1.7 ? 2 : 3, h = this.heatK(); return clamp(n + Pacing.tokenDelta(1 - PLAYER.team) + (h < -0.5 ? -1 : h > 0.6 ? 1 : 0), 1, 4); },
+  tokens() { const n = Math.round(Director.tp ? Director.tp.tokens : 2), h = this.heatK(); return clamp(n + Pacing.tokenDelta(1 - PLAYER.team) + (h < -0.5 ? -1 : h > 0.6 ? 1 : 0), 1, 4); },
   // ---------------------------------------------------------------- the duel director
   onDuel(o, w) { if (!this.on) return; const x = (o - 0.5) * 2 * Math.min(1, w); this.heat = clamp(this.heat + (x - this.heat) * 0.35, -1, 1); },
   // the heat as it is used: a little gentler on the tiers, and on hell only the harder half
-  heatK() { if (!this.on) return 0; const m = Director.mode(); let h = this.heat; if (m === 2) h = Math.max(0, h); else if (typeof m === 'number') h *= 0.7; return h; },
+  heatK() { if (!this.on) return 0; const tp = Director.tp, h = this.heat; return h < 0 ? h * tp.heatEase : h * tp.heatHard; },
   duelErrK() { const h = this.heatK(); return h < 0 ? 1 - 0.7 * h : 1 - 0.35 * h; },
   duelReactK() { const h = this.heatK(); return h < 0 ? 1 - 0.6 * h : 1 - 0.3 * h; },   // (one fewer in a lull)
   warnTime(behind) {
-    const m = Director.mode(), lv = this.level();
-    const w = m === 0 ? 0.8 : m === 1 ? 0.5 : m === 2 ? 0 : lv <= 0.3 ? 0.8 : lv <= 1 ? lerp(0.8, 0.5, (lv - 0.3) / 0.7) : lv < 1.7 ? lerp(0.5, 0, (lv - 1) / 0.7) : 0;
-    const h = this.heatK(), wh = h < 0 ? w - 0.5 * h : w * (1 - 0.8 * h);      // (losing duels: longer warnings; winning them: shorter)
-    return behind ? Math.max(wh, 0.25) : wh;
+    const tp = Director.tp, w = tp.warn, h = this.heatK(), wh = Math.max(0, h < 0 ? w - 0.5 * h : w * (1 - 0.8 * h));     // (losing duels: longer warnings; winning them: shorter)
+    return behind ? Math.max(wh, tp.behindMin) : wh;
   },
-  graceStrength() { const m = Director.mode(); return m === 2 ? 0 : typeof m === 'number' ? 1 : clamp(2 - this.level(), 0, 1); },
+  graceStrength() { return Director.tp ? Director.tp.grace : 0; },
   // ---------------------------------------------------------------- tokens
   canShoot(b, e) {
     if (!this.on || e !== PLAYER) return true;
@@ -7181,7 +7215,7 @@ const Combat = {
     Pacing.onAcquire();
     if (!this.on) return;
     const behind = !Director.inView(b.c, PLAYER), w = this.warnTime(behind);
-    if (behind) b.reactT *= 1.4;
+    if (behind) b.reactT *= Director.tp.behindReact;
     b.reactT *= this.duelReactK();
     b.warnUntil = w > 0 ? G.time + b.reactT + w : 0; if (w > 0) this.stats.warned++;
   },
@@ -7281,13 +7315,13 @@ const Pacing = {
   get on() { return Director.on && !this.off; },                            // (off: benchmarks comparing with and without)
   reset() {
     this.tension = 0; this.phase = 'build'; this.phaseT = 0; this.highT = 0; this.waves = 0; this.hist = [];
-    this.stats = { t: { build: 0, peak: 0, relax: 0, final: 0 }, dmg: { build: 0, peak: 0, relax: 0, final: 0 }, acq: { build: 0, peak: 0, relax: 0, final: 0 }, curve: [] };     // (measuring: time in each phase and damage the player took in it)
-    const k = clamp(Math.sqrt(GAME.dur / 180), 0.7, 1.3), hell = Director.mode() === 2;
-    this.len = { buildMin: 30 * k, buildMax: 45 * k, peakHold: 4, peakMax: 15 * k, relaxMin: (hell ? 8 : 15) * k, relaxMax: (hell ? 13 : 25) * k };     // (≈ 2 waves in 3:00, 1 in 1:30, 3 in 5:00)
+    this.stats = { t: { build: 0, peak: 0, relax: 0, final: 0 }, dmg: { build: 0, peak: 0, relax: 0, final: 0 }, acq: { build: 0, peak: 0, relax: 0, final: 0 }, curve: [], dmgT: [], aliveT: [] };     // (measuring: time in each phase and damage the player took in it)
+    const k = clamp(Math.sqrt(GAME.dur / 180), 0.7, 1.3);                 // (lull lengths come from the tier profile: Director.tp.relax)
+    this.k = k; this.len = { buildMin: 30 * k, buildMax: 45 * k, peakHold: 4, peakMax: 15 * k }; this.relaxLen();     // (≈ 2 waves in 3:00, 1 in 1:30, 3 in 5:00)
     Sfx.musicEnergy && Sfx.musicEnergy(0.5);
   },
   // ---------------------------------------------------------------- the player's tension
-  onDamage(v, amount, src) { if (v === PLAYER && src && src.team !== v.team) { this.tension = Math.min(1, this.tension + amount / v.maxHp * 0.9); if (this.stats) this.stats.dmg[this.phase] += amount / v.maxHp; } },
+  onDamage(v, amount, src) { if (v === PLAYER && src && src.team !== v.team) { this.tension = Math.min(1, this.tension + amount / v.maxHp * 0.9); if (this.stats) { this.stats.dmg[this.phase] += amount / v.maxHp; const k = Math.floor(G.time / 10); this.stats.dmgT[k] = (this.stats.dmgT[k] || 0) + amount / v.maxHp; } } },
   onDeath(v, killer) {
     if (v === PLAYER) this.tension = 1;
     else if (killer === PLAYER && v.pos.distanceTo(PLAYER.pos) < 8) this.tension = Math.min(1, this.tension + 0.15);
@@ -7295,7 +7329,10 @@ const Pacing = {
   onAcquire() { if (this.stats && PLAYER.alive) this.stats.acq[this.on ? this.phase : 'build']++; },    // (measuring: an enemy has just picked the player out)
   near() { const P = PLAYER; return CHARS.filter(o => o.team !== P.team && o.alive && o.state === 'play' && o.pos.distanceTo(P.pos) < 13 && !o.hiddenInInk()).length; },
   // ---------------------------------------------------------------- the loop
+  // lull length from the tier profile (smart: as the player's level stands when the lull starts), scaled with the match
+  relaxLen() { const r = Director.profile().relax * this.k; this.len.relaxMax = r; this.len.relaxMin = r * 0.6; },
   set(ph) {
+    if (ph === 'relax' && this.len) this.relaxLen();
     if (ph === this.phase) return; this.phase = ph; this.phaseT = 0; this.highT = 0; if (ph === 'peak') this.waves++; aiStat(1 - PLAYER.team, 'phase_' + ph);
     // a lull or a wave starts now, not whenever each of them next picks somewhere to go (those already at close quarters with the player finish first)
     if ((ph === 'relax' || ph === 'peak') && this.on) for (const b of G.bots) if (b.c.team !== PLAYER.team && !(b.enemy === PLAYER && b.c.pos.distanceTo(PLAYER.pos) < 7)) { b.path = []; b.retarget = 0; b.replanT = 0; }
@@ -7310,7 +7347,7 @@ const Pacing = {
     } else this.tension -= dt * 0.08;
     this.tension = clamp(this.tension, 0, 1);
     if ((this.histT = (this.histT || 0) - dt) <= 0) { this.histT = 1; this.hist.push(this.tension); if (this.hist.length > 60) this.hist.shift(); this.stats.curve.push(this.tension); }
-    if (P.alive && P.state === 'play') this.stats.t[this.on ? this.phase : 'build'] += dt;
+    if (P.alive && P.state === 'play') { this.stats.t[this.on ? this.phase : 'build'] += dt; const k = Math.floor(T / 10); this.stats.aliveT[k] = (this.stats.aliveT[k] || 0) + dt; }
     if (!this.on) return;
     if (this.phase !== 'relax' || (P.alive && P.state === 'play')) this.phaseT += dt;          // (a lull only counts while the player is up to enjoy it)
     const L = this.len, close = Math.abs(Director.lead) < 0.1;
@@ -7336,7 +7373,7 @@ const Pacing = {
   tokenDelta(team) { return this.steering(team) && this.phase === 'relax' ? -1 : 0; },
   counterK(team) { return this.steering(team) && this.phase === 'relax' ? 0 : 1; },
   // in a wave a couple of them come for the player (one, for a beginner)
-  waveHunters(team) { return this.steering(team) && (this.phase === 'peak' || this.phase === 'final') ? (Director.skill >= 0.9 ? 2 : 1) : 0; },
+  waveHunters(team) { if (!this.steering(team) || !(this.phase === 'peak' || this.phase === 'final')) return 0; const n = Math.round(Director.tp.hunters); return Director.skill >= 0.9 ? n : Math.min(n, 1); },     // (one at most for a beginner)
   remaining() { const L = this.len; if (!L) return 0; return this.phase === 'build' ? Math.max(0, L.buildMax - this.phaseT) : this.phase === 'peak' ? Math.max(0, L.peakMax - this.phaseT) : this.phase === 'relax' ? Math.max(0, L.relaxMax - this.phaseT) : Math.max(0, G.left); }
 };
 /* ============================================================ DIRECTOR PANEL  (press ` in a match)
@@ -7739,10 +7776,11 @@ function spawnTeams() {
   if (!G.roster) rollRoster();
   // where the four stand on the spawn pad: [sideways, back] from its centre (a narrow pad gets a tight 2 x 2)
   const slots = MAP.spawnSlots || [[-4.5, -0.4], [-1.5, 0.8], [1.5, -0.4], [4.5, 0.8]];
+  const roles = G.roster.map(team => { const bots = team.filter(m => !m.isPlayer), r = rolesFor(bots.map(m => m.weapon)); return new Map(bots.map((m, i) => [m, r[i]])); });     // (jobs by what each one carries)
   for (let t = 0; t < 2; t++) G.roster[t].forEach((m, i) => {
     const c = new Character(m.name, t, m.isPlayer, { weapon: m.weapon, look: m.look, char: m.char });
     const sp = SPAWN[t], sl = slots[i % slots.length]; c.pos.set(sp.x + sl[0] * (t ? -1 : 1), sp.y, sp.z + (t ? -1 : 1) * sl[1]); c.aimYaw = c.yaw = c.bodyYaw = sp.yaw;
-    CHARS.push(c); if (m.isPlayer) PLAYER = c; else G.bots.push(new Bot(c, m.role));
+    CHARS.push(c); if (m.isPlayer) PLAYER = c; else G.bots.push(new Bot(c, roles[t].get(m)));
   });
 }
 function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProjectionMatrix(); }
@@ -8529,7 +8567,8 @@ function initUI() {
   const sw = $('swatches');
   PALETTES.forEach((p, i) => { const d = document.createElement('div'); d.className = 'sw' + (i === GAME.pal ? ' sel' : ''); d.innerHTML = `<span style="background:${p[0]}"></span><span style="background:${p[1]}"></span>`; d.onclick = () => { GAME.pal = i; [...sw.children].forEach((c, k) => c.classList.toggle('sel', k === i)); applyPalette(); Profile.save(); if ($('lobby').classList.contains('show')) renderLobby(); Sfx.init(); Sfx.click(); }; sw.appendChild(d); });
   const seg = (id, fn) => { const el = $(id); el.querySelectorAll('button').forEach(b => b.onclick = () => { el.querySelectorAll('button').forEach(x => x.classList.toggle('sel', x === b)); fn(+b.dataset.v); Sfx.init(); Sfx.click(); }); };
-  seg('diff', v => { GAME.diff = v; Profile.save(); }); seg('dur', v => { GAME.dur = v; Profile.save(); });
+  const DIFF_NOTE = { 0: '放开打', 1: '有来有回', 2: '每一波都是硬仗', [SMART]: '跟着你变' }, diffNote = () => { $('diffNote').textContent = DIFF_NOTE[GAME.diff] || ''; };
+  seg('diff', v => { GAME.diff = v; Profile.save(); diffNote(); }); diffNote(); seg('dur', v => { GAME.dur = v; Profile.save(); });
   const selSeg = (id, v) => $(id).querySelectorAll('button').forEach(b => b.classList.toggle('sel', +b.dataset.v === v));
   selSeg('diff', GAME.diff); selSeg('dur', GAME.dur);
   seg('sQual', v => { SETTINGS.qual = v; applyQuality(); }); seg('sInv', v => SETTINGS.inv = v);

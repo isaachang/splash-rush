@@ -28,6 +28,24 @@ function diffAt(lv, hi) {
   return o;
 }
 const avgOf = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
+// what each tier is for, and every system's settings for it:  easy "let rip" · normal "give and take" · hell "every wave a hard fight".
+// Smart slides between them with the player's level - easy up to 0.5, normal at 1.3, hell from 2.3 (0.3 above the tiers: a judged level already
+// includes what the aids give, and keying on it straight would take them away too soon).  Lull lengths are for 3:00 (scaled with the match)
+//   tokens   how many may shoot at the player at once      warn / behindMin / behindReact   warning shots, and when shot from behind
+//   grace    the breather when low                          heatEase / heatHard   how much a losing / winning run of duels moves the enemies
+//   relax    lull length          counter / readK   how hard the counter-plans lean, how quickly the player is read (x the usual)
+//   hunters  sent after the player in a wave                stomp*/ease*   when the player's side running away starts to be checked
+//   net      a crushed player who is trying gets the safety net       foeOff   the enemies this far from the player's level
+const TIER_PROFILE = [
+  { tokens: 1, warn: 0.8, behindMin: 0.25, behindReact: 1.4, grace: 1, heatEase: 1, heatHard: 0.5, relax: 25, counter: 0, readK: 1.3, hunters: 0, stompStart: 0.12, stompSlope: 4, easeStart: 0.1, net: 1, foeOff: -0.2 },
+  { tokens: 2, warn: 0.5, behindMin: 0.25, behindReact: 1.4, grace: 0.6, heatEase: 0.7, heatHard: 0.7, relax: 13, counter: 0.5, readK: 1, hunters: 2, stompStart: 0.05, stompSlope: 4, easeStart: 0.04, net: 1, foeOff: 0 },
+  { tokens: 4, warn: 0, behindMin: 0, behindReact: 1, grace: 0, heatEase: 0, heatHard: 1, relax: 6, counter: 1, readK: 0.6, hunters: 3, stompStart: 0.04, stompSlope: 5, easeStart: 0.03, net: 0, foeOff: 0 }
+];
+function tierProfile(lv) {
+  const [a, b, t] = lv <= 0.5 ? [0, 0, 0] : lv < 1.3 ? [0, 1, (lv - 0.5) / 0.8] : lv < 2.3 ? [1, 2, lv - 1.3] : [2, 2, 0], A = TIER_PROFILE[a], B = TIER_PROFILE[b], o = {};
+  for (const k in A) o[k] = lerp(A[k], B[k], t);
+  return o;
+}
 const Director = {
   K: 0.8,                                                                  // how sharply a level gap turns into duel odds: p = 1 / (1 + e^(-K·gap))
   PAINT_K: { rifle: 1, smg: 0.82, charger: 0.49, splatling: 0.58, blaster: 0.9 },   // how much each weapon paints, relative to the rifle
@@ -39,6 +57,8 @@ const Director = {
   // 'smart', a tier (0 easy · 1 normal · 2 hell), or 'fixed' - a test pitting fixed rows against each other (G.aiLevels)
   mode() { if (!PLAYER) return 'fixed'; if (G.aiLevels) return G.aiLevels[1 - PLAYER.team] === SMART ? 'smart' : 'fixed'; return GAME.diff === SMART ? 'smart' : GAME.diff; },
   get on() { return this.mode() !== 'fixed'; },
+  // this match's tier profile (smart: from the player's level, re-read every frame)
+  profile() { const m = this.mode(); return typeof m === 'number' ? TIER_PROFILE[m] : m === 'smart' ? tierProfile(this.skill) : TIER_PROFILE[1]; },
   BANDS: [[0, 0.6], [0.7, 1.3], [2, LV_MAX]],                              // the room each tier has; smart has all of it
   band() { const m = this.mode(); return typeof m === 'number' ? this.BANDS[m] : [0, LV_MAX]; },
   // the saved levels, one per character + weapon (石墩's double health makes the same hands a different player).  An old single value
@@ -59,7 +79,7 @@ const Director = {
     this.mem = own || null; this.elo = prior; this.n = own ? Math.min(4, (own.m || 1) * 1.5) : 0; this.nm = 0;
     const [lo, hi] = this.band(), start = clamp(prior, lo, hi);           // a tier starts from the saved level, kept within the tier
     this.skill = prior; this.target = this.mateGoal = start; this.conf = 0; this.corrE = this.corrM = 0; this.planBonus = 0; this.stomp = this.net = this.mateEase = this.foeEase = 0; this.lead = 0; this.boost = 1; this.effort = 0.7; this.eff = []; this.effT = 0; this.sig = {}; this.sigT = 0; this.panelT = 0;
-    this.wasClimb = false; this.cheat = false; this.saved = null;
+    this.wasClimb = false; this.cheat = false; this.saved = null; this.tp = this.profile();
     this.fights = new Map(); this.log = []; this.trace = []; this.allDuels = [];
     this.st = { alive: 0, shots: 0, hits: 0, swimT: 0, refillT: 0, climbs: 0, bombs: 0, idleT: 0 };
     this.calibT = Math.min(60, 15 + GAME.dur / 6); this.endWin = clamp(Math.round(10 + GAME.dur / 9), 20, 40);
@@ -169,21 +189,21 @@ const Director = {
     // their usual level is an even match, and a player not pulling their weight is three weak teammates against four
     this.mateGoal = clamp(Math.max(sk - this.OFF.mates, Math.min(sk, 0.5)), lo, hi);
     // the player's side running away with it (past 5 %): the enemies sharpen up, up to +0.6 by 20 % ahead
-    this.stomp = Math.min(0.6, Math.max(0, this.lead - 0.05) * 4);
+    const tp = this.tp; this.stomp = Math.min(0.6, Math.max(0, this.lead - tp.stompStart) * tp.stompSlope);
     // the player's side crushed (past 25 %) while the player is really trying: a small net, never for one not pulling their weight, never on hell
-    this.net = !hell && this.effort >= 0.5 ? Math.min(0.25, Math.max(0, -this.lead - 0.25) * 2.5) : 0;
+    this.net = !hell && tp.net >= 0.5 && this.effort >= 0.5 ? Math.min(0.25, Math.max(0, -this.lead - 0.25) * 2.5) : 0;
     // bots busy countering the player play a little less efficiently; slightly sharper hands make up for it (only in a close game)
     this.planBonus = Strategist.on ? 0.15 * Strategist.k : 0;
-    this.target = clamp(sk - this.OFF.foes + this.stomp - this.net + this.planBonus, lo, hi);
+    this.target = clamp(sk - this.OFF.foes + tp.foeOff + this.stomp - this.net + this.planBonus, lo, hi);
     this.corrE = this.target - sk; this.corrM = this.mateGoal - sk;
     this.boost = 1 + clamp((this.lead - 0.1) / 0.06, 0, 2);                   // (the enemies out of sight close in faster - only when the player's side is running away)
     // both sides play the score the way people do: the side behind keeps to taking ground, the side ahead holds its own (retakes what was
     // turned over, keeps an eye on the way in) - nobody is made stronger or weaker for it.  One exception, and only one way round: the
     // player's side running away with it, the teammates ease off (hang back, stop chasing) - so the player's side does not stomp
     const f = clamp((Math.abs(this.lead) - this.PF.start) / this.PF.span, 0, 1), sg = Math.sign(this.lead);
-    this.pf = []; this.pf[P.team] = -sg * f; this.pf[1 - P.team] = sg * f; this.mateEase = sg > 0 ? clamp((this.lead - 0.04) / 0.08, 0, 1) : 0;
+    this.pf = []; this.pf[P.team] = -sg * f; this.pf[1 - P.team] = sg * f; this.mateEase = sg > 0 ? clamp((this.lead - tp.easeStart) / 0.08, 0, 1) : 0;
     // ...and the safety net's real lever (levels hardly move the turf): crushed past 15 % while really trying, the enemies ease off the same way
-    this.foeEase = !hell && this.effort >= 0.5 ? clamp((-this.lead - 0.15) / 0.1, 0, 1) : 0;
+    this.foeEase = !hell && tp.net >= 0.5 && this.effort >= 0.5 ? clamp((-this.lead - 0.15) / 0.1, 0, 1) : 0;
   },
   // 1 take ground · 0 as usual · -1 hold what we have
   paintFocus(team) { return this.on && this.pf ? this.pf[team] : 0; },
@@ -209,6 +229,7 @@ const Director = {
   update(dt) {
     const P = PLAYER; if (!P || !this.st) return; const T = G.time, st = this.st;
     if (devGod() || vipOn()) this.cheat = true;
+    this.tp = this.profile();
     this.effortTick(dt);
     if (P.alive && P.state === 'play') {
       const sp = Math.hypot(P.vel.x, P.vel.z);

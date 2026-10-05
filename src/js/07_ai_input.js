@@ -300,6 +300,12 @@ class Squad {
   }
 }
 
+// what each bot is for, from what it carries: the SMG 阿飒 slips round the side (flank), the sniper 满满 holds the high ground over the
+// middle (mid - it climbs up to perch on its own), the gatling 石墩 holds the front line (front); rifles fill in - front, then middle, then home
+function rolesFor(weapons) {
+  const out = weapons.map(w => w === 'smg' ? 'flank' : w === 'charger' ? 'mid' : w === 'splatling' ? 'front' : null), taken = new Set(out.filter(Boolean));
+  return out.map(r => { if (r) return r; const f = ['front', 'mid', 'home'].find(x => !taken.has(x)) || 'mid'; taken.add(f); return f; });
+}
 /* ================================================================= BOT */
 class Bot {
   constructor(c, role) {

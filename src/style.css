@@ -48,6 +48,7 @@ canvas#glFade{position:fixed;inset:0;width:100%;height:100%;display:none;z-index
 .seg{display:flex;gap:8px}
 .seg button{flex:1;cursor:pointer;font-family:inherit;font-weight:900;font-size:16px;padding:10px 6px;border-radius:14px;border:3px solid #111;background:#3a3760;color:#fff;box-shadow:0 4px 0 #111}
 .seg button.sel{background:#ffe45c;color:#111}
+.segNote{margin:6px 2px 0;font-size:13px;font-weight:700;opacity:.75;min-height:1em}
 .mapcard{display:flex;gap:12px;align-items:center;background:#0e0d20;border-radius:16px;padding:10px 12px;border:3px solid #111}
 .mapcard .thumb{width:62px;height:62px;border-radius:12px;background:linear-gradient(135deg,var(--c0) 0 45%,#555 45% 55%,var(--c1) 55%);border:3px solid #111}
 .mapcard b{font-size:18px}.mapcard small{display:block;opacity:.7;margin-top:4px}

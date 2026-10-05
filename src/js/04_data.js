@@ -177,6 +177,11 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.20.0', date: '2026-10-05', time: '15:01', title: '四档各有味道', items: [
+    '轻松「放开打」、普通「有来有回」、地狱「每一波都是硬仗」、智能「跟着你变」—— 战前准备里选难度时能看到',
+    '地狱回到真地狱：没人会对你手下留情，被围就是被围，一波接一波几乎不给喘息',
+    '机器人各司其职：拿冲锋枪的阿飒绕后偷袭，满满占高点狙击，石墩顶在前排扛线，拿步枪的补位前线、中路和守家'
+  ] },
   { v: 'v0.19.0', date: '2026-10-05', time: '10:34', title: '你才是核心', items: [
     '你是队伍的核心：认真抢地、认真交火的局更有机会赢；站着划水的局，队友扛不住',
     '被围时赶来的队友会帮你压住对手，但最后那一下留给你',

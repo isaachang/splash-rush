@@ -14,13 +14,13 @@ const Pacing = {
   get on() { return Director.on && !this.off; },                            // (off: benchmarks comparing with and without)
   reset() {
     this.tension = 0; this.phase = 'build'; this.phaseT = 0; this.highT = 0; this.waves = 0; this.hist = [];
-    this.stats = { t: { build: 0, peak: 0, relax: 0, final: 0 }, dmg: { build: 0, peak: 0, relax: 0, final: 0 }, acq: { build: 0, peak: 0, relax: 0, final: 0 }, curve: [] };     // (measuring: time in each phase and damage the player took in it)
-    const k = clamp(Math.sqrt(GAME.dur / 180), 0.7, 1.3), hell = Director.mode() === 2;
-    this.len = { buildMin: 30 * k, buildMax: 45 * k, peakHold: 4, peakMax: 15 * k, relaxMin: (hell ? 8 : 15) * k, relaxMax: (hell ? 13 : 25) * k };     // (≈ 2 waves in 3:00, 1 in 1:30, 3 in 5:00)
+    this.stats = { t: { build: 0, peak: 0, relax: 0, final: 0 }, dmg: { build: 0, peak: 0, relax: 0, final: 0 }, acq: { build: 0, peak: 0, relax: 0, final: 0 }, curve: [], dmgT: [], aliveT: [] };     // (measuring: time in each phase and damage the player took in it)
+    const k = clamp(Math.sqrt(GAME.dur / 180), 0.7, 1.3);                 // (lull lengths come from the tier profile: Director.tp.relax)
+    this.k = k; this.len = { buildMin: 30 * k, buildMax: 45 * k, peakHold: 4, peakMax: 15 * k }; this.relaxLen();     // (≈ 2 waves in 3:00, 1 in 1:30, 3 in 5:00)
     Sfx.musicEnergy && Sfx.musicEnergy(0.5);
   },
   // ---------------------------------------------------------------- the player's tension
-  onDamage(v, amount, src) { if (v === PLAYER && src && src.team !== v.team) { this.tension = Math.min(1, this.tension + amount / v.maxHp * 0.9); if (this.stats) this.stats.dmg[this.phase] += amount / v.maxHp; } },
+  onDamage(v, amount, src) { if (v === PLAYER && src && src.team !== v.team) { this.tension = Math.min(1, this.tension + amount / v.maxHp * 0.9); if (this.stats) { this.stats.dmg[this.phase] += amount / v.maxHp; const k = Math.floor(G.time / 10); this.stats.dmgT[k] = (this.stats.dmgT[k] || 0) + amount / v.maxHp; } } },
   onDeath(v, killer) {
     if (v === PLAYER) this.tension = 1;
     else if (killer === PLAYER && v.pos.distanceTo(PLAYER.pos) < 8) this.tension = Math.min(1, this.tension + 0.15);
@@ -28,7 +28,10 @@ const Pacing = {
   onAcquire() { if (this.stats && PLAYER.alive) this.stats.acq[this.on ? this.phase : 'build']++; },    // (measuring: an enemy has just picked the player out)
   near() { const P = PLAYER; return CHARS.filter(o => o.team !== P.team && o.alive && o.state === 'play' && o.pos.distanceTo(P.pos) < 13 && !o.hiddenInInk()).length; },
   // ---------------------------------------------------------------- the loop
+  // lull length from the tier profile (smart: as the player's level stands when the lull starts), scaled with the match
+  relaxLen() { const r = Director.profile().relax * this.k; this.len.relaxMax = r; this.len.relaxMin = r * 0.6; },
   set(ph) {
+    if (ph === 'relax' && this.len) this.relaxLen();
     if (ph === this.phase) return; this.phase = ph; this.phaseT = 0; this.highT = 0; if (ph === 'peak') this.waves++; aiStat(1 - PLAYER.team, 'phase_' + ph);
     // a lull or a wave starts now, not whenever each of them next picks somewhere to go (those already at close quarters with the player finish first)
     if ((ph === 'relax' || ph === 'peak') && this.on) for (const b of G.bots) if (b.c.team !== PLAYER.team && !(b.enemy === PLAYER && b.c.pos.distanceTo(PLAYER.pos) < 7)) { b.path = []; b.retarget = 0; b.replanT = 0; }
@@ -43,7 +46,7 @@ const Pacing = {
     } else this.tension -= dt * 0.08;
     this.tension = clamp(this.tension, 0, 1);
     if ((this.histT = (this.histT || 0) - dt) <= 0) { this.histT = 1; this.hist.push(this.tension); if (this.hist.length > 60) this.hist.shift(); this.stats.curve.push(this.tension); }
-    if (P.alive && P.state === 'play') this.stats.t[this.on ? this.phase : 'build'] += dt;
+    if (P.alive && P.state === 'play') { this.stats.t[this.on ? this.phase : 'build'] += dt; const k = Math.floor(T / 10); this.stats.aliveT[k] = (this.stats.aliveT[k] || 0) + dt; }
     if (!this.on) return;
     if (this.phase !== 'relax' || (P.alive && P.state === 'play')) this.phaseT += dt;          // (a lull only counts while the player is up to enjoy it)
     const L = this.len, close = Math.abs(Director.lead) < 0.1;
@@ -69,6 +72,6 @@ const Pacing = {
   tokenDelta(team) { return this.steering(team) && this.phase === 'relax' ? -1 : 0; },
   counterK(team) { return this.steering(team) && this.phase === 'relax' ? 0 : 1; },
   // in a wave a couple of them come for the player (one, for a beginner)
-  waveHunters(team) { return this.steering(team) && (this.phase === 'peak' || this.phase === 'final') ? (Director.skill >= 0.9 ? 2 : 1) : 0; },
+  waveHunters(team) { if (!this.steering(team) || !(this.phase === 'peak' || this.phase === 'final')) return 0; const n = Math.round(Director.tp.hunters); return Director.skill >= 0.9 ? n : Math.min(n, 1); },     // (one at most for a beginner)
   remaining() { const L = this.len; if (!L) return 0; return this.phase === 'build' ? Math.max(0, L.buildMax - this.phaseT) : this.phase === 'peak' ? Math.max(0, L.peakMax - this.phaseT) : this.phase === 'relax' ? Math.max(0, L.relaxMax - this.phaseT) : Math.max(0, G.left); }
 };

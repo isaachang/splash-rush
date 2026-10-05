@@ -173,17 +173,17 @@ const tests = function (DEVC, VIPC) {
     const holder = en.find((b, i) => got[i]), waiter = en.find((b, i) => !got[i]);
     [...C.holders.values()].forEach(s => s.t0 = T - 3); C.waiting.set(waiter, G.time); C.update(0);
     const handed = C.holders.size === cap - 1 && C.canShoot(waiter, P) && holder.tokCd > G.time;
-    GAME.diff = 0; const easyCap = C.tokens(); GAME.diff = 2; const hellCap = C.tokens(); GAME.diff = 1;
-    ok(cap === 2 && handed && easyCap === 1 && hellCap === 3 && C.canShoot(en[0], CHARS.find(c => c.team === P.team && c !== P)), 'attack tokens: on normal 2 of ' + en.length + ' enemies may shoot at the player at once (easy 1, hell 3); after its turn a holder hands over to one that is waiting; shooting at teammates is not limited');
+    const tierTok = t => { GAME.diff = t; D.tp = D.profile(); return C.tokens(); }; const easyCap = tierTok(0), hellCap = tierTok(2); tierTok(1);
+    ok(cap === 2 && handed && easyCap === 1 && hellCap === 4 && C.canShoot(en[0], CHARS.find(c => c.team === P.team && c !== P)), 'attack tokens: on normal 2 of ' + en.length + ' enemies may shoot at the player at once (easy 1, hell no limit); after its turn a holder hands over to one that is waiting; shooting at teammates is not limited');
     // warning shots: in front of the player, on the side the shot comes from
     const B = en[0]; B.c.pos.set(P.pos.x, P.pos.y, P.pos.z - 10); Cam.yaw = P.aimYaw = Math.PI; B.reactT = 0.4; C.onAcquire(B);
     const front = B.warnUntil - G.time, ap = C.aimPoint(B, P, P.chest()), off = Math.hypot(ap.x - P.pos.x, ap.z - P.pos.z), toward = (ap.z - P.pos.z) < 0;
     P.aimYaw = 0; B.reactT = 0.4; C.onAcquire(B); const behindReact = B.reactT, behindW = B.warnUntil - G.time;
-    GAME.diff = 2; P.aimYaw = Math.PI; B.reactT = 0.4; C.onAcquire(B); const hellFront = B.warnUntil; P.aimYaw = 0; B.reactT = 0.4; C.onAcquire(B); const hellBehind = B.warnUntil - G.time; GAME.diff = 1;
-    ok(Math.abs(front - 0.9) < 0.01 && off > 1 && off < 2.2 && toward && Math.abs(behindReact - 0.56) < 0.01 && hellFront === 0 && hellBehind > 0.5, 'warning shots: an enemy that takes aim at the player first puts ' + (front - 0.4).toFixed(1) + ' s of shots into the ground ' + off.toFixed(1) + ' m in front of them, on its side; from behind it is also slower to fire; on hell only from behind');
+    GAME.diff = 2; D.tp = D.profile(); P.aimYaw = Math.PI; B.reactT = 0.4; C.onAcquire(B); const hellFront = B.warnUntil; P.aimYaw = 0; B.reactT = 0.4; C.onAcquire(B); const hellBehind = B.warnUntil, hellReact = B.reactT; GAME.diff = 1; D.tp = D.profile();
+    ok(Math.abs(front - 0.9) < 0.01 && off > 1 && off < 2.2 && toward && Math.abs(behindReact - 0.56) < 0.01 && hellFront === 0 && hellBehind === 0 && Math.abs(hellReact - 0.4) < 0.01, 'warning shots: an enemy that takes aim at the player first puts ' + (front - 0.4).toFixed(1) + ' s of shots into the ground ' + off.toFixed(1) + ' m in front of them, on its side; from behind it is also slower to fire; on hell none at all, not even from behind');
     // the breather
-    P.hp = P.maxHp * 0.2; P.lastHurt = G.time; const kNorm = C.errK(P); GAME.diff = 2; const kHell = C.errK(P); GAME.diff = 1; P.hp = P.maxHp; const kFull = C.errK(P);
-    ok(kNorm > 2 && kHell === 1 && kFull === 1, 'breather: low and just hit, the player is ' + kNorm.toFixed(1) + 'x harder to hit for a moment (not on hell, not at full health)');
+    P.hp = P.maxHp * 0.2; P.lastHurt = G.time; const kNorm = C.errK(P); GAME.diff = 0; D.tp = D.profile(); const kEasy = C.errK(P); GAME.diff = 2; D.tp = D.profile(); const kHell = C.errK(P); GAME.diff = 1; D.tp = D.profile(); P.hp = P.maxHp; const kFull = C.errK(P);
+    ok(kNorm > 1.7 && kEasy > kNorm + 0.4 && kHell === 1 && kFull === 1, 'breather: low and just hit, the player is ' + kNorm.toFixed(1) + 'x harder to hit for a moment on normal, ' + kEasy.toFixed(1) + 'x on easy (not on hell, not at full health)');
     // backup: set on by two, the nearest teammates come and go for whoever is shooting
     const mates = G.bots.filter(b => b.c.team === P.team && !b.c.isPlayer); mates.forEach((b, i) => { b.support = null; b.mode = 'paint'; b.c.pos.set(P.pos.x + 3 + i * 6, P.pos.y, P.pos.z + 2); });
     P.dmgBy.set(en[0].c, G.time); P.dmgBy.set(en[1].c, G.time); C.supT = 0; C.updateSupport();
@@ -209,12 +209,12 @@ const tests = function (DEVC, VIPC) {
     D.effort = 0.9; D.signals(); const drops = D.skill; D.elo = 1; D.effort = 0.2; D.resolve({ e: { name: 'x' }, lv: 1 }, 0, 1); const eloSlack = D.elo; D.signals = sig;
     ok(lazy < 0.25 && keen > 0.85 && frozen === 1.0 && drops < 1.0 && eloSlack === 1, 'effort: idling at the spawn reads ' + lazy.toFixed(2) + ', moving, shooting, painting and hitting like the teammates ' + keen.toFixed(2) + '; while not trying the level does not drop and lost duels do not count (playing badly on purpose does not make it easier)');
     // the duel director: losing duels - longer warnings, slower, wider, one fewer shooting; winning - the other way; hell only gets harder
-    C.reset(); const base = { tok: C.tokens(), err: C.duelErrK(), warn: C.warnTime(false) };
+    GAME.diff = 1; D.tp = D.profile(); C.reset(); const base = { tok: C.tokens(), err: C.duelErrK(), warn: C.warnTime(false) };
     for (let i = 0; i < 6; i++) C.onDuel(0, 1); const cold = { h: C.heat, tok: C.tokens(), err: C.duelErrK(), react: C.duelReactK(), warn: C.warnTime(false) };
     C.reset(); for (let i = 0; i < 6; i++) C.onDuel(1, 1); const hot = { h: C.heat, tok: C.tokens(), err: C.duelErrK(), react: C.duelReactK(), warn: C.warnTime(false) };
-    GAME.diff = 2; C.reset(); for (let i = 0; i < 6; i++) C.onDuel(0, 1); const hellCold = C.duelErrK(); GAME.diff = SMART;
-    ok(cold.h < -0.8 && cold.tok === base.tok - 1 && cold.err > 1.5 && cold.react > 1.4 && cold.warn > base.warn + 0.3 && hot.h > 0.8 && hot.tok === base.tok + 1 && hot.err < 0.75 && hot.react < 0.8 && hot.warn < base.warn * 0.4 && hellCold === 1,
-      'duel director: after a run of lost duels the enemies facing the player shoot ' + cold.err.toFixed(1) + 'x wider, ' + cold.react.toFixed(1) + 'x slower, warn ' + cold.warn.toFixed(1) + ' s and one fewer may shoot; after a run of wins ' + hot.err.toFixed(2) + 'x, ' + hot.react.toFixed(2) + 'x, ' + hot.warn.toFixed(2) + ' s and one more; on hell a losing run changes nothing');
+    GAME.diff = 2; D.tp = D.profile(); C.reset(); for (let i = 0; i < 6; i++) C.onDuel(0, 1); const hellCold = C.duelErrK(); GAME.diff = SMART; D.tp = D.profile();
+    ok(cold.h < -0.8 && cold.tok === base.tok - 1 && cold.err > 1.35 && cold.react > 1.3 && cold.warn > base.warn + 0.2 && hot.h > 0.8 && hot.tok === base.tok + 1 && hot.err < 0.85 && hot.react < 0.85 && hot.warn < base.warn * 0.6 && hellCold === 1,
+      'duel director (normal): after a run of lost duels the enemies facing the player shoot ' + cold.err.toFixed(1) + 'x wider, ' + cold.react.toFixed(1) + 'x slower, warn ' + cold.warn.toFixed(1) + ' s and one fewer may shoot; after a run of wins ' + hot.err.toFixed(2) + 'x, ' + hot.react.toFixed(2) + 'x, ' + hot.warn.toFixed(2) + ' s and one more; on hell a losing run changes nothing');
     // backup suppresses and leaves the knock-out to the player
     const mb = G.bots.find(b => b.c.team === P.team && !b.c.isPlayer), foe = CHARS.find(c => c.team !== P.team);
     mb.support = { t: G.time, att: [foe] }; foe.hp = foe.maxHp * 0.3; foe.dmgBy.set(P, G.time);
@@ -230,8 +230,8 @@ const tests = function (DEVC, VIPC) {
     step(30 * 25, () => { Pc.tension = Math.max(Pc.tension, 0.7); }); const wave = Pc.phase;    // a while later: the wave comes
     step(30 * 6, () => { Pc.tension = 0.9; }); const after = Pc.phase;                         // held high a few seconds: the lull
     step(30 * 3, () => { Pc.tension = 0.1; }); const tooSoon = Pc.phase; step(30 * 20, () => { Pc.tension = 0.1; }); const back = Pc.phase;
-    const L3 = Pc.len.relaxMax; GAME.diff = 2; Pc.reset(); const Lh = Pc.len.relaxMax; GAME.diff = 1; GAME.dur = 90; Pc.reset(); const L90 = Pc.len.buildMin; GAME.dur = 300; Pc.reset(); const L300 = Pc.len.buildMin; GAME.dur = 180; Pc.reset();
-    ok(early === 'build' && wave === 'peak' && after === 'relax' && tooSoon === 'relax' && back === 'build' && Lh < L3 && L90 < L300, 'pacing: build-up -> a wave once tense (not before ~30 s) -> a lull once the tension has stayed high -> build-up again once calm; hell lulls are shorter (' + Lh.toFixed(0) + ' vs ' + L3.toFixed(0) + ' s), and the lengths follow the match');
+    const L3 = Pc.len.relaxMax; GAME.diff = 2; D.tp = D.profile(); Pc.reset(); const Lh = Pc.len.relaxMax; GAME.diff = 0; D.tp = D.profile(); Pc.reset(); const Le = Pc.len.relaxMax; GAME.diff = 1; D.tp = D.profile(); GAME.dur = 90; Pc.reset(); const L90 = Pc.len.buildMin; GAME.dur = 300; Pc.reset(); const L300 = Pc.len.buildMin; GAME.dur = 180; Pc.reset();
+    ok(early === 'build' && wave === 'peak' && after === 'relax' && tooSoon === 'relax' && back === 'build' && Math.abs(Le - 25) < 0.01 && Math.abs(L3 - 13) < 0.01 && Math.abs(Lh - 6) < 0.01 && L90 < L300, 'pacing: build-up -> a wave once tense (not before ~30 s) -> a lull once the tension has stayed high -> build-up again once calm; lulls of ' + Le.toFixed(0) + ' / ' + L3.toFixed(0) + ' / ' + Lh.toFixed(0) + ' s at 3:00 on easy / normal / hell, and the lengths follow the match');
     // what the bots do with it: in a lull an enemy 12 m away does not come for the player, in a build-up it does; paint spots avoid / approach the player
     const B = G.bots.find(b => b.c.team !== P.team); P.pos.set(0, 2.2, 20); B.c.pos.set(0, 2.2, 8); B.c.lastHurt = -99;          // (off the spawn pad: nobody targets a player inside their own barrier)
     Pc.set('build'); const inBuild = B.findEnemy() === P; Pc.set('relax'); const inLull = B.findEnemy() === P; const near = new THREE.Vector3(P.pos.x + 3, P.pos.y, P.pos.z), far = new THREE.Vector3(P.pos.x + 30, P.pos.y, P.pos.z);
@@ -242,6 +242,23 @@ const tests = function (DEVC, VIPC) {
     DirPanel.view = 0; DirPanel.toggle(); const compact = DirPanel.render(); DirPanel.toggle(); const full = DirPanel.render(); DirPanel.toggle();
     ok(['dp-ruler', '节奏', '紧张度', '比分', '对面'].every(k => compact.includes(k)) && !compact.includes('dp-bots') && ['dp-cols', '评分依据', '最近交火', 'dp-bots'].every(k => full.includes(k)) && DirPanel.view === 0, 'director panel: first press the essentials (level ruler, rhythm, tension, score, the other side), second press the details beside them, third press off');
     GAME.diff = gd;
+  }
+  // ---------------- what each tier is for, and smart sliding between them; jobs by what each bot carries
+  {
+    const [E, N, H] = TIER_PROFILE, p03 = tierProfile(0.5), p1 = tierProfile(1.3), p24 = tierProfile(2.4), p065 = tierProfile(0.9);
+    const table = E.tokens === 1 && N.tokens === 2 && H.tokens === 4 && E.warn === 0.8 && N.warn === 0.5 && H.warn === 0 && H.behindMin === 0 && H.grace === 0 && E.relax === 25 && N.relax === 13 && H.relax === 6 && E.counter === 0 && H.counter === 1 && E.net && !H.net && E.foeOff === -0.2 && N.foeOff === 0;
+    const slide = JSON.stringify(p03) === JSON.stringify(E) && JSON.stringify(p1) === JSON.stringify(N) && JSON.stringify(p24) === JSON.stringify(H) && p065.warn < E.warn && p065.warn > N.warn && p065.relax < E.relax && p065.relax > N.relax;
+    ok(table && slide, 'tiers: easy "let rip" (1 shooter, 0.8 s warnings, 25 s lulls, no counters), normal "give and take" (2, 0.5 s, 13 s), hell "every wave a hard fight" (no limit, no warnings, no breather, 6 s lulls, counters in full, no safety net); smart is easy up to 0.5, normal at 1.3, hell from 2.3 and slides in between; easy enemies sit 0.2 below the player');
+    const r1 = rolesFor(['rifle', 'smg', 'charger', 'splatling']), r2 = rolesFor(['rifle', 'rifle', 'rifle']), r3 = rolesFor(['charger', 'rifle', 'smg']);
+    setup(1); const fromMatch = G.bots.every(b => b.role0 === rolesFor(G.roster[b.c.team].filter(m => !m.isPlayer).map(m => m.weapon))[G.roster[b.c.team].filter(m => !m.isPlayer).findIndex(m => m.name === b.c.name)]);
+    ok(r1.join() === 'home,flank,mid,front' && r2.join() === 'front,mid,home' && r3.join() === 'mid,front,flank' && fromMatch, 'jobs by what they carry: SMG -> round the side, sniper -> the middle (and its high ground), gatling -> the front line, rifles fill front / middle / home (' + r1.join(' ') + '); every bot in a match gets its own');
+    const S = Strategist; GAME.dur = 90; const w90 = S.warmup(); GAME.dur = 180; const w180 = S.warmup();
+    ok(Math.abs(w180 - 20) < 1e-9 && w90 < 15 && w90 > 13, 'reading the player starts after ' + w180.toFixed(0) + ' s at 3:00 and ' + w90.toFixed(1) + ' s at 1:30');
+    // the strategist sends the SMG one round the side
+    setup(SMART); G.aiLevels = null; GAME.diff = 1; Director.tp = Director.profile(); const tm = 1 - PLAYER.team, team = G.bots.filter(b => b.c.team === tm);
+    const smg = team[2]; smg.c.weapon = WEAPONS.smg; team.forEach(b => b.task = null); S.prof = { lane: 1 }; S.give(tm, ['flank']); const flanker = team.find(b => b.task && b.task.id === 'flank'); smg.c.weapon = WEAPONS.rifle;
+    ok(flanker === smg, 'the strategist sends the SMG one to go round the side');
+    GAME.diff = 1; G.aiLevels = null;
   }
   // ---------------- the strategist (smart mode): reading the player and picking a plan against it
   {

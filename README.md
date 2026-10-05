@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://isaachang.github.io/splash-rush/"><img src="https://img.shields.io/badge/▶_在线试玩-Play_Now-ff7a00?style=for-the-badge" alt="Play Now"></a>
-  <img src="https://img.shields.io/badge/version-v0.19.0-3346ff?style=for-the-badge" alt="version">
+  <img src="https://img.shields.io/badge/version-v0.20.0-3346ff?style=for-the-badge" alt="version">
   <img src="https://img.shields.io/badge/Three.js-r158-111111?style=for-the-badge&logo=threedotjs" alt="three.js">
 </p>
 
@@ -49,7 +49,7 @@
 - **潜墨与爬墙**：在自己的墨水里游动、隐身、1 秒回满血，还能沿着涂过的墙往上爬
 - **超级跳**：打开地图点队友，从天而降直接跳到他身边
 - **击倒反馈**：墨渍牌子、穿墙的倒地标记、双杀 / 三杀 / 团灭，画面一顿、镜头一收
-- **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，拿狙击的会占高点；难度分轻松、普通、地狱三档（每档内会细调，地狱只升不降），另有一档「智能」
+- **7 个 AI 队友与对手**：会涂地、抢地盘、交火、回墨，按手上的武器分工（冲锋枪绕后、狙击占高点、加特林顶前排、步枪补位）；难度分轻松「放开打」、普通「有来有回」、地狱「每一波都是硬仗」三档，另有一档「智能」跟着你变
 - **完整对局流程**：选场地 → 战前准备（选角色和武器、看阵容）→ 开局飞行镜头 → 对局 → 裁判判定 → 结算
 - **原版风格结算**：俯视判定、比例条拉锯、WIN! / LOSE…，计分板、奖牌和毒舌吐槽奖
 - **阵亡观战**：先看是谁打倒了你，再切到队友视角，等复活时也不无聊
