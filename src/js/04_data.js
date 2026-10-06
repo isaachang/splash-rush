@@ -168,7 +168,7 @@ const Profile = {
     const d = this.data; GAME.name = d.name; GAME.pal = clamp(d.pal | 0, 0, PALETTES.length - 1); GAME.diff = clamp(d.diff | 0, 0, TIERS.length - 1); GAME.dur = [90, 180, 300].includes(d.dur) ? d.dur : 180;
   },
   save() {
-    Object.assign(this.data, { name: GAME.name, pal: GAME.pal, diff: GAME.diff, dur: GAME.dur });
+    Object.assign(this.data, { name: GAME.name, pal: GAME.pal, diff: GAME.diff, dur: typeof Camp !== 'undefined' && Camp.on ? Camp.durWas ?? GAME.dur : GAME.dur });     // (闯关 plays its own length: the player's 4v4 choice is kept)
     try { localStorage.setItem(PROFILE_KEY, JSON.stringify(this.data)); } catch (e) { }
   }
 };
@@ -177,6 +177,13 @@ const Profile = {
    Player-facing release notes (short, confirmed changes only).
    Newest first. VERSION shown on the title screen comes from here.   */
 const RELEASES = [
+  { v: 'v0.19.0', date: '2026-10-05', time: '20:29', title: '闯关 · 霸铺头', items: [
+    '主页多了「闯关」：第一关「西关早茶」，一关三轮连着打（现在先开放第一轮）',
+    '第一轮「霸铺头」：1:30 内朝铺头的门面开枪，把它染成你的颜色——源記腸粉、吳系茶餐廳、鎮海樓、陳添記魚皮、廣州酒家，时间到时霸住至少 3 间就过关',
+    '对面的颜色要先洗掉才能染上你的；刚霸住的铺头有 2 秒保护；霸住的铺头会时不时在门口溅出你的墨',
+    '准星外圈的进度环、屏幕上方的五间铺头、小地图上的标记、自家铺头被抢时屏幕边缘的提示，随时知道局势',
+    '队友也会帮你打铺头，但主力是你；原来的「开始对战」改名「自由对战」，玩法不变'
+  ] },
   { v: 'v0.18.0', date: '2026-10-05', time: '18:09', title: '像真人一样的对手', items: [
     '难度改成四档：轻松「放开打」、普通「有来有回」、困难「认真起来」、地狱「每一波都是硬仗」；「智能」档去掉了，原来选智能的会变成普通',
     '对手不再暗中让着你：没有了同时打你的人数限制、警告射击和残血喘息，也不会因为你打得好或打得差而变强变弱',

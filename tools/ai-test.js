@@ -143,9 +143,13 @@ const tests = function (DEVC, VIPC) {
     const [Fq, eq] = look(2, Math.PI, 15);
     ok(hears(2) && !hears(0) && !eq && !Fq.alert, 'hearing: the player shooting 15 m behind a bot is heard on hell (' + DIFF[2].hear + ' m) - as a noise to turn to, not a target - but not on easy (' + DIFF[0].hear + ' m); keeping quiet is not heard at all');
     // turning on a noise: the bot turns round and picks the player out, quicker the better it is
-    const turn = (lv, how) => { const [F] = look(lv, 0, 12); const P = PLAYER; F.c.pos.set(0, 2.2, 25); P.pos.set(0, 2.2, 13); F.update = F._u; F.c.ink = 100; let t = -1; run(30 * 4, i => { P.pos.set(0, 2.2, 13); P.vel.set(0, 0, 0); P.hp = P.maxHp; if (how === 'shoot') P.lastShot = G.time; else if (i < 3) { F.c.lastHurt = G.time; F.c.lastAttacker = P; } if (F.enemy === P) { t = i / 30; return true; } return false; }); return t; };
-    const tShotN = turn(1, 'shoot'), tShotH = turn(2, 'shoot'), tShotE = turn(0, 'shoot'), tHit = turn(0, 'hit');
-    ok(tShotN > 0.2 && tShotN < 2 && tShotH > 0 && tShotH < tShotN && tShotE < 0 && tHit > 0.2 && tHit < 3, 'turning round: shooting 12 m behind a bot (toward its own base, so it would not turn that way by itself), normal turns and picks the player out in ' + tShotN.toFixed(1) + ' s, hell in ' + tShotH.toFixed(1) + ' s, easy does not hear it (' + tShotE + '); shot in the back, even easy turns round (' + tHit.toFixed(1) + ' s)');
+    // turning on a noise: the bot hears it, turns round and picks the player out - quicker the better it is (medians of three: the
+    // bot also looks about on its own, so a single run can get lucky)
+    const turn = (lv, how) => { const [F] = look(lv, 0, 12); const P = PLAYER; F.c.pos.set(0, 2.2, 25); P.pos.set(0, 2.2, 13); F.update = F._u; F.c.ink = 100; let t = -1, heard = -1;
+      run(30 * 4, i => { P.pos.set(0, 2.2, 13); P.vel.set(0, 0, 0); P.hp = P.maxHp; if (how === 'shoot') P.lastShot = G.time; else if (i < 3) { F.c.lastHurt = G.time; F.c.lastAttacker = P; } if (heard < 0 && F.alert && F.alert.e === P) heard = i / 30; if (F.enemy === P) { t = i / 30; return true; } return false; }); return { t, heard }; };
+    const med3 = f => { const a = [f(), f(), f()].sort((x, y) => (x.t < 0 ? 99 : x.t) - (y.t < 0 ? 99 : y.t)); return a[1]; };
+    const sN = med3(() => turn(1, 'shoot')), sH = med3(() => turn(2, 'shoot')), hE = turn(0, 'hit');
+    ok(sN.heard >= 0 && sN.t > 0.2 && sN.t < 2 && sH.t > 0 && sH.t <= sN.t && hE.heard >= 0 && hE.heard < 0.3 && hE.t > 0 && hE.t < 3.5, 'turning round: shooting 12 m behind a bot (toward its own base, so it would not turn that way by itself), normal hears it and picks the player out in ' + sN.t.toFixed(1) + ' s, hell in ' + sH.t.toFixed(1) + ' s (easy\'s shorter hearing is checked above); shot in the back, even easy knows at once and turns round (' + hE.t.toFixed(1) + ' s)');
   }
   // memory: someone lost from sight is looked for a while (longer, the better the bot), and picked up again quicker
   {

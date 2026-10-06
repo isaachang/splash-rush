@@ -37,6 +37,7 @@ node tools/feature-test.js    # 逐项验证核心机制，必须全部 PASS
 node tools/map-test.js        # 改了滑板场（或地形代码）时跑，必须 ALL MAP TESTS PASSED
 node tools/canton-test.js     # 改了西關大屋（或悬空方块、涂地分层）时跑，必须 ALL CANTON TESTS PASSED
 node tools/ai-test.js         # 改了机器人、寻路或地图地形时跑，必须 ALL AI TESTS PASSED
+node tools/campaign-test.js   # 改了闯关（铺头、轮次流程、闯关界面）或武器打墙的逻辑时跑，必须 ALL CAMPAIGN TESTS PASSED
 node tools/director-test.js   # 改了导演台（四档难度）或机器人难度表时跑，必须 ALL DIRECTOR TESTS PASSED（约 3 分钟）
 node tools/director-bench.js canton 1 t1 8 180   # 调档位时用：机器人假扮玩家（水平 0~2.5，0.3 像轻松、1 普通、1.5 困难、2 地狱），选哪一档（t0 轻松 / t1 普通 / t2 困难 / t3 地狱；f0 / f1 / f2 是全员同一行的旧写法，用来对比），看胜负、涂地差和发挥估计（不是必过项）；加 NOSTRAT=1 关掉对策，TIERO='{"1":{"mates":0.9}}' 临时换档位参数（对手 / 队友水平、队友枪法），DIRO='{"PF":{"span":0.1}}' 临时换参数，LAZY=1 / LAZY=2 让假玩家在出生点附近 / 满地图闲逛、从不开枪（检查「摆烂会输」）
 node tools/ai-bench.js canton 2 1 12   # 调机器人强弱时用：全电脑对打，看胜场、涂地、击倒和卡住的秒数（不是必过项）

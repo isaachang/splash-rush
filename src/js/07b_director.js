@@ -194,7 +194,7 @@ const Director = {
   },
   // end of a match: fold this match into this loadout's saved estimate (a rolling average).  Not with a name-box mode on, nor in tests
   save() {
-    if (G.pilot || G.aiLevels || !PLAYER || !this.st || this.cheat || this.st.alive < 30) return;
+    if (G.pilot || G.aiLevels || Camp.on || !PLAYER || !this.st || this.cheat || this.st.alive < 30) return;     // (闯关 rounds play by other rules: kept out)
     const sv = this.mem, q = Math.min(1, this.st.alive / 120) * Math.min(1, (this.nm + 1) / 6), s = sv ? lerp(sv.s, this.skill, 0.4 * q) : this.skill;
     this.saved = this.skillBook()[this.key] = { s: Math.round(s * 100) / 100, m: Math.min(10, (sv ? sv.m || 1 : 0) + 1) }; Profile.save();
   },

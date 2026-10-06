@@ -19,7 +19,7 @@ const Strategist = {
   },
   // watching the player before the first reading: 20 s at 3:00, shorter in a short match (14 s at 1:30)
   warmup() { return 20 * clamp(Math.sqrt(GAME.dur / 180), 0.7, 1.3); },
-  get on() { return Director.on && !this.off; },                          // (off: tests comparing with and without plans)
+  get on() { return Director.on && !this.off && !Camp.on; },                          // (off: tests comparing with and without plans)
   team() { return 1 - PLAYER.team; },                                       // the side that reads and counters
   laneOf(x) { return clamp(Math.floor((x + XH) / (2 * XH) * this.NX), 0, this.NX - 1); },
   bandOf(z) { return clamp(Math.floor((z + ZH) / (2 * ZH) * this.NZ), 0, this.NZ - 1); },

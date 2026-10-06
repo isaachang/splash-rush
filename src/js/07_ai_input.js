@@ -321,7 +321,7 @@ class Bot {
     const c = this.c, e0 = c.eye(), T = G.time, tr = this.trait; let best = null, bs = 1e9;
     // the score: the side taking ground only takes on enemies close by (still answering whoever shoots them); a pushy one looks further, a careful one less far
     const pf = Director.paintFocus(c.team), hurt = T - c.lastHurt < 1.5, job = Strategist.taskId(this);
-    let rk = (hurt || pf <= 0 ? 1 : lerp(1, 0.45, pf)) * (tr ? 1 + 0.15 * tr.aggr : 1);
+    let rk = (hurt || pf <= 0 ? 1 : lerp(1, 0.45, pf)) * (tr && !hurt ? 1 + 0.15 * tr.aggr : 1);
     // a job from the strategist: hunters look further and go for the player first; painters and flankers keep out of fights on the way
     if (job === 'hunt') rk = Math.max(rk, 1.2); else if (!hurt && job === 'paint') rk = Math.min(rk, 0.6); else if (!hurt && job === 'flank') rk = Math.min(rk, 0.8);
     const fov = D.fov ?? 1.13, hear = D.hear ?? 15;
@@ -351,10 +351,11 @@ class Bot {
     return best;
   }
   // a noise from somewhere unseen: where it seems to come from - the further off, the vaguer
-  hearAt(e, d) {
+  hearAt(e, d, hurt) {
     const a = this.alert, T = G.time; if (a && a.e !== e && T - a.t < 0.6 && a.d < d) return;
     const k = 0.15 * d, same = a && a.e === e && T - a.t < 1;
-    this.alert = { e, d, x: e.pos.x + rand(-k, k), y: e.pos.y, z: e.pos.z + rand(-k, k), t: T, t0: same ? a.t0 : T, went: same ? a.went : false };
+    this.alert = { e, d, x: e.pos.x + rand(-k, k), y: e.pos.y, z: e.pos.z + rand(-k, k), t: T, t0: same ? a.t0 : T, went: same ? a.went : false, hurt: !!hurt || (same && a.hurt) };
+    this.dawdleT = 0;                                                       // (a noise snaps a daydreaming beginner out of it)
   }
   // something heard, or someone just lost: turn toward it once the bot has reacted, and keep an eye there for a while (longer, the better it is)
   faceAlert(dt, D) {
@@ -381,7 +382,7 @@ class Bot {
       for (let a = 0; a < 5; a++) { const o = ownerAt(p.x + Math.cos(a * 1.26) * 2, p.y, p.z + Math.sin(a * 1.26) * 2); if (o !== c.team && o !== -2) s += 0.6; }
       const zRel = (c.team === 0 ? -p.z : p.z) / ZH;
       s += this.role === 'front' ? zRel * 3 : this.role === 'mid' ? 1 - Math.abs(zRel) * 2.2 : -zRel * 2.2;
-      s -= p.distanceTo(c.pos) * 0.04; s += rand(0, 1.6) + Director.turfBias(c.team, own, zRel);
+      s -= p.distanceTo(c.pos) * 0.04; s += rand(0, 1.6) + Director.turfBias(c.team, own, zRel) + Shops.bias(c.team, p);
       if (c.weapon.type === 'charge') s += NAV.h[k] * 0.9 - (this.role === 'front' ? zRel * 1.5 : 0);
       if (s > bs) { bs = s; best = k; }
     }
@@ -411,7 +412,7 @@ class Bot {
         if (role === 'home') s -= 1.5 * foes.filter(([, f]) => Math.hypot(f.x - p.x, f.z - p.z) < 8).length;
       }
       for (const o of others) if (Math.hypot(o.x - p.x, o.z - p.z) < 8) s -= 1.2;
-      s += rand(0, 1.4) + Director.turfBias(tm, own, zRel);
+      s += rand(0, 1.4) + Director.turfBias(tm, own, zRel) + Shops.bias(tm, p);
       if (s > bs) { bs = s; best = n; }
     };
     for (let i = 0; i < 46; i++) { const k = randi(0, NAV.N - 1); if (reach[k] >= 0) consider(k, 0); }
@@ -567,6 +568,18 @@ class Bot {
     if (c.grounded && d < 2 && (w.y > c.pos.y + 0.7 || ((w.fl & NF.JUMP) && d < 1.6 && w.y > c.pos.y + 0.3))) I.jump = true;
     return true;
   }
+  // shooting a building: re-picked every half second (beginners now and then wander on instead); stand side-on and keep the trigger down
+  shopShoot(dt, D) {
+    const c = this.c, I = c.intent, T = G.time;
+    if (T >= (this.shopT || 0)) { this.shopT = T + 0.5; const t = Shops.botTarget(this); this.shopTgt = t && (D.team || Math.random() < 0.6) ? t : null; }
+    const t = this.shopTgt; if (!t) return false;
+    const ye = this.aimAt(t.aim, dt, D.turn * 0.8, c.weapon.id), fx = Math.sin(c.aimYaw), fz = Math.cos(c.aimYaw);
+    this.strafeT -= dt; if (this.strafeT <= 0) { this.strafe = Math.random() < 0.5 ? -1 : 1; this.strafeT = rand(0.6, 1.4); }
+    I.mx = -fz * this.strafe * 0.35; I.mz = fx * this.strafe * 0.35;
+    if (Math.abs(ye) < 0.2) this.pull(I, c.weapon.charges ? 0.85 : 1); else if (c.charging) I.fire = true;
+    this.path = []; this.dState = 'shop';
+    return true;
+  }
   aimAt(tp, dt, turn, wid) {
     const c = this.c, m = c.muzzle(), dx = tp.x - m.x, dy = tp.y - m.y, dz = tp.z - m.z, hd = Math.hypot(dx, dz);
     const yawErr = angDiff(c.aimYaw, Math.atan2(dx, dz));
@@ -585,7 +598,7 @@ class Bot {
       // lost sight of them: remember where they were, and keep an eye on it
       if (!e && prev && prev.alive && prev.state === 'play') this.alert = { e: prev, d: prev.pos.distanceTo(c.pos), x: prev.pos.x, y: prev.pos.y, z: prev.pos.z, t: T, t0: T - 9, went: false };
       // shot from somewhere unseen: turn toward where it came from (it takes a moment, and a slow one turns slowly)
-      if (!e && T - c.lastHurt < 0.6 && c.lastAttacker && c.lastAttacker.alive && c.lastAttacker.team !== c.team) this.hearAt(c.lastAttacker, c.lastAttacker.pos.distanceTo(c.pos) * 0.5);
+      if (!e && T - c.lastHurt < 0.6 && c.lastAttacker && c.lastAttacker.alive && c.lastAttacker.team !== c.team) this.hearAt(c.lastAttacker, c.lastAttacker.pos.distanceTo(c.pos) * 0.5, true);
       // the squad's shared target, when this bot can hit it too (a teammate calling it out)
       if (D.focus && S && S.focus && S.focus !== e && S.focus.alive && S.focus.pos.distanceTo(c.pos) < c.weapon.range + 2 && this.canSee(S.focus) && !S.focus.hiddenInInk()) { e = S.focus; if (e !== this.enemy) aiStat(c.team, 'focus'); }
       if (e && e !== this.enemy) {
@@ -681,6 +694,8 @@ class Bot {
       I.mx = I.mz = 0; I.special = false; this.path = []; return;
     }
     I.special = false;
+    // 闯关: a building that isn't ours (or is ours and being taken) in range and in sight - stop and shoot it
+    if (Shops.on && this.mode === 'paint' && !this.climb && c.ink > (chg ? 30 : 12) && this.shopShoot(dt, D)) return;
     if (this.mode === 'refill') {
       if (!this.path.length && !onOwn) { if (!this.findRefill()) { // paint own puddle
         if (c.ink > 4) { this.pull(I, 0.3); c.aimPitch = damp(c.aimPitch, -0.9, 8, dt); } I.mx = I.mz = 0; return; } }
@@ -715,7 +730,8 @@ class Bot {
     }
     const moving = this.followPath(I, dt);
     if (this.climb) return;
-    if (!this.faceAlert(dt, D)) {
+    if (this.faceAlert(dt, D)) { if (this.alert.hurt && T - c.lastHurt < 2) { I.mx = I.mz = 0; I.swim = false; } }     // (shot from behind: stop and turn to face it, don't walk on)
+    else {
       const baseYaw = moving ? Math.atan2(I.mx, I.mz) : c.aimYaw + dt * 2.5;
       const wantYaw = baseYaw + Math.sin(T * 2.3 * this.jitter + this.sweep) * 0.6;
       c.aimYaw += angDiff(c.aimYaw, wantYaw) * Math.min(1, dt * (chg ? 3 : 6));

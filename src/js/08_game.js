@@ -64,7 +64,7 @@ const HUD = {
     }
     if (!c.alive) { $('deathCd').textContent = Math.max(1, Math.ceil(c.respawnT)); }
     this.mmT -= dt; if (this.mmT <= 0) { this.mmT = 0.2; this.drawMap(); }
-    KillFX.update(dt);
+    KillFX.update(dt); Shops.update(dt);
     // hold Tab: live scoreboard
     const tabOn = !!Input.keys.Tab && (G.state === 'play' || G.state === 'intro') && !G.paused;
     $('scoreTab').classList.toggle('show', tabOn);
@@ -96,6 +96,7 @@ const HUD = {
     const toM = (x, z) => [(x + XH) / (2 * XH) * W, (z + ZH) / (2 * ZH) * H];
     g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 1;
     for (const s of SOLIDS) { if (s.bound) continue; const [a, b] = toM(s.x0, s.z0), [c2, d] = toM(s.x1, s.z1); g.strokeRect(a, b, c2 - a, d - b); }
+    Shops.drawMap(g, toM);
     HUD.mapAllies = [];
     for (const ch of CHARS) {
       if (!ch.alive || ch.team !== PLAYER.team || ch.state === 'dead') continue; const [x, y] = toM(ch.pos.x, ch.pos.z);
@@ -344,27 +345,28 @@ function resetFov() { Cam.zoom = 1; camera.fov = SETTINGS.fov; camera.updateProj
 function startMatch() {
   Sfx.init(); Sfx.stopMusic(); Sfx.duck(false);
   applyPalette(); resetPaint(); Fx.clear(); Wake.clear(); Proj.clear();
-  spawnTeams(); Director.reset(); Strategist.reset(); Combat.reset(); Pacing.reset(); HUD.buildTeams(); KillFX.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
+  spawnTeams(); Director.reset(); Strategist.reset(); Combat.reset(); Pacing.reset(); HUD.buildTeams(); KillFX.reset(); Shops.reset(); G.hitStop = 0; ScreenInk.reset(TEAM_HEX[1]);
+  $('hud').classList.toggle('camp', Camp.on); $('cineTitle').innerHTML = Camp.on ? `<b>${ROUND_NO_T[Camp.round.no]} · ${Camp.round.nameT || Camp.round.name}</b><i>ROUND ${Camp.round.no} · ${Camp.round.en}</i>` : '<b>西關大屋</b><i>XIGUAN MANSION</i>';
   try { renderer.compile(scene, camera); } catch (e) { }
   G.left = GAME.dur; G.time = 0; G.state = 'intro'; G.introT = 0; G.paused = false; G.flags = {}; resetFov(); cineUI(false);
   const W = PLAYER.weapon; $('weapTag').innerHTML = weaponIcon(W.id, '#fff', 48, TEAM_HEX[0]) + W.name;
   $('subw').innerHTML = '<i></i>' + SUBS[PLAYER.subId].short;
   Cam.yaw = SPAWN[0].yaw; Cam.pitch = -0.08; Cam.pivotY = SPAWN[0].y + 1.5;
-  show('title', false); show('lobby', false); show('results', false); show('pause', false); show('hud', true);
+  show('title', false); show('lobby', false); show('results', false); show('campres', false); show('campsel', false); show('pause', false); show('hud', true);
   $('death').classList.remove('show'); $('center').innerHTML = '';
   $('hint').style.display = 'block';
   lockPointer();
 }
-function pauseGame() { if (G.state !== 'play' && G.state !== 'intro') return; G.paused = true; show('pause', true); Input.keys = {}; Sfx.duck(true); }
+function pauseGame() { if (G.state !== 'play' && G.state !== 'intro') return; G.paused = true; Camp.pauseCard(); show('pause', true); Input.keys = {}; Sfx.duck(true); }
 function resumeGame() { G.paused = false; show('pause', false); clock.getDelta(); lockPointer(); Sfx.duck(false); }
 function quitToTitle() {
   if (G.mapOpen) { G.mapOpen = false; $('minimap').classList.remove('big'); $('mapHint').classList.remove('show'); }
-  G.paused = false; show('pause', false); show('hud', false); show('results', false); Sfx.duck(false);
+  G.paused = false; show('pause', false); show('hud', false); show('results', false); show('campres', false); Sfx.duck(false);
   if (document.pointerLockElement) document.exitPointerLock();
-  gotoTitle();
+  Camp.exit(); gotoTitle();
 }
 function endMatch() {
-  Director.save();
+  Director.save(); if (Camp.on) Camp.finish();
   G.state = 'end'; G.endT = 0; Sfx.whistle(); Sfx.stopMusic(); flash(0.6);
   HUD.center('比赛结束！', '', 0);
   CHARS.forEach(c => { c.intent.fire = false; c.intent.swim = false; c.intent.mx = c.intent.mz = 0; });
@@ -414,6 +416,7 @@ function medalsFor(c) {
 }
 // results, following the original's flow: top-down judging → meter tug-of-war → WIN!/LOSE… → scoreboard (winners first) → your medals
 function showResults() {
+  if (Camp.on) return Camp.showResults();
   G.state = 'results'; show('hud', false); show('results', true); resetFov();
   if (document.pointerLockElement) document.exitPointerLock();
   const rid = G.rid = (G.rid || 0) + 1, later = (ms, fn) => setTimeout(() => { if (G.rid === rid && G.state === 'results') fn(); }, ms);
@@ -465,16 +468,16 @@ function showResults() {
 function resetToAttract() {
   if (G.state === 'title') return;
   G.state = 'title'; G.titleT = 0; clearChars(); resetFov();
-  Fx.clear(); Wake.clear(); Proj.clear(); applyPalette(); resetPaint();
-  show('hud', false); show('results', false);
+  Fx.clear(); Wake.clear(); Proj.clear(); Shops.clear(); applyPalette(); resetPaint();
+  show('hud', false); show('results', false); show('campres', false);
   Sfx.music('title');
 }
 function gotoTitle() {
-  resetToAttract(); show('lobby', false); show('mapsel', false); show('title', true); renderLoadCard();
+  resetToAttract(); show('lobby', false); show('mapsel', false); show('campsel', false); show('title', true); renderLoadCard();
 }
 function openLobby() {
   resetToAttract(); rollRoster(); G.lobbyTab = 'char'; renderLobby(); setTimeout(lobbyAnimate, 30);
-  show('title', false); show('results', false); show('mapsel', false); show('lobby', true);
+  show('title', false); show('results', false); show('campres', false); show('mapsel', false); show('campsel', false); show('lobby', true);
 }
 function statBars(v) { let s = '<div class="bar">'; for (let i = 1; i <= 5; i++) s += `<i class="${i <= v ? 'on' : ''}"></i>`; return s + '</div>'; }
 // ---- loadout screen: portrait row, then a panel with a "character" and a "weapon" page
@@ -549,6 +552,8 @@ function renderLobby() {
   const W0 = WEAPONS[cur], S0 = SUBS[CH.sub || 'bomb'], nm = tab === 'weap' ? W0.name : tab === 'sub' ? S0.name : CH.name, rl = tab === 'weap' ? W0.role + ' · ' + CH.name + (CH.weapons.length > 1 ? '可用' : '专属') : tab === 'sub' ? '副武器 · ' + CH.name + '专属' : CH.role + ' · ' + W0.name;
   if ($('pvName').textContent !== nm) { const pn = $('pvName').parentNode; if (pn && pn.classList) { pn.classList.remove('tx'); void pn.offsetWidth; pn.classList.add('tx'); } }
   $('pvName').textContent = nm; $('pvRole').textContent = rl;
+  $('lobby').classList.toggle('camp', Camp.on); $('lobbySub').textContent = Camp.on ? `闯关 · ${Camp.stage.name} · ${ROUND_NO[Camp.round.no]}` : '涂地对战 · ' + MAP.name;
+  $('lobbyGoal').innerHTML = Camp.on ? Camp.goalCard() : '';
   ['rosterA', 'rosterB'].forEach((id, t) => {
     $(id).innerHTML = G.roster[t].map(m => `<div class="rrow${m.isPlayer ? ' me' : ''}" style="border-left-color:${TEAM_HEX[t]}"><span class="cp">${charIcon(m.char, 34, TEAM_HEX[t])}</span><span class="rt"><b>${m.name}${m.isPlayer ? '（你）' : ''}</b><small>${CHARACTERS[m.char].name} · ${WEAPONS[m.weapon].name}</small></span><span class="rw">${weaponIcon(m.weapon, '#fff', 34, TEAM_HEX[t])}</span></div>`).join('');
   });
@@ -564,7 +569,7 @@ function renderMaps() {
   $('mapCards').querySelectorAll('.mscard').forEach(el => { el.onclick = () => { Sfx.init(); Sfx.click(); if (el.dataset.id !== MAP_ID) switchMap(el.dataset.id); }; el.ondblclick = () => { if (el.dataset.id === MAP_ID) mapSelNext(); }; });
 }
 // the lobby and map select are laid out for ~1500 x 860: on a smaller window shrink them as a whole instead of squeezing
-function fitMenus() { const k = Math.min(1, innerWidth / 1500, innerHeight / 860); ['lobby', 'mapsel'].forEach(id => { const el = $(id); if (el) el.style.zoom = k < 0.999 ? k.toFixed(3) : ''; }); }
+function fitMenus() { const k = Math.min(1, innerWidth / 1500, innerHeight / 860); ['lobby', 'mapsel', 'campsel'].forEach(id => { const el = $(id); if (el) el.style.zoom = k < 0.999 ? k.toFixed(3) : ''; }); }
 addEventListener('resize', fitMenus);
 // map select screen: title -> pick a map (the background turns into it straight away) -> lobby
 function openMapSel() { renderMaps(); show('title', false); show('lobby', false); show('results', false); show('mapsel', true); }
@@ -995,10 +1000,10 @@ const Preview = {
 /* 西關大屋's opening film: three held shots of the landmarks (hard cuts, slow moves, a long lens), then one unbroken move through the
    paifang and round to the play camera. Letterbox bars, a caption per shot; hold Space to skip to the landing. */
 const CINE = { T: 7.0, shots: [
-  { t0: 0.0, t1: 1.5, p0: [-13.5, 1.0, 0.4], p1: [-12.7, 4.4, 0.9], l0: [0, 5.2, 0], l1: [0, 7.6, 0], fov: 38, cap: ['鎮海樓', 'ZHENHAI TOWER'] },
-  { t0: 1.5, t1: 3.0, p0: [-4.2, 3.7, -16.6], p1: [-3.6, 3.9, -23.4], l0: [5, 4.1, -19.8], l1: [5, 4.3, -22.6], fov: 40, cap: ['廣州酒家', 'GUANGZHOU RESTAURANT'] },
-  { t0: 3.0, t1: 4.5, p0: [22.3, 3.75, 29.5], p1: [22.3, 3.75, 20.5], l0: [26, 3.6, 24.5], l1: [26, 3.6, 15.5], fov: 46, cap: ['腸粉街', 'RICE-ROLL ARCADE'] },
-  { t0: 4.5, t1: 5.8, p0: [0.6, 3.5, 22.5], p1: [0, 4.3, 33.5], l0: [0, 6.0, 31], l1: [0, 5.4, 47], fov: 44, cap: ['獵德牌坊', 'LIEDE ARCHWAY'], own: true } ] };
+  { t0: 0.0, t1: 1.5, p0: [-13.5, 1.0, 0.4], p1: [-12.7, 4.4, 0.9], l0: [0, 5.2, 0], l1: [0, 7.6, 0], fov: 38, cap: ['鎮海樓', 'ZHENHAI TOWER'], camp: ['鎮海樓', '頭位 · 正中間'] },
+  { t0: 1.5, t1: 3.0, p0: [-4.2, 3.7, -16.6], p1: [-3.6, 3.9, -23.4], l0: [5, 4.1, -19.8], l1: [5, 4.3, -22.6], fov: 40, cap: ['廣州酒家', 'GUANGZHOU RESTAURANT'], camp: ['廣州酒家', '對面的鋪頭'] },
+  { t0: 3.0, t1: 4.5, p0: [22.3, 3.75, 29.5], p1: [22.3, 3.75, 20.5], l0: [26, 3.6, 24.5], l1: [26, 3.6, 15.5], fov: 46, cap: ['腸粉街', 'RICE-ROLL ARCADE'], camp: ['源記腸粉', '我們的鋪頭'] },
+  { t0: 4.5, t1: 5.8, p0: [0.6, 3.5, 22.5], p1: [0, 4.3, 33.5], l0: [0, 6.0, 31], l1: [0, 5.4, 47], fov: 44, cap: ['獵德牌坊', 'LIEDE ARCHWAY'], camp: ['霸住三間', '就過關'], own: true } ] };
 function cineUI(on) { const h = $('hud'); if (!h || !h.classList) return; if (on) { h.classList.add('cine'); h.classList.add('cbars'); } else { h.classList.remove('cine'); h.classList.remove('cbars'); $('cineTitle').classList.remove('on'); $('cineCap').classList.remove('on'); } }
 function updateCine(dt) {
   const C = CINE, sg = PLAYER.team ? -1 : 1, V = (a, own) => new THREE.Vector3(a[0] * (own ? sg : 1), a[1], a[2] * (own ? sg : 1)), sm = k => k * k * (3 - 2 * k);
@@ -1018,7 +1023,7 @@ function updateCine(dt) {
   else { G.introT += dt; const t = G.introT, last = C.shots[C.shots.length - 1];
     if (t < last.t1) { let i = C.shots.findIndex(s => t < s.t1); const s = C.shots[i], k = (t - s.t0) / (s.t1 - s.t0), e = s.own ? sm(k) * 0.5 + k * 0.5 : k * 0.85 + sm(k) * 0.15;
       pos = V(s.p0, s.own).lerp(V(s.p1, s.own), e); look = V(s.l0, s.own).lerp(V(s.l1, s.own), e); fov = s.fov;
-      if (F.shot !== i) { F.shot = i; const c = $('cineCap'); c.classList.remove('on'); if (c.children && c.children[0]) { c.children[0].textContent = s.cap[0]; c.children[1].textContent = s.cap[1]; } F.capAt = t + 0.12; }
+      if (F.shot !== i) { F.shot = i; const c = $('cineCap'), cp = (Camp.on && s.camp) || s.cap; c.classList.remove('on'); if (c.children && c.children[0]) { c.children[0].textContent = cp[0]; c.children[1].textContent = cp[1]; } F.capAt = t + 0.12; }
       if (F.capAt && t >= F.capAt) { F.capAt = 0; $('cineCap').classList.add('on'); }
       if (i === 0) { if (t > 0.15 && !F.ttl) { F.ttl = 1; $('cineTitle').classList.add('on'); } if (t > 1.15 && F.ttl === 1) { F.ttl = 2; $('cineTitle').classList.remove('on'); } }
     } else land((t - last.t1) / (C.T - last.t1), V(last.p1, true), V(last.l1, true), last.fov);
@@ -1027,9 +1032,10 @@ function updateCine(dt) {
   // landed: the usual READY / GO
   if (!F.done) { F.done = 1; cineUI(false); resetFov(); camera.position.copy(end.pos); camera.lookAt(end.look); }
   if (F.skip) G.introT += dt;
-  const t = G.introT;
-  if (!F.t2) { F.t2 = 1; HUD.center('READY?', '', 1000); Sfx.beep(false); }
-  if (t > C.T + 1.0) { G.state = 'play'; HUD.center('GO!', '', 900); Sfx.whistle(); Sfx.beep(true); flash(0.35); Sfx.music('game'); Cam.pos.copy(camera.position); Input.jumpQ = false; }
+  const t = G.introT, gw = Camp.on ? 1.8 : 0;          // (闯关: the round's goal first)
+  if (gw && !F.goal) { F.goal = 1; HUD.center(Camp.round.goal, Camp.round.sub, 1700); Sfx.beep(false); }
+  if (!F.t2 && t > C.T + gw) { F.t2 = 1; HUD.center('READY?', '', 1000); Sfx.beep(false); }
+  if (t > C.T + gw + 1.0) { G.state = 'play'; HUD.center('GO!', '', 900); Sfx.whistle(); Sfx.beep(true); flash(0.35); Sfx.music('game'); Cam.pos.copy(camera.position); Input.jumpQ = false; }
 }
 function updateIntro(dt) {
   if (MAP_ID === 'canton') return updateCine(dt);
@@ -1140,6 +1146,12 @@ function initUI() {
   $('pname').addEventListener('input', () => { if (Profile.data.vip && GAME.name !== VIP_NAME) { Profile.data.vip = null; Profile.save(); $('pnameWrap').classList.remove('vip'); } });
   $('pnameWrap').classList.toggle('dev', devGod()); $('pnameWrap').classList.toggle('vip', vipOn()); G.modeWas = devGod() ? 'dev' : vipOn() ? 'vip' : '';
   $('btnStart').onclick = () => { Sfx.init(); Sfx.click(); openMapSel(); };
+  $('btnCamp').onclick = () => { Sfx.init(); Sfx.click(); openCampSel(); };
+  $('btnCsBack').onclick = () => { Sfx.click(); Camp.exit(); show('campsel', false); show('title', true); renderLoadCard(); };
+  $('btnCsGo').onclick = () => { Sfx.init(); Sfx.click(); if (Camp.enter(G.campPick || 'xiguan')) openLobby(); };
+  $('btnRestart').onclick = () => { Sfx.click(); if (!Camp.on) return; show('pause', false); G.paused = false; Sfx.duck(false); startMatch(); };
+  $('btnCrAgain').onclick = () => { Sfx.click(); rollRoster(); startMatch(); };
+  $('btnCrBack').onclick = () => { Sfx.click(); openCampSel(); };
   $('titleMap').onclick = () => { Sfx.init(); Sfx.click(); openMapSel(); };
   $('btnMsBack').onclick = () => { Sfx.click(); show('mapsel', false); show('title', true); renderLoadCard(); };
   $('btnMsNext').onclick = mapSelNext;
@@ -1147,7 +1159,7 @@ function initUI() {
   $('btnChangeMap').onclick = () => { Sfx.click(); Profile.save(); openMapSel(); };
   renderMaps();
   $('loadCard').onclick = () => { Sfx.init(); Sfx.click(); openLobby(); };
-  $('btnBack').onclick = () => { Sfx.click(); show('lobby', false); show('title', true); renderLoadCard(); };
+  $('btnBack').onclick = () => { Sfx.click(); if (Camp.on) { openCampSel(); return; } show('lobby', false); show('title', true); renderLoadCard(); };
   $('pvReplay').onclick = () => { Sfx.init(); Sfx.click(); SubDemo.restart(); };
   $('infoTabs').querySelectorAll('button').forEach(b => b.onclick = () => { Sfx.init(); Sfx.click(); if (G.lobbyTab === b.dataset.tab) return; G.lobbyTab = b.dataset.tab; renderLobby(); lobbyAnimate(); });
   $('btnGo').onclick = () => { Sfx.click(); Profile.save(); enforceRoster(); startMatch(); };

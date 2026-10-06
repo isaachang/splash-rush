@@ -178,6 +178,7 @@ const Proj = {
     else for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; this.spray(owner, p, new THREE.Vector3(Math.cos(a) * rand(2, 4), rand(-1, 2), Math.sin(a) * rand(2, 4)), rand(0.5, 0.75)); }
     const v = sndVol(p); if (v > 0.03) Sfx.blastBoom(v, sndPan(p), R);
     if (PLAYER && PLAYER.alive) { const d = PLAYER.pos.distanceTo(p); if (d < R + 5) G.shake(0.35 * (1 - d / (R + 5))); }
+    if (Shops.on) Shops.blast(owner, p, R, dmg[0]);
     for (const c of CHARS) {
       if (c.team === team || !c.alive || c === direct) continue;
       const ch = c.chest(), d = ch.distanceTo(p); if (d >= R) continue;
@@ -427,6 +428,7 @@ const Proj = {
         if (Cover.list.length) { const cv = Cover.at(b.team, b.p.x, b.p.y, b.p.z); if (cv) { Cover.hit(cv, b.kind === 'shot' ? this.shotDamage(b) : 0, b.p, b.team, b.kind === 'shot' ? b.r : 0); if (b.blast) { const W = b.W; this.blastAt(b.owner, prev.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id); } dead = true; break; } }
         const s = solidAt(b.p.x, b.p.y, b.p.z);
         if (s) {
+          if (b.kind === 'shot' && Shops.on) Shops.hit(b.owner, b.p, this.shotDamage(b));        // (闯关: a shot into one of the buildings)
           if (b.big) { const h = this.classify(s, prev, b.p); if (h.type !== 'none') this.splash(b.owner, h.type === 'wall' ? h.pt : new THREE.Vector3(b.p.x, h.y, b.p.z), h.n, b.v.clone().normalize(), b.r, h.type, h.face); if (sndVol(b.p) > 0.1) Sfx.splat(sndVol(b.p)); }
           else if (b.blast) { const W = b.W; this.impact(s, prev, b.p, b.team, b.owner, b.r); this.blastAt(b.owner, prev.clone(), W.blastR, W.blastCore, W.blastDmg, 1.5, W.id); }
           else this.impact(s, prev, b.p, b.team, b.owner, b.r);
@@ -496,6 +498,7 @@ const Proj = {
     const v = sndVol(p); Sfx.boom(v * (cu ? 0.8 : 1)); if (v > 0.3) G.shake(v * (cu ? 0.5 : 0.7));
     for (const c of CHARS) { if (c.team === b.team || !c.alive) continue; const d = c.chest().distanceTo(p); if (d < R) c.damage(d < core ? 180 : lerp(edge, 30, (d - core) / (R - core)), b.owner, cu ? 'curling' : 'bomb'); }
     Cover.blast(b.team, p, R, cu ? 110 : 140);                         // bombs are the answer to a cover
+    if (Shops.on) Shops.blast(b.owner, p, R, cu ? 110 : 140);
   },
   clear() { this.shots.length = 0; this.pending.length = 0; this.bombs.forEach(b => scene.remove(b.g)); this.bombs.length = 0; Cover.clear(); }
 };

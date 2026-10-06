@@ -746,6 +746,7 @@ class Character {
       Proj.splash(this, impactAt, new THREE.Vector3(0, 1, 0), dir, ir * (full ? 0.8 : 0.6), 'floor');
       Fx.burstDir(tr.end.x, tr.end.y, tr.end.z, col, full ? 34 : 16, full ? 8 : 5, full ? 0.13 : 0.1, dir.x, dir.y + 0.3, dir.z, 0.7);
     } else if (tr.solid) {
+      if (Shops.on) Shops.hit(this, tr.end, c >= 0.999 ? W.dmgFull : lerp(W.dmgMin, W.dmgMax, ct));
       const h = Proj.classify(tr.solid, tr.prev, tr.end);
       if (h.type === 'floor') { impactAt = new THREE.Vector3(tr.end.x, h.y, tr.end.z); Proj.splash(this, impactAt, h.n, dir, ir, 'floor'); }
       else if (h.type === 'wall') { impactAt = h.pt.clone(); Proj.splash(this, h.pt, h.n, dir, ir * 0.85, 'wall', h.face); }

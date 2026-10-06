@@ -162,6 +162,9 @@ const Sfx = (() => {
     // the whole other team down at once: a quick fanfare on top
     wipe() { if (!ctx) return; const t = ctx.currentTime; [76, 79, 83, 88].forEach((m, i) => tone('square', mtof(m), null, 0.16, 0.06, null, t + 0.2 + i * 0.07)); },
     assist() { if (!ctx) return; const t = ctx.currentTime; tone('sine', 900, 1200, 0.07, 0.06); tone('sine', 1350, 1700, 0.09, 0.05, null, t + 0.06); },
+    // 闯关: a building taken - a struck gong (ours: bright and long; theirs: lower and short); a dull knock for hitting a building
+    gong(ours) { if (!ctx) return; const t = ctx.currentTime, f = ours ? 196 : 147, k = ours ? 1 : 0.6; [[1, 0.2, 1.6], [2.76, 0.08, 1.1], [5.4, 0.04, 0.7], [1.5, 0.05, 1.2]].forEach(([m, v, d]) => tone('sine', f * m, f * m * 0.985, d * k, v * k, null, t)); noise(0.25, 0.16 * k, 'bandpass', 900, 1.5, 300, null, t); },
+    shopHit() { tone('triangle', 230, 120, 0.07, 0.06); noise(0.05, 0.05, 'lowpass', 900, 1, 300); },
     hurt() { tone('sawtooth', 240, 110, 0.14, 0.09); noise(0.1, 0.12, 'lowpass', 700, 1); },
     swimIn() { tone('sine', 280, 950, 0.12, 0.14); noise(0.16, 0.12, 'bandpass', 900, 2, 300); },
     swimOut() { tone('sine', 820, 300, 0.1, 0.1); },

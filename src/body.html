@@ -11,7 +11,8 @@
     <div class="tag">4 V 4 · 涂地对战 · 把整个广场染成你的颜色</div>
   </div>
   <div class="menu">
-    <button class="btn big" id="btnStart">开始对战</button>
+    <button class="btn big" id="btnCamp">闯关</button>
+    <button class="btn big vs" id="btnStart">自由对战</button>
     <div style="display:flex;gap:14px">
       <button class="btn" id="btnHow">操作说明</button>
       <button class="btn alt" id="btnSet">设置</button>
@@ -50,8 +51,9 @@
       <h3>对阵阵容</h3>
       <div class="rosterWrap"><div class="roster" id="rosterA"></div><div class="vs">VS</div><div class="roster" id="rosterB"></div></div>
       <div class="opts">
+        <div class="full" id="lobbyGoal"></div>
         <div class="full"><h3>对手强度</h3><div class="seg" id="diff"><button data-v="0">轻松</button><button data-v="1" class="sel">普通</button><button data-v="2">困难</button><button data-v="3">地狱</button></div><p class="segNote" id="diffNote"></p></div>
-        <div class="full"><h3>对战时长</h3><div class="seg" id="dur"><button data-v="90">1:30</button><button data-v="180" class="sel">3:00</button><button data-v="300">5:00</button></div></div>
+        <div class="full" id="durBox"><h3>对战时长</h3><div class="seg" id="dur"><button data-v="90">1:30</button><button data-v="180" class="sel">3:00</button><button data-v="300">5:00</button></div></div>
         <div class="full"><h3>队伍配色</h3><div class="swatches" id="swatches"></div></div>
       </div>
     </div>
@@ -66,15 +68,25 @@
 </div>
 
 
+<div id="campsel" class="screen">
+  <div class="lobbyHead"><h2>闯关</h2><span>单人 · 一关三轮，连着打</span></div>
+  <div class="csBody" id="campCards"></div>
+  <div class="lobbyFoot"><button class="btn" id="btnCsBack">‹ 返回</button><button class="btn big" id="btnCsGo">出发 ›</button></div>
+</div>
+
 <div id="devFx"></div>
 <div id="hud" class="screen">
   <div id="vignette"></div>
   <canvas id="inkCanvas"></canvas>
   <div id="topbar"><div class="team" id="teamA"></div><div id="timer">3:00</div><div class="team" id="teamB"></div></div>
+  <div id="shopBar"></div>
+  <div id="shopMarks"></div>
+  <div id="shopBanner"></div>
   <div id="kxFlash"></div>
   <div id="kxMarks"></div>
   <div id="crosshair"><div class="ring"></div><div class="dot"></div><div id="kxBurst"></div>
     <svg id="chargeRing" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="9"/><circle id="chargeArc" cx="50" cy="50" r="40" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="251.3" stroke-dashoffset="251.3" stroke-linecap="round"/></svg>
+    <svg id="capRing" viewBox="0 0 128 128"><circle cx="64" cy="64" r="54" fill="none" stroke="rgba(0,0,0,.4)" stroke-width="7"/><circle id="capArc" cx="64" cy="64" r="54" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="339.3" stroke-dashoffset="339.3" stroke-linecap="round"/></svg>
     <svg id="hitmark" viewBox="0 0 44 44"><g stroke="#fff" stroke-width="4" stroke-linecap="round"><path d="M6 6l9 9M38 6l-9 9M6 38l9-9M38 38l-9-9"/></g></svg></div>
   <div id="inkbar"><div id="inkfill"></div></div>
   <div id="ret2"><div class="rr"></div><svg class="x" viewBox="0 0 40 40"><g stroke="#fff" stroke-width="4.5" stroke-linecap="round"><path d="M5 5l9 9M35 5l-9 9M5 35l9-9M35 35l-9-9"/></g></svg></div>
@@ -102,7 +114,9 @@
 
 <div id="pause" class="screen">
   <h2>暂停中</h2>
+  <div id="pauseGoal"></div>
   <button class="btn big" id="btnResume">继续战斗</button>
+  <button class="btn alt" id="btnRestart">重新开始本轮</button>
   <button class="btn alt" id="btnSet2">设置</button>
   <button class="btn" id="btnQuit">退出到主菜单</button>
   <div class="pausever" id="pauseVer"></div>
@@ -117,6 +131,16 @@
   <div id="rsFoot">
     <div id="awards"></div>
     <div id="resBtns"><button class="btn rs-main" id="btnAgain">再来一局</button><button class="btn rs-sub" id="btnChange">更换装备</button><button class="btn rs-ghost" id="btnMenu">主菜单</button></div>
+  </div>
+</div>
+
+<div id="campres" class="screen">
+  <div class="crBox">
+    <div class="crHead" id="crHead"></div>
+    <div class="crVerdict" id="crVerdict"></div>
+    <div class="crLine" id="crLine"></div>
+    <div class="crTodo"><b>结算页正在构思中</b><small>三轮都做完之后，这里会换成正式的结算</small></div>
+    <div class="crBtns"><button class="btn big" id="btnCrAgain">再来一次</button><button class="btn" id="btnCrBack">返回闯关</button></div>
   </div>
 </div>
 
